@@ -1,0 +1,322 @@
+name: resumo_dos_deuses_flutter
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.6
+  flutter_svg: ^2.0.16
+  shimmer: ^3.0.0
+  animate_do: ^3.3.4
+  flutter_stripe: ^11.3.0
+  dio: ^5.7.0
+  google_mobile_ads: ^5.2.0
+  arrow_path: ^3.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^3.0.0
+  flutter_markdown: ^0.7.3+2
+  redux: ^5.0.0
+  flutter_redux: ^0.10.0
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  firebase_auth_web: ^5.13.2
+  cloud_firestore: ^5.4.4
+  collection: ^1.18.0
+  js: ^0.7.1
+  google_sign_in: ^6.1.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+  assets:
+    - assets/images/authors/C_S_Lewis.webp
+    - assets/temp_book.jpg
+    - assets/Biblia/completa_traducoes/abbrev_map.json
+    - assets/Biblia/completa_traducoes/nvi/
+    - assets/Biblia/completa_traducoes/aa/
+    - assets/Biblia/completa_traducoes/acf/
+    - assets/Biblia/eventos_por_capitulo/
+    - assets/images/tribos/
+    - assets/intro/
+    - assets/icons/
+    - assets/routes/
+
+    - assets/Biblia/completa_traducoes/nvi/gn/
+    - assets/Biblia/completa_traducoes/nvi/ex/
+    - assets/Biblia/completa_traducoes/nvi/lv/
+    - assets/Biblia/completa_traducoes/nvi/nm/
+    - assets/Biblia/completa_traducoes/nvi/dt/
+    - assets/Biblia/completa_traducoes/nvi/js/
+    - assets/Biblia/completa_traducoes/nvi/jz/
+    - assets/Biblia/completa_traducoes/nvi/rt/
+    - assets/Biblia/completa_traducoes/nvi/1sm/
+    - assets/Biblia/completa_traducoes/nvi/2sm/
+    - assets/Biblia/completa_traducoes/nvi/1rs/
+    - assets/Biblia/completa_traducoes/nvi/2rs/
+    - assets/Biblia/completa_traducoes/nvi/1cr/
+    - assets/Biblia/completa_traducoes/nvi/2cr/
+    - assets/Biblia/completa_traducoes/nvi/ed/
+    - assets/Biblia/completa_traducoes/nvi/ne/
+    - assets/Biblia/completa_traducoes/nvi/et/
+    - assets/Biblia/completa_traducoes/nvi/jo/
+    - assets/Biblia/completa_traducoes/nvi/sl/
+    - assets/Biblia/completa_traducoes/nvi/pv/
+    - assets/Biblia/completa_traducoes/nvi/ec/
+    - assets/Biblia/completa_traducoes/nvi/ct/
+    - assets/Biblia/completa_traducoes/nvi/is/
+    - assets/Biblia/completa_traducoes/nvi/jr/
+    - assets/Biblia/completa_traducoes/nvi/lm/
+    - assets/Biblia/completa_traducoes/nvi/ez/
+    - assets/Biblia/completa_traducoes/nvi/dn/
+    - assets/Biblia/completa_traducoes/nvi/os/
+    - assets/Biblia/completa_traducoes/nvi/jl/
+    - assets/Biblia/completa_traducoes/nvi/am/
+    - assets/Biblia/completa_traducoes/nvi/ob/
+    - assets/Biblia/completa_traducoes/nvi/jn/
+    - assets/Biblia/completa_traducoes/nvi/mq/
+    - assets/Biblia/completa_traducoes/nvi/na/
+    - assets/Biblia/completa_traducoes/nvi/hc/
+    - assets/Biblia/completa_traducoes/nvi/sf/
+    - assets/Biblia/completa_traducoes/nvi/ag/
+    - assets/Biblia/completa_traducoes/nvi/zc/
+    - assets/Biblia/completa_traducoes/nvi/ml/
+    - assets/Biblia/completa_traducoes/nvi/mt/
+    - assets/Biblia/completa_traducoes/nvi/mc/
+    - assets/Biblia/completa_traducoes/nvi/lc/
+    - assets/Biblia/completa_traducoes/nvi/jo/
+    - assets/Biblia/completa_traducoes/nvi/jó/
+    - assets/Biblia/completa_traducoes/nvi/atos/
+    - assets/Biblia/completa_traducoes/nvi/rm/
+    - assets/Biblia/completa_traducoes/nvi/1co/
+    - assets/Biblia/completa_traducoes/nvi/2co/
+    - assets/Biblia/completa_traducoes/nvi/gl/
+    - assets/Biblia/completa_traducoes/nvi/ef/
+    - assets/Biblia/completa_traducoes/nvi/fp/
+    - assets/Biblia/completa_traducoes/nvi/cl/
+    - assets/Biblia/completa_traducoes/nvi/1ts/
+    - assets/Biblia/completa_traducoes/nvi/2ts/
+    - assets/Biblia/completa_traducoes/nvi/1tm/
+    - assets/Biblia/completa_traducoes/nvi/2tm/
+    - assets/Biblia/completa_traducoes/nvi/tt/
+    - assets/Biblia/completa_traducoes/nvi/fm/
+    - assets/Biblia/completa_traducoes/nvi/hb/
+    - assets/Biblia/completa_traducoes/nvi/tg/
+    - assets/Biblia/completa_traducoes/nvi/1pe/
+    - assets/Biblia/completa_traducoes/nvi/2pe/
+    - assets/Biblia/completa_traducoes/nvi/1jo/
+    - assets/Biblia/completa_traducoes/nvi/2jo/
+    - assets/Biblia/completa_traducoes/nvi/3jo/
+    - assets/Biblia/completa_traducoes/nvi/jd/
+    - assets/Biblia/completa_traducoes/nvi/ap/
+
+    - assets/Biblia/completa_traducoes/acf/gn/
+    - assets/Biblia/completa_traducoes/acf/ex/
+    - assets/Biblia/completa_traducoes/acf/lv/
+    - assets/Biblia/completa_traducoes/acf/nm/
+    - assets/Biblia/completa_traducoes/acf/dt/
+    - assets/Biblia/completa_traducoes/acf/js/
+    - assets/Biblia/completa_traducoes/acf/jz/
+    - assets/Biblia/completa_traducoes/acf/rt/
+    - assets/Biblia/completa_traducoes/acf/1sm/
+    - assets/Biblia/completa_traducoes/acf/2sm/
+    - assets/Biblia/completa_traducoes/acf/1rs/
+    - assets/Biblia/completa_traducoes/acf/2rs/
+    - assets/Biblia/completa_traducoes/acf/1cr/
+    - assets/Biblia/completa_traducoes/acf/2cr/
+    - assets/Biblia/completa_traducoes/acf/ed/
+    - assets/Biblia/completa_traducoes/acf/ne/
+    - assets/Biblia/completa_traducoes/acf/et/
+    - assets/Biblia/completa_traducoes/acf/jo/
+    - assets/Biblia/completa_traducoes/acf/sl/
+    - assets/Biblia/completa_traducoes/acf/pv/
+    - assets/Biblia/completa_traducoes/acf/ec/
+    - assets/Biblia/completa_traducoes/acf/ct/
+    - assets/Biblia/completa_traducoes/acf/is/
+    - assets/Biblia/completa_traducoes/acf/jr/
+    - assets/Biblia/completa_traducoes/acf/lm/
+    - assets/Biblia/completa_traducoes/acf/ez/
+    - assets/Biblia/completa_traducoes/acf/dn/
+    - assets/Biblia/completa_traducoes/acf/os/
+    - assets/Biblia/completa_traducoes/acf/jl/
+    - assets/Biblia/completa_traducoes/acf/am/
+    - assets/Biblia/completa_traducoes/acf/ob/
+    - assets/Biblia/completa_traducoes/acf/jn/
+    - assets/Biblia/completa_traducoes/acf/mq/
+    - assets/Biblia/completa_traducoes/acf/na/
+    - assets/Biblia/completa_traducoes/acf/hc/
+    - assets/Biblia/completa_traducoes/acf/sf/
+    - assets/Biblia/completa_traducoes/acf/ag/
+    - assets/Biblia/completa_traducoes/acf/zc/
+    - assets/Biblia/completa_traducoes/acf/ml/
+    - assets/Biblia/completa_traducoes/acf/mt/
+    - assets/Biblia/completa_traducoes/acf/mc/
+    - assets/Biblia/completa_traducoes/acf/lc/
+    - assets/Biblia/completa_traducoes/acf/jo/
+    - assets/Biblia/completa_traducoes/acf/jó/
+    - assets/Biblia/completa_traducoes/acf/atos/
+    - assets/Biblia/completa_traducoes/acf/rm/
+    - assets/Biblia/completa_traducoes/acf/1co/
+    - assets/Biblia/completa_traducoes/acf/2co/
+    - assets/Biblia/completa_traducoes/acf/gl/
+    - assets/Biblia/completa_traducoes/acf/ef/
+    - assets/Biblia/completa_traducoes/acf/fp/
+    - assets/Biblia/completa_traducoes/acf/cl/
+    - assets/Biblia/completa_traducoes/acf/1ts/
+    - assets/Biblia/completa_traducoes/acf/2ts/
+    - assets/Biblia/completa_traducoes/acf/1tm/
+    - assets/Biblia/completa_traducoes/acf/2tm/
+    - assets/Biblia/completa_traducoes/acf/tt/
+    - assets/Biblia/completa_traducoes/acf/fm/
+    - assets/Biblia/completa_traducoes/acf/hb/
+    - assets/Biblia/completa_traducoes/acf/tg/
+    - assets/Biblia/completa_traducoes/acf/1pe/
+    - assets/Biblia/completa_traducoes/acf/2pe/
+    - assets/Biblia/completa_traducoes/acf/1jo/
+    - assets/Biblia/completa_traducoes/acf/2jo/
+    - assets/Biblia/completa_traducoes/acf/3jo/
+    - assets/Biblia/completa_traducoes/acf/jd/
+    - assets/Biblia/completa_traducoes/acf/ap/
+
+    - assets/Biblia/completa_traducoes/aa/gn/
+    - assets/Biblia/completa_traducoes/aa/ex/
+    - assets/Biblia/completa_traducoes/aa/lv/
+    - assets/Biblia/completa_traducoes/aa/nm/
+    - assets/Biblia/completa_traducoes/aa/dt/
+    - assets/Biblia/completa_traducoes/aa/js/
+    - assets/Biblia/completa_traducoes/aa/jz/
+    - assets/Biblia/completa_traducoes/aa/rt/
+    - assets/Biblia/completa_traducoes/aa/1sm/
+    - assets/Biblia/completa_traducoes/aa/2sm/
+    - assets/Biblia/completa_traducoes/aa/1rs/
+    - assets/Biblia/completa_traducoes/aa/2rs/
+    - assets/Biblia/completa_traducoes/aa/1cr/
+    - assets/Biblia/completa_traducoes/aa/2cr/
+    - assets/Biblia/completa_traducoes/aa/ed/
+    - assets/Biblia/completa_traducoes/aa/ne/
+    - assets/Biblia/completa_traducoes/aa/et/
+    - assets/Biblia/completa_traducoes/aa/jo/
+    - assets/Biblia/completa_traducoes/aa/sl/
+    - assets/Biblia/completa_traducoes/aa/pv/
+    - assets/Biblia/completa_traducoes/aa/ec/
+    - assets/Biblia/completa_traducoes/aa/ct/
+    - assets/Biblia/completa_traducoes/aa/is/
+    - assets/Biblia/completa_traducoes/aa/jr/
+    - assets/Biblia/completa_traducoes/aa/lm/
+    - assets/Biblia/completa_traducoes/aa/ez/
+    - assets/Biblia/completa_traducoes/aa/dn/
+    - assets/Biblia/completa_traducoes/aa/os/
+    - assets/Biblia/completa_traducoes/aa/jl/
+    - assets/Biblia/completa_traducoes/aa/am/
+    - assets/Biblia/completa_traducoes/aa/ob/
+    - assets/Biblia/completa_traducoes/aa/jn/
+    - assets/Biblia/completa_traducoes/aa/mq/
+    - assets/Biblia/completa_traducoes/aa/na/
+    - assets/Biblia/completa_traducoes/aa/hc/
+    - assets/Biblia/completa_traducoes/aa/sf/
+    - assets/Biblia/completa_traducoes/aa/ag/
+    - assets/Biblia/completa_traducoes/aa/zc/
+    - assets/Biblia/completa_traducoes/aa/ml/
+    - assets/Biblia/completa_traducoes/aa/mt/
+    - assets/Biblia/completa_traducoes/aa/mc/
+    - assets/Biblia/completa_traducoes/aa/lc/
+    - assets/Biblia/completa_traducoes/aa/jo/
+    - assets/Biblia/completa_traducoes/aa/jó/
+    - assets/Biblia/completa_traducoes/aa/atos/
+    - assets/Biblia/completa_traducoes/aa/rm/
+    - assets/Biblia/completa_traducoes/aa/1co/
+    - assets/Biblia/completa_traducoes/aa/2co/
+    - assets/Biblia/completa_traducoes/aa/gl/
+    - assets/Biblia/completa_traducoes/aa/ef/
+    - assets/Biblia/completa_traducoes/aa/fp/
+    - assets/Biblia/completa_traducoes/aa/cl/
+    - assets/Biblia/completa_traducoes/aa/1ts/
+    - assets/Biblia/completa_traducoes/aa/2ts/
+    - assets/Biblia/completa_traducoes/aa/1tm/
+    - assets/Biblia/completa_traducoes/aa/2tm/
+    - assets/Biblia/completa_traducoes/aa/tt/
+    - assets/Biblia/completa_traducoes/aa/fm/
+    - assets/Biblia/completa_traducoes/aa/hb/
+    - assets/Biblia/completa_traducoes/aa/tg/
+    - assets/Biblia/completa_traducoes/aa/1pe/
+    - assets/Biblia/completa_traducoes/aa/2pe/
+    - assets/Biblia/completa_traducoes/aa/1jo/
+    - assets/Biblia/completa_traducoes/aa/2jo/
+    - assets/Biblia/completa_traducoes/aa/3jo/
+    - assets/Biblia/completa_traducoes/aa/jd/
+    - assets/Biblia/completa_traducoes/aa/ap/
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/assets-and-images/#from-packages
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Medium.ttf
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/custom-fonts/#from-packages

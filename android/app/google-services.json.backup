@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "225819514315",
+    "project_id": "resumo-livros",
+    "storage_bucket": "resumo-livros.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225819514315:android:e15bf8d871ceaffe23d24e",
+        "android_client_info": {
+          "package_name": "com.resumolivros.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcuHVPneHpt5LWM3u2ZtpUimfHrQsNAlk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
