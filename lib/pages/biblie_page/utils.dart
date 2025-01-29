@@ -157,50 +157,73 @@ class UtilsBiblePage {
     );
   }
 
-  /// Mostra comentários gerais em um modal.
-  static void showGeneralComments({
-    required BuildContext context,
-    required List<Map<String, dynamic>> comments,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF313333),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.3,
-          minChildSize: 0.3,
-          maxChildSize: 0.8,
-          builder: (context, scrollController) {
-            return comments.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      "Nenhum comentário disponível.",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  )
-                : SingleChildScrollView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.all(16.0),
-                    child: MarkdownBody(
-                      data: comments
-                          .map((comment) => comment['content'])
-                          .join("\n\n"),
-                      styleSheet: MarkdownStyleSheet(
-                        p: const TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
-                  );
-          },
-        );
-      },
-    );
-  }
+  /// Mostra comentários gerais em um modal, exibindo o "topic" como título antes do conteúdo.
+static void showGeneralComments({
+  required BuildContext context,
+  required List<Map<String, dynamic>> comments,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: const Color(0xFF313333),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) {
+      return DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.3,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        builder: (context, scrollController) {
+          return comments.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    "Nenhum comentário disponível.",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                )
+              : SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: comments.map((comment) {
+                      final topic = comment['topico'] ?? 'Sem título';
+                      final content = comment['content'] ?? '';
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          MarkdownBody(
+                            data: '## **$topic**\n\n$content',
+                            styleSheet: MarkdownStyleSheet(
+                              h2: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              p: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(color: Colors.white24, thickness: 1),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                );
+        },
+      );
+    },
+  );
+}
+
 
   /// Ordena comentários com base na relevância das tags.
   static List<Map<String, dynamic>> _sortCommentsByTags(
@@ -273,22 +296,34 @@ class UtilsBiblePage {
     );
   }
 
-  /// Constrói a lista de comentários.
+  /// Constrói a lista de comentários, exibindo "topic" antes do conteúdo como um título Markdown.
   static Widget _buildCommentsList(List<Map<String, dynamic>> comments) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: comments.asMap().entries.map((entry) {
         final index = entry.key;
         final comment = entry.value;
+        final topic = comment['topico'] ?? 'Sem título'; // Se não houver "topic", usa um padrão.
+        final content = comment['content'] ?? '';
+        print("debug topic");
+        print(comment);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (index > 0)
               const Divider(color: Colors.white24, thickness: 1, height: 32),
             MarkdownBody(
-              data: comment['content'] ?? '',
+              data: '## **$topic**\n\n$content', // O topic agora é um título de nível 2 (h2)
               styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(color: Colors.white, fontSize: 16),
+                h2: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                p: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],

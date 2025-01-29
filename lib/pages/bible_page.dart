@@ -28,8 +28,7 @@ class _BiblePageState extends State<BiblePage> {
       if (booksMap != null) {
         // Define Gênesis e capítulo 1 como padrão
         setState(() {
-          selectedBook =
-              'gn'; // Abreviação de Gênesis (ajuste de acordo com seu JSON)
+          selectedBook ='gn'; // Abreviação de Gênesis (ajuste de acordo com seu JSON)
           selectedChapter = 1;
         });
         // Carrega o conteúdo do primeiro capítulo
@@ -65,48 +64,58 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Future<void> _loadChapterComments(String book, int chapter) async {
-    try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection("comentario")
-          .where("livro", isEqualTo: book)
-          .where("capitulo", isEqualTo: chapter.toString())
-          .get();
+  try {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection("comentario")
+        .where("livro", isEqualTo: book)
+        .where("capitulo", isEqualTo: chapter.toString())
+        .get();
 
-      // Mapa de comentários por versículo
-      Map<int, List<Map<String, dynamic>>> commentsMap = {};
+    // Mapa de comentários por versículo
+    Map<int, List<Map<String, dynamic>>> commentsMap = {};
+    List<Map<String, dynamic>> chapterCommentsList = [];
 
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data();
+    for (var doc in querySnapshot.docs) {
+      final data = doc.data();
+      chapterCommentsList.add(data);
 
-        // Verifica se 'tags' existe e é uma lista
-        if (data['tags'] != null && data['tags'] is List) {
-          for (var tag in data['tags']) {
-            // Verifica se 'chapter' e 'verses' estão presentes
-            if (tag is Map<String, dynamic> &&
-                tag['chapter'] == chapter.toString() &&
-                tag['verses'] != null &&
-                tag['verses'] is List) {
-              for (var verse in tag['verses']) {
-                // Converte o número do versículo para inteiro
-                final verseNumber = int.tryParse(verse.toString());
-                if (verseNumber != null) {
-                  commentsMap.putIfAbsent(verseNumber, () => []).add(data);
-                }
+      // Verifica se 'tags' existe e é uma lista
+      if (data['tags'] != null && data['tags'] is List) {
+        for (var tag in data['tags']) {
+          // Verifica se 'chapter' e 'verses' estão presentes
+          if (tag is Map<String, dynamic> &&
+              tag['chapter'] == chapter.toString() &&
+              tag['verses'] != null &&
+              tag['verses'] is List) {
+            for (var verse in tag['verses']) {
+              // Converte o número do versículo para inteiro
+              final verseNumber = int.tryParse(verse.toString());
+              if (verseNumber != null) {
+                commentsMap.putIfAbsent(verseNumber, () => []).add(data);
               }
             }
           }
         }
       }
-      setState(() {
-        chapterComments = querySnapshot.docs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .toList();
-        verseComments = commentsMap;
-      });
-    } catch (e) {
-      print("Erro ao carregar comentários: $e");
     }
+
+    // Ordena os comentários pelo campo "topic_number" (convertido para inteiro)
+    chapterCommentsList.sort((a, b) {
+      final numA = int.tryParse(a['topic_number']?.toString() ?? '0') ?? 0;
+      final numB = int.tryParse(b['topic_number']?.toString() ?? '0') ?? 0;
+      return numA.compareTo(numB);
+    });
+    
+
+    setState(() {
+      chapterComments = chapterCommentsList;
+      verseComments = commentsMap;
+    });
+  } catch (e) {
+    print("Erro ao carregar comentários: $e");
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -172,28 +181,29 @@ class _BiblePageState extends State<BiblePage> {
                   const SizedBox(height: 16),
 
                   // Botão para abrir os comentários gerais do capítulo
-                  if (selectedBook != null && selectedChapter != null)
-                    ElevatedButton(
-                      onPressed: () {
-                        _loadChapterComments(
-                          booksMap![selectedBook!]['nome'],
-                          selectedChapter!,
-                        );
-                        UtilsBiblePage.showGeneralComments(
-                          context: context,
-                          comments: chapterComments,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFCDE7BE),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                      ),
-                      child: const Text(
-                        "Ver Comentários do Capítulo",
-                        style: TextStyle(color: Color(0xFF181A1A)),
-                      ),
-                    ),
+if (selectedBook != null && selectedChapter != null)
+  ElevatedButton(
+    onPressed: () async {
+      await _loadChapterComments(
+        booksMap![selectedBook!]['nome'],
+        selectedChapter!,
+      );
+
+      // Agora a lista já está atualizada antes de abrir o diálogo
+      UtilsBiblePage.showGeneralComments(
+        context: context,
+        comments: List.from(chapterComments), // Garante que a lista está na ordem correta
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFFCDE7BE),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    ),
+    child: const Text(
+      "Ver Comentários do Capítulo",
+      style: TextStyle(color: Color(0xFF181A1A)),
+    ),
+  ),
                   const SizedBox(height: 16),
 
                   // Carrega o conteúdo do capítulo selecionado

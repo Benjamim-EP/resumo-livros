@@ -10,7 +10,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp();
   }
-
+  
   try {
     final googleUser = await GoogleSignIn().signIn();
 
@@ -20,6 +20,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
     }
 
     final googleAuth = await googleUser.authentication;
+    print('Credenciais do Google obtidas: ${googleAuth.accessToken}');
 
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,

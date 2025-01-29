@@ -653,7 +653,8 @@ void userMiddleware(
       print(
           'Nenhuma indicação encontrada no Firestore. Carregando por features...');
 
-      // Nenhuma indicação encontrada. Executa a lógica de busca normal.
+      // Nenhuma indicação encontrada. Executa a lógica de busca normal
+      
       final userFeatures =
           userDoc.data()?['userFeatures'] as Map<String, dynamic>?;
 
@@ -728,46 +729,6 @@ void userMiddleware(
       // Despacha os tópicos carregados para o Redux
       store.dispatch(TopicsByFeatureLoadedAction(topicsByFeature));
 
-      // excluir daqui para baixo
-      // if (indicacoes != null &&
-      //     indicacoes.values.any((list) => list.isNotEmpty)) {
-      //   print("Carregando tópicos de 'indicacoes' do Firestore...");
-
-      //   Map<String, List<Map<String, dynamic>>> topicsByFeature = {};
-
-      //   for (var key in indicacoes.keys) {
-      //     final topicIds = indicacoes[key] as List<dynamic>? ?? [];
-
-      //     List<Map<String, dynamic>> topics = [];
-      //     for (String topicId in topicIds) {
-      //       // Busca os detalhes do tópico no Firestore
-      //       final topicDoc = await FirebaseFirestore.instance
-      //           .collection('topics')
-      //           .doc(topicId)
-      //           .get();
-
-      //       if (topicDoc.exists) {
-      //         topics.add({
-      //           'id': topicDoc.id,
-      //           'cover': topicDoc.data()?['cover'] ?? '',
-      //           'bookName': topicDoc.data()?['bookName'] ?? '',
-      //           'chapterName': topicDoc.data()?['chapterName'] ?? '',
-      //           'conteudo': topicDoc.data()?['conteudo'] ?? '',
-      //           'autor': topicDoc.data()?['authorName'] ?? '',
-      //           'bookId': topicDoc.data()?['bookId'] ?? '',
-      //         });
-      //       } else {
-      //         print("Tópico não encontrado no Firestore: $topicId");
-      //       }
-      //     }
-
-      //     topicsByFeature[key] = topics;
-      //   }
-      //   // Despacha os tópicos carregados para o Redux
-      //   store.dispatch(TopicsByFeatureLoadedAction(topicsByFeature));
-      //   print("Busca de tópicos com userfeatures finalizada");
-      //   return; // Encerrar aqui se os tópicos foram encontrados em "indicacoes"
-      // }
     } catch (e) {
       print('Erro ao carregar topicsByFeature: $e');
     }
@@ -987,34 +948,7 @@ void topicMiddleware(
               'bookId': similarTopicDoc.data()?['bookId'],
             });
 
-            // buscar livro
-            // if (bookId != null && chapterId != null) {
-            //   final bookDoc = await FirebaseFirestore.instance
-            //       .collection('books')
-            //       .doc(bookId)
-            //       .get();
-
-            //   if (bookDoc.exists) {
-            //     final bookTitle = bookDoc.data()?['titulo'] ?? 'Sem título';
-            //     final chapters =
-            //         bookDoc.data()?['capitulos'] as List<dynamic> ?? [];
-            //     final chapter = chapters.firstWhere(
-            //         (chap) => chap['id'] == chapterId,
-            //         orElse: () => null);
-
-            //     final chapterTitle = chapter?['titulo'] ?? 'Sem título';
-
-            //     //print(
-            //     //  'Middleware: Livro "$bookTitle", Capítulo "$chapterTitle" carregados para tópico $similarTopicId');
-
-            //     detailedTopics.add({
-            //       'similar_topic_id': similarTopicId,
-            //       'similarity': topic['similarity'],
-            //       'bookTitle': bookTitle,
-            //       'chapterTitle': chapterTitle,
-            //     });
-            //   }
-            // }
+            
           }
         }
 
