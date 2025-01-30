@@ -69,22 +69,18 @@ class _ExploreState extends State<Explore> {
                     }
                   }
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Feature Title
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Text(
-                          feature,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                  return ExpansionTile(
+                    title: Text(
+                      feature,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      // Horizontal List of Cards
+                    ),
+                    collapsedBackgroundColor: const Color(0xFF1A1B1D),
+                    backgroundColor: const Color(0xFF232538),
+                    children: [
                       SizedBox(
                         height: 250,
                         child: ListView.builder(
@@ -97,10 +93,8 @@ class _ExploreState extends State<Explore> {
 
                             return GestureDetector(
                               onTapDown: (details) {
-                                // Obtém a posição do clique
                                 final tapPosition = details.globalPosition;
 
-                                // Mostra o menu suspenso ao clicar no cartão
                                 showMenu(
                                   context: context,
                                   position: RelativeRect.fromLTRB(
@@ -112,27 +106,24 @@ class _ExploreState extends State<Explore> {
                                         tapPosition.dy,
                                   ),
                                   items: [
-                                    // Opção: Ir para página do livro
-                                    PopupMenuItem<String>(
+                                    const PopupMenuItem<String>(
                                       value: 'book',
-                                      child: const Text(
+                                      child: Text(
                                         'Ir para Livro',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
-                                    // Opção: Ir para tópicos
                                     ...topics.map((topic) {
                                       final topicId =
                                           topic['id']?.toString() ?? 'unknown';
                                       return PopupMenuItem<String>(
                                         value: topicId,
                                         child: Text(
-                                          topic['titulo'] ??
-                                              'Título desconhecido',
+                                          topic['titulo'] ?? 'Título desconhecido',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
@@ -143,14 +134,10 @@ class _ExploreState extends State<Explore> {
                                       );
                                     }).toList(),
                                   ],
-                                  color: const Color(
-                                      0xFF232538), // Fundo do menu suspenso
-                                  elevation:
-                                      8, // Efeito de sombra para destacar
+                                  color: const Color(0xFF232538),
+                                  elevation: 8,
                                 ).then((value) {
-                                  // Lógica ao selecionar uma opção
                                   if (value == 'book') {
-                                    // Ir para a página do livro
                                     if (bookId.isNotEmpty) {
                                       Navigator.push(
                                         context,
@@ -160,9 +147,7 @@ class _ExploreState extends State<Explore> {
                                         ),
                                       );
                                     }
-                                  } else if (value != null &&
-                                      value != 'unknown') {
-                                    // Ir para um tópico específico
+                                  } else if (value != null && value != 'unknown') {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -184,10 +169,8 @@ class _ExploreState extends State<Explore> {
                                 child: SizedBox(
                                   width: 150,
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // Book Cover
                                       ClipRRect(
                                         borderRadius: const BorderRadius.only(
                                           topLeft: Radius.circular(12),
@@ -210,12 +193,10 @@ class _ExploreState extends State<Explore> {
                                                 ),
                                               ),
                                       ),
-                                      // Book Name
                                       Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Text(
-                                          firstTopic['bookName'] ??
-                                              'Título desconhecido',
+                                          firstTopic['bookName'] ?? 'Título desconhecido',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
@@ -224,13 +205,11 @@ class _ExploreState extends State<Explore> {
                                           ),
                                         ),
                                       ),
-                                      // Author Name
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8.0),
                                         child: Text(
-                                          firstTopic['autor'] ??
-                                              'Autor desconhecido',
+                                          firstTopic['autor'] ?? 'Autor desconhecido',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
@@ -246,7 +225,7 @@ class _ExploreState extends State<Explore> {
                             );
                           },
                         ),
-                      )
+                      ),
                     ],
                   );
                 }).toList(),
@@ -254,7 +233,6 @@ class _ExploreState extends State<Explore> {
             );
           },
         );
-
       case "Autores":
         return StoreConnector<AppState, List<Map<String, dynamic>>>(
           converter: (store) {

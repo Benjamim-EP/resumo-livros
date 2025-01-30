@@ -26,20 +26,26 @@ class _BiblePageState extends State<BiblePage> {
     super.initState();
     _loadBooksMap().then((_) {
       if (booksMap != null) {
-        // Define Gênesis e capítulo 1 como padrão
         setState(() {
-          selectedBook ='gn'; // Abreviação de Gênesis (ajuste de acordo com seu JSON)
+          selectedBook = 'gn'; 
           selectedChapter = 1;
         });
-        // Carrega o conteúdo do primeiro capítulo
-        _loadChapterContent(selectedBook!, selectedChapter!).catchError((e) {
-          print("Erro ao carregar o capítulo inicial: $e");
-        });
-        // Carrega os comentários do primeiro capítulo
-        _loadChapterComments(
-            booksMap![selectedBook!]['nome'], selectedChapter!);
+
+        _updateChapterData(); 
       }
     });
+  }
+
+  /// Atualiza o conteúdo e os comentários sempre que um novo livro ou capítulo for selecionado.
+  void _updateChapterData() {
+    if (selectedBook != null && selectedChapter != null) {
+      setState(() {
+        chapterComments.clear();
+        verseComments.clear();
+      });
+
+      _loadChapterComments(booksMap![selectedBook!]['nome'], selectedChapter!);
+    }
   }
 
   Future<void> _loadBooksMap() async {
@@ -135,7 +141,6 @@ class _BiblePageState extends State<BiblePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Botões de Tradução
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -146,7 +151,6 @@ class _BiblePageState extends State<BiblePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Dropdowns para seleção de livro e capítulo
                   Row(
                     children: [
                       Expanded(
@@ -156,9 +160,9 @@ class _BiblePageState extends State<BiblePage> {
                           onChanged: (value) {
                             setState(() {
                               selectedBook = value;
-                              selectedChapter =
-                                  1; // Define o capítulo padrão como 1
+                              selectedChapter = 1;
                             });
+                            _updateChapterData();
                           },
                         ),
                       ),
@@ -173,6 +177,7 @@ class _BiblePageState extends State<BiblePage> {
                               setState(() {
                                 selectedChapter = value;
                               });
+                              _updateChapterData();
                             },
                           ),
                         ),
@@ -180,43 +185,32 @@ class _BiblePageState extends State<BiblePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Botão para abrir os comentários gerais do capítulo
-if (selectedBook != null && selectedChapter != null)
-  ElevatedButton(
-    onPressed: () async {
-      await _loadChapterComments(
-        booksMap![selectedBook!]['nome'],
-        selectedChapter!,
-      );
-
-      // Agora a lista já está atualizada antes de abrir o diálogo
-      UtilsBiblePage.showGeneralComments(
-        context: context,
-        comments: List.from(chapterComments), // Garante que a lista está na ordem correta
-      );
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFFCDE7BE),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    ),
-    child: const Text(
-      "Ver Comentários do Capítulo",
-      style: TextStyle(color: Color(0xFF181A1A)),
-    ),
-  ),
+                  if (selectedBook != null && selectedChapter != null)
+                    ElevatedButton(
+                      onPressed: () {
+                        UtilsBiblePage.showGeneralComments(
+                          context: context,
+                          comments: chapterComments,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFCDE7BE),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                      ),
+                      child: const Text(
+                        "Ver Comentários do Capítulo",
+                        style: TextStyle(color: Color(0xFF181A1A)),
+                      ),
+                    ),
                   const SizedBox(height: 16),
 
-                  // Carrega o conteúdo do capítulo selecionado
                   if (selectedBook != null && selectedChapter != null)
                     Expanded(
                       child: FutureBuilder<List<String>>(
-                        future: _loadChapterContent(
-                          selectedBook!,
-                          selectedChapter!,
-                        ),
+                        future: _loadChapterContent(selectedBook!, selectedChapter!),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
                             return const Center(
                               child: CircularProgressIndicator(
                                 color: Color(0xFFCDE7BE),
@@ -238,21 +232,34 @@ if (selectedBook != null && selectedChapter != null)
                               final verseNumber = index + 1;
                               final verseText = chapterContent[index];
 
-                              // Mostra o botão apenas se houver comentários associados ao versículo
-                              return ListTile(
-                                leading: Text(
-                                  '$verseNumber',
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                                title: Text(
-                                  verseText,
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                                trailing: verseComments.containsKey(verseNumber)
-                                    ? IconButton(
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0), // Menos espaço entre os versículos
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Número do versículo menor e mais próximo do texto
+                                    Text(
+                                      '$verseNumber ',
+                                      style: const TextStyle(
+                                        fontSize: 12, // Fonte menor para ocupar menos espaço
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    // Texto do versículo com mais espaço disponível
+                                    Expanded(
+                                      child: Text(
+                                        verseText,
+                                        style: const TextStyle(color: Colors.white70, fontSize: 16),
+                                      ),
+                                    ),
+                                    // Ícone menor e mais próximo da borda direita
+                                    if (verseComments.containsKey(verseNumber))
+                                      IconButton(
                                         icon: const Icon(
                                           Icons.notes_rounded,
                                           color: Color(0xFFCDE7BE),
+                                          size: 18, // Ícone menor
                                         ),
                                         onPressed: () {
                                           UtilsBiblePage.showVerseComments(
@@ -262,13 +269,15 @@ if (selectedBook != null && selectedChapter != null)
                                             selectedBook: selectedBook,
                                             selectedChapter: selectedChapter,
                                             verseNumber: verseNumber,
-                                            loadChapterContent:
-                                                _loadChapterContent,
+                                            loadChapterContent: _loadChapterContent,
                                             truncateString: _truncateString,
                                           );
                                         },
-                                      )
-                                    : null,
+                                        padding: EdgeInsets.zero, // Remove padding extra ao redor do ícone
+                                        constraints: const BoxConstraints(), // Remove restrições extras
+                                      ),
+                                  ],
+                                ),
                               );
                             },
                           );
