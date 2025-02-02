@@ -5,6 +5,7 @@ import 'package:resumo_dos_deuses_flutter/pages/components/min_topic_card.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:resumo_dos_deuses_flutter/test_widgets/linhadefluxoanimada.dart';
 
 class RotaPage extends StatefulWidget {
   @override
@@ -56,10 +57,10 @@ class _RotaPageState extends State<RotaPage> {
             maxScale: 2.5,
             child: Stack(
               children: [
-                CustomPaint(
-                  painter: BooksGraphPainter(books, _visibleBooks),
-                  size: const Size(2000, 2000),
-                ),
+                // 🔥 Adiciona as conexões animadas (as linhas)
+                ..._buildFlowLines(books, _visibleBooks),
+
+                // 📚 Adiciona os livros na tela
                 ...books.asMap().entries.map((entry) {
                   final index = entry.key;
                   final book = entry.value;
@@ -87,6 +88,33 @@ class _RotaPageState extends State<RotaPage> {
         },
       ),
     );
+  }
+
+  List<Widget> _buildFlowLines(List<BookNode> books, List<bool> visibleBooks) {
+    List<Widget> flowLines = [];
+
+    for (int i = 0; i < books.length; i++) {
+      if (!visibleBooks[i]) continue;
+      final book = books[i];
+
+      for (final connection in book.connections) {
+        if (connection < books.length && visibleBooks[connection]) {
+          final target = books[connection];
+
+          final start = Offset(book.position.dx + 35, book.position.dy + 50);
+          final end = Offset(target.position.dx + 35, target.position.dy);
+
+          flowLines.add(
+            Positioned(
+              left: 0,
+              top: 0,
+              child: AnimatedFlowLine(start: start, end: end),
+            ),
+          );
+        }
+      }
+    }
+    return flowLines;
   }
 
   void _onBookTap(int index) {
@@ -135,7 +163,7 @@ class _RotaPageState extends State<RotaPage> {
     final List<BookNode> bookNodes = [];
     const double initialX = 100; // Posição inicial x
     const double initialY = 100; // Posição inicial y
-    const double verticalSpacing = 150; // Espaço entre os livros
+    const double verticalSpacing = 250; // Espaço entre os livros
 
     groupedBooks.forEach((bookId, topics) {
       if (topics.isNotEmpty) {
@@ -173,43 +201,25 @@ class _RotaPageState extends State<RotaPage> {
 class BooksGraphPainter extends CustomPainter {
   final List<BookNode> books;
   final List<bool> visibleBooks;
+  final List<AnimatedFlowLine> flowLines = [];
 
   BooksGraphPainter(this.books, this.visibleBooks);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
-
     for (int i = 0; i < books.length; i++) {
-      if (!visibleBooks[i]) continue; // Ignora livros não visíveis
+      if (!visibleBooks[i]) continue;
       final book = books[i];
+
       for (final connection in book.connections) {
         if (connection < books.length && visibleBooks[connection]) {
           final target = books[connection];
 
-          // Cria um caminho curvo para a seta
-          final path = Path()
-            ..moveTo(
-                book.position.dx + 35, book.position.dy + 50) // Ponto inicial
-            ..quadraticBezierTo(
-              (book.position.dx + target.position.dx) / 2, // Controle da curva
-              (book.position.dy + target.position.dy) / 2 - 50, // Altura
-              target.position.dx + 35,
-              target.position.dy,
-            );
+          final start = Offset(book.position.dx + 35, book.position.dy + 50);
+          final end = Offset(target.position.dx + 35, target.position.dy);
 
-          // Adiciona a seta ao caminho
-          final arrowPath = ArrowPath.make(
-            path: path,
-            tipLength: 15.0,
-            tipAngle: 45.0,
-          );
-
-          // Desenha o caminho no canvas
-          canvas.drawPath(arrowPath, paint);
+          // Adiciona um AnimatedFlowLine para a conexão
+          flowLines.add(AnimatedFlowLine(start: start, end: end));
         }
       }
     }

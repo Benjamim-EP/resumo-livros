@@ -9,6 +9,7 @@ import '../services/book_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void tagMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
@@ -600,14 +601,22 @@ void userMiddleware(
             'Usuário não autenticado. Não é possível carregar topicsByFeature.');
         return;
       }
-      // Busca os dados do usuário no Firestore
+
+// 🔹 1. Primeiro tenta carregar os dados localmente para evitar buscas desnecessárias
+      final cachedTopics = await _loadTopicsLocally(userId);
+      if (cachedTopics != null && cachedTopics.isNotEmpty) {
+        print("Carregando tópicos do cache local...");
+        store.dispatch(TopicsByFeatureLoadedAction(cachedTopics));
+        return;
+      }
+
+// 🔹 2. Se não houver dados locais, busca do Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .get();
-
-      // Verifica se há "indicacoes" no Firestore
       final indicacoes = userDoc.data()?['indicacoes'] as Map<String, dynamic>?;
+
       if (indicacoes != null &&
           indicacoes.values.any((list) => list.isNotEmpty)) {
         print("Carregando tópicos de 'indicacoes' do Firestore...");
@@ -616,10 +625,9 @@ void userMiddleware(
 
         for (var key in indicacoes.keys) {
           final topicIds = indicacoes[key] as List<dynamic>? ?? [];
-
           List<Map<String, dynamic>> topics = [];
+
           for (String topicId in topicIds) {
-            // Busca os detalhes do tópico no Firestore
             final topicDoc = await FirebaseFirestore.instance
                 .collection('topics')
                 .doc(topicId)
@@ -640,21 +648,21 @@ void userMiddleware(
               print("Tópico não encontrado no Firestore: $topicId");
             }
           }
-
           topicsByFeature[key] = topics;
         }
 
-        // Despacha os tópicos carregados para o Redux
+        // 🔹 3. Salva os dados localmente para futuras consultas
+        await _saveTopicsLocally(userId, topicsByFeature);
+
+        // 🔹 4. Envia os dados para o Redux
         store.dispatch(TopicsByFeatureLoadedAction(topicsByFeature));
-        print("Busca de tópicos com userfeatures finalizada");
-        return; // Encerrar aqui se os tópicos foram encontrados em "indicacoes"
+        print("Busca de tópicos finalizada e salva localmente.");
+        return;
       }
 
       print(
           'Nenhuma indicação encontrada no Firestore. Carregando por features...');
 
-      // Nenhuma indicação encontrada. Executa a lógica de busca normal
-      
       final userFeatures =
           userDoc.data()?['userFeatures'] as Map<String, dynamic>?;
 
@@ -663,23 +671,31 @@ void userMiddleware(
         return;
       }
 
+// 🔹 1. Primeiro tenta carregar do cache local antes de processar
+      final cachedTopics_ = await _loadTopicsLocally(userId);
+      if (cachedTopics_ != null && cachedTopics_.isNotEmpty) {
+        print("Carregando tópicos do cache local...");
+        store.dispatch(TopicsByFeatureLoadedAction(cachedTopics_));
+        return;
+      }
+
       Map<String, List<Map<String, dynamic>>> topicsByFeature = {};
+      Map<String, dynamic> updatedIndicacoes =
+          indicacoes ?? {}; // 🔹 Mantém todas as categorias
 
       for (var feature in userFeatures.entries) {
         final key = feature.key;
         final value = feature.value;
 
-        // Gera o embedding para a feature
+        // 🔹 Gera embedding e consulta Pinecone
         final embedding = await _generateEmbedding(value, openAIKey);
-
-        // Realiza a consulta no Pinecone
         final results = await _pineconeQuery(
           {'query': embedding},
           pineconeUrl,
           pineconeKey,
         );
 
-        // Extrai os IDs dos tópicos correspondentes
+        // 🔹 Extrai os IDs dos tópicos correspondentes
         final topicIds = (results.first['matches'] as List<dynamic>)
             .map((match) => match['id'])
             .cast<String>()
@@ -688,7 +704,6 @@ void userMiddleware(
         List<Map<String, dynamic>> topics = [];
         for (String topicId in topicIds) {
           try {
-            // Busca os detalhes do tópico no Firestore
             final topicDoc = await FirebaseFirestore.instance
                 .collection('topics')
                 .doc(topicId)
@@ -714,21 +729,22 @@ void userMiddleware(
         }
 
         topicsByFeature[key] = topics;
-
-        // Atualiza o campo "indicacoes" no Firestore
-        final updatedIndicacoes = indicacoes ?? {};
-        updatedIndicacoes[key] = topicIds;
-
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .update({'indicacoes': updatedIndicacoes});
-
-        print('Indicacoes atualizadas no Firestore: $updatedIndicacoes');
+        updatedIndicacoes[key] =
+            topicIds; // 🔹 Agora mantém TODAS as categorias
       }
-      // Despacha os tópicos carregados para o Redux
-      store.dispatch(TopicsByFeatureLoadedAction(topicsByFeature));
 
+// 🔹 Atualiza todas as categorias no Firestore apenas uma vez
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'indicacoes': updatedIndicacoes,
+      });
+      print('Indicacoes atualizadas no Firestore: $updatedIndicacoes');
+
+// 🔹 Salva localmente para acelerar futuras consultas
+      await _saveTopicsLocally(userId, topicsByFeature);
+
+// 🔹 Despacha para o Redux
+      store.dispatch(TopicsByFeatureLoadedAction(topicsByFeature));
+      print("Busca de tópicos finalizada e salva localmente.");
     } catch (e) {
       print('Erro ao carregar topicsByFeature: $e');
     }
@@ -947,8 +963,6 @@ void topicMiddleware(
               'titulo': similarTopicDoc.data()?['titulo'],
               'bookId': similarTopicDoc.data()?['bookId'],
             });
-
-            
           }
         }
 
@@ -1271,4 +1285,32 @@ Formato da resposta (JSON), a reposta só deve ser feita exclusivamente nesse fo
     print('Erro na API: ${response.statusCode} - ${response.body}');
     return null;
   }
+}
+
+// 🔹 Salvar dados localmente
+Future<void> _saveTopicsLocally(String userId,
+    Map<String, List<Map<String, dynamic>>> topicsByFeature) async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = jsonEncode(topicsByFeature);
+  await prefs.setString('topicsByFeature_$userId', jsonString);
+}
+
+// 🔹 Carregar dados localmente
+Future<Map<String, List<Map<String, dynamic>>>?> _loadTopicsLocally(
+    String userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString('topicsByFeature_$userId');
+
+  if (jsonString != null) {
+    final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+    return decoded.map((key, value) =>
+        MapEntry(key, List<Map<String, dynamic>>.from(value as List)));
+  }
+  return null;
+}
+
+Future<void> _clearLocalTopics(String userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('topicsByFeature_$userId');
+  print("📌 Cache de tópicos para o usuário $userId foi LIMPO!");
 }
