@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
 
@@ -21,6 +22,7 @@ class _BiblePageState extends State<BiblePage> {
   List<Map<String, dynamic>> chapterComments = []; // Comentários carregados
   Map<int, List<Map<String, dynamic>>> verseComments =
       {}; // Comentários por versículo
+  bool showBibleRoutes = false; // Variável para controlar a exibição
 
   @override
   void initState() {
@@ -132,53 +134,66 @@ class _BiblePageState extends State<BiblePage> {
         backgroundColor: const Color(0xFF181A1A),
       ),
       body: booksMap == null
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFCDE7BE),
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          _showTranslationSelection();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF272828),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          "Escolher Tradução",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Lógica para abrir as rotas da Bíblia (implementação futura)
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF272828),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          "Rotas da Bíblia",
-                          style: TextStyle(color: Colors.white),
+    ? const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFCDE7BE),
+        ),
+      )
+    : showBibleRoutes
+        ? BibleRoutesWidget(
+            onBack: () {
+              setState(() {
+                showBibleRoutes = false; // Volta para a tela principal
+              });
+            },
+          )
+        : Padding(
+            // Mantém o conteúdo original da tela principal
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        _showTranslationSelection();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF272828),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                    ],
-                  ),
+                      child: const Text(
+                        "Escolher Tradução",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          showBibleRoutes = !showBibleRoutes;
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF272828),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        showBibleRoutes ? "Voltar" : "Rotas da Bíblia",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
                   const SizedBox(height: 16),
 
                   Row(
