@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
 
 class BiblePage extends StatefulWidget {
@@ -276,6 +277,25 @@ class _BiblePageState extends State<BiblePage> {
                                         padding: EdgeInsets.zero, // Remove padding extra ao redor do ícone
                                         constraints: const BoxConstraints(), // Remove restrições extras
                                       ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.bookmark_border,
+                                        color: Colors.white70,
+                                        size: 18, // Ícone menor
+                                      ),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => SaveVerseDialog(
+                                            bookAbbrev: selectedBook!,
+                                            chapter: selectedChapter!,
+                                            verseNumber: verseNumber,
+                                          ),
+                                        );
+                                      },
+                                      padding: EdgeInsets.zero, // Remove padding extra ao redor do ícone
+                                      constraints: const BoxConstraints(), // Remove restrições extras
+                                    ),
                                   ],
                                 ),
                               );

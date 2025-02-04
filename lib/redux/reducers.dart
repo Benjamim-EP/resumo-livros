@@ -90,6 +90,7 @@ class UserState {
   final List<Map<String, dynamic>> booksInProgressDetails;
   final List<Map<String, dynamic>> rotaAtual;
   final List<Map<String, dynamic>> userRoutes;
+  final Map<String, List<Map<String, dynamic>>> verseSaves;
 
   UserState({
     this.userId,
@@ -111,7 +112,8 @@ class UserState {
     this.booksInProgressDetails = const [],
     this.rotaAtual = const [],
     this.userRoutes = const [],
-  });
+    this.verseSaves = const {},}
+  );
 
   UserState copyWith({
     String? userId,
@@ -133,6 +135,8 @@ class UserState {
     Map<String, List<Map<String, dynamic>>>? savedTopicsContent,
     List<Map<String, dynamic>>? rotaAtual,
     List<Map<String, dynamic>>? userRoutes,
+    Map<String, List<Map<String, dynamic>>>? verseSaves,
+    
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -156,12 +160,15 @@ class UserState {
           booksInProgressDetails ?? this.booksInProgressDetails,
       rotaAtual: rotaAtual ?? this.rotaAtual,
       userRoutes: userRoutes ?? this.userRoutes,
+      verseSaves: verseSaves ?? this.verseSaves,
     );
   }
 }
 
 UserState userReducer(UserState state, dynamic action) {
-  if (action is UserLoggedInAction) {
+  if (action is UserVerseCollectionsUpdatedAction) {
+    return state.copyWith(verseSaves: action.verseSaves);
+  }else if (action is UserLoggedInAction) {
     return state.copyWith(
       userId: action.userId,
       email: action.email,

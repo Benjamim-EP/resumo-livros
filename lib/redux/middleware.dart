@@ -270,7 +270,7 @@ void userMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
   next(action);
 
-  if (action is LoadUserStatsAction) {
+   if (action is LoadUserStatsAction) {
     try {
       final userId = store.state.userState.userId;
 
@@ -308,45 +308,44 @@ void userMiddleware(
     } catch (e) {
       print('Erro ao carregar os detalhes do usuário: $e');
     }
-  } else if (action is SaveTopicToCollectionAction) {
-    final userId = store.state.userState.userId;
-    if (userId != null) {
-      try {
-        final userDoc =
-            FirebaseFirestore.instance.collection('users').doc(userId);
+  } else if (action is SaveVerseToCollectionAction) {
+  final userId = store.state.userState.userId;
+  if (userId != null) {
+    try {
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(userId);
 
-        // Obtém as coleções do usuário
-        final userSnapshot = await userDoc.get();
-        final currentCollections =
-            userSnapshot.data()?['topicSaves'] as Map<String, dynamic>? ?? {};
+      // 🔹 Obtém os dados do usuário do Firestore
+      final userSnapshot = await userDoc.get();
+      final rawCollections = userSnapshot.data()?['topicSaves'] as Map<String, dynamic>? ?? {};
 
-        // Obtém a coleção atual ou cria uma nova lista se não existir
-        final updatedCollection = List<String>.from(
-          currentCollections[action.collectionName] ?? [],
-        );
+      // 🔹 Converte corretamente para `Map<String, List<String>>`
+      final Map<String, List<String>> currentCollections = rawCollections.map(
+        (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+      );
 
-        // Verifica se o tópico já está na coleção
-        if (!updatedCollection.contains(action.topicId)) {
-          updatedCollection.add(action.topicId);
-          currentCollections[action.collectionName] = updatedCollection;
+      // 🔹 Obtém a coleção específica ou cria uma nova lista
+      final updatedCollection = currentCollections[action.collectionName] ?? [];
 
-          // Atualiza o Firestore
-          await userDoc.update({'topicSaves': currentCollections});
+      // 🔹 Verifica se o versículo já está salvo
+      if (!updatedCollection.contains(action.verseId)) {
+        updatedCollection.add(action.verseId);
+        currentCollections[action.collectionName] = updatedCollection;
 
-          // Atualiza o estado do Redux
-          store.dispatch(UserTopicCollectionsLoadedAction(
-            Map<String, List<String>>.from(currentCollections),
-          ));
+        // 🔹 Atualiza no Firestore
+        await userDoc.update({'topicSaves': currentCollections});
 
-          print('Tópico salvo na coleção "${action.collectionName}".');
-        } else {
-          print('Tópico já está salvo na coleção "${action.collectionName}".');
-        }
-      } catch (e) {
-        print('Erro ao salvar tópico: $e');
+        // 🔹 Atualiza Redux com os dados corrigidos
+        store.dispatch(UserTopicCollectionsLoadedAction(currentCollections));
+
+        print('Versículo salvo na coleção "${action.collectionName}".');
+      } else {
+        print('Versículo já está salvo na coleção "${action.collectionName}".');
       }
+    } catch (e) {
+      print('Erro ao salvar versículo: $e');
     }
-  } else if (action is LoadUserPremiumStatusAction) {
+  }
+} else if (action is LoadUserPremiumStatusAction) {
     try {
       final userId = store.state.userState.userId;
 
@@ -749,18 +748,38 @@ void userMiddleware(
       print('Erro ao carregar topicsByFeature: $e');
     }
   } else if (action is LoadTopicsContentUserSavesAction) {
-    try {
-      final topicSaves = store.state.userState.topicSaves;
-      final Map<String, List<Map<String, dynamic>>> topicsByCollection = {};
+  try {
+    final topicSaves = store.state.userState.topicSaves;
+    final Map<String, List<Map<String, dynamic>>> topicsByCollection = {};
 
-      // Itera sobre cada coleção de tópicos salvos
-      for (var entry in topicSaves.entries) {
-        final collectionName = entry.key;
-        final topicIds = entry.value;
+    // Itera sobre cada coleção de tópicos salvos
+    for (var entry in topicSaves.entries) {
+      final collectionName = entry.key;
+      final topicIds = entry.value;
 
-        final List<Map<String, dynamic>> topics = [];
-        for (var topicId in topicIds) {
-          try {
+      final List<Map<String, dynamic>> topics = [];
+
+      for (var topicId in topicIds) {
+        try {
+          if (topicId.startsWith("bibleverses-")) {
+            // 🔹 Versículo salvo (Formato: "bibleverses-gn-1-2")
+            final parts = topicId.split("-");
+            if (parts.length == 4) {
+              final bookAbbrev = parts[1]; // Ex: "gn"
+              final chapter = parts[2]; // Ex: "1"
+              final verse = parts[3]; // Ex: "2"
+
+              topics.add({
+                'id': topicId,
+                'cover': 'https://via.placeholder.com/80x100', // Imagem padrão
+                'bookName': bookAbbrev, // Ex: "gn"
+                'chapterName': chapter, // Ex: "1"
+                'titulo': "Versículo $chapter:$verse",
+                'conteudo': "Versículo salvo da Bíblia.",
+              });
+            }
+          } else {
+            // 🔹 Tópico salvo (Busca no Firestore)
             final topicDoc = await FirebaseFirestore.instance
                 .collection('topics')
                 .doc(topicId)
@@ -778,21 +797,26 @@ void userMiddleware(
             } else {
               print('Tópico não encontrado no Firestore: $topicId');
             }
-          } catch (e) {
-            print('Erro ao carregar tópico $topicId: $e');
           }
+        } catch (e) {
+          print('Erro ao carregar tópico $topicId: $e');
         }
-
-        topicsByCollection[collectionName] = topics;
       }
 
-      store.dispatch(
-          LoadTopicsContentUserSavesSuccessAction(topicsByCollection));
-    } catch (e) {
-      store.dispatch(LoadTopicsContentUserSavesFailureAction(
-          'Erro ao carregar tópicos salvos: $e'));
+      topicsByCollection[collectionName] = topics;
     }
-  } else if (action is LoadBooksDetailsAction) {
+
+    // Despacha a ação com os dados carregados
+    store.dispatch(LoadTopicsContentUserSavesSuccessAction(topicsByCollection));
+  } catch (e) {
+    store.dispatch(
+      LoadTopicsContentUserSavesFailureAction(
+        'Erro ao carregar tópicos salvos: $e',
+      ),
+    );
+  }
+}
+ else if (action is LoadBooksDetailsAction) {
     try {
       final booksInProgress = store.state.userState.booksInProgress;
 

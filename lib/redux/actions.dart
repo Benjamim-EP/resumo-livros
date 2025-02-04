@@ -391,3 +391,18 @@ class DeleteSingleTopicFromCollectionAction {
 
   DeleteSingleTopicFromCollectionAction(this.collectionName, this.topicId);
 }
+
+
+
+class UserVerseCollectionsUpdatedAction {
+  final Map<String, List<Map<String, dynamic>>> verseSaves;
+
+  UserVerseCollectionsUpdatedAction(this.verseSaves);
+}
+
+class SaveVerseToCollectionAction {
+  final String collectionName;
+  final String verseId; // Exemplo: "bibleverses-gn-7-3"
+
+  SaveVerseToCollectionAction(this.collectionName, this.verseId);
+}
