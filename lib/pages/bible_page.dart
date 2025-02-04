@@ -145,9 +145,38 @@ class _BiblePageState extends State<BiblePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildTranslationButton('nvi', 'NVI'),
-                      _buildTranslationButton('aa', 'AA'),
-                      _buildTranslationButton('acf', 'ACF'),
+                      ElevatedButton(
+                        onPressed: () {
+                          _showTranslationSelection();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF272828),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "Escolher Tradução",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Lógica para abrir as rotas da Bíblia (implementação futura)
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF272828),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "Rotas da Bíblia",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -341,4 +370,32 @@ class _BiblePageState extends State<BiblePage> {
         ? '${text.substring(0, maxLength)}...'
         : text;
   }
+
+  void _showTranslationSelection() {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: const Color(0xFF181A1A),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (BuildContext context) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Escolha a Tradução",
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            _buildTranslationButton('nvi', 'NVI'),
+            _buildTranslationButton('aa', 'AA'),
+            _buildTranslationButton('acf', 'ACF'),
+          ],
+        ),
+      );
+    },
+  );
+}
 }
