@@ -1,0 +1,504 @@
+{
+    "eventos": [
+      {
+        "evento": 1,
+        "texto": "As palavras finais de Jesus",
+        "referencias": ["Atos 1:4–8"]
+      },
+      {
+        "evento": 2,
+        "texto": "A ascensão de Jesus",
+        "referencias": ["Atos 1:5–12"]
+      },
+      {
+        "evento": 3,
+        "texto": "A reunião de oração e eleição no Cenáculo",
+        "referencias": ["Atos 1:13–26"]
+      },
+      {
+        "evento": 4,
+        "texto": "Pentecostes",
+        "referencias": ["Atos 2:1–13"]
+      },
+      {
+        "evento": 5,
+        "texto": "O primeiro sermão de Pedro",
+        "referencias": ["Atos 2:14–36"]
+      },
+      {
+        "evento": 6,
+        "texto": "A primeira grande colheita de almas",
+        "referencias": ["Atos 2:37–47"]
+      },
+      {
+        "evento": 7,
+        "texto": "Cura do coxo na Porta Formosa",
+        "referencias": ["Atos 3:1–11"]
+      },
+      {
+        "evento": 8,
+        "texto": "O segundo sermão de Pedro",
+        "referencias": ["Atos 3:12–26"]
+      },
+      {
+        "evento": 9,
+        "texto": "Primeira perseguição e segunda grande colheita de almas",
+        "referencias": ["Atos 4:1–4"]
+      },
+      {
+        "evento": 10,
+        "texto": "A defesa de Pedro perante o Sinédrio",
+        "referencias": ["Atos 4:5–22"]
+      },
+      {
+        "evento": 11,
+        "texto": "O entusiasmo e testemunho da igreja primitiva",
+        "referencias": ["Atos 4:23–37"]
+      },
+      {
+        "evento": 12,
+        "texto": "O julgamento divino sobre Ananias e Safira",
+        "referencias": ["Atos 5:1–11"]
+      },
+      {
+        "evento": 13,
+        "texto": "Os primeiros milagres realizados pelos apóstolos",
+        "referencias": ["Atos 5:12–16"]
+      },
+      {
+        "evento": 14,
+        "texto": "A segunda perseguição e defesa dos apóstolos",
+        "referencias": ["Atos 5:17–32"]
+      },
+      {
+        "evento": 15,
+        "texto": "O sábio conselho de Gamaliel",
+        "referencias": ["Atos 5:33–42"]
+      },
+      {
+        "evento": 16,
+        "texto": "Eleição dos primeiros sete diáconos",
+        "referencias": ["Atos 6:1–7"]
+      },
+      {
+        "evento": 17,
+        "texto": "O ministério de Estevão",
+        "referencias": ["Atos 6:8–15"]
+      },
+      {
+        "evento": 18,
+        "texto": "A mensagem de Estevão ao Sinédrio",
+        "referencias": ["Atos 7:1–53"]
+      },
+      {
+        "evento": 19,
+        "texto": "O martírio de Estevão",
+        "referencias": ["Atos 7:54–60"]
+      },
+      {
+        "evento": 20,
+        "texto": "A perseguição da igreja por Saulo",
+        "referencias": ["Atos 9:1–4"]
+      },
+      {
+        "evento": 21,
+        "texto": "O avivamento de Filipe em Samaria e a condenação de Simão",
+        "referencias": ["Atos 8:5–25"]
+      },
+      {
+        "evento": 22,
+        "texto": "A conversão do eunuco etíope",
+        "referencias": ["Atos 8:26–40"]
+      },
+      {
+        "evento": 23,
+        "texto": "A conversão de Saulo (Paulo)",
+        "referencias": ["Atos 9:1–19"]
+      },
+      {
+        "evento": 24,
+        "texto": "O início do ministério de Saulo (Paulo)",
+        "referencias": ["Atos 9:20–31"]
+      },
+      {
+        "evento": 25,
+        "texto": "Paulo descreve sua luta contra a carne como novo crente",
+        "referencias": ["Romanos 7:7–25"]
+      },
+      {
+        "evento": 26,
+        "texto": "A cura de Enéias",
+        "referencias": ["Atos 9:32–35"]
+      },
+      {
+        "evento": 27,
+        "texto": "A ressurreição de Tabita (Dorcas)",
+        "referencias": ["Atos 9:36–43"]
+      },
+      {
+        "evento": 28,
+        "texto": "A visão do lençol de Pedro em Jope",
+        "referencias": ["Atos 10:1–22"]
+      },
+      {
+        "evento": 29,
+        "texto": "A conversão de Cornélio",
+        "referencias": ["Atos 10:23–48"]
+      },
+      {
+        "evento": 30,
+        "texto": "O ministério de Barnabé na igreja de Antioquia",
+        "referencias": ["Atos 11:19–26"]
+      },
+      {
+            "evento": 31,
+            "texto": "O martírio de Tiago e a libertação de Pedro",
+            "referencias": ["Atos 12:1–19"]
+          },
+          {
+            "evento": 32,
+            "texto": "Herodes Agripa é morto por blasfêmia",
+            "referencias": ["Atos 12:20–25"]
+          },
+          {
+            "evento": 33,
+            "texto": "A primeira viagem missionária",
+            "referencias": ["Atos 13:1–5"]
+          },
+          {
+            "evento": 34,
+            "texto": "Ministério de Barnabé e Saulo em Chipre",
+            "referencias": ["Atos 13:6–12"]
+          },
+          {
+            "evento": 35,
+            "texto": "Deserção de João Marcos",
+            "referencias": ["Atos 13:13"]
+          },
+          {
+            "evento": 36,
+            "texto": "O primeiro sermão registrado de Paulo",
+            "referencias": ["Atos 13:14–43"]
+          },
+          {
+            "evento": 37,
+            "texto": "Paulo se volta para os gentios",
+            "referencias": ["Atos 13:44–52"]
+          },
+          {
+            "evento": 38,
+            "texto": "Paulo cura um homem aleijado em Listra",
+            "referencias": ["Atos 14:6–18"]
+          },
+          {
+            "evento": 39,
+            "texto": "Paulo é apedrejado em Listra",
+            "referencias": ["Atos 14:19–20"]
+          },
+          {
+            "evento": 40,
+            "texto": "Paulo é arrebatado ao terceiro céu",
+            "referencias": ["2 Coríntios 12:2–10"]
+          },
+          {
+            "evento": 41,
+            "texto": "Paulo escreve Gálatas após sua primeira viagem missionária",
+            "referencias": ["Gálatas 1:1–5"]
+          },
+          {
+            "evento": 42,
+            "texto": "Paulo repreende Pedro",
+            "referencias": ["Gálatas 2:11–14"]
+          },
+          {
+            "evento": 43,
+            "texto": "O concílio em Jerusalém",
+            "referencias": ["Atos 15:1–22"]
+          },
+          {
+            "evento": 44,
+            "texto": "A segunda viagem missionária",
+            "referencias": ["Atos 15:36–16:5"]
+          },
+          {
+            "evento": 45,
+            "texto": "A visão macedônica de Paulo",
+            "referencias": ["Atos 16:6–10"]
+          },
+          {
+            "evento": 46,
+            "texto": "Conversão de Lídia em Filipos",
+            "referencias": ["Atos 16:13–15"]
+          },
+          {
+            "evento": 47,
+            "texto": "Conversão de uma jovem possessa em Filipos",
+            "referencias": ["Atos 16:16–24"]
+          },
+          {
+            "evento": 48,
+            "texto": "Conversão do carcereiro de Filipos",
+            "referencias": ["Atos 16:25–34"]
+          },
+          {
+            "evento": 49,
+            "texto": "Fundação da igreja em Tessalônica",
+            "referencias": ["Atos 17:1–9"]
+          },
+          {
+            "evento": 50,
+            "texto": "Paulo e Silas em Bereia",
+            "referencias": ["Atos 17:10–15"]
+          },
+          {
+            "evento": 51,
+            "texto": "O sermão de Paulo no Areópago",
+            "referencias": ["Atos 17:16–34"]
+          },
+          {
+            "evento": 52,
+            "texto": "Fundação da igreja em Corinto",
+            "referencias": ["Atos 18:1–17"]
+          },
+          {
+            "evento": 53,
+            "texto": "Paulo escreve 1 e 2 Tessalonicenses durante sua segunda viagem missionária",
+            "referencias": ["1 Tessalonicenses 1:1–10", "2 Tessalonicenses 1:1–14"]
+          },
+          {
+            "evento": 54,
+            "texto": "A terceira viagem missionária",
+            "referencias": ["Atos 18:22–23"]
+          },
+          {
+            "evento": 55,
+            "texto": "O ministério de Apolo",
+            "referencias": ["Atos 18:24–28"]
+          },
+          {
+            "evento": 56,
+            "texto": "O batismo dos doze discípulos de João Batista",
+            "referencias": ["Atos 19:1–7"]
+          },
+          {
+            "evento": 57,
+            "texto": "O ministério estendido de Paulo em Éfeso",
+            "referencias": ["Atos 19:8–41"]
+          },
+          {
+            "evento": 58,
+            "texto": "Paulo ressuscita Êutico dentre os mortos em Trôade",
+            "referencias": ["Atos 20:6–12"]
+          },
+          {
+            "evento": 59,
+            "texto": "Paulo se dirige aos presbíteros de Éfeso em Mileto",
+            "referencias": ["Atos 20:17–38"]
+          },
+          {
+            "evento": 60,
+            "texto": "Paulo é advertido para não ir a Jerusalém",
+            "referencias": ["Atos 21:4–14"]
+          },
+          {
+            "evento": 61,
+            "texto": "Paulo escreve 1 e 2 Coríntios e Romanos durante sua terceira viagem missionária",
+            "referencias": ["Romanos 1:1–8"]
+          },
+          {
+            "evento": 62,
+            "texto": "Paulo expressa sua grande tristeza pela cegueira de Israel",
+            "referencias": ["Romanos 10:1–3"]
+          },
+          {
+            "evento": 63,
+            "texto": "Paulo condena o fornicador na igreja de Corinto",
+            "referencias": ["1 Coríntios 5:1–8"]
+          },
+          {
+            "evento": 64,
+            "texto": "Paulo relembra seus terríveis sofrimentos",
+            "referencias": ["2 Coríntios 11:24–28"]
+          },
+          {
+            "evento": 65,
+            "texto": "O espinho na carne de Paulo dado por Satanás",
+            "referencias": ["2 Coríntios 12:2–10"]
+          },
+          {
+            "evento": 66,
+            "texto": "Paulo faz um voto judaico em Jerusalém",
+            "referencias": ["Atos 21:17–26"]
+          },
+          {
+            "evento": 67,
+            "texto": "Paulo é preso no templo e resgatado pelos soldados romanos",
+            "referencias": ["Atos 21:27–40"]
+    },
+    {
+        "evento": 68,
+        "texto": "Paulo discursa para uma multidão judaica enfurecida",
+        "referencias": ["Atos 22:1–21"]
+      },
+      {
+        "evento": 69,
+        "texto": "Paulo é novamente resgatado pelos soldados romanos",
+        "referencias": ["Atos 22:22–30"]
+      },
+      {
+        "evento": 70,
+        "texto": "Paulo fala aos Saduceus e Fariseus",
+        "referencias": ["Atos 23:1–9"]
+      },
+      {
+        "evento": 71,
+        "texto": "Paulo é levado para Cesareia para escapar de um plano para matá-lo",
+        "referencias": ["Atos 23:10–24"]
+      },
+      {
+        "evento": 72,
+        "texto": "A defesa de Paulo diante de Félix",
+        "referencias": ["Atos 24:10–26"]
+      },
+      {
+        "evento": 73,
+        "texto": "Paulo apela seu caso a César",
+        "referencias": ["Atos 25:10–12"]
+      },
+      {
+        "evento": 74,
+        "texto": "A defesa de Paulo diante de Festo e do Rei Agripa",
+        "referencias": ["Atos 26:1–32"]
+      },
+      {
+        "evento": 75,
+        "texto": "A terrível tempestade que Paulo enfrenta a caminho de Roma",
+        "referencias": ["Atos 27:14–44"]
+      },
+      {
+        "evento": 76,
+        "texto": "Paulo na Ilha de Malta",
+        "referencias": ["Atos 28:1–10"]
+      },
+      {
+        "evento": 77,
+        "texto": "Paulo escreve as quatro epístolas da prisão em Roma",
+        "referencias": ["Efésios 1:1–2", "Colossenses 1:1–8", "Filemom 1:1–3", "Filipenses 1:1–6"]
+      },
+      {
+        "evento": 78,
+        "texto": "Paulo pede a Filemom que perdoe Onésimo",
+        "referencias": ["Filemom 10–19"]
+      },
+      {
+        "evento": 79,
+        "texto": "Paulo escreve 1 Timóteo e Tito antes de sua segunda prisão em Roma",
+        "referencias": ["1 Timóteo 1:1–3", "Tito 1:1–5"]
+      },
+      {
+        "evento": 80,
+        "texto": "Paulo é preso novamente e escreve 2 Timóteo pouco antes de seu martírio",
+        "referencias": ["2 Timóteo 1:1–6", "2 Timóteo 4:6–8"]
+      },
+      {
+        "evento": 81,
+        "texto": "Paulo pede para Timóteo e João Marcos visitá-lo na prisão",
+        "referencias": ["2 Timóteo 4:9–11"]
+      },
+      {
+        "evento": 82,
+        "texto": "Tiago escreve sua epístola",
+        "referencias": ["Tiago 1:1"]
+      },
+      {
+        "evento": 83,
+        "texto": "Mateus escreve seu evangelho",
+        "referencias": ["Mateus 1:1"]
+      },
+      {
+        "evento": 84,
+        "texto": "Marcos escreve seu evangelho",
+        "referencias": ["Marcos 1:1–4"]
+      },
+      {
+        "evento": 85,
+        "texto": "Lucas escreve seu evangelho",
+        "referencias": ["Lucas 1:1–4"]
+      },
+      {
+        "evento": 86,
+        "texto": "João escreve seu evangelho",
+        "referencias": ["João 1:1–5"]
+      },
+      {
+        "evento": 87,
+        "texto": "Lucas escreve o livro de Atos",
+        "referencias": ["Atos 1:1–2"]
+      },
+      {
+        "evento": 88,
+        "texto": "O autor de Hebreus escreve sua epístola",
+        "referencias": ["Hebreus 1:1–12"]
+      },
+      {
+        "evento": 89,
+        "texto": "Pedro escreve Primeira e Segunda Pedro",
+        "referencias": ["1 Pedro 1:1–2", "2 Pedro 1:1–2"]
+      },
+      {
+        "evento": 90,
+        "texto": "João escreve suas três epístolas",
+        "referencias": ["1 João 1:1–2", "2 João 12:1–2", "3 João 1:1–4"]
+      },
+      {
+        "evento": 91,
+        "texto": "Judas escreve sua epístola",
+        "referencias": ["Judas 1:1–4"]
+      },
+      {
+        "evento": 92,
+        "texto": "João escreve o livro de Apocalipse",
+        "referencias": ["Apocalipse 1:4–8"]
+      },
+      {
+        "evento": 93,
+        "texto": "João é exilado na Ilha de Patmos",
+        "referencias": ["Apocalipse 1:9"]
+      },
+      {
+        "evento": 94,
+        "texto": "João vê Cristo glorificado",
+        "referencias": ["Apocalipse 1:10–18"]
+      },
+      {
+        "evento": 95,
+        "texto": "João recebe a mensagem de Cristo para as sete igrejas",
+        "referencias": ["Apocalipse 1:19–20"]
+      },
+      {
+        "evento": 96,
+        "texto": "João ouve os cânticos de louvor pela criação e redenção",
+        "referencias": ["Apocalipse 4:11", "Apocalipse 5:9"]
+      },
+      {
+        "evento": 97,
+        "texto": "João vê a grande tribulação vindoura",
+        "referencias": ["Apocalipse 6:12–17"]
+      },
+      {
+        "evento": 98,
+        "texto": "João testemunha a gloriosa segunda vinda de Cristo",
+        "referencias": ["Apocalipse 19:6–9", "Apocalipse 19:11–21"]
+      },
+      {
+        "evento": 99,
+        "texto": "João tenta adorar um anjo em duas ocasiões, mas é repreendido",
+        "referencias": ["Apocalipse 19:10", "Apocalipse 22:8–9"]
+      },
+      {
+        "evento": 100,
+        "texto": "João descreve o milênio, a derrota final de Satanás, o julgamento do grande trono branco e a Nova Jerusalém",
+        "referencias": ["Apocalipse 20:1–15", "Apocalipse 21:1–11"]
+      }
+    ]
+  }

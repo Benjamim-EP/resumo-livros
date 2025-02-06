@@ -76,6 +76,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/Biblia/rotas_biblia/profeciasdesuavinda.json
+    - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
     - assets/images/authors/C_S_Lewis.webp
     - assets/temp_book.jpg
     - assets/Biblia/completa_traducoes/abbrev_map.json
