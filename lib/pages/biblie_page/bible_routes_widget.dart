@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/palavras_do_fim_dos_tempos_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/profecias_de_sua_vinda_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/eventos_vida_de_jesus_page.dart';
 
 class BibleRoutesWidget extends StatefulWidget {
   final VoidCallback onBack;
@@ -24,6 +25,11 @@ class _BibleRoutesWidgetState extends State<BibleRoutesWidget> {
       'file': 'palavrasdofimdostempos.json',
       'title': 'Palavras do Fim dos Tempos',
       'page': (List<dynamic> data) => PalavrasDoFimDosTemposPage(termos: data),
+    },
+    {
+      'file': 'eventosvidadeJesus.json',
+      'title': 'Eventos da Vida de Jesus',
+      'page': (List<dynamic> data) => EventosVidaDeJesusPage(eventos: data),
     },
   ];
 
@@ -80,9 +86,7 @@ class _BibleRoutesWidgetState extends State<BibleRoutesWidget> {
       final String jsonString =
           await rootBundle.loadString('assets/Biblia/rotas_biblia/$fileName');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
-      return jsonData.containsKey('profecias')
-          ? jsonData['profecias']
-          : jsonData['termos']; // Suporta ambos os tipos de JSON
+      return jsonData['profecias'] ?? jsonData['termos'] ?? jsonData['eventos'];
     } catch (e) {
       print("Erro ao carregar $fileName: $e");
       return null;

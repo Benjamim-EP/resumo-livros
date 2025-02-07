@@ -78,12 +78,16 @@ flutter:
   assets:
     - assets/Biblia/rotas_biblia/profeciasdesuavinda.json
     - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
+    - assets/Biblia/rotas_biblia/eventosvidadeJesus.json
+
     - assets/images/authors/C_S_Lewis.webp
     - assets/temp_book.jpg
+
     - assets/Biblia/completa_traducoes/abbrev_map.json
     - assets/Biblia/completa_traducoes/nvi/
     - assets/Biblia/completa_traducoes/aa/
     - assets/Biblia/completa_traducoes/acf/
+    
     - assets/Biblia/eventos_por_capitulo/
     - assets/images/tribos/
     - assets/intro/
