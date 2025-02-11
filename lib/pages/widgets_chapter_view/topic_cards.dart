@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 
@@ -31,18 +29,26 @@ class TopicCard extends StatefulWidget {
 class _TopicCardState extends State<TopicCard> {
   @override
   Widget build(BuildContext context) {
-    return StoreConnector<AppState, Map<String, String?>>(
-      onInit: (store) => store.dispatch(LoadTopicContentAction(widget.topicId)),
+    return StoreConnector<AppState, Map<String, dynamic>>(
+      onInit: (store) {
+        store.dispatch(LoadTopicContentAction(widget.topicId));
+        store.dispatch(CheckBookProgressAction(widget.bookId));
+      },
       converter: (store) => {
         'content': store.state.topicState.topicsContent[widget.topicId],
         'titulo': store.state.topicState.topicsTitles[widget.topicId],
+        'bookProgress': store.state.booksState.booksProgress[widget.bookId] ?? [],
       },
       builder: (context, topicData) {
         final content = topicData['content'];
         final title = topicData['titulo'] ?? 'Sem Título';
+        final bookProgress = topicData['bookProgress'] as List<dynamic>;
+
         if (content == null) {
           return const Center(child: CircularProgressIndicator());
         }
+
+        final isRead = bookProgress.contains(widget.topicId);
 
         return Card(
           margin: const EdgeInsets.all(16),
@@ -91,25 +97,15 @@ class _TopicCardState extends State<TopicCard> {
                           child: const Text(
                             'Similares',
                             style: TextStyle(
-                              color: Color.fromARGB(
-                                  255, 129, 194, 91), // Verde da aplicação
+                              color: Color.fromARGB(255, 129, 194, 91), // Verde da aplicação
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                         ElevatedButton.icon(
-                          onPressed: widget.readTopics.contains(widget.topicId)
-                              ? null
-                              : () => _markTopicAsRead(
-                                    widget.bookId,
-                                    widget.topicId,
-                                  ),
+                          onPressed: isRead ? null : () => _markTopicAsRead(),
                           icon: const Icon(Icons.check),
-                          label: Text(
-                            widget.readTopics.contains(widget.topicId)
-                                ? 'Lido'
-                                : 'Marcar como lido',
-                          ),
+                          label: Text(isRead ? 'Lido' : 'Marcar como lido'),
                         ),
                       ],
                     ),
@@ -135,17 +131,16 @@ class _TopicCardState extends State<TopicCard> {
     );
   }
 
-  void _markTopicAsRead(String bookId, String topicId) {
-    if (widget.readTopics.contains(topicId)) return;
+  void _markTopicAsRead() {
+    if (widget.readTopics.contains(widget.topicId)) return;
 
-    // Atualiza o Redux Store com o chapterId
     StoreProvider.of<AppState>(context).dispatch(
-      MarkTopicAsReadAction(bookId, topicId, widget.chapterId),
+      MarkTopicAsReadAction(widget.bookId, widget.topicId, widget.chapterId),
     );
 
-    // Atualiza o estado local
     setState(() {
-      widget.readTopics.add(topicId);
+      widget.readTopics.add(widget.topicId);
     });
   }
 }
+

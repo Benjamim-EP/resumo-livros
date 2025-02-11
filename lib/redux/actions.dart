@@ -406,3 +406,26 @@ class SaveVerseToCollectionAction {
 
   SaveVerseToCollectionAction(this.collectionName, this.verseId);
 }
+
+class LoadWeeklyRecommendationsAction {}
+
+class WeeklyRecommendationsLoadedAction {
+  final List<Map<String, dynamic>> books;
+  WeeklyRecommendationsLoadedAction(this.books);
+}
+
+class CheckBookProgressAction {
+  final String bookId;
+  CheckBookProgressAction(this.bookId);
+}
+
+class LoadBookProgressSuccessAction {
+  final String bookId;
+  final List<String> readTopics;
+  LoadBookProgressSuccessAction(this.bookId, this.readTopics);
+}
+
+class LoadBookProgressFailureAction {
+  final String error;
+  LoadBookProgressFailureAction(this.error);
+}

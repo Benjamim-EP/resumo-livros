@@ -44,7 +44,7 @@ AppState appReducer(AppState state, dynamic action) {
 final Store<AppState> store = Store<AppState>(
   appReducer,
   initialState: AppState(
-    booksState: BooksState(booksByTag: {}),
+    booksState: BooksState(booksByTag: {},weeklyRecommendations: []),
     userState: UserState(),
     authorState: AuthorState(),
     topicState: TopicState(),
@@ -56,6 +56,7 @@ final Store<AppState> store = Store<AppState>(
     authorMiddleware,
     userMiddleware,
     topicMiddleware,
-    embeddingMiddleware, // Adicione o middleware aqui
+    embeddingMiddleware,
+    weeklyRecommendationsMiddleware, // Adicionado aqui
   ],
 );

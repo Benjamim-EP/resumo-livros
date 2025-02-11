@@ -11,6 +11,48 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+void weeklyRecommendationsMiddleware(
+    Store<AppState> store, dynamic action, NextDispatcher next) async {
+  if (action is LoadWeeklyRecommendationsAction) {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('books')
+          .get();
+
+      List<Map<String, dynamic>> books = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        final nota = data['nota'] as Map<String, dynamic>? ?? {};
+        final score = (nota['score'] as num?) ?? 0;
+        final votes = (nota['votes'] as num?) ?? 0;
+
+        return {
+          'id': doc.id,
+          'cover': data['cover'] ?? '',
+          'bookName': data['titulo'] ?? 'Título desconhecido',
+          'autor': data['autorId'] ?? 'Autor desconhecido',
+          'nota': score,
+          'votes': votes,
+        };
+      }).toList();
+
+      // Ordena os livros pela maior nota e maior número de votos
+      books.sort((a, b) {
+        int scoreCompare = b['nota'].compareTo(a['nota']);
+        return scoreCompare != 0 ? scoreCompare : b['votes'].compareTo(a['votes']);
+      });
+
+      // Pega apenas os 10 melhores
+      final topBooks = books.take(10).toList();
+
+      store.dispatch(WeeklyRecommendationsLoadedAction(topBooks));
+    } catch (e) {
+      print("Erro ao carregar recomendações semanais: $e");
+    }
+  }
+
+  next(action);
+}
+
 void tagMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
   next(action);
@@ -69,8 +111,26 @@ void userRoutesMiddleware(
 void bookMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
   next(action);
+  
+  if (action is CheckBookProgressAction) {
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print("Usuário não autenticado. Não é possível carregar progresso.");
+      return;
+    }
 
-  if (action is TagsLoadedAction) {
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final booksProgress = userDoc.data()?['booksProgress'] as Map<String, dynamic>? ?? {};
+
+      final readTopics = List<String>.from(booksProgress[action.bookId] ?? []);
+
+      store.dispatch(LoadBookProgressSuccessAction(action.bookId, readTopics));
+    } catch (e) {
+      print("Erro ao carregar progresso de leitura: $e");
+      store.dispatch(LoadBookProgressFailureAction(e.toString()));
+    }
+  }else if (action is TagsLoadedAction) {
     final bookService = BookService();
     try {
       for (final tag in action.tags) {
@@ -84,23 +144,7 @@ void bookMiddleware(
     } catch (e) {
       print("Erro ao carregar livros: $e");
     }
-    // } else if (action is LoadAuthorDetailsAction) {
-    //   print('Middleware: Carregando detalhes do autor ${action.authorId}');
-    //   final authorService = AuthorService();
-    //   try {
-    //     final authorDetails =
-    //         await authorService.fetchAuthorDetails(action.authorId);
-    //     if (authorDetails != null) {
-    //       print('Middleware: Detalhes encontrados: $authorDetails');
-    //       store.dispatch(
-    //           AuthorDetailsLoadedAction(action.authorId, authorDetails));
-    //     } else {
-    //       print(
-    //           'Middleware: Nenhum detalhe encontrado para o autor ${action.authorId}');
-    //     }
-    //   } catch (e) {
-    //     print('Middleware: Erro ao carregar detalhes do autor: $e');
-    //   }
+    
   } else if (action is LoadBookDetailsAction) {
     final bookService = BookService();
     try {
@@ -939,8 +983,6 @@ void topicMiddleware(
 
         store.dispatch(
             TopicContentLoadedAction(action.topicId, content, titulo));
-        //store.dispatch(
-        //TopicMetadatasLoadedAction(action.topicId, topicmetadata));
       } else {
         print('Tópico ${action.topicId} não encontrado.');
       }

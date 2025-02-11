@@ -7,13 +7,15 @@ class BooksState {
   final Map<String, dynamic>? bookDetails; // Detalhes de um único livro
   final Map<String, dynamic> booksProgress; // Progresso dos livros
   final int nTopicos;
+  final List<Map<String, dynamic>> weeklyRecommendations; // Indicação semanal ✅
 
   BooksState({
     this.booksByTag = const {},
     this.isLoading = false,
     this.bookDetails,
-    this.booksProgress = const {}, // Inicializa como mapa vazio
+    this.booksProgress = const {},
     this.nTopicos = 1,
+    this.weeklyRecommendations = const [], // ✅ Inicializa corretamente
   });
 
   BooksState copyWith({
@@ -22,6 +24,7 @@ class BooksState {
     Map<String, dynamic>? bookDetails,
     Map<String, dynamic>? booksProgress,
     int? nTopicos,
+    List<Map<String, dynamic>>? weeklyRecommendations, // ✅ Adicionado no copyWith
   }) {
     return BooksState(
       booksByTag: booksByTag ?? this.booksByTag,
@@ -29,12 +32,15 @@ class BooksState {
       bookDetails: bookDetails ?? this.bookDetails,
       booksProgress: booksProgress ?? this.booksProgress,
       nTopicos: nTopicos ?? this.nTopicos,
+      weeklyRecommendations: weeklyRecommendations ?? this.weeklyRecommendations, // ✅ Agora atualizado corretamente
     );
   }
 }
 
 BooksState booksReducer(BooksState state, dynamic action) {
-  if (action is BooksLoadedByTagAction) {
+  if (action is WeeklyRecommendationsLoadedAction) {
+    return state.copyWith(weeklyRecommendations: action.books);
+  }else if (action is BooksLoadedByTagAction) {
     return state.copyWith(
       booksByTag: {
         ...state.booksByTag,
