@@ -97,6 +97,7 @@ class UserState {
   final List<Map<String, dynamic>> rotaAtual;
   final List<Map<String, dynamic>> userRoutes;
   final Map<String, List<Map<String, dynamic>>> verseSaves;
+  final List<Map<String, dynamic>> userDiaries; // 🔹 Novo campo para armazenar os diários
 
   UserState({
     this.userId,
@@ -118,8 +119,9 @@ class UserState {
     this.booksInProgressDetails = const [],
     this.rotaAtual = const [],
     this.userRoutes = const [],
-    this.verseSaves = const {},}
-  );
+    this.verseSaves = const {},
+    this.userDiaries = const [], // 🔹 Inicializa como lista vazia
+  });
 
   UserState copyWith({
     String? userId,
@@ -142,7 +144,7 @@ class UserState {
     List<Map<String, dynamic>>? rotaAtual,
     List<Map<String, dynamic>>? userRoutes,
     Map<String, List<Map<String, dynamic>>>? verseSaves,
-    
+    List<Map<String, dynamic>>? userDiaries, // 🔹 Adiciona ao copyWith
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -167,12 +169,16 @@ class UserState {
       rotaAtual: rotaAtual ?? this.rotaAtual,
       userRoutes: userRoutes ?? this.userRoutes,
       verseSaves: verseSaves ?? this.verseSaves,
+      userDiaries: userDiaries ?? this.userDiaries, // 🔹 Atualiza o estado com a nova lista de diários
     );
   }
 }
 
+
 UserState userReducer(UserState state, dynamic action) {
-  if (action is UserVerseCollectionsUpdatedAction) {
+  if (action is LoadUserDiariesSuccessAction) {
+    return state.copyWith(userDiaries: action.diaries);
+  }else if (action is UserVerseCollectionsUpdatedAction) {
     return state.copyWith(verseSaves: action.verseSaves);
   }else if (action is UserLoggedInAction) {
     return state.copyWith(

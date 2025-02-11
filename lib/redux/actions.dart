@@ -429,3 +429,22 @@ class LoadBookProgressFailureAction {
   final String error;
   LoadBookProgressFailureAction(this.error);
 }
+
+class LoadUserDiariesAction {}
+
+class LoadUserDiariesSuccessAction {
+  final List<Map<String, dynamic>> diaries;
+  LoadUserDiariesSuccessAction(this.diaries);
+}
+
+class LoadUserDiariesFailureAction {
+  final String error;
+  LoadUserDiariesFailureAction(this.error);
+}
+
+class AddDiaryEntryAction {
+  final String title;
+  final String content;
+
+  AddDiaryEntryAction(this.title, this.content);
+}

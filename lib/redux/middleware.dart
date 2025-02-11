@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 void weeklyRecommendationsMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
@@ -313,8 +314,62 @@ void authorMiddleware(
 void userMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
   next(action);
+  if (action is AddDiaryEntryAction) {
+  final userId = store.state.userState.userId;
+    if (userId != null) {
+      try {
+        final newDiary = {
+          "titulo": action.title,
+          "conteudo": action.content,
+          "data": Timestamp.now(),
+        };
 
-   if (action is LoadUserStatsAction) {
+        final docRef = await FirebaseFirestore.instance.collection('posts').add(newDiary);
+
+        // Adiciona o ID do novo diário à lista de diários do usuário
+        final userDoc = FirebaseFirestore.instance.collection('users_posts').doc(userId);
+        await userDoc.update({
+          "ids": FieldValue.arrayUnion([{"id": docRef.id}])
+        });
+
+        // Recarrega os diários do usuário
+        store.dispatch(LoadUserDiariesAction());
+      } catch (e) {
+        print("Erro ao adicionar diário: $e");
+      }
+    }
+} else if (action is LoadUserDiariesAction) {
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print("Usuário não autenticado. Não é possível carregar os diários.");
+      return;
+    }
+
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('users_posts').doc(userId).get();
+      final diaryIds = (userDoc.data()?['ids'] as List<dynamic>?) ?? [];
+
+      List<Map<String, dynamic>> diaries = [];
+
+      for (var diary in diaryIds) {
+        final postId = diary['id'];
+        final postDoc = await FirebaseFirestore.instance.collection('posts').doc(postId).get();
+        if (postDoc.exists) {
+          diaries.add({
+            'id': postDoc.id,
+            'titulo': postDoc.data()?['titulo'] ?? 'Sem Título',
+            'conteudo': postDoc.data()?['conteudo'] ?? '',
+            'data': DateFormat('dd MMM yyyy').format((postDoc.data()?['data'] as Timestamp).toDate()),
+          });
+        }
+      }
+
+      store.dispatch(LoadUserDiariesSuccessAction(diaries));
+    } catch (e) {
+      print("Erro ao carregar os diários: $e");
+      store.dispatch(LoadUserDiariesFailureAction(e.toString()));
+    }
+  }else if (action is LoadUserStatsAction) {
     try {
       final userId = store.state.userState.userId;
 
