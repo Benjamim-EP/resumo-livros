@@ -81,6 +81,8 @@ flutter:
     - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json
 
+    - assets/hinos/hinos.json
+
     - assets/images/authors/C_S_Lewis.webp
     - assets/temp_book.jpg
 
