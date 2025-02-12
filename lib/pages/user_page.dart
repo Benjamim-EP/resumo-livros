@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
+import 'package:resumo_dos_deuses_flutter/pages/user_page/user_diary_page.dart';
 import '../components/avatar/profile_picture.dart';
 import '../components/user/user_info.dart';
 import '../components/stats/stat_item.dart';
@@ -203,177 +204,12 @@ class _UserPageState extends State<UserPage> {
         );
 
       default:
-        return StoreConnector<AppState, List<Map<String, dynamic>>>(
-          converter: (store) => store.state.userState.userDiaries,
-          onInit: (store) {
-            if (store.state.userState.userDiaries.isEmpty) {
-              store.dispatch(LoadUserDiariesAction());
-            }
-          },
-          builder: (context, userDiaries) {
-            return Column(
-              children: [
-                // 🔹 Botão para adicionar uma nova nota
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showAddDiaryDialog(context),
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text(
-                      "Adicionar Nota",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF129575),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                  ),
-                ),
+        return const UserDiaryPage();
 
-                // 🔹 Lista de anotações existentes
-                Expanded(
-                  child: userDiaries.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "Nenhum diário encontrado.",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: userDiaries.length,
-                          itemBuilder: (context, index) {
-                            final diary = userDiaries[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 8.0),
-                              elevation: 4.0,
-                              color: const Color(0xFF313333),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(16),
-                                title: Text(
-                                  diary['titulo'],
-                                  style: const TextStyle(color: Colors.white, fontSize: 18),
-                                ),
-                                subtitle: Text(
-                                  diary['data'] ?? '',
-                                  style: const TextStyle(color: Colors.grey, fontSize: 14),
-                                ),
-                                trailing: const Icon(Icons.book, color: Colors.white70),
-                                onTap: () {
-                                  _showDiaryContent(context, diary['titulo'], diary['conteudo']);
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            );
-          },
-        );
 
     }
   }
-  void _showAddDiaryDialog(BuildContext context) {
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController contentController = TextEditingController();
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        backgroundColor: const Color(0xFF2C2F33),
-        title: const Text("Adicionar Nota", style: TextStyle(color: Colors.white)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Título",
-                  labelStyle: const TextStyle(color: Colors.white54),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white54),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.green),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: contentController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 4,
-                decoration: InputDecoration(
-                  labelText: "Conteúdo",
-                  labelStyle: const TextStyle(color: Colors.white54),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white54),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.green),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(foregroundColor: Colors.white70),
-            child: const Text("Cancelar"),
-          ),
-          TextButton(
-            onPressed: () {
-              final title = titleController.text.trim();
-              final content = contentController.text.trim();
-
-              if (title.isNotEmpty && content.isNotEmpty) {
-                StoreProvider.of<AppState>(context).dispatch(
-                  AddDiaryEntryAction(title, content),
-                );
-                Navigator.of(context).pop();
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.green),
-            child: const Text("Salvar"),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-  void _showDiaryContent(BuildContext context, String title, String content) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF232538),
-          title: Text(title, style: const TextStyle(color: Colors.white)),
-          content: SingleChildScrollView(
-            child: Text(
-              content,
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Fechar", style: TextStyle(color: Colors.green)),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  
   Widget _buildBookCard(Map<String, dynamic> bookDetails) {
     final progress = (bookDetails['progress'] ?? 0).toDouble() / 100;
 
@@ -427,15 +263,7 @@ class _UserPageState extends State<UserPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Text(
-                  //   'Progresso: ${bookDetails['progress']?.toString() ?? '0'}%',
-                  //   style: const TextStyle(
-                  //     color: Colors.white54,
-                  //     fontSize: 12,
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 8),
-                  // Barra de progresso
+                 
                   SizedBox(
                     width:
                         200, // Defina a largura desejada para a barra de progresso
