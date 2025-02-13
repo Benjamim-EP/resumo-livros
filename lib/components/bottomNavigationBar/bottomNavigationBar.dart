@@ -6,7 +6,7 @@ import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/rota_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/hymns_page.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
@@ -48,7 +48,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       _buildTabNavigator(_userNavigatorKey, UserPage()),
       _buildTabNavigator(_exploreNavigatorKey, const Explore()),
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
-      _buildTabNavigator(_rotaNavigatorKey, RotaPage()),
+      _buildTabNavigator(_rotaNavigatorKey, HymnsPage()),
     ];
   }
 
