@@ -7,15 +7,15 @@ class BibleReferenceHighlighter {
 
   /// 🔹 Carrega `abbrev_map.json` apenas uma vez (cacheado)
   static Future<void> loadBooksMap() async {
-  if (_booksMap == null) {
-    final String data = await rootBundle.loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
-    final Map<String, dynamic> decodedData = json.decode(data);
+    if (_booksMap == null) {
+      final String data =
+          await rootBundle.loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
+      final Map<String, dynamic> decodedData = json.decode(data);
 
-    // 🔹 Converte para Map<String, Map<String, dynamic>>
-    _booksMap = decodedData.map((key, value) => MapEntry(key, Map<String, dynamic>.from(value)));
+      // 🔹 Converte para Map<String, Map<String, dynamic>>
+      _booksMap = decodedData.map((key, value) => MapEntry(key, Map<String, dynamic>.from(value)));
+    }
   }
-}
-
 
   /// 🔹 Destaca referências bíblicas no texto
   static Future<RichText> highlightBibleReferences(String text) async {
@@ -23,30 +23,55 @@ class BibleReferenceHighlighter {
     if (_booksMap == null) return RichText(text: TextSpan(text: text));
 
     List<TextSpan> spans = [];
-    final regExp = RegExp(r'(\s+|\n+|[^\s]+)');
-    final matches = regExp.allMatches(text).toList();
+    int lastIndex = 0;
 
-    for (int i = 0; i < matches.length; i++) {
-      final word = matches[i].group(0)!;
-      final nextWord = (i + 1 < matches.length) ? matches[i + 1].group(0) : null;
+    // Expressão regular para capturar referências bíblicas completas
+    final regex = RegExp(
+      r'\b([A-Za-zÀ-ÖØ-öø-ÿ]+|[A-Za-zÀ-ÖØ-öø-ÿ]+\s\d+)(?:\s\d+)?(?::\d+(?:-\d+)?)?\b',
+      caseSensitive: false,
+    );
 
-      if (word.trim().isEmpty) {
-        spans.add(TextSpan(text: word));
-        continue;
+    final matches = regex.allMatches(text);
+
+    for (final match in matches) {
+      final matchText = match.group(0)!;
+      final start = match.start;
+      final end = match.end;
+
+      // Adiciona o texto antes do match sem destaque
+      if (start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, start),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+        ));
       }
 
-      final reference = _detectBibleReference(word, nextWord);
-      if (reference != null) {
+      // Verifica se o match é uma referência bíblica válida
+      final formattedReference = _formatBibleReference(matchText);
+      if (formattedReference != null) {
         spans.add(TextSpan(
-          text: reference,
+          text: formattedReference,
           style: const TextStyle(
             color: Color(0xFF129575),
             fontWeight: FontWeight.bold,
           ),
         ));
       } else {
-        spans.add(TextSpan(text: word));
+        spans.add(TextSpan(
+          text: matchText,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+        ));
       }
+
+      lastIndex = end;
+    }
+
+    // Adiciona o restante do texto após o último match
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      ));
     }
 
     return RichText(
@@ -57,36 +82,46 @@ class BibleReferenceHighlighter {
     );
   }
 
-
-  /// 🔹 Detecta referências como `Gênesis 1:2` ou `Gn 1:2`
-  static String? _detectBibleReference(String word, String? nextWord) {
+  /// 🔹 Converte referências abreviadas para nome completo e mantém capítulo/versículo
+  static String? _formatBibleReference(String reference) {
     if (_booksMap == null) return null;
 
+    // Tenta identificar se o texto começa com uma abreviação ou nome completo
     for (var entry in _booksMap!.entries) {
-      final abbrev = entry.key;
+      final abbrev = entry.key.toLowerCase();
       final bookName = entry.value['nome'];
       final totalChapters = entry.value['capitulos'];
 
-      // 🔸 Verifica se a palavra corresponde a um nome de livro ou abreviação
-      if (word == bookName || word.toLowerCase() == abbrev) {
-        if (nextWord != null) {
-          final parts = nextWord.split(':');
+      // Se a referência contém espaços, pode ter capítulo/versículo
+      final parts = reference.split(RegExp(r'\s+'));
 
-          if (parts.length == 2) {
-            final chapter = int.tryParse(parts[0]);
-            final verse = int.tryParse(parts[1]);
+      if (parts.isNotEmpty) {
+        final firstPart = parts.first.toLowerCase();
 
-            if (chapter != null && verse != null && chapter <= totalChapters) {
-              return "$bookName $chapter:$verse";
-            }
-          } else {
-            final chapter = int.tryParse(nextWord);
-            if (chapter != null && chapter <= totalChapters) {
-              return "$bookName $chapter";
+        if (firstPart == abbrev || firstPart == bookName.toLowerCase()) {
+          final remaining = parts.skip(1).join(' ');
+
+          // Verifica se tem capítulo ou versículo
+          if (remaining.isNotEmpty) {
+            final chapterVerse = remaining.split(':');
+
+            if (chapterVerse.length == 2) {
+              final chapter = int.tryParse(chapterVerse[0]);
+              final verse = chapterVerse[1];
+
+              if (chapter != null && chapter <= totalChapters) {
+                return "$bookName $chapter:$verse";
+              }
+            } else {
+              final chapter = int.tryParse(remaining);
+              if (chapter != null && chapter <= totalChapters) {
+                return "$bookName $chapter";
+              }
             }
           }
+
+          return bookName;
         }
-        return bookName;
       }
     }
 
