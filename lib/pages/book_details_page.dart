@@ -60,9 +60,7 @@ class BookDetailsPage extends StatelessWidget {
 
           final chaptersIniciados =
               (bookProgress?['chaptersIniciados'] as List<dynamic>?) ?? [];
-          print(booksProgress);
-          print("debug 2");
-          print(chaptersIniciados);
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(

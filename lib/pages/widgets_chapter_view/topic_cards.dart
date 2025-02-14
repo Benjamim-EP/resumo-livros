@@ -42,13 +42,14 @@ class _TopicCardState extends State<TopicCard> {
       builder: (context, topicData) {
         final content = topicData['content'];
         final title = topicData['titulo'] ?? 'Sem Título';
-        final bookProgress = topicData['bookProgress'] as List<dynamic>;
+        final bookProgress = topicData['bookProgress'] as Map<String, dynamic>? ?? {};
+        final readTopics = (bookProgress['readTopics'] as List<dynamic>?)?.cast<String>() ?? [];
 
         if (content == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final isRead = bookProgress.contains(widget.topicId);
+        final isRead = readTopics.contains(widget.topicId);
 
         return Card(
           margin: const EdgeInsets.all(16),

@@ -58,15 +58,16 @@ BooksState booksReducer(BooksState state, dynamic action) {
     return state.copyWith(booksProgress: updatedBooksProgress);
   } else if (action is MarkTopicAsReadAction) {
     final updatedBooksProgress = Map<String, dynamic>.from(state.booksProgress);
-    final bookProgress =
-        updatedBooksProgress[action.bookId] ?? {'readTopics': []};
+    final bookProgress = updatedBooksProgress[action.bookId] ?? {'readTopics': <String>[]};
+
     final readTopics = List<String>.from(bookProgress['readTopics'] ?? []);
     if (!readTopics.contains(action.topicId)) {
       readTopics.add(action.topicId);
       bookProgress['readTopics'] = readTopics;
+
+      // Atualiza progresso baseado no número de capítulos lidos
       bookProgress['progress'] = ((readTopics.length /
-                  (state.bookDetails?[action.bookId]?['chapters']?.length ??
-                      1)) *
+                  (state.bookDetails?[action.bookId]?['chapters']?.length ?? 1)) *
               100)
           .toInt();
       updatedBooksProgress[action.bookId] = bookProgress;
