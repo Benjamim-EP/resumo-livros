@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
@@ -23,10 +24,17 @@ class _BiblePageState extends State<BiblePage> {
   Map<int, List<Map<String, dynamic>>> verseComments =
       {}; // Comentários por versículo
   bool showBibleRoutes = false; // Variável para controlar a exibição
+  final FlutterTts _flutterTts = FlutterTts();
+
 
   @override
   void initState() {
     super.initState();
+
+    _flutterTts.setLanguage("pt-BR"); // Define o idioma para português do Brasil
+    _flutterTts.setSpeechRate(0.5);   // Define a velocidade da fala
+    _flutterTts.setPitch(1.0);        // Define o tom da voz
+
     _loadBooksMap().then((_) {
       if (booksMap != null) {
         setState(() {
@@ -37,6 +45,11 @@ class _BiblePageState extends State<BiblePage> {
         _updateChapterData(); 
       }
     });
+  }
+
+  Future<void> _speakChapter(List<String> chapterContent) async {
+    String textToSpeak = chapterContent.join(" "); // Junta os versículos em um único texto
+    await _flutterTts.speak(textToSpeak); // Faz a leitura do capítulo
   }
 
   /// Atualiza o conteúdo e os comentários sempre que um novo livro ou capítulo for selecionado.
@@ -249,7 +262,7 @@ class _BiblePageState extends State<BiblePage> {
                       ),
                     ),
                   const SizedBox(height: 16),
-
+                
                   if (selectedBook != null && selectedChapter != null)
                     Expanded(
                       child: FutureBuilder<List<String>>(
@@ -271,79 +284,100 @@ class _BiblePageState extends State<BiblePage> {
                           }
 
                           final chapterContent = snapshot.data!;
-                          return ListView.builder(
-                            itemCount: chapterContent.length,
-                            itemBuilder: (context, index) {
-                              final verseNumber = index + 1;
-                              final verseText = chapterContent[index];
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4.0), // Menos espaço entre os versículos
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Número do versículo menor e mais próximo do texto
-                                    Text(
-                                      '$verseNumber ',
-                                      style: const TextStyle(
-                                        fontSize: 12, // Fonte menor para ocupar menos espaço
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    // Texto do versículo com mais espaço disponível
-                                    Expanded(
-                                      child: Text(
-                                        verseText,
-                                        style: const TextStyle(color: Colors.white70, fontSize: 16),
-                                      ),
-                                    ),
-                                    // Ícone menor e mais próximo da borda direita
-                                    if (verseComments.containsKey(verseNumber))
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.notes_rounded,
-                                          color: Color(0xFFCDE7BE),
-                                          size: 18, // Ícone menor
-                                        ),
-                                        onPressed: () {
-                                          UtilsBiblePage.showVerseComments(
-                                            context: context,
-                                            verseComments: verseComments,
-                                            booksMap: booksMap,
-                                            selectedBook: selectedBook,
-                                            selectedChapter: selectedChapter,
-                                            verseNumber: verseNumber,
-                                            loadChapterContent: _loadChapterContent,
-                                            truncateString: _truncateString,
-                                          );
-                                        },
-                                        padding: EdgeInsets.zero, // Remove padding extra ao redor do ícone
-                                        constraints: const BoxConstraints(), // Remove restrições extras
-                                      ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.bookmark_border,
-                                        color: Colors.white70,
-                                        size: 18, // Ícone menor
-                                      ),
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) => SaveVerseDialog(
-                                            bookAbbrev: selectedBook!,
-                                            chapter: selectedChapter!,
-                                            verseNumber: verseNumber,
-                                          ),
-                                        );
-                                      },
-                                      padding: EdgeInsets.zero, // Remove padding extra ao redor do ícone
-                                      constraints: const BoxConstraints(), // Remove restrições extras
-                                    ),
-                                  ],
+                          
+                          return Column(  // 🔹 Retorna um Column para incluir o botão + a Lista
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  if (chapterContent.isNotEmpty) {
+                                    _speakChapter(chapterContent);
+                                  }
+                                },
+                                icon: const Icon(Icons.volume_up, color: Colors.white),
+                                label: const Text(
+                                  "Ouvir Capítulo",
+                                  style: TextStyle(color: Colors.white),
                                 ),
-                              );
-                            },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF129575),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Expanded( // 🔹 Para evitar erro de tamanho na tela
+                                child: ListView.builder(
+                                  itemCount: chapterContent.length,
+                                  itemBuilder: (context, index) {
+                                    final verseNumber = index + 1;
+                                    final verseText = chapterContent[index];
+
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '$verseNumber ',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white70,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              verseText,
+                                              style: const TextStyle(color: Colors.white70, fontSize: 16),
+                                            ),
+                                          ),
+                                          if (verseComments.containsKey(verseNumber))
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.notes_rounded,
+                                                color: Color(0xFFCDE7BE),
+                                                size: 18,
+                                              ),
+                                              onPressed: () {
+                                                UtilsBiblePage.showVerseComments(
+                                                  context: context,
+                                                  verseComments: verseComments,
+                                                  booksMap: booksMap,
+                                                  selectedBook: selectedBook,
+                                                  selectedChapter: selectedChapter,
+                                                  verseNumber: verseNumber,
+                                                  loadChapterContent: _loadChapterContent,
+                                                  truncateString: _truncateString,
+                                                );
+                                              },
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                            ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.bookmark_border,
+                                              color: Colors.white70,
+                                              size: 18,
+                                            ),
+                                            onPressed: () {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) => SaveVerseDialog(
+                                                  bookAbbrev: selectedBook!,
+                                                  chapter: selectedChapter!,
+                                                  verseNumber: verseNumber,
+                                                ),
+                                              );
+                                            },
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           );
                         },
                       ),
