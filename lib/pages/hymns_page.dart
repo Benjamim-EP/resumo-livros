@@ -35,7 +35,7 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
 
     List<Map<String, dynamic>> hymnsList = jsonData.entries.map((entry) {
       return {
-        "id": entry.key,
+        "id": entry.key, // 🔹 Mantém o ID numérico
         "title": entry.value["title"],
         "verses": entry.value["verses"]
       };
@@ -48,7 +48,6 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
   }
 
   Future<void> _loadSongs() async {
-    // 🔹 Carrega os cânticos avulsos (quando disponíveis)
     try {
       final String data = await rootBundle.loadString('assets/hinos/canticos_avulsos.json');
       final List<dynamic> jsonData = json.decode(data);
@@ -79,8 +78,7 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
       _loadMoreHymns();
     }
   }
@@ -137,12 +135,12 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
             itemCount: _songs.length,
             itemBuilder: (context, index) {
               final song = _songs[index];
-              return _buildHymnCard(song);
+              return _buildHymnCard(song, isHymn: false);
             },
           );
   }
 
-  Widget _buildHymnCard(Map<String, dynamic> hymn) {
+  Widget _buildHymnCard(Map<String, dynamic> hymn, {bool isHymn = true}) {
     return Card(
       color: const Color(0xFF272828),
       elevation: 4,
@@ -153,7 +151,7 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         title: Text(
-          hymn['title'],
+          isHymn ? "${hymn['id']}. ${hymn['title']}" : hymn['title'],
           style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
         trailing: const Icon(Icons.arrow_forward, color: Colors.white),
