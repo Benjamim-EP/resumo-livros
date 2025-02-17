@@ -1,27 +1,56 @@
 {
     "1": {
-        "title": "Aleluia! Aleluia! ",
-        "verses": {}
+        "title": "Cristo meu Mestre... ",
+        "verses": {
+            "1": "Cristo meu Mestre e meu Senhor, \n \nEu Te adoro, por fé, com fervor; \n \nRogo que guardes meu coração; \n \nVem protegê-lo, com Tua unção \n \nE defendê-lo, ó meu Guardião.",
+            "2": "Mestre divino, sempre senti \n \nMeu coração dependente de Ti; \n \nBom fundamento dá-lhe, Senhor, \n \nDá-lhe firmeza, virtude, valor \n \nE fortaleza, ó meu Protetor.",
+            "3": "Vale profundo, cheio de mal, \n \nÉ este mundo, ó Rei divinal. \n \nSó Tua força pode manter \n \nSanto e puro, na graça, meu ser, \n \nSempre seguro, com fé e poder.",
+            "4": "Mestre piedoso, com Tua mão, \n \nFaze perfeito o meu coração, \n \nSanto, ardoroso em Te servir, \n \nSempre voltado aos bens do porvir; \n \nMestre amado, desejo Te ouvir."
+        }
     },
     "2": {
-        "title": "Toda a glória a Jesus ",
-        "verses": {}
+        "title": "De Deus tu és eleita ",
+        "verses": {
+            "1": "De Deus tu és eleita, igreja de Jesus, \n \nO teu divino Mestre á glória te conduz; \n \nPrepara-te, pois Ele mui breve voltará; \n \nA glória que te espera já preparada está.",
+            "2": "Com celestiais adornos espera o teu Senhor, \n \nVestida de justiça e do divino amor; \n \nDileta és de Cristo, que vida te doou; \n \nA fim de resgatar-te, Seu sangue derramou.",
+            "3": "É grande tua glória, igreja de Jesus; \n \nConsagra-te a Ele, andando em sua luz; \n \nEm breve, no Seu reino, gloriosa entrarás, \n \nE a face do Esposo, no céu, contemplarás."
+        }
     },
     "3": {
-        "title": "Ação de graças darei ",
-        "verses": {}
+        "title": "Faz-nos ouvir Tua voz ",
+        "verses": {
+            "1": "Faz-nos ouvir Tua voz gloriosa, \n \nÓ nosso Mestre, fiel Redentor; \n \nA Tua igreja, dileta esposa, \n \nSente por Ti inefável amor.",
+            "coro": "Ó caro Salvador, a Tua voz de amor \n \nNos guia para o céu, glorioso lar; \n \nPela Palavra vem nos consolar.",
+            "2": "Ó Jesus Cristo, celeste Esposo, \n \nVem conduzir-nos, por Teu grande amor; \n \nJá antevemos, ó Rei majestoso, \n \nA glória eterna do Teu esplendor.",
+            "3": "A Tua igreja está se adornando \n \nPara encontrar-se Contigo, ó Jesus; \n \nCom santas vestes, está aguardando \n \nVer Tua face no reino de luz."
+        }
     },
     "4": {
-        "title": "Glória, glória nas alturas! ",
-        "verses": {}
+        "title": "Ouve a nossa oração ",
+        "verses": {
+            "1": "Nossos olhos para os céus, ó Deus, nos levantamos; \n \nConfiando em Teu amor, a nossa voz alçamos.",
+            "coro": "Ouve a nossa oração \n \nDesde a Tua habitação; \n \nTua benção, Teu perdão, \n \nManda, ó Deus piedoso.",
+            "2": "Refrigério celestial E bálsamo precioso \n \nÉ sentir-Te em nosso ser, Pai santo, glorioso.",
+            "3": "No Teu trono, ó Senhor, recebe nesta hora \n \nA humilde oração do povo que Te adora."
+        }
     },
     "5": {
-        "title": "Majestoso é Cristo Jesus! ",
-        "verses": {}
+        "title": "A Rocha celestial ",
+        "verses": {
+            "1": "Sábio e prudente será o varão \n \nQue a casa na rocha erguer; \n \nSempre terá eficaz proteção, \n \nPois nada a pode abater.",
+            "coro": "A Rocha celestial \n \nÈ Cristo, o Filho de Deus, \n \nO Fundamento eternal \n \nDe quem busca o reino dos céus.",
+            "2": "Quem sobre a areia quiser construir, \n \nEm vão trabalhado terá, \n \nPois sua casa virá a cair; \n \nEm falso alicerce estará.",
+            "3": "As tempestades e os ventos virão \n \nA todos, com grande furor; \n \nMas os que sobre a Rocha estão, \n \nFirmeza terão no Senhor."
+        }
     },
     "6": {
-        "title": "A Jesus eu cantarei louvor ",
-        "verses": {}
+        "title": "Glória ao justo, fiel Cordeiro ",
+        "verses": {
+            "1": "Ao Cordeiro imaculado, Jesus Cristo, exaltemos; \n \nDo Seu Nome falaremos, pois, com infinito amor, \n \nVeio à terra, glorioso, com poder e esplendor.",
+            "2": "Seguiremos a Jesus Cristo com inteira confiança; \n \nTemos viva esperança de chegar ao lar de amor, \n \nDirigidos, amparados pelo sábio Condutor.",
+            "3": "Só a Cristo daremos glória e louvores em eterno, \n \nPois livrou-nos do inferno, do pecado e do mal, \n \nPara dar-nos a herança no Seu lar celestial.",
+            "coro": "Glória ao Justo, fiel Cordeiro, \n \nPuro, Santo, Verdadeiro! \n \nPela morte no madeiro, \n \nNos reconciliou com Deus."
+        }
     },
     "7": {
         "title": "Granjeai, granjeai os talentos ",
@@ -370,6 +399,15 @@
             "coro": "Perdoa teu irmão de todo o coração, \n \nAssim terás cumprido o santo mandamento; \n \nTambém terás perdão e paz no coração; \n \nPor Deus serás benquisto. Sublime é o perdão!",
             "2": "Medita, irmão amado, no grande amor de Cristo \n \nE busca a excelente, eterna Caridade; \n \nCaminha na justiça, na paz, na santidade, \n \nEm toda humildade. Sublime é o perdão!",
             "3": "Se teu irmão amares de um coração sincero, \n \nTerás a vida eterna na celestial cidade; \n \nEmbora ofendido, Suporta com piedade, \n \nConserva a santidade. Sublime é o perdão!"
+        }
+    },
+    "47": {
+        "title": "Sublime é o perdão!",
+        "verses": {
+            "1": "\"Setenta vezes sete ao teu irmão perdoa\",  \n  \nAssim falou o Mestre ao ser interrogado;  \n  \nSe tu o perdoares, serás abençoado  \n  \nE bem-aventurado. Sublime é o perdão!",
+            "2": "Medita, irmão amado, no grande amor de Cristo  \n  \nE busca a excelente, eterna Caridade;  \n  \nCaminha na justiça, na paz, na santidade,  \n  \nEm toda humildade. Sublime é o perdão!",
+            "3": "Se teu irmão amares de um coração sincero,  \n  \nTerás a vida eterna na celestial cidade;  \n  \nEmbora ofendido, suporta com piedade,  \n  \nConserva a santidade. Sublime é o perdão!",
+            "coro": "Perdoa teu irmão de todo o coração,  \n  \nAssim terás cumprido o santo mandamento;  \n  \nTambém terás perdão e paz no coração;  \n  \nPor Deus serás benquisto. Sublime é o perdão!"
         }
     },
     "48": {
@@ -1064,6 +1102,15 @@
             "3": "Meu bom Jesus, sustém meu coração, \n \nLonge de Ti não há consolação; \n \nÓ Salvador, Contigo almejo estar; \n \nCom toda a alma quero a Ti me consagrar."
         }
     },
+    "127": {
+        "title": "Meu bom Jesus, Contigo almejo estar",
+        "verses": {
+            "1": "Meu bom Jesus, Contigo almejo estar  \n  \nE, só por Ti, viver e caminhar,  \n  \nPara poder me proteger do mal  \n  \nE ao final, viver na pátria eternal.",
+            "coro": "Vem, Jesus, Redentor,  \n  \nNas lutas me ajudar,  \n  \nEm Ti desejo inteiramente confiar.",
+            "2": "Meu bom Jesus, ó Fonte de amor,  \n  \nAlmejo ouvir a Tua voz, Senhor;  \n  \nFaz-me viver cumprindo o Teu querer,  \n  \nE rejeitando o mundo e todo o seu prazer.",
+            "3": "Meu bom Jesus, sustém meu coração,  \n  \nLonge de Ti não há consolação;  \n  \nÓ Salvador, Contigo almejo estar;  \n  \nCom toda a alma quero a Ti me consagrar."
+        }
+    },
     "128": {
         "title": "Teu filho sou, ó Criador ",
         "verses": {
@@ -1342,6 +1389,15 @@
             "2": "\"Sou a Verdade\", disse-o Salvador; \n \nNessa Verdade vamos nos firmar; \n \nEla nos leva ao reino de amor, \n \nOnde os fiéis em breve irão entrar.",
             "3": "\"Eu sou a Vida\", disse o Redentor; \n \nÈ essa Vida que suplanta o mal, \n \nVida perfeita, Vida de amor, \n \nVida sublime e celestial.",
             "4": "\"Ninguém virá ao Pai, senão por Mim\", \n \nDisse Jesus, Autor da Salvação; \n \nSó no Senhor há dádivas sem fim, \n \nSó n’Ele alcançaremos redenção."
+        }
+    },
+    "160": {
+        "title": "\"Sou o Caminho, a Verdade e a Vida\"",
+        "verses": {
+            "1": "\"Sou o Caminho\", disse-nos Jesus;  \n  \nNeste Caminho vamos nós andar,  \n  \nFirmes na fé, pois ela nos conduz  \n  \nNa esperança de, no céu, morar.",
+            "2": "\"Sou a Verdade\", disse-o Salvador;  \n  \nNessa Verdade vamos nos firmar;  \n  \nEla nos leva ao reino de amor,  \n  \nOnde os fiéis em breve irão entrar.",
+            "3": "\"Eu sou a Vida\", disse o Redentor;  \n  \nÉ essa Vida que suplanta o mal,  \n  \nVida perfeita, Vida de amor,  \n  \nVida sublime e celestial.",
+            "4": "\"Ninguém virá ao Pai, senão por Mim\",  \n  \nDisse Jesus, Autor da Salvação;  \n  \nSó no Senhor há dádivas sem fim,  \n  \nSó n’Ele alcançaremos redenção."
         }
     },
     "161": {
@@ -1636,6 +1692,14 @@
             "3": "Nós sofreremos aflições como Jesus sofreu; \n \nBom ânimo devemos ter, pois Cristo já venceu; \n \nO reino Lhe pertence na terra e nos céus; \n \nCom Ele reinaremos junto aos santos Seus."
         }
     },
+    "194": {
+        "title": "\"Vós chorareis e vos lamentareis\"",
+        "verses": {
+            "1": "\"Vós, na verdade chorareis e vos lamentareis;  \n  \nO mundo se alegrará\", disse o Rei dos reis;  \n  \nMas eis que, muito em breve, Cristo retornará  \n  \nE nossa alegria nunca terminará.",
+            "2": "Orando em nome de Jesus, Deus nos atenderá;  \n  \nPor Seus fiéis, o Redentor intercedendo está;  \n  \nPor grande amor paterno, Deus ouve as orações  \n  \nE forças nos concede nas nossas provações.",
+            "3": "Nós sofreremos aflições como Jesus sofreu;  \n  \nBom ânimo devemos ter, pois Cristo já venceu;  \n  \nO reino Lhe pertence na terra e nos céus;  \n  \nCom Ele reinaremos junto aos santos Seus."
+        }
+    },
     "195": {
         "title": "Senhor, estou disposto ",
         "verses": {
@@ -1887,6 +1951,15 @@
             "coro": "Só Jesus concede paz e salvação, \n \nE, na glória eterna, grande galardão; \n \nQuem também deseja ir com Deus morar, \n \nSente que, a Cristo, deve aceitar.",
             "2": "Todos os cansados, vinde ao Senhor, \n \nVinde sem demora, Ele é o Salvadora; \n \nE dizei a Cristo, com satisfação: \n \n\"Nós Te consagramos nosso coração\".",
             "3": "Com a nova vida no Senhor Jesus \n \nMostrareis ao mundo que Ele é a Luz; \n \nSeja a vossa obra um louvor a Deus, \n \nE a vida eterna vós tereis nos céus."
+        }
+    },
+    "224": {
+        "title": "Só Jesus concede paz e salvação",
+        "verses": {
+            "1": "Quem, disposto, segue ao Senhor Jesus,  \n  \nCom virtude e força leva a sua cruz;  \n  \nTem poder divino em seu coração,  \n  \nNão será vencido pela tentação.",
+            "coro": "Só Jesus concede paz e salvação,  \n  \nE, na glória eterna, grande galardão;  \n  \nQuem também deseja ir com Deus morar,  \n  \nSente que, a Cristo, deve aceitar.",
+            "2": "Todos os cansados, vinde ao Senhor,  \n  \nVinde sem demora, Ele é o Salvador;  \n  \nE dizei a Cristo, com satisfação:  \n  \n\"Nós Te consagramos nosso coração\".",
+            "3": "Com a nova vida no Senhor Jesus  \n  \nMostrareis ao mundo que Ele é a Luz;  \n  \nSeja a vossa obra um louvor a Deus,  \n  \nE a vida eterna vós tereis nos céus."
         }
     },
     "225": {
@@ -3587,6 +3660,15 @@
             "3": "Rememoremos o martírio, \n \nA humilhação que suportou; \n \nSendo, de Deus, o amado Filho, \n \nDo céu desceu e nos salvou. \n \nRetornou ao Pai eterno, \n \nMas dentro em breve voltará \n \nPara nos dar perpétua glória \n \nNo reino que preparado está."
         }
     },
+    "419": {
+        "title": "\"Fazei isto em memória de Mim\" (Santa Ceia)",
+        "verses": {
+            "1": "Sempre lembremo-nos da morte  \n  \nDo nosso amado e bom Jesus;  \n  \nSua memória celebremos,  \n  \nSeu sacrifício sobre a cruz.",
+            "coro": "Tomaremos, comovidos,  \n  \nA Santa Ceia do Senhor;  \n  \nSomos, agora, Seus remidos  \n  \nPor Sua obra de grande amor.",
+            "2": "Neste momento o pão partimos,  \n  \nComo Jesus determinou,  \n  \nE, nesta comunhão,  \n  \nSentimos quanto o Mestre nos amou;  \n  \nAo bebermos deste cálice,  \n  \nPor mandamento do Senhor,  \n  \nAnunciamos Sua morte  \n  \nAté que venha o Redentor.",
+            "3": "Rememoremos o martírio,  \n  \nA humilhação que suportou;  \n  \nSendo, de Deus, o amado Filho,  \n  \nDo céu desceu e nos salvou.  \n  \nRetornou ao Pai eterno,  \n  \nMas dentro em breve voltará  \n  \nPara nos dar perpétua glória  \n  \nNo reino que preparado está."
+        }
+    },
     "420": {
         "title": "Foi no Calvário... ",
         "verses": {
@@ -4073,6 +4155,14 @@
             "coro": "Já desde a minha infância clamo a Ti, Senhor, \n \nDe todo o coração e com sincero amor; \n \nE Tu, meu bom Jesus, és sempre a minha Luz \n \nE me conduzirás ao lar de esplendo. \n\n476 -\"Deixai a Mim vir os pequeninos...\""
         }
     },
+    "476": {
+        "title": "\"Deixai a Mim vir os pequeninos...\"",
+        "verses": {
+            "1": "Crianças eram encaminhadas  \n  \nAos pés do bom Jesus, o Redentor,  \n  \nA fim de serem abençoadas  \n  \nE conhecerem o Seu amor.",
+            "2": "\"Deixai a mim vir os pequeninos  \n  \nE não os impeçais\", falou Jesus;  \n  \nQuem não se torna também menino  \n  \nNão tem entrada no lar de luz.",
+            "3": "Doutrina santa e excelente  \n  \nEnsina o Redentor aos Seus fiéis.  \n  \nA Deus sirvamos humildemente,  \n  \nPois foi humilde o Rei dos reis."
+        }
+    },
     "477": {
         "title": "Vinde, crianças ",
         "verses": {
@@ -4103,19 +4193,10 @@
     "480": {
         "title": "Jovens, amai o conselho ",
         "verses": {
-            "1": "Nós cremos na inteira Bíblia Sagrada e aceitamo-La como contendo a \ninfalível Palavra de Deus, inspirada pelo Espírito Santo. A Palavra de \nDeus é a única e perfeita guia de nossa  fé e conduta, e a Ela nada se \npode acrescentar ou d’Ela diminuir. É, também, o poder de Deus para \nsalvação de todo aquele que crê. (ll Pedro 1:21; ll Timóteo 3:16- 17; \nRomanos 1:16)",
-            "coro": "A Deus e a Cristo, o Senhor, \n \nDevemos consagração, \n \nRespeito, honra, profundo amor \n \nE eterna veneração.",
-            "2": "Nós cremos que há um só Deus vivente e verdadeiro, eterno e de \ninfinito poder, Criador de todas as coisas, em cuja unidade estão o Pai, \no Filho e o Espírito Santo. (Efésios 4:6; Mateus 28:19; l João 5:7)",
-            "3": "Nós cremos que Jesus Cristo, o Filho de Deus, é a Palavra feita carne, \nhavendo assumido uma natureza humana no ventre de Maria virgem, \npossuindo Ele, por conseguinte, duas naturezas, a divina e a humana; \npor isso é chamado verdadeiro Deus e verdadeiro homem e é o único \nSalvador, pois sofreu a morte pela culpa de todos os homens. (Lucas \n1:27,35; João 1:14; l Pedro 3:18)",
-            "4": "Nós cremos na existência pessoal do diabo, e de seus anjos, maus \nespíritos que, junto a ele, serão punidos no fogo eterno. (Mateus 25:41)",
-            "5": "Nós cremos que a regeneração ou novo nascimento, só se recebe pela \nfé em Jesus Cristo, que pelos nossos pecados foi entregue e \nressuscitou para a nossa justificação. Os que estão em Cristo Jesus \nsão novas criaturas. Jesus Cristo, para nós, foi feito por Deus \nsabedoria, justiça, santificação e redenção. (Romanos 3:24- 25; l \nCoríntios 1:30; ll Coríntios 5:17)",
-            "6": "Nós cremos no batismo na água, com uma só imersão, em Nome de \nJesus Cristo (Atos 2:38) e em Nome do Pai e do Filho e do Espírito \nSanto. (Mateus 28:18-19)",
-            "7": "Nós cremos no batismo do Espírito Santo, com evidência de novas \nlínguas, conforme o Espírito Santo concede que se fale. (Atos 2:4; \n10:45-47; 19:6)",
-            "8": "Nós cremos na Santa Ceia. Jesus Cristo, na noite em que foi traído, \ntomando o pão e havendo dado graça, partiu-o e deu-o aos discípulos, \ndizendo: \"Isto é o meu corpo, que por vós é dado; fazei isto em \nmemória de mim\". Semelhantemente tomou o cálice, depois da ceia, \n\ndizendo: \" Este cálice é o Novo Testamento no meu sangue, que é \nderramado por vós\". (Lucas 22:19-20; I Coríntios 11:24-25)",
-            "9": "Nós cremos na necessidade de nos abster das coisas sacrificadas aos \nídolos, do sangue, da carne sufocada e da fornicação, conforme \nmostrou o Espírito Santo na Assembleia de Jerusalém. (Atos 15:28-29; \n16:4;21:25)",
-            "10": "Nós cremos que Jesus Cristo tomou sobre Si as nossas enfermidades. \n\"Está alguém entre vós doentes? Chame os presbíteros da igreja, e \norem sobre ele, ungindo-o com azeite em nome de Senhor. E a oração \nda fé salvará o doente, e o Senhor o levantará; e se houver cometido \npecados, ser-lhe-ão perdoados\". (Mateus 8:17; Tiago 5:14-15)",
-            "11": "Nós cremos que o mesmo Senhor (antes do milênio) descerá do céu \ncom alarido, com voz de arcanjo e com a trombeta de Deus; e os que \nmorreram em Cristo ressuscitarão primeiro. Depois nós, os que \nficarmos vivos, seremos arrebatados juntamente com eles nas nuvens, \na encontrar o Senhor nos ares e assim estaremos sempre com o \nSenhor. (I Tessalonicenses 4:16-17; Apocalipse 20:6)",
-            "12": "Nós cremos que haverá a ressurreição corporal dos mortos, justos e \ninjustos. Estes irão para o tormento eterno, mas os justos para a vida \neterna. (Atos 24:15; Mateus 25:46) \n\nCoros"
+            "1": "Jovens, amai o conselho, \n \nO ensino de Cristo Jesus; \n \nEle é o vosso Modelo \n \nDe vida, justiça e luz.",
+            "coro": "A Deus e a Cristo, o Senhor, \n \nDevemos consagração, \n \nRespeito, honra, profundo amor \n \nE eterna veneração",
+            "2": "Vasos,por Cristo,escolhidos \n \nSereis, para glória de Deus; \n \nCristo vos quer revestidos \n \nDas santas virtudes dos céus",
+            "3": "Jovens que seguem o Mestre, \n \nEm sua existência terão \n \nA providência celeste \n \nE próspero n’Ele serão"
         }
     }
 }
