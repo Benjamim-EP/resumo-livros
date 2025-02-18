@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/chapter_view_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/save_topic_dialog.dart';
 import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/similar_topic_view.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
@@ -93,20 +95,40 @@ class TopicContentView extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, String topicId) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        TextButton(
-          onPressed: () => _showSimilarTopics(context, topicId),
-          child: const Text(
-            'Ver Tópicos Similares',
-            style: TextStyle(
-              color: Color.fromARGB(255, 129, 194, 91), // Verde da aplicação
-              fontWeight: FontWeight.bold,
+    return StoreConnector<AppState, Map<String, dynamic>?>(
+      converter: (store) => store.state.topicState.topicsMetadata[topicId],
+      builder: (context, metadata) {
+        if (metadata == null) return const SizedBox.shrink();
+
+        final bookId = metadata['bookId'];
+        final chapterId = metadata['capituloId'];
+        final chapterIndex = metadata['chapterIndex'];
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              onPressed: () => _showSimilarTopics(context, topicId),
+              icon: const Icon(Icons.compare,
+                  color: Color(0xFF81C25B)), // Verde da aplicação
+              tooltip: 'Ver Tópicos Similares',
             ),
-          ),
-        ),
-      ],
+            if (bookId != null)
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BookDetailsPage(bookId: bookId),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.menu_book, color: Colors.white),
+                tooltip: 'Ir para Livro',
+              ),
+          ],
+        );
+      },
     );
   }
 

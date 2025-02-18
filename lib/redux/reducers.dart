@@ -24,7 +24,8 @@ class BooksState {
     Map<String, dynamic>? bookDetails,
     Map<String, dynamic>? booksProgress,
     int? nTopicos,
-    List<Map<String, dynamic>>? weeklyRecommendations, // ✅ Adicionado no copyWith
+    List<Map<String, dynamic>>?
+        weeklyRecommendations, // ✅ Adicionado no copyWith
   }) {
     return BooksState(
       booksByTag: booksByTag ?? this.booksByTag,
@@ -32,7 +33,8 @@ class BooksState {
       bookDetails: bookDetails ?? this.bookDetails,
       booksProgress: booksProgress ?? this.booksProgress,
       nTopicos: nTopicos ?? this.nTopicos,
-      weeklyRecommendations: weeklyRecommendations ?? this.weeklyRecommendations, // ✅ Agora atualizado corretamente
+      weeklyRecommendations: weeklyRecommendations ??
+          this.weeklyRecommendations, // ✅ Agora atualizado corretamente
     );
   }
 }
@@ -40,7 +42,7 @@ class BooksState {
 BooksState booksReducer(BooksState state, dynamic action) {
   if (action is WeeklyRecommendationsLoadedAction) {
     return state.copyWith(weeklyRecommendations: action.books);
-  }else if (action is BooksLoadedByTagAction) {
+  } else if (action is BooksLoadedByTagAction) {
     return state.copyWith(
       booksByTag: {
         ...state.booksByTag,
@@ -58,7 +60,8 @@ BooksState booksReducer(BooksState state, dynamic action) {
     return state.copyWith(booksProgress: updatedBooksProgress);
   } else if (action is MarkTopicAsReadAction) {
     final updatedBooksProgress = Map<String, dynamic>.from(state.booksProgress);
-    final bookProgress = updatedBooksProgress[action.bookId] ?? {'readTopics': <String>[]};
+    final bookProgress =
+        updatedBooksProgress[action.bookId] ?? {'readTopics': <String>[]};
 
     final readTopics = List<String>.from(bookProgress['readTopics'] ?? []);
     if (!readTopics.contains(action.topicId)) {
@@ -67,7 +70,8 @@ BooksState booksReducer(BooksState state, dynamic action) {
 
       // Atualiza progresso baseado no número de capítulos lidos
       bookProgress['progress'] = ((readTopics.length /
-                  (state.bookDetails?[action.bookId]?['chapters']?.length ?? 1)) *
+                  (state.bookDetails?[action.bookId]?['chapters']?.length ??
+                      1)) *
               100)
           .toInt();
       updatedBooksProgress[action.bookId] = bookProgress;
@@ -98,7 +102,8 @@ class UserState {
   final List<Map<String, dynamic>> rotaAtual;
   final List<Map<String, dynamic>> userRoutes;
   final Map<String, List<Map<String, dynamic>>> verseSaves;
-  final List<Map<String, dynamic>> userDiaries; // 🔹 Novo campo para armazenar os diários
+  final List<Map<String, dynamic>>
+      userDiaries; // 🔹 Novo campo para armazenar os diários
 
   UserState({
     this.userId,
@@ -170,18 +175,18 @@ class UserState {
       rotaAtual: rotaAtual ?? this.rotaAtual,
       userRoutes: userRoutes ?? this.userRoutes,
       verseSaves: verseSaves ?? this.verseSaves,
-      userDiaries: userDiaries ?? this.userDiaries, // 🔹 Atualiza o estado com a nova lista de diários
+      userDiaries: userDiaries ??
+          this.userDiaries, // 🔹 Atualiza o estado com a nova lista de diários
     );
   }
 }
 
-
 UserState userReducer(UserState state, dynamic action) {
   if (action is LoadUserDiariesSuccessAction) {
     return state.copyWith(userDiaries: action.diaries);
-  }else if (action is UserVerseCollectionsUpdatedAction) {
+  } else if (action is UserVerseCollectionsUpdatedAction) {
     return state.copyWith(verseSaves: action.verseSaves);
-  }else if (action is UserLoggedInAction) {
+  } else if (action is UserLoggedInAction) {
     return state.copyWith(
       userId: action.userId,
       email: action.email,
@@ -396,6 +401,15 @@ TopicState topicReducer(TopicState state, dynamic action) {
       topicsTitles: {
         ...state.topicsTitles,
         action.topicId: action.titulo,
+      },
+      topicsMetadata: {
+        ...state.topicsMetadata,
+        action.topicId: {
+          'bookId': action.bookId,
+          'capituloId': action.capituloId,
+          'chapterName': action.chapterName,
+          'chapterIndex': action.chapterIndex,
+        },
       },
     );
   } else if (action is SimilarTopicsLoadedAction) {

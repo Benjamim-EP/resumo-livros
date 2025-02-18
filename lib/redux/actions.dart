@@ -112,8 +112,20 @@ class TopicContentLoadedAction {
   final String topicId;
   final String content;
   final String titulo;
+  final String bookId;
+  final String capituloId;
+  final String chapterName;
+  final int? chapterIndex;
 
-  TopicContentLoadedAction(this.topicId, this.content, this.titulo);
+  TopicContentLoadedAction(
+    this.topicId,
+    this.content,
+    this.titulo,
+    this.bookId,
+    this.capituloId,
+    this.chapterName,
+    this.chapterIndex,
+  );
 }
 
 class LoadSimilarTopicsAction {
@@ -391,8 +403,6 @@ class DeleteSingleTopicFromCollectionAction {
 
   DeleteSingleTopicFromCollectionAction(this.collectionName, this.topicId);
 }
-
-
 
 class UserVerseCollectionsUpdatedAction {
   final Map<String, List<Map<String, dynamic>>> verseSaves;

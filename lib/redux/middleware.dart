@@ -16,9 +16,8 @@ void weeklyRecommendationsMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
   if (action is LoadWeeklyRecommendationsAction) {
     try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('books')
-          .get();
+      final querySnapshot =
+          await FirebaseFirestore.instance.collection('books').get();
 
       List<Map<String, dynamic>> books = querySnapshot.docs.map((doc) {
         final data = doc.data();
@@ -39,7 +38,9 @@ void weeklyRecommendationsMiddleware(
       // Ordena os livros pela maior nota e maior número de votos
       books.sort((a, b) {
         int scoreCompare = b['nota'].compareTo(a['nota']);
-        return scoreCompare != 0 ? scoreCompare : b['votes'].compareTo(a['votes']);
+        return scoreCompare != 0
+            ? scoreCompare
+            : b['votes'].compareTo(a['votes']);
       });
 
       // Pega apenas os 10 melhores
@@ -112,7 +113,7 @@ void userRoutesMiddleware(
 void bookMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
   next(action);
-  
+
   if (action is CheckBookProgressAction) {
     final userId = store.state.userState.userId;
     if (userId == null) {
@@ -121,8 +122,12 @@ void bookMiddleware(
     }
 
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      final booksProgress = userDoc.data()?['booksProgress'] as Map<String, dynamic>? ?? {};
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      final booksProgress =
+          userDoc.data()?['booksProgress'] as Map<String, dynamic>? ?? {};
 
       final readTopics = List<String>.from(booksProgress[action.bookId] ?? []);
 
@@ -131,7 +136,7 @@ void bookMiddleware(
       print("Erro ao carregar progresso de leitura: $e");
       store.dispatch(LoadBookProgressFailureAction(e.toString()));
     }
-  }else if (action is TagsLoadedAction) {
+  } else if (action is TagsLoadedAction) {
     final bookService = BookService();
     try {
       for (final tag in action.tags) {
@@ -145,7 +150,6 @@ void bookMiddleware(
     } catch (e) {
       print("Erro ao carregar livros: $e");
     }
-    
   } else if (action is LoadBookDetailsAction) {
     final bookService = BookService();
     try {
@@ -315,7 +319,7 @@ void userMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
   next(action);
   if (action is AddDiaryEntryAction) {
-  final userId = store.state.userState.userId;
+    final userId = store.state.userState.userId;
     if (userId != null) {
       try {
         final newDiary = {
@@ -324,12 +328,16 @@ void userMiddleware(
           "data": Timestamp.now(),
         };
 
-        final docRef = await FirebaseFirestore.instance.collection('posts').add(newDiary);
+        final docRef =
+            await FirebaseFirestore.instance.collection('posts').add(newDiary);
 
         // Adiciona o ID do novo diário à lista de diários do usuário
-        final userDoc = FirebaseFirestore.instance.collection('users_posts').doc(userId);
+        final userDoc =
+            FirebaseFirestore.instance.collection('users_posts').doc(userId);
         await userDoc.update({
-          "ids": FieldValue.arrayUnion([{"id": docRef.id}])
+          "ids": FieldValue.arrayUnion([
+            {"id": docRef.id}
+          ])
         });
 
         // Recarrega os diários do usuário
@@ -338,7 +346,7 @@ void userMiddleware(
         print("Erro ao adicionar diário: $e");
       }
     }
-} else if (action is LoadUserDiariesAction) {
+  } else if (action is LoadUserDiariesAction) {
     final userId = store.state.userState.userId;
     if (userId == null) {
       print("Usuário não autenticado. Não é possível carregar os diários.");
@@ -346,20 +354,27 @@ void userMiddleware(
     }
 
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users_posts').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users_posts')
+          .doc(userId)
+          .get();
       final diaryIds = (userDoc.data()?['ids'] as List<dynamic>?) ?? [];
 
       List<Map<String, dynamic>> diaries = [];
 
       for (var diary in diaryIds) {
         final postId = diary['id'];
-        final postDoc = await FirebaseFirestore.instance.collection('posts').doc(postId).get();
+        final postDoc = await FirebaseFirestore.instance
+            .collection('posts')
+            .doc(postId)
+            .get();
         if (postDoc.exists) {
           diaries.add({
             'id': postDoc.id,
             'titulo': postDoc.data()?['titulo'] ?? 'Sem Título',
             'conteudo': postDoc.data()?['conteudo'] ?? '',
-            'data': DateFormat('dd MMM yyyy').format((postDoc.data()?['data'] as Timestamp).toDate()),
+            'data': DateFormat('dd MMM yyyy')
+                .format((postDoc.data()?['data'] as Timestamp).toDate()),
           });
         }
       }
@@ -369,7 +384,7 @@ void userMiddleware(
       print("Erro ao carregar os diários: $e");
       store.dispatch(LoadUserDiariesFailureAction(e.toString()));
     }
-  }else if (action is LoadUserStatsAction) {
+  } else if (action is LoadUserStatsAction) {
     try {
       final userId = store.state.userState.userId;
 
@@ -408,43 +423,47 @@ void userMiddleware(
       print('Erro ao carregar os detalhes do usuário: $e');
     }
   } else if (action is SaveVerseToCollectionAction) {
-  final userId = store.state.userState.userId;
-  if (userId != null) {
-    try {
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(userId);
+    final userId = store.state.userState.userId;
+    if (userId != null) {
+      try {
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(userId);
 
-      // 🔹 Obtém os dados do usuário do Firestore
-      final userSnapshot = await userDoc.get();
-      final rawCollections = userSnapshot.data()?['topicSaves'] as Map<String, dynamic>? ?? {};
+        // 🔹 Obtém os dados do usuário do Firestore
+        final userSnapshot = await userDoc.get();
+        final rawCollections =
+            userSnapshot.data()?['topicSaves'] as Map<String, dynamic>? ?? {};
 
-      // 🔹 Converte corretamente para `Map<String, List<String>>`
-      final Map<String, List<String>> currentCollections = rawCollections.map(
-        (key, value) => MapEntry(key, List<String>.from(value ?? [])),
-      );
+        // 🔹 Converte corretamente para `Map<String, List<String>>`
+        final Map<String, List<String>> currentCollections = rawCollections.map(
+          (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+        );
 
-      // 🔹 Obtém a coleção específica ou cria uma nova lista
-      final updatedCollection = currentCollections[action.collectionName] ?? [];
+        // 🔹 Obtém a coleção específica ou cria uma nova lista
+        final updatedCollection =
+            currentCollections[action.collectionName] ?? [];
 
-      // 🔹 Verifica se o versículo já está salvo
-      if (!updatedCollection.contains(action.verseId)) {
-        updatedCollection.add(action.verseId);
-        currentCollections[action.collectionName] = updatedCollection;
+        // 🔹 Verifica se o versículo já está salvo
+        if (!updatedCollection.contains(action.verseId)) {
+          updatedCollection.add(action.verseId);
+          currentCollections[action.collectionName] = updatedCollection;
 
-        // 🔹 Atualiza no Firestore
-        await userDoc.update({'topicSaves': currentCollections});
+          // 🔹 Atualiza no Firestore
+          await userDoc.update({'topicSaves': currentCollections});
 
-        // 🔹 Atualiza Redux com os dados corrigidos
-        store.dispatch(UserTopicCollectionsLoadedAction(currentCollections));
+          // 🔹 Atualiza Redux com os dados corrigidos
+          store.dispatch(UserTopicCollectionsLoadedAction(currentCollections));
 
-        print('Versículo salvo na coleção "${action.collectionName}".');
-      } else {
-        print('Versículo já está salvo na coleção "${action.collectionName}".');
+          print('Versículo salvo na coleção "${action.collectionName}".');
+        } else {
+          print(
+              'Versículo já está salvo na coleção "${action.collectionName}".');
+        }
+      } catch (e) {
+        print('Erro ao salvar versículo: $e');
       }
-    } catch (e) {
-      print('Erro ao salvar versículo: $e');
     }
-  }
-} else if (action is LoadUserPremiumStatusAction) {
+  } else if (action is LoadUserPremiumStatusAction) {
     try {
       final userId = store.state.userState.userId;
 
@@ -847,75 +866,76 @@ void userMiddleware(
       print('Erro ao carregar topicsByFeature: $e');
     }
   } else if (action is LoadTopicsContentUserSavesAction) {
-  try {
-    final topicSaves = store.state.userState.topicSaves;
-    final Map<String, List<Map<String, dynamic>>> topicsByCollection = {};
+    try {
+      final topicSaves = store.state.userState.topicSaves;
+      final Map<String, List<Map<String, dynamic>>> topicsByCollection = {};
 
-    // Itera sobre cada coleção de tópicos salvos
-    for (var entry in topicSaves.entries) {
-      final collectionName = entry.key;
-      final topicIds = entry.value;
+      // Itera sobre cada coleção de tópicos salvos
+      for (var entry in topicSaves.entries) {
+        final collectionName = entry.key;
+        final topicIds = entry.value;
 
-      final List<Map<String, dynamic>> topics = [];
+        final List<Map<String, dynamic>> topics = [];
 
-      for (var topicId in topicIds) {
-        try {
-          if (topicId.startsWith("bibleverses-")) {
-            // 🔹 Versículo salvo (Formato: "bibleverses-gn-1-2")
-            final parts = topicId.split("-");
-            if (parts.length == 4) {
-              final bookAbbrev = parts[1]; // Ex: "gn"
-              final chapter = parts[2]; // Ex: "1"
-              final verse = parts[3]; // Ex: "2"
+        for (var topicId in topicIds) {
+          try {
+            if (topicId.startsWith("bibleverses-")) {
+              // 🔹 Versículo salvo (Formato: "bibleverses-gn-1-2")
+              final parts = topicId.split("-");
+              if (parts.length == 4) {
+                final bookAbbrev = parts[1]; // Ex: "gn"
+                final chapter = parts[2]; // Ex: "1"
+                final verse = parts[3]; // Ex: "2"
 
-              topics.add({
-                'id': topicId,
-                'cover': 'https://via.placeholder.com/80x100', // Imagem padrão
-                'bookName': bookAbbrev, // Ex: "gn"
-                'chapterName': chapter, // Ex: "1"
-                'titulo': "Versículo $chapter:$verse",
-                'conteudo': "Versículo salvo da Bíblia.",
-              });
-            }
-          } else {
-            // 🔹 Tópico salvo (Busca no Firestore)
-            final topicDoc = await FirebaseFirestore.instance
-                .collection('topics')
-                .doc(topicId)
-                .get();
-
-            if (topicDoc.exists) {
-              topics.add({
-                'id': topicDoc.id,
-                'cover': topicDoc.data()?['cover'] ?? '',
-                'bookName': topicDoc.data()?['bookName'] ?? '',
-                'chapterName': topicDoc.data()?['chapterName'] ?? '',
-                'conteudo': topicDoc.data()?['conteudo'] ?? '',
-                'titulo': topicDoc.data()?['titulo'] ?? '',
-              });
+                topics.add({
+                  'id': topicId,
+                  'cover':
+                      'https://via.placeholder.com/80x100', // Imagem padrão
+                  'bookName': bookAbbrev, // Ex: "gn"
+                  'chapterName': chapter, // Ex: "1"
+                  'titulo': "Versículo $chapter:$verse",
+                  'conteudo': "Versículo salvo da Bíblia.",
+                });
+              }
             } else {
-              print('Tópico não encontrado no Firestore: $topicId');
+              // 🔹 Tópico salvo (Busca no Firestore)
+              final topicDoc = await FirebaseFirestore.instance
+                  .collection('topics')
+                  .doc(topicId)
+                  .get();
+
+              if (topicDoc.exists) {
+                topics.add({
+                  'id': topicDoc.id,
+                  'cover': topicDoc.data()?['cover'] ?? '',
+                  'bookName': topicDoc.data()?['bookName'] ?? '',
+                  'chapterName': topicDoc.data()?['chapterName'] ?? '',
+                  'conteudo': topicDoc.data()?['conteudo'] ?? '',
+                  'titulo': topicDoc.data()?['titulo'] ?? '',
+                });
+              } else {
+                print('Tópico não encontrado no Firestore: $topicId');
+              }
             }
+          } catch (e) {
+            print('Erro ao carregar tópico $topicId: $e');
           }
-        } catch (e) {
-          print('Erro ao carregar tópico $topicId: $e');
         }
+
+        topicsByCollection[collectionName] = topics;
       }
 
-      topicsByCollection[collectionName] = topics;
+      // Despacha a ação com os dados carregados
+      store.dispatch(
+          LoadTopicsContentUserSavesSuccessAction(topicsByCollection));
+    } catch (e) {
+      store.dispatch(
+        LoadTopicsContentUserSavesFailureAction(
+          'Erro ao carregar tópicos salvos: $e',
+        ),
+      );
     }
-
-    // Despacha a ação com os dados carregados
-    store.dispatch(LoadTopicsContentUserSavesSuccessAction(topicsByCollection));
-  } catch (e) {
-    store.dispatch(
-      LoadTopicsContentUserSavesFailureAction(
-        'Erro ao carregar tópicos salvos: $e',
-      ),
-    );
-  }
-}
- else if (action is LoadBooksDetailsAction) {
+  } else if (action is LoadBooksDetailsAction) {
     try {
       final booksInProgress = store.state.userState.booksInProgress;
 
@@ -1026,18 +1046,36 @@ void topicMiddleware(
       if (topicDoc.exists) {
         final content = topicDoc.data()?['conteudo'] ?? '';
         final titulo = topicDoc.data()?['titulo'] ?? '';
+        final bookId = topicDoc.data()?['bookId'] ?? '';
+        final capituloId = topicDoc.data()?['capituloId'] ?? '';
+        final chapterName = topicDoc.data()?['chapterName'] ?? '';
 
-        final topicmetadata = {
+        // Extrai o número inicial do chapterName como chapterIndex
+        final chapterIndexMatch = RegExp(r'^\d+').firstMatch(chapterName);
+        final chapterIndex = chapterIndexMatch != null
+            ? int.tryParse(chapterIndexMatch.group(0)!)
+            : null;
+
+        final topicMetadata = {
           'id': topicDoc.id,
           'cover': topicDoc.data()?['cover'] ?? '',
           'bookName': topicDoc.data()?['bookName'] ?? '',
-          'chapterName': topicDoc.data()?['chapterName'] ?? '',
-          'titulo': topicDoc.data()?['titulo'] ?? '',
-          'bookId': topicDoc.data()?['bookId'] ?? '',
+          'chapterName': chapterName,
+          'chapterIndex': chapterIndex,
+          'capituloId': capituloId,
+          'titulo': titulo,
+          'bookId': bookId,
         };
 
-        store.dispatch(
-            TopicContentLoadedAction(action.topicId, content, titulo));
+        store.dispatch(TopicContentLoadedAction(
+          action.topicId,
+          content,
+          titulo,
+          bookId,
+          capituloId,
+          chapterName,
+          chapterIndex,
+        ));
       } else {
         print('Tópico ${action.topicId} não encontrado.');
       }

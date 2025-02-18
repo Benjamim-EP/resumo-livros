@@ -41,7 +41,6 @@ class _ChapterViewPageState extends State<ChapterViewPage> {
   Widget build(BuildContext context) {
     final chapter = widget.chapters[widget.index];
     final topics = chapter['topicos'] as List<dynamic>? ?? [];
-    print(chapter);
     return Scaffold(
       appBar: AppBar(
         title: Text(chapter['titulo'] ?? 'Sem título'),
