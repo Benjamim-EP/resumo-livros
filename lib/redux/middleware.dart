@@ -1084,7 +1084,6 @@ void topicMiddleware(
     }
   } else if (action is LoadSimilarTopicsAction) {
     try {
-      //print('Middleware: Buscando tópico ${action.topicId} no Firestore');
       final topicDoc = await FirebaseFirestore.instance
           .collection('topics')
           .doc(action.topicId)
@@ -1096,39 +1095,9 @@ void topicMiddleware(
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList();
 
-        //print('Middleware: similar_topics encontrados: $similarTopics');
-
-        List<Map<String, dynamic>> detailedTopics = [];
-        for (var topic in similarTopics.take(5)) {
-          final similarTopicId = topic['similar_topic_id'];
-          //print('Middleware: Processando tópico similar $similarTopicId');
-
-          final similarTopicDoc = await FirebaseFirestore.instance
-              .collection('topics')
-              .doc(similarTopicId)
-              .get();
-
-          if (similarTopicDoc.exists) {
-            //final bookId = similarTopicDoc.data()?['bookId'];
-            //final chapterId = similarTopicDoc.data()?['capituloId'];
-            //print(
-            //    'Middleware: Tópico $similarTopicId pertence ao livro $bookId e capítulo $chapterId');
-            detailedTopics.add({
-              'similar_topic_id': similarTopicId,
-              'similarity': topic['similarity'],
-              'bookTitle': similarTopicDoc.data()?['bookName'],
-              'chapterTitle': similarTopicDoc.data()?['chapterName'],
-              'cover': similarTopicDoc.data()?['cover'],
-              'titulo': similarTopicDoc.data()?['titulo'],
-              'bookId': similarTopicDoc.data()?['bookId'],
-            });
-          }
-        }
-
-        //print(
-        //    'Middleware: Tópicos detalhados carregados: $detailedTopics para ${action.topicId}');
-        store.dispatch(
-            SimilarTopicsLoadedAction(action.topicId, detailedTopics));
+        // Como os dados já estão completos, podemos enviar diretamente
+        store
+            .dispatch(SimilarTopicsLoadedAction(action.topicId, similarTopics));
       } else {
         print('Middleware: Tópico ${action.topicId} não encontrado.');
         store.dispatch(SimilarTopicsLoadedAction(action.topicId, []));

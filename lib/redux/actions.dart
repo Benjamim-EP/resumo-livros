@@ -130,7 +130,6 @@ class TopicContentLoadedAction {
 
 class LoadSimilarTopicsAction {
   final String topicId;
-
   LoadSimilarTopicsAction(this.topicId);
 }
 

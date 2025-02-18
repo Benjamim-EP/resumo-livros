@@ -5,27 +5,71 @@ import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 
-class SimilarTopicsView extends StatelessWidget {
+class SimilarTopicsView extends StatefulWidget {
   final String topicId;
 
   const SimilarTopicsView({super.key, required this.topicId});
 
   @override
+  _SimilarTopicsViewState createState() => _SimilarTopicsViewState();
+}
+
+class _SimilarTopicsViewState extends State<SimilarTopicsView> {
+  final ScrollController _scrollController = ScrollController();
+  List<Map<String, dynamic>> _loadedTopics = [];
+  int _loadedCount = 10; // Quantidade inicial a ser carregada
+  bool _isLoadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore) {
+      _loadMoreTopics();
+    }
+  }
+
+  void _loadMoreTopics() {
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      setState(() {
+        _loadedCount += 10; // Carrega mais 10 tópicos
+        _isLoadingMore = false;
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.8, // Começa ocupando 80% da tela
-      minChildSize: 0.3, // Altura mínima de 30%
-      maxChildSize: 0.8, // Altura máxima de 80%
+      initialChildSize: 0.8,
+      minChildSize: 0.3,
+      maxChildSize: 0.8,
       expand: false,
       builder: (context, scrollController) {
         return StoreConnector<AppState, List<Map<String, dynamic>>>(
           onInit: (store) {
-            if (!store.state.topicState.similarTopics.containsKey(topicId)) {
-              store.dispatch(LoadSimilarTopicsAction(topicId));
+            if (!store.state.topicState.similarTopics
+                .containsKey(widget.topicId)) {
+              store.dispatch(LoadSimilarTopicsAction(widget.topicId));
             }
           },
           converter: (store) =>
-              store.state.topicState.similarTopics[topicId] ?? [],
+              store.state.topicState.similarTopics[widget.topicId] ?? [],
           builder: (context, similarTopics) {
             if (similarTopics.isEmpty) {
               return const Center(
@@ -34,6 +78,8 @@ class SimilarTopicsView extends StatelessWidget {
                 ),
               );
             }
+
+            _loadedTopics = similarTopics.take(_loadedCount).toList();
 
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -52,10 +98,19 @@ class SimilarTopicsView extends StatelessWidget {
                   Expanded(
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      controller: scrollController,
-                      itemCount: similarTopics.length,
+                      controller: _scrollController,
+                      itemCount:
+                          _loadedTopics.length + (_isLoadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
-                        final similarTopic = similarTopics[index];
+                        if (index == _loadedTopics.length) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFCDE7BE),
+                            ),
+                          );
+                        }
+
+                        final similarTopic = _loadedTopics[index];
                         final similarTopicId = similarTopic['similar_topic_id'];
                         final similarity = similarTopic['similarity'];
                         final bookTitle =
@@ -79,7 +134,7 @@ class SimilarTopicsView extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Capa do livro (adicionado clique para BookDetailsPage)
+                                  // Capa do livro com clique para detalhes
                                   if (cover != null)
                                     GestureDetector(
                                       onTap: () {
