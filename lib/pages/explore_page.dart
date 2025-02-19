@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/components/loadingbooks.dart';
 import 'package:resumo_dos_deuses_flutter/components/search_bar.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/explore_page/sermons_tab.dart';
 import 'package:resumo_dos_deuses_flutter/pages/hymns_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
@@ -24,7 +25,8 @@ class _ExploreState extends State<Explore> {
   void _onTabSelected(String tab) {
     setState(() {
       _selectedTab = tab;
-
+      print("aba selecionada");
+      print(_selectedTab);
       if (tab == "Autores") {
         final store = StoreProvider.of<AppState>(context, listen: false);
         if ((store.state.authorState.authorDetails?.isEmpty ?? true)) {
@@ -372,6 +374,9 @@ class _ExploreState extends State<Explore> {
             return AuthorsSection(authors: authors);
           },
         );
+      case "Pregações":
+        return const SermonsSection();
+
       default:
         return const SizedBox();
     }
@@ -388,7 +393,7 @@ class _ExploreState extends State<Explore> {
             const SearchBar2(hintText: "Autor, Livro"),
             const SizedBox(height: 40),
             ExploreItens(
-              itens: const ["Livros", "Autores", "Rota"],
+              itens: const ["Livros", "Autores", "Pregações"],
               buttonType: 2,
               onTabSelected: _onTabSelected,
               selectedTab: _selectedTab, // Aba atualmente ativa
