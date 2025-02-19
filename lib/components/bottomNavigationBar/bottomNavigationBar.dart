@@ -232,7 +232,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(Icons.rocket),
-                      label: 'Rota',
+                      label: 'Cântico',
                     ),
                   ],
                 ),
