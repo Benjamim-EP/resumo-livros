@@ -24,9 +24,9 @@ class Tabs extends StatelessWidget {
           onTap: () => onTabSelected('Salvos'),
         ),
         TabItem(
-          label: 'Cântico',
-          isSelected: selectedTab == 'Cântico',
-          onTap: () => onTabSelected('Cântico'),
+          label: 'Diário',
+          isSelected: selectedTab == 'Diário',
+          onTap: () => onTabSelected('Diário'),
         ),
       ],
     );

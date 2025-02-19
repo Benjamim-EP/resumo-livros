@@ -205,11 +205,9 @@ class _UserPageState extends State<UserPage> {
 
       default:
         return const UserDiaryPage();
-
-
     }
   }
-  
+
   Widget _buildBookCard(Map<String, dynamic> bookDetails) {
     final progress = (bookDetails['progress'] ?? 0).toDouble() / 100;
 
@@ -263,7 +261,6 @@ class _UserPageState extends State<UserPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                 
                   SizedBox(
                     width:
                         200, // Defina a largura desejada para a barra de progresso
@@ -297,8 +294,6 @@ class _UserPageState extends State<UserPage> {
         final userDetails = data['userDetails'] as Map<String, dynamic>;
         final livros = data['booksInProgress']?.toString() ?? '0';
         final topicos = userDetails['Tópicos']?.toString() ?? '0';
-        // print("debug");
-        // print(data);
         return Scaffold(
           backgroundColor: const Color(0xFF272828),
           body: Column(

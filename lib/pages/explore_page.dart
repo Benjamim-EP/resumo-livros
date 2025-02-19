@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/components/loadingbooks.dart';
 import 'package:resumo_dos_deuses_flutter/components/search_bar.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/explore_page/sermons_tab.dart';
+import 'package:resumo_dos_deuses_flutter/pages/explore_page/SermonsSection.dart';
 import 'package:resumo_dos_deuses_flutter/pages/hymns_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';

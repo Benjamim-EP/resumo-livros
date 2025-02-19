@@ -87,7 +87,7 @@ class UserState {
   final String? nome;
   final bool isLoggedIn;
   final List<String> tags;
-  final Map<String, dynamic>? userDetails;
+  final Map<String, dynamic>? userDetails; // informações gerais do usuário
   final Map<String, List<Map<String, String>>> userBooks;
   final Map<String, List<String>> topicSaves;
   final List<Map<String, dynamic>> booksInProgress;
