@@ -390,16 +390,51 @@ class _ExploreState extends State<Explore> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
+
+            // 🔹 Barra de pesquisa
             const SearchBar2(hintText: "Autor, Livro"),
-            const SizedBox(height: 40),
+
+            const SizedBox(height: 10),
+
+            // 🔹 Exibição dos Selos do Usuário
+            StoreConnector<AppState, int>(
+              converter: (store) =>
+                  store.state.userState.userDetails?['selos'] ?? 0,
+              builder: (context, selos) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.monetization_on,
+                          color: Colors.amber, size: 24), // Ícone de moeda
+                      const SizedBox(width: 6),
+                      Text(
+                        selos.toString(), // Número de selos
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // 🔹 Itens da aba de Exploração (Livros, Autores, Pregações)
             ExploreItens(
               itens: const ["Livros", "Autores", "Pregações"],
               buttonType: 2,
               onTabSelected: _onTabSelected,
               selectedTab: _selectedTab, // Aba atualmente ativa
             ),
+
             const SizedBox(height: 10),
-            // Torna somente o conteúdo da aba rolável
+
+            // 🔹 Torna somente o conteúdo da aba rolável
             Expanded(
               child: SingleChildScrollView(
                 child: _buildTabContent(),
