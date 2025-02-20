@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:resumo_dos_deuses_flutter/components/bottomNavigationBar/bottomNavigationBar.dart';
-import 'package:resumo_dos_deuses_flutter/consts.dart';
 import 'package:resumo_dos_deuses_flutter/design/theme.dart';
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
-import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
 import 'package:resumo_dos_deuses_flutter/services/auth_check.dart';
-import 'package:resumo_dos_deuses_flutter/services/stripe_service.dart';
 import './services/navigation_service.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import './app_initialization.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
