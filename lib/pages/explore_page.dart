@@ -3,6 +3,7 @@ import 'package:resumo_dos_deuses_flutter/components/loadingbooks.dart';
 import 'package:resumo_dos_deuses_flutter/components/search_bar.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/explore_page/SermonsSection.dart';
+import 'package:resumo_dos_deuses_flutter/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
@@ -184,6 +185,7 @@ class _ExploreState extends State<Explore> {
                       );
                     },
                   ),
+                  // Banner de assinatura (caso o usuário não seja premium)
                   StoreConnector<AppState, bool>(
                     converter: (store) {
                       final userDetails = store.state.userState.userDetails;
@@ -243,8 +245,14 @@ class _ExploreState extends State<Explore> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () async {
-                                    await StripeService.instance.makePayment();
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const SubscriptionSelectionPage(),
+                                      ),
+                                    );
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
