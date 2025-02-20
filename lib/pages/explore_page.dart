@@ -6,9 +6,11 @@ import 'package:resumo_dos_deuses_flutter/pages/explore_page/SermonsSection.dart
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:resumo_dos_deuses_flutter/services/stripe_service.dart';
 import '../components/explore_itens.dart';
 import '../components/authors_section.dart'; // Novo componente para autores
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Explore extends StatefulWidget {
   const Explore({super.key});
@@ -24,7 +26,6 @@ class _ExploreState extends State<Explore> {
   void _onTabSelected(String tab) {
     setState(() {
       _selectedTab = tab;
-      print("aba selecionada");
       print(_selectedTab);
       if (tab == "Autores") {
         final store = StoreProvider.of<AppState>(context, listen: false);
@@ -180,6 +181,88 @@ class _ExploreState extends State<Explore> {
                             ),
                           ),
                         ],
+                      );
+                    },
+                  ),
+                  StoreConnector<AppState, bool>(
+                    converter: (store) {
+                      final userDetails = store.state.userState.userDetails;
+
+                      if (userDetails == null)
+                        return false; // Se não há dados, assume que não é premium
+
+                      final premiumData =
+                          userDetails['isPremium'] as Map<String, dynamic>?;
+
+                      if (premiumData != null) {
+                        final expirationTimestamp = premiumData['expiration'];
+
+                        if (expirationTimestamp != null &&
+                            expirationTimestamp is Timestamp) {
+                          final expirationDate = expirationTimestamp.toDate();
+                          final now = DateTime.now();
+                          return now.isBefore(
+                              expirationDate); // Retorna true se ainda estiver premium
+                        }
+                      }
+
+                      return false; // Se não encontrar os dados corretos, assume que não é premium
+                    },
+                    builder: (context, isPremium) {
+                      if (isPremium) return const SizedBox.shrink();
+
+                      return Card(
+                        color: Colors.amber[800],
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "🔓 Acesse o Premium!",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                "Desbloqueie todo o conteúdo exclusivo e tenha uma experiência completa.",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    await StripeService.instance.makePayment();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.amber[800],
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                  ),
+                                  child: const Text(
+                                    "Assine Agora",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                   ),
