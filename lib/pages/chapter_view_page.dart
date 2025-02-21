@@ -3,6 +3,11 @@ import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/save_topic_
 import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/sidebar_indicator.dart';
 import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/similar_topic_view.dart';
 import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/topic_cards.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
+import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChapterViewPage extends StatefulWidget {
   final List<dynamic> chapters;
@@ -29,6 +34,7 @@ class _ChapterViewPageState extends State<ChapterViewPage> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    _markAsReading();
   }
 
   @override
@@ -99,5 +105,43 @@ class _ChapterViewPageState extends State<ChapterViewPage> {
       context: context,
       builder: (_) => SaveTopicDialog(topicId: topicId),
     );
+  }
+
+  Future<void> _markAsReading() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'reading_${widget.bookId}';
+
+    if (prefs.getBool(key) == true)
+      return; // 🔹 Evita acessar o Firestore se já está salvo
+
+    StoreProvider.of<AppState>(context)
+        .dispatch(MarkBookAsReadingAction(widget.bookId));
+    await prefs.setBool(key, true);
+
+    final userId = StoreProvider.of<AppState>(context).state.userState.userId;
+    if (userId == null) return;
+
+    final docRef = FirebaseFirestore.instance
+        .collection('week_recomendation')
+        .doc(widget.bookId);
+
+    try {
+      final docSnapshot = await docRef.get();
+      if (docSnapshot.exists) {
+        // 🔹 Atualiza lista e conta de usuários lendo
+        await docRef.update({
+          'lendo': FieldValue.arrayUnion([userId]),
+          'lendo_count': FieldValue.increment(1),
+        });
+      } else {
+        // 🔹 Cria o documento se não existir
+        await docRef.set({
+          'lendo': [userId],
+          'lendo_count': 1,
+        });
+      }
+    } catch (e) {
+      print("Erro ao atualizar Firestore: $e");
+    }
   }
 }

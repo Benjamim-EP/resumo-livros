@@ -5,7 +5,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes_widget.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
 
 class BiblePage extends StatefulWidget {

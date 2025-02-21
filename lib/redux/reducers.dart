@@ -8,25 +8,26 @@ class BooksState {
   final Map<String, dynamic> booksProgress; // Progresso dos livros
   final int nTopicos;
   final List<Map<String, dynamic>> weeklyRecommendations; // Indicação semanal ✅
+  final Set<String> booksReading;
 
-  BooksState({
-    this.booksByTag = const {},
-    this.isLoading = false,
-    this.bookDetails,
-    this.booksProgress = const {},
-    this.nTopicos = 1,
-    this.weeklyRecommendations = const [], // ✅ Inicializa corretamente
-  });
+  BooksState(
+      {this.booksByTag = const {},
+      this.isLoading = false,
+      this.bookDetails,
+      this.booksProgress = const {},
+      this.nTopicos = 1,
+      this.weeklyRecommendations = const [], // ✅ Inicializa corretamente
+      this.booksReading = const {}});
 
-  BooksState copyWith({
-    Map<String, List<Map<String, String>>>? booksByTag,
-    bool? isLoading,
-    Map<String, dynamic>? bookDetails,
-    Map<String, dynamic>? booksProgress,
-    int? nTopicos,
-    List<Map<String, dynamic>>?
-        weeklyRecommendations, // ✅ Adicionado no copyWith
-  }) {
+  BooksState copyWith(
+      {Map<String, List<Map<String, String>>>? booksByTag,
+      bool? isLoading,
+      Map<String, dynamic>? bookDetails,
+      Map<String, dynamic>? booksProgress,
+      int? nTopicos,
+      List<Map<String, dynamic>>?
+          weeklyRecommendations, // ✅ Adicionado no copyWith
+      Set<String>? booksReading}) {
     return BooksState(
       booksByTag: booksByTag ?? this.booksByTag,
       isLoading: isLoading ?? this.isLoading,
@@ -35,12 +36,17 @@ class BooksState {
       nTopicos: nTopicos ?? this.nTopicos,
       weeklyRecommendations: weeklyRecommendations ??
           this.weeklyRecommendations, // ✅ Agora atualizado corretamente
+      booksReading: booksReading ?? this.booksReading,
     );
   }
 }
 
 BooksState booksReducer(BooksState state, dynamic action) {
-  if (action is WeeklyRecommendationsLoadedAction) {
+  if (action is MarkBookAsReadingAction) {
+    final updatedBooksReading = Set<String>.from(state.booksReading)
+      ..add(action.bookId);
+    return state.copyWith(booksReading: updatedBooksReading);
+  } else if (action is WeeklyRecommendationsLoadedAction) {
     return state.copyWith(weeklyRecommendations: action.books);
   } else if (action is BooksLoadedByTagAction) {
     return state.copyWith(

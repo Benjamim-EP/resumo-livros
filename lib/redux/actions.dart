@@ -457,3 +457,8 @@ class AddDiaryEntryAction {
 
   AddDiaryEntryAction(this.title, this.content);
 }
+
+class MarkBookAsReadingAction {
+  final String bookId;
+  MarkBookAsReadingAction(this.bookId);
+}
