@@ -543,21 +543,34 @@ void userMiddleware(
           final booksProgress =
               snapshot.data()?['booksProgress'] as Map<String, dynamic>? ?? {};
           final books = <Map<String, dynamic>>[];
+
+          print("📚 Dados brutos do Firestore: $booksProgress");
+
           for (final bookId in booksProgress.keys) {
             final bookProgress = booksProgress[bookId];
+
+            final chaptersIniciados =
+                bookProgress['chaptersIniciados'] as List<dynamic>? ?? [];
+
+            print("📖 Livro: $bookId, Capítulos Iniciados: $chaptersIniciados");
+
             books.add({
               'id': bookId,
-              'progress': bookProgress['progress'],
-              'chaptersIniciados': bookProgress['chaptersIniciados'] ?? [],
+              'progress':
+                  bookProgress['progress'] ?? 0, // Garante um valor padrão
+              'chaptersIniciados': chaptersIniciados,
             });
           }
-          //print(books);
 
           store.dispatch(BooksInProgressLoadedAction(books));
+        } else {
+          print("⚠ Documento do usuário não encontrado no Firestore.");
         }
+      } else {
+        print("⚠ Usuário não autenticado.");
       }
     } catch (e) {
-      print('Erro ao carregar progresso dos livros: $e');
+      print('❌ Erro ao carregar progresso dos livros: $e');
     }
   } else if (action is UpdateUserFieldAction) {
     final userId = store.state.userState.userId;

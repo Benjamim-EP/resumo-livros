@@ -28,8 +28,9 @@ class BookDetailsPage extends StatelessWidget {
       body: StoreConnector<AppState, Map<String, dynamic>>(
         onInit: (store) {
           store.dispatch(LoadBookDetailsAction(bookId));
-          store.dispatch(
-              LoadBooksInProgressAction()); // Carrega progresso dos livros
+          if (store.state.userState.booksInProgressDetails.isEmpty) {
+            store.dispatch(LoadBooksInProgressAction());
+          }
         },
         converter: (store) => {
           'bookDetails': store.state.booksState.bookDetails,
@@ -39,6 +40,15 @@ class BookDetailsPage extends StatelessWidget {
           final bookDetails = data['bookDetails'] as Map<String, dynamic>?;
           final booksProgress =
               data['booksProgress'] as List<Map<String, dynamic>>?;
+          Map<String, dynamic> bookProgress = {};
+          try {
+            bookProgress = booksProgress!.firstWhere(
+              (progress) => progress['id'].toString() == bookId,
+              orElse: () => {},
+            );
+          } catch (e) {
+            print("⚠ Erro ao carregar progresso do livro: $e");
+          }
 
           if (bookDetails == null ||
               !bookDetails.containsKey(bookId) ||
@@ -53,14 +63,11 @@ class BookDetailsPage extends StatelessWidget {
 
           final book = bookDetails[bookId]!;
           final chapters = book['chapters'] as List<dynamic>? ?? [];
-          final bookProgress = booksProgress?.firstWhere(
-            (progress) => progress['id'] == bookId,
-            orElse: () => <String, dynamic>{}, // Retorno padrão como mapa vazio
-          );
 
           final chaptersIniciados =
               (bookProgress?['chaptersIniciados'] as List<dynamic>?) ?? [];
-
+          print(
+              "📖 Capitulos iniciados carregados: $chaptersIniciados"); // Debug
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -148,15 +155,20 @@ class BookDetailsPage extends StatelessWidget {
                 const SizedBox(height: 16),
                 // Lista de Capítulos
                 ListView.builder(
+                  key: ValueKey(chapters.length), // Evita reconstrução completa
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: chapters.length,
                   itemBuilder: (context, index) {
                     final chapter = chapters[index];
-                    final chapterId = chapter['chapterId'];
-                    final isChapterRead = chaptersIniciados.contains(chapterId);
+                    final chapterId = chapter['capituloId'];
+                    print("chapterId:$chapterId");
+                    final isChapterRead =
+                        chaptersIniciados.contains(chapterId.toString());
 
                     return ListTile(
+                      key: ValueKey(
+                          chapterId), // Evita recriação desnecessária do widget
                       contentPadding: const EdgeInsets.symmetric(vertical: 4.0),
                       leading: Text(
                         (index + 1).toString().padLeft(2, '0'),
@@ -168,17 +180,15 @@ class BookDetailsPage extends StatelessWidget {
                       ),
                       title: Text(
                         chapter['titulo'] ?? 'Capítulo desconhecido',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.white),
                       ),
-                      trailing: SvgPicture.asset(
+                      trailing: Icon(
                         isChapterRead
-                            ? 'assets/icons/bookopen.svg'
-                            : 'assets/icons/bookclosed.svg',
-                        height: 24,
-                        width: 24,
+                            ? Icons.menu_book
+                            : Icons.book, // Ícone de livro aberto ou fechado
+                        color: Colors.white,
+                        size: 24,
                       ),
                       onTap: () {
                         final store =
@@ -198,7 +208,7 @@ class BookDetailsPage extends StatelessWidget {
                       },
                     );
                   },
-                ),
+                )
               ],
             ),
           );
