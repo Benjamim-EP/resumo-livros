@@ -1262,7 +1262,7 @@ Future<List<Map<String, dynamic>>> _pineconeQuery(
   for (var entry in embeddings.entries) {
     final body = jsonEncode({
       "vector": entry.value,
-      "topK": 5,
+      "topK": 100,
       "includeValues": false,
       "includeMetadata": true,
     });

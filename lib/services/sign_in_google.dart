@@ -10,7 +10,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp();
   }
-  
+
   try {
     final googleUser = await GoogleSignIn().signIn();
 
@@ -54,7 +54,9 @@ Future<User?> signInWithGoogle(BuildContext context) async {
           'Dias': 0,
           'Livros': 0,
           'Tópicos': 0,
-          'firstLogin': true
+          'firstLogin': true,
+          'selos': 10,
+          'descrição': "",
         });
         print('Novo usuário cadastrado: ${user.email}');
         // Redireciona para a tela de primeiro login

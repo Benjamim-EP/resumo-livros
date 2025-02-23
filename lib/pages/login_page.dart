@@ -4,11 +4,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/pages/explore_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/splashViews/finalform_view.dart';
-import 'package:resumo_dos_deuses_flutter/components/bottomNavigationBar/bottomNavigationBar.dart';
 import 'package:resumo_dos_deuses_flutter/services/auth_check.dart';
-import '../services/sign_anonymously.dart';
 import '../services/sign_in_google.dart';
 import '../services/sign_email.dart';
 
