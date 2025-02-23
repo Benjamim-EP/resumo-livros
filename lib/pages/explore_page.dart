@@ -7,7 +7,6 @@ import 'package:resumo_dos_deuses_flutter/pages/purschase_pages/subscription_sel
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/services/stripe_service.dart';
 import '../components/explore_itens.dart';
 import '../components/authors_section.dart'; // Novo componente para autores
 import 'package:flutter_redux/flutter_redux.dart';
@@ -275,7 +274,7 @@ class _ExploreState extends State<Explore> {
                     },
                   ),
 
-// 🔹 Seção de Livros por Categoria
+                  // 🔹 Seção de Livros por Categoria
                   ...topicsByFeature.entries.map((entry) {
                     final feature = entry.key;
 

@@ -37,18 +37,21 @@ class _TopicCardState extends State<TopicCard> {
       converter: (store) => {
         'content': store.state.topicState.topicsContent[widget.topicId],
         'titulo': store.state.topicState.topicsTitles[widget.topicId],
-        'bookProgress': store.state.booksState.booksProgress[widget.bookId] ?? [],
+        'bookProgress':
+            store.state.booksState.booksProgress[widget.bookId] ?? [],
       },
       builder: (context, topicData) {
         final content = topicData['content'];
         final title = topicData['titulo'] ?? 'Sem Título';
-        final bookProgress = topicData['bookProgress'] as Map<String, dynamic>? ?? {};
-        final readTopics = (bookProgress['readTopics'] as List<dynamic>?)?.cast<String>() ?? [];
+        final bookProgress =
+            topicData['bookProgress'] as Map<String, dynamic>? ?? {};
+        final readTopics = List<String>.from(bookProgress['readTopics'] ?? []);
 
         if (content == null) {
           return const Center(child: CircularProgressIndicator());
         }
-
+        print("debug topicId");
+        print(widget.topicId);
         final isRead = readTopics.contains(widget.topicId);
 
         return Card(
@@ -98,7 +101,8 @@ class _TopicCardState extends State<TopicCard> {
                           child: const Text(
                             'Similares',
                             style: TextStyle(
-                              color: Color.fromARGB(255, 129, 194, 91), // Verde da aplicação
+                              color: Color.fromARGB(
+                                  255, 129, 194, 91), // Verde da aplicação
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -139,9 +143,6 @@ class _TopicCardState extends State<TopicCard> {
       MarkTopicAsReadAction(widget.bookId, widget.topicId, widget.chapterId),
     );
 
-    setState(() {
-      widget.readTopics.add(widget.topicId);
-    });
+    setState(() {}); // Apenas força a reconstrução do widget
   }
 }
-

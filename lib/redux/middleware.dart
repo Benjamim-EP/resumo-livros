@@ -129,8 +129,11 @@ void bookMiddleware(
       final booksProgress =
           userDoc.data()?['booksProgress'] as Map<String, dynamic>? ?? {};
 
-      final readTopics = List<String>.from(booksProgress[action.bookId] ?? []);
-
+      final bookProgress =
+          booksProgress[action.bookId] as Map<String, dynamic>? ?? {};
+      final readTopics = List<String>.from(bookProgress['readTopics'] ?? []);
+      print("Debug topicos lidos");
+      print(readTopics);
       store.dispatch(LoadBookProgressSuccessAction(action.bookId, readTopics));
     } catch (e) {
       print("Erro ao carregar progresso de leitura: $e");
@@ -801,7 +804,7 @@ void userMiddleware(
         return;
       }
 
-// 🔹 1. Primeiro tenta carregar do cache local antes de processar
+      // 🔹 1. Primeiro tenta carregar do cache local antes de processar
       final cachedTopics_ = await _loadTopicsLocally(userId);
       if (cachedTopics_ != null && cachedTopics_.isNotEmpty) {
         print("Carregando tópicos do cache local...");

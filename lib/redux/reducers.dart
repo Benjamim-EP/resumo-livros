@@ -66,8 +66,8 @@ BooksState booksReducer(BooksState state, dynamic action) {
     return state.copyWith(booksProgress: updatedBooksProgress);
   } else if (action is MarkTopicAsReadAction) {
     final updatedBooksProgress = Map<String, dynamic>.from(state.booksProgress);
-    final bookProgress =
-        updatedBooksProgress[action.bookId] ?? {'readTopics': <String>[]};
+    final bookProgress = Map<String, dynamic>.from(
+        updatedBooksProgress[action.bookId] ?? {'readTopics': <String>[]});
 
     final readTopics = List<String>.from(bookProgress['readTopics'] ?? []);
     if (!readTopics.contains(action.topicId)) {
@@ -75,13 +75,26 @@ BooksState booksReducer(BooksState state, dynamic action) {
       bookProgress['readTopics'] = readTopics;
 
       // Atualiza progresso baseado no número de capítulos lidos
-      bookProgress['progress'] = ((readTopics.length /
-                  (state.bookDetails?[action.bookId]?['chapters']?.length ??
-                      1)) *
-              100)
-          .toInt();
+      final totalChapters =
+          (state.bookDetails?[action.bookId]?['chapters']?.length ?? 1);
+      bookProgress['progress'] =
+          ((readTopics.length / totalChapters) * 100).toInt();
+
       updatedBooksProgress[action.bookId] = bookProgress;
     }
+
+    return state.copyWith(booksProgress: updatedBooksProgress);
+  } else if (action is LoadBookProgressSuccessAction) {
+    final updatedBooksProgress = Map<String, dynamic>.from(state.booksProgress);
+
+    updatedBooksProgress[action.bookId] = {
+      ...(updatedBooksProgress[action.bookId] as Map?)?.map(
+            (key, value) => MapEntry(key.toString(), value),
+          ) ??
+          {},
+      'readTopics': List<String>.from(action.readTopics ?? []),
+    };
+
     return state.copyWith(booksProgress: updatedBooksProgress);
   }
   return state;
