@@ -75,99 +75,137 @@ class _SermonsSectionState extends State<SermonsSection> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      child: Column(
-        children: [
-          Expanded(
-            child: _sermons.isEmpty && _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scrollController,
-                    itemCount: _sermons.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _sermons.length) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final sermon = _sermons[index];
-                      final String title =
-                          sermon["titulo"] ?? "Título desconhecido";
-                      final String fonte =
-                          sermon["fonte"] ?? "Fonte desconhecida";
-                      final String videoUrl = sermon["url"] ?? "";
-                      final String thumbnailUrl = _getThumbnailUrl(videoUrl);
+  @override
+Widget build(BuildContext context) {
+  return SizedBox(
+    height: MediaQuery.of(context).size.height,
+    child: Column(
+      children: [
+        // 🔹 Barra de Pesquisa (fixa no topo)
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: "Pesquisar sermões...",
+              hintStyle: const TextStyle(color: Colors.white70),
+              prefixIcon: const Icon(Icons.search, color: Colors.white70),
+              filled: true,
+              fillColor: const Color(0xFF272828),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
 
-                      return GestureDetector(
-                        onTap: () => _openSermon(title, videoUrl),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: const Color(0xFF272828),
-                            image: DecorationImage(
-                              image: NetworkImage(thumbnailUrl),
-                              fit: BoxFit.cover,
-                              alignment: Alignment.centerRight,
-                              opacity: 0.4, // 🔹 Reduz opacidade da thumbnail
+        // 🔹 Botões de seleção do orador (fixos no topo)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSpeakerButton("Joyce Meyer"),
+              _buildSpeakerButton("Billy Graham"),
+              _buildSpeakerButton("CCB"),
+              _buildSpeakerButton("Todos"),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16), // Espaçamento entre filtros e lista
+
+        // 🔹 Lista rolável com sermões
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (!_isLoading &&
+                  scrollInfo.metrics.pixels ==
+                      scrollInfo.metrics.maxScrollExtent) {
+                _fetchSermons();
+              }
+              return false;
+            },
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: _sermons.length + (_hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _sermons.length) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final sermon = _sermons[index];
+                final String title = sermon["titulo"] ?? "Título desconhecido";
+                final String fonte = sermon["fonte"] ?? "Fonte desconhecida";
+                final String videoUrl = sermon["url"] ?? "";
+                final String thumbnailUrl = _getThumbnailUrl(videoUrl);
+
+                return GestureDetector(
+                  onTap: () => _openSermon(title, videoUrl),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFF272828),
+                      image: DecorationImage(
+                        image: NetworkImage(thumbnailUrl),
+                        fit: BoxFit.cover,
+                        alignment: Alignment.centerRight,
+                        opacity: 0.4, // 🔹 Reduz opacidade da thumbnail
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        // 🔹 Degradê para melhorar contraste
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Colors.black.withOpacity(0.7),
+                                  Colors.transparent,
+                                ],
+                              ),
                             ),
                           ),
-                          child: Stack(
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
                             children: [
-                              // 🔹 Degradê para melhorar contraste
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.centerLeft,
-                                      end: Alignment.centerRight,
-                                      colors: [
-                                        Colors.black.withOpacity(0.7),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
+                              // 🔹 Ícone de play
+                              const Icon(Icons.play_circle_fill,
+                                  color: Colors.white, size: 40),
+                              const SizedBox(width: 12),
+                              // 🔹 Título e fonte
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // 🔹 Ícone de play
-                                    const Icon(Icons.play_circle_fill,
-                                        color: Colors.white, size: 40),
-                                    const SizedBox(width: 12),
-                                    // 🔹 Título e fonte
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            title,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            fonte,
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 14,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
                                       ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      fonte,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -175,12 +213,35 @@ class _SermonsSectionState extends State<SermonsSection> {
                             ],
                           ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
+                );
+              },
+            ),
           ),
-        ],
+        ),
+      ],
+    ),
+  );
+}
+Widget _buildSpeakerButton(String speakerName) {
+    return ElevatedButton(
+      onPressed: () {
+        // Lógica de filtro será implementada depois
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF272828),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Text(
+        speakerName,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
       ),
     );
   }
+
 }
