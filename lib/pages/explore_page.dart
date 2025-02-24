@@ -273,7 +273,19 @@ class _ExploreState extends State<Explore> {
                       );
                     },
                   ),
-
+                  // 🔹 Seção de Introdução "SOBRE VOCÊ"
+                  const Padding(
+                    padding: EdgeInsets.only(top: 24, bottom: 16),
+                    child: Text(
+                      "SOBRE VOCÊ",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                   // 🔹 Seção de Livros por Categoria
                   ...topicsByFeature.entries.map((entry) {
                     final feature = entry.key;
