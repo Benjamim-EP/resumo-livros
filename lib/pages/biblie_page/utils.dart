@@ -305,8 +305,6 @@ static void showGeneralComments({
         final comment = entry.value;
         final topic = comment['topico'] ?? 'Sem título'; // Se não houver "topic", usa um padrão.
         final content = comment['content'] ?? '';
-        print("debug topic");
-        print(comment);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

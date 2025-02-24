@@ -6,6 +6,7 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.da
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BiblePage extends StatefulWidget {
   const BiblePage({super.key});
@@ -253,7 +254,6 @@ class _BiblePageState extends State<BiblePage> {
                                   ),
                                   const SizedBox(height: 16),
                                   Expanded(
-                                    // 🔹 Para evitar erro de tamanho na tela
                                     child: ListView.builder(
                                       itemCount: chapterContent.length,
                                       itemBuilder: (context, index) {
@@ -266,14 +266,16 @@ class _BiblePageState extends State<BiblePage> {
                                           verseComments: verseComments,
                                           selectedBook: selectedBook,
                                           selectedChapter: selectedChapter,
-                                          selectedTranslation:
-                                              selectedTranslation,
+                                          selectedTranslation: selectedTranslation,
                                           context: context,
                                           booksMap: booksMap,
+                                          onAddUserComment: _showUserCommentDialog,  // 🔹 Chamando função ao clicar no botão de comentário
+                                          onViewUserComments: _showUserComments, // 🔹 Chamando função para visualizar comentários
                                         );
                                       },
                                     ),
                                   ),
+
                                 ],
                               );
                             },
@@ -284,4 +286,114 @@ class _BiblePageState extends State<BiblePage> {
                 ),
     );
   }
+
+  /// Armazena comentários do usuário localmente
+  Future<void> _saveUserComment(int verseNumber, String comment) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${selectedBook}_${selectedChapter}_$verseNumber';
+    
+    List<String> comments = prefs.getStringList(key) ?? [];
+    comments.add(comment); // Adiciona novo comentário à lista
+
+    await prefs.setStringList(key, comments);
+  }
+
+  /// Carrega os comentários salvos localmente para um versículo específico
+  Future<List<String>> _loadUserComments(int verseNumber) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${selectedBook}_${selectedChapter}_$verseNumber';
+    return prefs.getStringList(key) ?? [];
+  }
+
+  /// Exibe um diálogo para adicionar comentário do usuário
+  void _showUserCommentDialog(int verseNumber) {
+    TextEditingController commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF272828),
+          title: const Text(
+            "Adicionar Comentário",
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            controller: commentController,
+            maxLines: 3,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: "Digite seu comentário...",
+              hintStyle: const TextStyle(color: Colors.white70),
+              filled: true,
+              fillColor: const Color(0xFF3A3A3A),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar", style: TextStyle(color: Colors.redAccent)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final comment = commentController.text.trim();
+                if (comment.isNotEmpty) {
+                  await _saveUserComment(verseNumber, comment);
+                  Navigator.pop(context);
+                  setState(() {}); // Atualiza a UI para refletir o novo comentário
+                }
+              },
+              child: const Text("Salvar", style: TextStyle(color: Colors.greenAccent)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Exibe os comentários salvos para um versículo
+  void _showUserComments(int verseNumber) async {
+    List<String> comments = await _loadUserComments(verseNumber);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF272828),
+          title: const Text(
+            "Seus Comentários",
+            style: TextStyle(color: Colors.white),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: comments.isEmpty
+                ? const Text("Nenhum comentário ainda.", style: TextStyle(color: Colors.white70))
+                : ListView(
+                    shrinkWrap: true,
+                    children: comments
+                        .map((comment) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Text(
+                                "- $comment",
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Fechar", style: TextStyle(color: Colors.greenAccent)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }

@@ -10,6 +10,7 @@ class BiblePageWidgets {
     required String translationLabel,
     required String selectedTranslation,
     required VoidCallback onPressed,
+    
   }) {
     final isSelected = selectedTranslation == translationKey;
     return ElevatedButton(
@@ -90,81 +91,109 @@ class BiblePageWidgets {
 
   /// Widget que exibe um versículo com comentários e opções
   static Widget buildVerseItem({
-    required int verseNumber,
-    required String verseText,
-    required Map<int, List<Map<String, dynamic>>> verseComments,
-    required String? selectedBook,
-    required int? selectedChapter,
-    required String selectedTranslation,
-    required BuildContext context,
-    required Map<String, dynamic>? booksMap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$verseNumber ',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white70,
-              fontWeight: FontWeight.bold,
-            ),
+  required int verseNumber,
+  required String verseText,
+  required Map<int, List<Map<String, dynamic>>> verseComments,
+  required String? selectedBook,
+  required int? selectedChapter,
+  required String selectedTranslation,
+  required BuildContext context,
+  required Map<String, dynamic>? booksMap,
+  required Function(int) onAddUserComment, // 🔹 Adicionar este parâmetro
+  required Function(int) onViewUserComments, // 🔹 Adicionar este parâmetro
+}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4.0),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$verseNumber ',
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.white70,
+            fontWeight: FontWeight.bold,
           ),
-          Expanded(
-            child: Text(
-              verseText,
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
-            ),
+        ),
+        Expanded(
+          child: Text(
+            verseText,
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
-          if (verseComments.containsKey(verseNumber))
-            IconButton(
-              icon: const Icon(
-                Icons.notes_rounded,
-                color: Color(0xFFCDE7BE),
-                size: 18,
-              ),
-              onPressed: () {
-                UtilsBiblePage.showVerseComments(
-                  context: context,
-                  verseComments: verseComments,
-                  booksMap: booksMap,
-                  selectedBook: selectedBook,
-                  selectedChapter: selectedChapter,
-                  verseNumber: verseNumber,
-                  loadChapterContent: (book, chapter) =>
-                      BiblePageHelper.loadChapterContent(
-                          book, chapter, selectedTranslation),
-                  truncateString: (text, maxLength) => text.length > maxLength
-                      ? '${text.substring(0, maxLength)}...'
-                      : text,
-                );
-              },
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
+        ),
+        if (verseComments.containsKey(verseNumber))
           IconButton(
             icon: const Icon(
-              Icons.bookmark_border,
-              color: Colors.white70,
+              Icons.notes_rounded,
+              color: Color(0xFFCDE7BE),
               size: 18,
             ),
             onPressed: () {
-              showDialog(
+              UtilsBiblePage.showVerseComments(
                 context: context,
-                builder: (context) => SaveVerseDialog(
-                  bookAbbrev: selectedBook!,
-                  chapter: selectedChapter!,
-                  verseNumber: verseNumber,
-                ),
+                verseComments: verseComments,
+                booksMap: booksMap,
+                selectedBook: selectedBook,
+                selectedChapter: selectedChapter,
+                verseNumber: verseNumber,
+                loadChapterContent: (book, chapter) =>
+                    BiblePageHelper.loadChapterContent(
+                        book, chapter, selectedTranslation),
+                truncateString: (text, maxLength) => text.length > maxLength
+                    ? '${text.substring(0, maxLength)}...'
+                    : text,
               );
             },
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-        ],
-      ),
-    );
-  }
+        IconButton(
+          icon: const Icon(
+            Icons.bookmark_border,
+            color: Colors.white70,
+            size: 18,
+          ),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => SaveVerseDialog(
+                bookAbbrev: selectedBook!,
+                chapter: selectedChapter!,
+                verseNumber: verseNumber,
+              ),
+            );
+          },
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        // 🔹 Botão para adicionar comentário do usuário
+        IconButton(
+          icon: const Icon(
+            Icons.comment,
+            color: Colors.white70,
+            size: 18,
+          ),
+          onPressed: () {
+            onAddUserComment(verseNumber);
+          },
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        // 🔹 Botão para visualizar comentários do usuário
+        IconButton(
+          icon: const Icon(
+            Icons.visibility,
+            color: Colors.white70,
+            size: 18,
+          ),
+          onPressed: () {
+            onViewUserComments(verseNumber);
+          },
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    ),
+  );
+}
 }
