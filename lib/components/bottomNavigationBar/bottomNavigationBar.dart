@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/chat_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/explore_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page.dart';
@@ -32,6 +33,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _rotaNavigatorKey =
       GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _chatNavigatorKey = GlobalKey<NavigatorState>();
+
 
   late final List<Widget> _pages;
 
@@ -49,6 +52,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       _buildTabNavigator(_exploreNavigatorKey, const Explore()),
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
       _buildTabNavigator(_rotaNavigatorKey, HymnsPage()),
+      _buildTabNavigator(_chatNavigatorKey, const ChatPage()), // 🔹 Adicionado Chat
     ];
   }
 
@@ -159,6 +163,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return _bibleNavigatorKey;
       case 3:
         return _rotaNavigatorKey;
+      case 4:
+        return _chatNavigatorKey; // 🔹 Novo item para o Chat
       default:
         return _exploreNavigatorKey;
     }
@@ -233,6 +239,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     BottomNavigationBarItem(
                       icon: Icon(Icons.rocket),
                       label: 'Cântico',
+                    ),
+                    BottomNavigationBarItem( // 🔹 Novo item do Chat
+                      icon: Icon(Icons.chat),
+                      label: 'Chat',
                     ),
                   ],
                 ),
