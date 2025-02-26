@@ -449,3 +449,24 @@ TopicState topicReducer(TopicState state, dynamic action) {
   }
   return state;
 }
+
+class ChatState {
+  final String? latestResponse;
+
+  ChatState({this.latestResponse});
+
+  ChatState copyWith({String? latestResponse}) {
+    return ChatState(
+      latestResponse: latestResponse ?? this.latestResponse,
+    );
+  }
+}
+
+ChatState chatReducer(ChatState state, dynamic action) {
+  if (action is SendMessageSuccessAction) {
+    return state.copyWith(latestResponse: action.botResponse);
+  } else if (action is SendMessageFailureAction) {
+    return state.copyWith(latestResponse: "Erro: ${action.error}");
+  }
+  return state;
+}

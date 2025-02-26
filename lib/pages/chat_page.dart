@@ -4,6 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:resumo_dos_deuses_flutter/pages/chat_page/message_model.dart';
 import 'package:resumo_dos_deuses_flutter/pages/chat_page/openai_chat_service.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
+import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
 
@@ -17,45 +21,15 @@ class _ChatPageState extends State<ChatPage> {
   final CollectionReference _chatCollection =
       FirebaseFirestore.instance.collection("chats");
 
-  void _sendMessage() async {
-  final user = _auth.currentUser;
-  if (user == null || _messageController.text.trim().isEmpty) return;
+  void _sendMessage() {
+    if (_messageController.text.trim().isEmpty) return;
+    
+    String userMessage = _messageController.text.trim();
+    _messageController.clear();
 
-  String messageText = _messageController.text.trim();
-  _messageController.clear();
-
-  // 🔹 Criar um ID único para a conversa do usuário
-  String chatId = user.uid;
-
-  // 🔹 Referência para a coleção de mensagens do usuário no Firestore
-  DocumentReference userChatRef =
-      _chatCollection.doc(chatId).collection("messages").doc();
-
-  // 🔹 Salva a mensagem do usuário no Firestore
-  await userChatRef.set({
-    "senderId": user.uid,
-    "senderName": user.displayName ?? "Usuário",
-    "text": messageText,
-    "timestamp": Timestamp.now(),
-    "isUser": true,
-  });
-
-  // 🔹 Obtém a resposta da OpenAI
-  String botResponse = await OpenAIService.sendMessageToGPT(messageText);
-
-  // 🔹 Salva a resposta do bot no Firestore
-  await _chatCollection
-      .doc(chatId)
-      .collection("messages")
-      .add({
-        "senderId": "AI",
-        "senderName": "Assistente",
-        "text": botResponse,
-        "timestamp": Timestamp.now(),
-        "isUser": false,
-      });
-}
-
+    // 🔹 Dispara a action do Redux para processar a mensagem
+    StoreProvider.of<AppState>(context).dispatch(SendMessageAction(userMessage));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,37 +41,69 @@ class _ChatPageState extends State<ChatPage> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _chatCollection
-                  .doc(_auth.currentUser?.uid) // 🔹 Obtém apenas as mensagens do usuário atual
-                  .collection("messages")
-                  .orderBy("timestamp", descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                List<ChatMessage> messages = snapshot.data!.docs
-                    .map((doc) => ChatMessage.fromFirestore(doc))
-                    .toList();
-
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    return _buildMessageItem(messages[index]);
+            child: Column(
+              children: [
+                // 🔹 Exibe a resposta da OpenAI do Redux antes das mensagens salvas
+                StoreConnector<AppState, String?>(
+                  converter: (store) => store.state.chatState.latestResponse, // 🔹 Agora funciona
+                  builder: (context, botResponse) {
+                    if (botResponse == null) return const SizedBox.shrink();
+                    
+                    return _buildMessageItem(ChatMessage(
+                      id: "bot-${DateTime.now().millisecondsSinceEpoch}", // 🔹 Gera um ID único
+                      senderId: "AI",
+                      senderName: "Assistente",
+                      text: botResponse,
+                      timestamp: Timestamp.now(),
+                      isUser: false,
+                    ));
                   },
-                );
-              },
-            ),
+                ),
 
+                // 🔹 Lista de mensagens do Firestore
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _chatCollection
+                        .doc(_auth.currentUser?.uid)
+                        .collection("messages")
+                        .orderBy("timestamp", descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      List<ChatMessage> messages = snapshot.data!.docs
+                          .map((doc) => ChatMessage.fromFirestore(doc))
+                          .toList();
+
+                      return ListView.builder(
+                        reverse: true,
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final message = messages[index];
+                          return _buildMessageItem(ChatMessage(
+                            id: message.id, // 🔹 Agora passamos um ID válido
+                            senderId: message.senderId,
+                            senderName: message.senderName,
+                            text: message.text,
+                            timestamp: message.timestamp,
+                            isUser: message.isUser,
+                          ));
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
           _buildMessageInput(),
         ],
       ),
     );
   }
+
 
   Widget _buildMessageItem(ChatMessage message) {
     bool isUser = message.isUser;

@@ -1,6 +1,7 @@
 // redux/middleware.dart
 import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/components/bookFrame/book_details.dart';
+import 'package:resumo_dos_deuses_flutter/pages/chat_page/openai_chat_service.dart';
 import 'package:resumo_dos_deuses_flutter/services/author_service.dart';
 import 'actions.dart';
 import 'store.dart';
@@ -1229,6 +1230,39 @@ void embeddingMiddleware(
       store.dispatch(SearchSuccessAction(topics));
     } catch (e) {
       store.dispatch(SearchFailureAction('Erro durante a busca: $e'));
+    }
+  } else if (action is SendMessageAction) {
+    try {
+      final userMessage = action.userMessage;
+
+      // 🔹 Gera o embedding para a consulta do usuário
+      final embedding = await _generateEmbedding(userMessage, openAIKey);
+
+      // 🔹 Faz a busca no Pinecone usando o embedding
+      final results = await _pineconeQuery({
+        'query': embedding,
+      }, pineconeUrl, pineconeKey);
+
+      // 🔹 Extrai os "content" dos metadados do Pinecone para dar contexto ao OpenAI
+      List<String> knowledgeBase = results
+          .expand((result) => (result['matches'] as List)
+              .map((match) => match['metadata']['content'].toString()))
+          .toList();
+
+      // 🔹 Monta a mensagem do sistema com o contexto extraído
+      String systemMessage =
+          "Você é um assistente útil. Responda com base nesses conhecimentos:\n\n${knowledgeBase.join("\n\n")}";
+
+      // 🔹 Obtém a resposta do OpenAI
+      String botResponse = await OpenAIService.sendMessageToGPT(
+        userMessage: userMessage,
+        systemContext: systemMessage,
+      );
+
+      // 🔹 Salva no Redux a resposta bem-sucedida
+      store.dispatch(SendMessageSuccessAction(botResponse));
+    } catch (e) {
+      store.dispatch(SendMessageFailureAction('Erro ao processar mensagem: $e'));
     }
   }
 }

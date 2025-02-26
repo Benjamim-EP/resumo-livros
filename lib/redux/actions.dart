@@ -462,3 +462,19 @@ class MarkBookAsReadingAction {
   final String bookId;
   MarkBookAsReadingAction(this.bookId);
 }
+
+// chat actions
+class SendMessageAction {
+  final String userMessage;
+  SendMessageAction(this.userMessage);
+}
+
+class SendMessageSuccessAction {
+  final String botResponse;
+  SendMessageSuccessAction(this.botResponse);
+}
+
+class SendMessageFailureAction {
+  final String error;
+  SendMessageFailureAction(this.error);
+}
