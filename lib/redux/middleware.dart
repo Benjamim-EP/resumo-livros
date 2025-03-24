@@ -1,4 +1,5 @@
 // redux/middleware.dart
+import 'package:flutter/services.dart';
 import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/components/bookFrame/book_details.dart';
 import 'package:resumo_dos_deuses_flutter/pages/chat_page/openai_chat_service.dart';
@@ -12,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void weeklyRecommendationsMiddleware(
     Store<AppState> store, dynamic action, NextDispatcher next) async {
@@ -663,6 +665,7 @@ void userMiddleware(
           {'query': embedding},
           pineconeUrl,
           pineconeKey,
+          100
         );
         //print("Resultados do Pinecone para $key: $results");
 
@@ -827,6 +830,7 @@ void userMiddleware(
           {'query': embedding},
           pineconeUrl,
           pineconeKey,
+          100
         );
 
         // 🔹 Extrai os IDs dos tópicos correspondentes
@@ -1175,7 +1179,7 @@ void embeddingMiddleware(
 
       // Requisição ao Pinecone para cada embedding
       final searchResults =
-          await _pineconeQuery(embeddings, pineconeUrl, pineconeKey);
+          await _pineconeQuery(embeddings, pineconeUrl, pineconeKey,100);
 
       store.dispatch(EmbedAndSearchSuccessAction(searchResults));
     } catch (e) {
@@ -1190,7 +1194,7 @@ void embeddingMiddleware(
       // Chama _pineconeQuery com apenas um namespace para busca simples
       final results = await _pineconeQuery({
         'query': embedding,
-      }, pineconeUrl, pineconeKey);
+      }, pineconeUrl, pineconeKey,100);
 
       // print("debug Search query action");
       // print(results);
@@ -1233,25 +1237,68 @@ void embeddingMiddleware(
     }
   } else if (action is SendMessageAction) {
     try {
-      final userMessage = action.userMessage;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
 
-      // 🔹 Gera o embedding para a consulta do usuário
+      String userMessage = action.userMessage;
+      String chatId = user.uid;
+
+      // 🔹 Salva a mensagem do usuário no Firestore
+      await FirebaseFirestore.instance
+          .collection("chats")
+          .doc(chatId)
+          .collection("messages")
+          .add({
+        "senderId": user.uid,
+        "senderName": user.displayName ?? "Usuário",
+        "text": userMessage,
+        "timestamp": Timestamp.now(),
+        "isUser": true,
+      });
+
+      // 🔹 Gera embedding e busca no Pinecone
       final embedding = await _generateEmbedding(userMessage, openAIKey);
+      final results = await _pineconeQuery({'query': embedding}, pineconeUrl, pineconeKey,10);
 
-      // 🔹 Faz a busca no Pinecone usando o embedding
-      final results = await _pineconeQuery({
-        'query': embedding,
-      }, pineconeUrl, pineconeKey);
+      // 🔹 Extrai conteúdos dos metadados do Pinecone
+      List<String> knowledgeBase = [];
+      Set<String> usedBooks = {}; // 🔹 Para evitar repetição de livros
+      Set<String> usedAuthors = {}; // 🔹 Para evitar repetição de autores
 
-      // 🔹 Extrai os "content" dos metadados do Pinecone para dar contexto ao OpenAI
-      List<String> knowledgeBase = results
-          .expand((result) => (result['matches'] as List)
-              .map((match) => match['metadata']['content'].toString()))
-          .toList();
+      for (var result in results) {
+        for (var match in result['matches']) {
+          final metadata = match['metadata'];
+          
+          if (metadata != null) {
+            String content = metadata['content']?.toString() ?? '';
+            String book = metadata['book']?.toString() ?? 'Livro Desconhecido';
+            String author = metadata['author']?.toString() ?? 'Autor Desconhecido';
 
-      // 🔹 Monta a mensagem do sistema com o contexto extraído
-      String systemMessage =
-          "Você é um assistente útil. Responda com base nesses conhecimentos:\n\n${knowledgeBase.join("\n\n")}";
+            // 🔹 Adiciona os dados ao Knowledge Base
+            knowledgeBase.add("Livro: $book\nAutor: $author\n\n$content");
+
+            // 🔹 Armazena livros e autores únicos
+            usedBooks.add(book);
+            usedAuthors.add(author);
+          }
+        }
+      }
+      // 🔹 Debug para verificar os dados coletados
+      print("Debug KnowledgeBase Para OpenAI:");
+      print(knowledgeBase);
+      print("Livros usados: $usedBooks");
+      print("Autores usados: $usedAuthors");
+      
+      // 🔹 Monta a mensagem do sistema para o OpenAI
+      String systemMessage = """
+      Você é um autor que responde aos questionamentos do usuário com base somente nos conhecimentos fornecidos. 
+      Na resposta, diga quais os livros e autores usados na base para sua resposta.
+
+      Autores encontrados: ${usedAuthors.join(", ")}
+      Livros usados: ${usedBooks.join(", ")}
+
+      Responda com base nesses conhecimentos:\n\n${knowledgeBase.join("\n\n")}
+      """;
 
       // 🔹 Obtém a resposta do OpenAI
       String botResponse = await OpenAIService.sendMessageToGPT(
@@ -1259,8 +1306,22 @@ void embeddingMiddleware(
         systemContext: systemMessage,
       );
 
-      // 🔹 Salva no Redux a resposta bem-sucedida
+      // 🔹 Salva a resposta do OpenAI no Firestore
+      await FirebaseFirestore.instance
+          .collection("chats")
+          .doc(chatId)
+          .collection("messages")
+          .add({
+        "senderId": "AI",
+        "senderName": "Assistente",
+        "text": botResponse,
+        "timestamp": Timestamp.now(),
+        "isUser": false,
+      });
+
+      // 🔹 Atualiza o Redux com a resposta do OpenAI (mas sem duplicar na UI)
       store.dispatch(SendMessageSuccessAction(botResponse));
+
     } catch (e) {
       store.dispatch(SendMessageFailureAction('Erro ao processar mensagem: $e'));
     }
@@ -1293,6 +1354,7 @@ Future<List<Map<String, dynamic>>> _pineconeQuery(
   Map<String, List<double>> embeddings,
   String pineconeUrl,
   String apiKey,
+  int topK 
 ) async {
   final List<Map<String, dynamic>> results = [];
 
