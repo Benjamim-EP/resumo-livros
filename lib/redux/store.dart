@@ -3,6 +3,15 @@ import 'package:redux/redux.dart';
 import 'reducers.dart';
 import 'middleware.dart'; // Middlewares existentes
 
+import 'middleware/book_middleware.dart';
+import 'middleware/author_middleware.dart';
+import 'middleware/user_middleware.dart';
+import 'middleware/topic_middleware.dart';
+import 'middleware/search_embedding_middleware.dart';
+import 'middleware/chat_middleware.dart';
+import 'middleware/recommendation_middleware.dart';
+import 'middleware/misc_middleware.dart';
+
 class AppState {
   final BooksState booksState;
   final UserState userState;
@@ -49,20 +58,21 @@ AppState appReducer(AppState state, dynamic action) {
 final Store<AppState> store = Store<AppState>(
   appReducer,
   initialState: AppState(
-    booksState: BooksState(booksByTag: {},weeklyRecommendations: []),
+    booksState: BooksState(booksByTag: {}, weeklyRecommendations: []),
     userState: UserState(),
     authorState: AuthorState(),
     topicState: TopicState(),
-    chatState: ChatState(), // 🔹 Adicionando ChatState inicial
+    chatState: ChatState(),
   ),
   middleware: [
-    userRoutesMiddleware,
-    tagMiddleware,
-    bookMiddleware,
-    authorMiddleware,
-    userMiddleware,
-    topicMiddleware,
-    embeddingMiddleware,
-    weeklyRecommendationsMiddleware, // Adicionado aqui
+    // Combina todos os middlewares dos arquivos separados
+    ...createBookMiddleware(),
+    ...createAuthorMiddleware(),
+    ...createUserMiddleware(),
+    ...createTopicMiddleware(),
+    ...createSearchEmbeddingMiddleware(),
+    ...createChatMiddleware(),
+    ...createRecommendationMiddleware(),
+    ...createMiscMiddleware(),
   ],
 );
