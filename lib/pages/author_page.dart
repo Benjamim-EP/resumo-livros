@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/components/author/author_books_section.dart';
 import 'package:resumo_dos_deuses_flutter/components/buttons/button_selection.dart';
 import 'package:resumo_dos_deuses_flutter/components/author/author_cover_informations.dart';
 import 'package:resumo_dos_deuses_flutter/components/author/author_description_data.dart';
