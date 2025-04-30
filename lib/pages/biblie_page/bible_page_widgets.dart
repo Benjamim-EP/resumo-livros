@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
+// REMOVIDO: import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 
 class BiblePageWidgets {
-  /// Botão de seleção de tradução
+  // ... (buildTranslationButton e showTranslationSelection permanecem iguais) ...
   static Widget buildTranslationButton({
     required String translationKey,
     required String translationLabel,
     required String selectedTranslation,
     required VoidCallback onPressed,
-    
   }) {
     final isSelected = selectedTranslation == translationKey;
     return ElevatedButton(
@@ -89,111 +88,68 @@ class BiblePageWidgets {
     );
   }
 
-  /// Widget que exibe um versículo com comentários e opções
+  /// Widget que exibe um versículo (sem comentários)
   static Widget buildVerseItem({
-  required int verseNumber,
-  required String verseText,
-  required Map<int, List<Map<String, dynamic>>> verseComments,
-  required String? selectedBook,
-  required int? selectedChapter,
-  required String selectedTranslation,
-  required BuildContext context,
-  required Map<String, dynamic>? booksMap,
-  required Function(int) onAddUserComment, // 🔹 Adicionar este parâmetro
-  required Function(int) onViewUserComments, // 🔹 Adicionar este parâmetro
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4.0),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$verseNumber ',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.white70,
-            fontWeight: FontWeight.bold,
+    required int verseNumber,
+    required String verseText,
+    // REMOVIDO: verseComments
+    required String? selectedBook,
+    required int? selectedChapter,
+    // REMOVIDO: selectedTranslation (não é mais necessário aqui)
+    required BuildContext context,
+    // REMOVIDO: booksMap (não é mais necessário aqui)
+    // REMOVIDO: onAddUserComment
+    // REMOVIDO: onViewUserComments
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$verseNumber ',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        Expanded(
-          child: Text(
-            verseText,
-            style: const TextStyle(color: Colors.white70, fontSize: 16),
+          Expanded(
+            child: Text(
+              verseText,
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
+            ),
           ),
-        ),
-        if (verseComments.containsKey(verseNumber))
+          // REMOVIDO: Ícone e lógica de exibição de comentários do Firestore
+          // REMOVIDO: Ícone e lógica de comentários do usuário (adicionar/visualizar)
+
+          // Mantém o botão de salvar versículo
           IconButton(
             icon: const Icon(
-              Icons.notes_rounded,
-              color: Color(0xFFCDE7BE),
+              Icons.bookmark_border,
+              color: Colors.white70,
               size: 18,
             ),
             onPressed: () {
-              UtilsBiblePage.showVerseComments(
-                context: context,
-                verseComments: verseComments,
-                booksMap: booksMap,
-                selectedBook: selectedBook,
-                selectedChapter: selectedChapter,
-                verseNumber: verseNumber,
-                loadChapterContent: (book, chapter) =>
-                    BiblePageHelper.loadChapterContent(
-                        book, chapter, selectedTranslation),
-                truncateString: (text, maxLength) => text.length > maxLength
-                    ? '${text.substring(0, maxLength)}...'
-                    : text,
-              );
+              if (selectedBook != null && selectedChapter != null) {
+                showDialog(
+                  context: context,
+                  builder: (context) => SaveVerseDialog(
+                    bookAbbrev: selectedBook,
+                    chapter: selectedChapter,
+                    verseNumber: verseNumber,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text("Selecione livro e capítulo para salvar.")));
+              }
             },
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-        IconButton(
-          icon: const Icon(
-            Icons.bookmark_border,
-            color: Colors.white70,
-            size: 18,
-          ),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => SaveVerseDialog(
-                bookAbbrev: selectedBook!,
-                chapter: selectedChapter!,
-                verseNumber: verseNumber,
-              ),
-            );
-          },
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        // 🔹 Botão para adicionar comentário do usuário
-        IconButton(
-          icon: const Icon(
-            Icons.comment,
-            color: Colors.white70,
-            size: 18,
-          ),
-          onPressed: () {
-            onAddUserComment(verseNumber);
-          },
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        // 🔹 Botão para visualizar comentários do usuário
-        IconButton(
-          icon: const Icon(
-            Icons.visibility,
-            color: Colors.white70,
-            size: 18,
-          ),
-          onPressed: () {
-            onViewUserComments(verseNumber);
-          },
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 }

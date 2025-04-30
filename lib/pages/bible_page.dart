@@ -6,7 +6,8 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.da
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// REMOVIDO: Importação de shared_preferences (se ainda existia para comentários do usuário)
+// import 'package:shared_preferences/shared_preferences.dart';
 
 class BiblePage extends StatefulWidget {
   const BiblePage({super.key});
@@ -21,9 +22,10 @@ class _BiblePageState extends State<BiblePage> {
   int? selectedChapter; // Capítulo selecionado
   String selectedTranslation = 'nvi'; // Tradução selecionada, padrão "nvi"
 
-  List<Map<String, dynamic>> chapterComments = []; // Comentários carregados
-  Map<int, List<Map<String, dynamic>>> verseComments =
-      {}; // Comentários por versículo
+  // REMOVIDO: Variáveis de estado dos comentários
+  // List<Map<String, dynamic>> chapterComments = [];
+  // Map<int, List<Map<String, dynamic>>> verseComments = {};
+
   bool showBibleRoutes = false; // Variável para controlar a exibição
   final FlutterTts _flutterTts = FlutterTts();
 
@@ -38,46 +40,23 @@ class _BiblePageState extends State<BiblePage> {
     BiblePageHelper.loadBooksMap().then((map) {
       setState(() {
         booksMap = map;
-        selectedBook = 'gn';
-        selectedChapter = 1;
+        selectedBook = 'gn'; // Livro inicial padrão
+        selectedChapter = 1; // Capítulo inicial padrão
       });
-
-      _updateChapterData();
+      // REMOVIDO: Chamada para _updateChapterData()
     });
   }
 
   Future<void> _speakChapter(List<String> chapterContent) async {
-    String textToSpeak =
-        chapterContent.join(" "); // Junta os versículos em um único texto
-    await _flutterTts.speak(textToSpeak); // Faz a leitura do capítulo
+    String textToSpeak = chapterContent.join(" ");
+    await _flutterTts.speak(textToSpeak);
   }
 
-  /// Atualiza o conteúdo e os comentários sempre que um novo livro ou capítulo for selecionado.
-  void _updateChapterData() {
-    if (selectedBook != null && selectedChapter != null) {
-      setState(() {
-        chapterComments.clear();
-        verseComments.clear();
-      });
+  // REMOVIDO: Função _updateChapterData() inteira
 
-      BiblePageHelper.loadChapterComments(
-              booksMap![selectedBook!]['nome'], selectedChapter!)
-          .then((data) {
-        setState(() {
-          chapterComments = data['chapterComments'];
-          verseComments = data['verseComments'];
-        });
-      });
-    }
-  }
+  // REMOVIDO: Função _loadBooksMap() (já estava no helper)
 
-  Future<void> _loadBooksMap() async {
-    final String data = await rootBundle
-        .loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
-    setState(() {
-      booksMap = json.decode(data);
-    });
-  }
+  // REMOVIDO: Funções _saveUserComment, _loadUserComments, _showUserCommentDialog, _showUserComments
 
   @override
   Widget build(BuildContext context) {
@@ -96,12 +75,11 @@ class _BiblePageState extends State<BiblePage> {
               ? BibleRoutesWidget(
                   onBack: () {
                     setState(() {
-                      showBibleRoutes = false; // Volta para a tela principal
+                      showBibleRoutes = false;
                     });
                   },
                 )
               : Padding(
-                  // Mantém o conteúdo original da tela principal
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,8 +120,7 @@ class _BiblePageState extends State<BiblePage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 8),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                                  borderRadius: BorderRadius.circular(8)),
                             ),
                             child: Text(
                               showBibleRoutes ? "Voltar" : "Rotas da Bíblia",
@@ -162,9 +139,10 @@ class _BiblePageState extends State<BiblePage> {
                               onChanged: (value) {
                                 setState(() {
                                   selectedBook = value;
-                                  selectedChapter = 1;
+                                  selectedChapter =
+                                      1; // Reset chapter on book change
                                 });
-                                _updateChapterData();
+                                // REMOVIDO: Chamada para _updateChapterData()
                               },
                             ),
                           ),
@@ -179,35 +157,21 @@ class _BiblePageState extends State<BiblePage> {
                                   setState(() {
                                     selectedChapter = value;
                                   });
-                                  _updateChapterData();
+                                  // REMOVIDO: Chamada para _updateChapterData()
                                 },
                               ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      if (selectedBook != null && selectedChapter != null)
-                        ElevatedButton(
-                          onPressed: () {
-                            UtilsBiblePage.showGeneralComments(
-                              context: context,
-                              comments: chapterComments,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFCDE7BE),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                          ),
-                          child: const Text(
-                            "Ver Comentários do Capítulo",
-                            style: TextStyle(color: Color(0xFF181A1A)),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
+                      // REMOVIDO: Botão "Ver Comentários do Capítulo"
+                      // const SizedBox(height: 16), // Removido espaçamento extra
                       if (selectedBook != null && selectedChapter != null)
                         Expanded(
                           child: FutureBuilder<List<String>>(
+                            // Chave para forçar rebuild ao mudar livro/capítulo/tradução
+                            key: ValueKey(
+                                '$selectedBook-$selectedChapter-$selectedTranslation'),
                             future: BiblePageHelper.loadChapterContent(
                                 selectedBook!,
                                 selectedChapter!,
@@ -221,10 +185,18 @@ class _BiblePageState extends State<BiblePage> {
                                   ),
                                 );
                               } else if (snapshot.hasError) {
+                                return Center(
+                                  child: Text(
+                                    'Erro ao carregar capítulo: ${snapshot.error}',
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                );
+                              } else if (!snapshot.hasData ||
+                                  snapshot.data!.isEmpty) {
                                 return const Center(
                                   child: Text(
-                                    'Erro ao carregar o capítulo.',
-                                    style: TextStyle(color: Colors.white),
+                                    'Capítulo não encontrado ou vazio.',
+                                    style: TextStyle(color: Colors.white70),
                                   ),
                                 );
                               }
@@ -232,7 +204,6 @@ class _BiblePageState extends State<BiblePage> {
                               final chapterContent = snapshot.data!;
 
                               return Column(
-                                // 🔹 Retorna um Column para incluir o botão + a Lista
                                 children: [
                                   ElevatedButton.icon(
                                     onPressed: () {
@@ -242,10 +213,8 @@ class _BiblePageState extends State<BiblePage> {
                                     },
                                     icon: const Icon(Icons.volume_up,
                                         color: Colors.white),
-                                    label: const Text(
-                                      "Ouvir Capítulo",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
+                                    label: const Text("Ouvir Capítulo",
+                                        style: TextStyle(color: Colors.white)),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF129575),
                                       padding: const EdgeInsets.symmetric(
@@ -260,22 +229,20 @@ class _BiblePageState extends State<BiblePage> {
                                         final verseNumber = index + 1;
                                         final verseText = chapterContent[index];
 
+                                        // Chamada simplificada para buildVerseItem
                                         return BiblePageWidgets.buildVerseItem(
                                           verseNumber: verseNumber,
                                           verseText: verseText,
-                                          verseComments: verseComments,
+                                          // REMOVIDO: verseComments
                                           selectedBook: selectedBook,
                                           selectedChapter: selectedChapter,
-                                          selectedTranslation: selectedTranslation,
                                           context: context,
-                                          booksMap: booksMap,
-                                          onAddUserComment: _showUserCommentDialog,  // 🔹 Chamando função ao clicar no botão de comentário
-                                          onViewUserComments: _showUserComments, // 🔹 Chamando função para visualizar comentários
+                                          // REMOVIDO: onAddUserComment
+                                          // REMOVIDO: onViewUserComments
                                         );
                                       },
                                     ),
                                   ),
-
                                 ],
                               );
                             },
@@ -286,114 +253,4 @@ class _BiblePageState extends State<BiblePage> {
                 ),
     );
   }
-
-  /// Armazena comentários do usuário localmente
-  Future<void> _saveUserComment(int verseNumber, String comment) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = '${selectedBook}_${selectedChapter}_$verseNumber';
-    
-    List<String> comments = prefs.getStringList(key) ?? [];
-    comments.add(comment); // Adiciona novo comentário à lista
-
-    await prefs.setStringList(key, comments);
-  }
-
-  /// Carrega os comentários salvos localmente para um versículo específico
-  Future<List<String>> _loadUserComments(int verseNumber) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = '${selectedBook}_${selectedChapter}_$verseNumber';
-    return prefs.getStringList(key) ?? [];
-  }
-
-  /// Exibe um diálogo para adicionar comentário do usuário
-  void _showUserCommentDialog(int verseNumber) {
-    TextEditingController commentController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF272828),
-          title: const Text(
-            "Adicionar Comentário",
-            style: TextStyle(color: Colors.white),
-          ),
-          content: TextField(
-            controller: commentController,
-            maxLines: 3,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: "Digite seu comentário...",
-              hintStyle: const TextStyle(color: Colors.white70),
-              filled: true,
-              fillColor: const Color(0xFF3A3A3A),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar", style: TextStyle(color: Colors.redAccent)),
-            ),
-            TextButton(
-              onPressed: () async {
-                final comment = commentController.text.trim();
-                if (comment.isNotEmpty) {
-                  await _saveUserComment(verseNumber, comment);
-                  Navigator.pop(context);
-                  setState(() {}); // Atualiza a UI para refletir o novo comentário
-                }
-              },
-              child: const Text("Salvar", style: TextStyle(color: Colors.greenAccent)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Exibe os comentários salvos para um versículo
-  void _showUserComments(int verseNumber) async {
-    List<String> comments = await _loadUserComments(verseNumber);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF272828),
-          title: const Text(
-            "Seus Comentários",
-            style: TextStyle(color: Colors.white),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: comments.isEmpty
-                ? const Text("Nenhum comentário ainda.", style: TextStyle(color: Colors.white70))
-                : ListView(
-                    shrinkWrap: true,
-                    children: comments
-                        .map((comment) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Text(
-                                "- $comment",
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ))
-                        .toList(),
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Fechar", style: TextStyle(color: Colors.greenAccent)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
 }
