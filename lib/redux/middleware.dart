@@ -1,12 +1,9 @@
 // redux/middleware.dart
-import 'package:flutter/services.dart';
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/components/bookFrame/book_details.dart';
 import 'package:resumo_dos_deuses_flutter/pages/chat_page/openai_chat_service.dart';
 import 'package:resumo_dos_deuses_flutter/services/author_service.dart';
 import 'actions.dart';
 import 'store.dart';
-import '../services/tag_service.dart';
 import '../services/book_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
@@ -662,11 +659,7 @@ void userMiddleware(
         //print("Embedding gerado para $key: $embedding");
 
         final results = await _pineconeQuery(
-          {'query': embedding},
-          pineconeUrl,
-          pineconeKey,
-          100
-        );
+            {'query': embedding}, pineconeUrl, pineconeKey, 100);
         //print("Resultados do Pinecone para $key: $results");
 
         final topicIds = (results.first['matches'] as List<dynamic>)
@@ -827,11 +820,7 @@ void userMiddleware(
         // 🔹 Gera embedding e consulta Pinecone
         final embedding = await _generateEmbedding(value, openAIKey);
         final results = await _pineconeQuery(
-          {'query': embedding},
-          pineconeUrl,
-          pineconeKey,
-          100
-        );
+            {'query': embedding}, pineconeUrl, pineconeKey, 100);
 
         // 🔹 Extrai os IDs dos tópicos correspondentes
         final topicIds = (results.first['matches'] as List<dynamic>)
@@ -1179,7 +1168,7 @@ void embeddingMiddleware(
 
       // Requisição ao Pinecone para cada embedding
       final searchResults =
-          await _pineconeQuery(embeddings, pineconeUrl, pineconeKey,100);
+          await _pineconeQuery(embeddings, pineconeUrl, pineconeKey, 100);
 
       store.dispatch(EmbedAndSearchSuccessAction(searchResults));
     } catch (e) {
@@ -1194,7 +1183,7 @@ void embeddingMiddleware(
       // Chama _pineconeQuery com apenas um namespace para busca simples
       final results = await _pineconeQuery({
         'query': embedding,
-      }, pineconeUrl, pineconeKey,100);
+      }, pineconeUrl, pineconeKey, 100);
 
       // print("debug Search query action");
       // print(results);
@@ -1258,7 +1247,8 @@ void embeddingMiddleware(
 
       // 🔹 Gera embedding e busca no Pinecone
       final embedding = await _generateEmbedding(userMessage, openAIKey);
-      final results = await _pineconeQuery({'query': embedding}, pineconeUrl, pineconeKey,10);
+      final results = await _pineconeQuery(
+          {'query': embedding}, pineconeUrl, pineconeKey, 10);
 
       // 🔹 Extrai conteúdos dos metadados do Pinecone
       List<String> knowledgeBase = [];
@@ -1268,11 +1258,12 @@ void embeddingMiddleware(
       for (var result in results) {
         for (var match in result['matches']) {
           final metadata = match['metadata'];
-          
+
           if (metadata != null) {
             String content = metadata['content']?.toString() ?? '';
             String book = metadata['book']?.toString() ?? 'Livro Desconhecido';
-            String author = metadata['author']?.toString() ?? 'Autor Desconhecido';
+            String author =
+                metadata['author']?.toString() ?? 'Autor Desconhecido';
 
             // 🔹 Adiciona os dados ao Knowledge Base
             knowledgeBase.add("Livro: $book\nAutor: $author\n\n$content");
@@ -1288,7 +1279,7 @@ void embeddingMiddleware(
       print(knowledgeBase);
       print("Livros usados: $usedBooks");
       print("Autores usados: $usedAuthors");
-      
+
       // 🔹 Monta a mensagem do sistema para o OpenAI
       String systemMessage = """
       Você é um autor que responde aos questionamentos do usuário com base somente nos conhecimentos fornecidos. 
@@ -1321,9 +1312,9 @@ void embeddingMiddleware(
 
       // 🔹 Atualiza o Redux com a resposta do OpenAI (mas sem duplicar na UI)
       store.dispatch(SendMessageSuccessAction(botResponse));
-
     } catch (e) {
-      store.dispatch(SendMessageFailureAction('Erro ao processar mensagem: $e'));
+      store
+          .dispatch(SendMessageFailureAction('Erro ao processar mensagem: $e'));
     }
   }
 }
@@ -1351,11 +1342,10 @@ Future<List<double>> _generateEmbedding(String text, String apiKey) async {
 }
 
 Future<List<Map<String, dynamic>>> _pineconeQuery(
-  Map<String, List<double>> embeddings,
-  String pineconeUrl,
-  String apiKey,
-  int topK 
-) async {
+    Map<String, List<double>> embeddings,
+    String pineconeUrl,
+    String apiKey,
+    int topK) async {
   final List<Map<String, dynamic>> results = [];
 
   for (var entry in embeddings.entries) {
