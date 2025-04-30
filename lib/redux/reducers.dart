@@ -1,4 +1,6 @@
 // redux/reducers.dart
+import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
+
 import 'actions.dart';
 
 class BooksState {
@@ -332,10 +334,29 @@ UserState userReducer(UserState state, dynamic action) {
     updatedTopicSaves[action.collectionName] = updatedTopics;
     return state.copyWith(topicSaves: updatedTopicSaves);
   } else if (action is UserPremiumStatusLoadedAction) {
-    return state.copyWith(userDetails: {
-      ...state.userDetails ?? {}, // Mantém outros detalhes do usuário
-      'isPremium': action.premiumStatus, // Atualiza apenas o mapa isPremium
-    });
+    // MODO ANTIGO (baseado no isPremium map) - Pode ser mantido por compatibilidade ou removido
+    // return state.copyWith(userDetails: {
+    //   ...state.userDetails ?? {},
+    //   'isPremium': action.premiumStatus,
+    // });
+    // MODO NOVO (atualiza campos específicos de assinatura)
+    // A ação agora seria SubscriptionStatusUpdatedAction
+    return state; // Não faz nada aqui, espera a nova ação
+  } else if (action is SubscriptionStatusUpdatedAction) {
+    // Atualiza os campos detalhados da assinatura no userDetails
+    final updatedDetails = Map<String, dynamic>.from(state.userDetails ?? {});
+    updatedDetails['stripeCustomerId'] = action.customerId;
+    updatedDetails['subscriptionStatus'] = action.status;
+    updatedDetails['subscriptionEndDate'] =
+        action.endDate; // Pode ser Timestamp ou null
+    updatedDetails['stripeSubscriptionId'] =
+        action.subscriptionId; // Pode ser String ou null
+    updatedDetails['activePriceId'] = action.priceId; // Pode ser String ou null
+
+    // print(
+    //     "Reducer: Atualizando estado com dados da assinatura: Status=${action.status}, EndDate=${action.endDate?.toDate()}");
+
+    return state.copyWith(userDetails: updatedDetails);
   }
 
   return state;

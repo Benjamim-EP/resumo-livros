@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:resumo_dos_deuses_flutter/consts.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/stripe_service.dart';
 
@@ -39,8 +41,12 @@ class SubscriptionSelectionPage extends StatelessWidget {
                   price: "R\$19,99/mês",
                   description: "Acesso premium por 1 mês.",
                   onTap: () {
-                    StripeService.instance.makePayment(
-                        "prod_RoEGL7L2Q42qxS", userId, email, nome, context);
+                    StoreProvider.of<AppState>(context).dispatch(
+                      InitiateStripePaymentAction(
+                        priceId: stripePriceIdMonthly, // Use a constante
+                        isSubscription: false,
+                      ),
+                    );
                   },
                 ),
                 _buildPlanCard(
@@ -48,8 +54,12 @@ class SubscriptionSelectionPage extends StatelessWidget {
                   price: "R\$19,99/mês",
                   description: "Renovação automática mensal.",
                   onTap: () {
-                    StripeService.instance.subscribeUser(
-                        "prod_RoEGoEHf7gIgY0", userId, email, nome, context);
+                    StoreProvider.of<AppState>(context).dispatch(
+                      InitiateStripePaymentAction(
+                        priceId: stripePriceIdRecurring, // Use a constante
+                        isSubscription: true,
+                      ),
+                    );
                   },
                 ),
                 _buildPlanCard(
@@ -57,8 +67,12 @@ class SubscriptionSelectionPage extends StatelessWidget {
                   price: "R\$47,97/3 meses",
                   description: "20% de desconto no total.",
                   onTap: () {
-                    StripeService.instance.makePayment(
-                        "prod_RoEHs1QAcZivO4", userId, email, nome, context);
+                    StoreProvider.of<AppState>(context).dispatch(
+                      InitiateStripePaymentAction(
+                        priceId: stripePriceIdQuarterly, // Use a constante
+                        isSubscription: false,
+                      ),
+                    );
                   },
                 ),
               ],

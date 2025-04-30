@@ -447,4 +447,57 @@ class FirestoreService {
     }
     return null; // Retorna nulo se não encontrar
   }
+
+  /// Encontra o userId do Firebase associado a um stripeCustomerId.
+  Future<String?> findUserIdByStripeCustomerId(String stripeCustomerId) async {
+    try {
+      final querySnapshot = await _db
+          .collection('users')
+          .where('stripeCustomerId', isEqualTo: stripeCustomerId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot
+            .docs.first.id; // Retorna o ID do documento Firebase
+      }
+      print(
+          "Nenhum usuário Firebase encontrado com Stripe Customer ID: $stripeCustomerId");
+      return null;
+    } catch (e) {
+      print("Erro ao buscar usuário por Stripe Customer ID: $e");
+      return null;
+    }
+  }
+
+  /// Atualiza (ou cria) os campos de assinatura no documento do usuário.
+  Future<void> updateUserSubscriptionStatus({
+    required String userId,
+    required String status, // 'active', 'canceled', etc.
+    required String customerId, // Sempre salvar/atualizar o customerId
+    String? subscriptionId, // Pode ser nulo para pagamentos únicos
+    Timestamp? endDate, // Pode ser nulo se não aplicável
+    String? priceId, // O ID do plano/preço ativo
+  }) async {
+    try {
+      final userDocRef = _db.collection('users').doc(userId);
+      final updateData = {
+        'stripeCustomerId': customerId, // Garante que o customerId está salvo
+        'subscriptionStatus': status,
+        if (subscriptionId != null) 'stripeSubscriptionId': subscriptionId,
+        if (endDate != null) 'subscriptionEndDate': endDate,
+        if (priceId != null)
+          'activePriceId': priceId, // Salva o ID do plano ativo
+      };
+
+      // Usa set com merge=true para criar ou atualizar os campos sem sobrescrever o resto
+      await userDocRef.set(updateData, SetOptions(merge: true));
+
+      print(
+          "Status da assinatura atualizado no Firestore para usuário $userId: $status");
+    } catch (e) {
+      print(
+          "Erro ao atualizar status da assinatura no Firestore para $userId: $e");
+    }
+  }
 }
