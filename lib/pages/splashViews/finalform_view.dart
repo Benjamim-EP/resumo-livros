@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware.dart';
+import 'package:resumo_dos_deuses_flutter/services/openai_service.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 
@@ -144,8 +144,10 @@ class _FinalFormViewState extends State<FinalFormView> {
                         child: CircularProgressIndicator(),
                       ),
                     );
+                    final openAIService = OpenAIService();
+                    final analysis =
+                        await openAIService.getTribeAnalysis(userText);
 
-                    final analysis = await getTribeAnalysis(userText);
                     Navigator.pop(context);
 
                     if (analysis != null && analysis.isNotEmpty) {
