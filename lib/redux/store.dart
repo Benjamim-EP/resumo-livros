@@ -1,5 +1,6 @@
 // redux/store.dart
 import 'package:redux/redux.dart';
+import 'package:resumo_dos_deuses_flutter/redux/middleware/payment_middleware.dart';
 import 'reducers.dart';
 
 import 'middleware/book_middleware.dart';
@@ -73,5 +74,6 @@ final Store<AppState> store = Store<AppState>(
     ...createChatMiddleware(),
     ...createRecommendationMiddleware(),
     ...createMiscMiddleware(),
+    ...createPaymentMiddleware(),
   ],
 );

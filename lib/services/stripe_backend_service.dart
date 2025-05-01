@@ -1,8 +1,8 @@
 // lib/services/stripe_backend_service.dart
 import 'package:dio/dio.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:resumo_dos_deuses_flutter/consts.dart'; // Para chaves e IDs
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart'; // Para interagir com Firestore
+import 'package:resumo_dos_deuses_flutter/consts.dart';
+import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
 
 class StripeBackendService {
   final Dio _dio = Dio();
@@ -11,19 +11,24 @@ class StripeBackendService {
 
   StripeBackendService() {
     _dio.options.headers = {
-      "Authorization":
-          "Bearer $stripeSecretKey", // USA CHAVE SECRETA (APENAS DEV!)
+      "Authorization": "Bearer $stripeSecretKey",
       "Content-Type": 'application/x-www-form-urlencoded',
     };
+    // Adiciona um interceptor para loggar requisições e respostas (útil para debug)
+    _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (o) => print(">>> Dio Log: $o") // Redireciona log do Dio
+        ));
   }
 
-  // --- Métodos Simulados do Backend ---
-
-  /// (Backend) Obtém ou cria um Customer no Stripe.
   Future<String?> getOrCreateCustomer(
       String email, String name, String userId) async {
+    // --- DEBUG PRINT ---
+    print(
+        ">>> BackendService: getOrCreateCustomer chamado para email: $email, userId: $userId");
+    // --- FIM DEBUG PRINT ---
     try {
-      // 1. Tenta buscar cliente pelo email
       final searchResponse = await _dio.get(
         "$_stripeApiBaseUrl/customers",
         queryParameters: {"email": email, "limit": 1},
@@ -31,68 +36,92 @@ class StripeBackendService {
 
       final List<dynamic> customers = searchResponse.data["data"];
       if (customers.isNotEmpty) {
-        print("Cliente Stripe encontrado: ${customers.first["id"]}");
-        // Garante que o userId está nos metadados (caso tenha sido criado antes)
-        await _updateCustomerMetadataIfNeeded(customers.first["id"], userId);
-        return customers.first["id"];
+        final customerId = customers.first["id"];
+        // --- DEBUG PRINT ---
+        print(">>> BackendService: Cliente Stripe encontrado: $customerId");
+        // --- FIM DEBUG PRINT ---
+        await _updateCustomerMetadataIfNeeded(customerId, userId);
+        return customerId;
       }
 
-      // 2. Se não encontrar, cria um novo cliente
-      print("Criando novo cliente Stripe para: $email");
+      // --- DEBUG PRINT ---
+      print(">>> BackendService: Criando novo cliente Stripe para: $email");
+      // --- FIM DEBUG PRINT ---
       final createResponse = await _dio.post(
         "$_stripeApiBaseUrl/customers",
         data: {
           "email": email,
           "name": name,
-          "metadata[userId]":
-              userId, // Associa o ID do Firebase ao cliente Stripe
+          "metadata[userId]": userId,
         },
       );
       final newCustomerId = createResponse.data["id"];
-      print("Novo cliente Stripe criado: $newCustomerId");
+      // --- DEBUG PRINT ---
+      print(">>> BackendService: Novo cliente Stripe criado: $newCustomerId");
+      // --- FIM DEBUG PRINT ---
       return newCustomerId;
     } catch (e) {
-      print("Erro (Backend Simulado) ao obter/criar cliente Stripe: $e");
+      // --- DEBUG PRINT ---
+      print(">>> BackendService: ERRO (getOrCreateCustomer) - $e");
+      // --- FIM DEBUG PRINT ---
       if (e is DioException) {
-        print("Detalhes do erro Dio: ${e.response?.data}");
+        print(
+            ">>> BackendService: Detalhes DioException: ${e.response?.statusCode} - ${e.response?.data}");
       }
       return null;
     }
   }
 
-  /// (Backend) Garante que o metadata[userId] está presente no cliente Stripe.
   Future<void> _updateCustomerMetadataIfNeeded(
       String customerId, String userId) async {
+    // --- DEBUG PRINT ---
+    print(
+        ">>> BackendService: Verificando/Atualizando metadata para customer $customerId com userId $userId");
+    // --- FIM DEBUG PRINT ---
     try {
       final customerData =
           await _dio.get("$_stripeApiBaseUrl/customers/$customerId");
       final metadata =
           customerData.data['metadata'] as Map<String, dynamic>? ?? {};
       if (metadata['userId'] != userId) {
-        print(
-            "Atualizando metadata do cliente Stripe $customerId com userId $userId");
+        // --- DEBUG PRINT ---
+        print(">>> BackendService: Metadata desatualizado. Atualizando...");
+        // --- FIM DEBUG PRINT ---
         await _dio.post(
           "$_stripeApiBaseUrl/customers/$customerId",
           data: {"metadata[userId]": userId},
         );
+        print(">>> BackendService: Metadata atualizado com sucesso."); // DEBUG
+      } else {
+        print(">>> BackendService: Metadata já está correto."); // DEBUG
       }
     } catch (e) {
-      print("Erro ao verificar/atualizar metadata do cliente $customerId: $e");
+      // --- DEBUG PRINT ---
+      print(">>> BackendService: ERRO (_updateCustomerMetadataIfNeeded) - $e");
+      // --- FIM DEBUG PRINT ---
       if (e is DioException) {
-        print("Detalhes do erro Dio: ${e.response?.data}");
+        print(
+            ">>> BackendService: Detalhes DioException: ${e.response?.statusCode} - ${e.response?.data}");
       }
     }
   }
 
-  /// (Backend) Cria um PaymentIntent para pagamento único.
   Future<String?> createPaymentIntent(String priceId, String customerId) async {
-    final amount = stripePriceAmountMap[
-        priceId]; // Pega valor do mapa (REMOVER EM PRODUÇÃO)
+    // --- DEBUG PRINT ---
+    print(
+        ">>> BackendService: createPaymentIntent chamado para priceId: $priceId, customerId: $customerId");
+    // --- FIM DEBUG PRINT ---
+    final amount = stripePriceAmountMap[priceId];
     if (amount == null) {
+      // --- DEBUG PRINT ---
       print(
-          "Erro (Backend Simulado): Valor não encontrado para priceId $priceId");
+          ">>> BackendService: ERRO - Valor não encontrado para priceId $priceId");
+      // --- FIM DEBUG PRINT ---
       return null;
     }
+    // --- DEBUG PRINT ---
+    print(">>> BackendService: Valor calculado: $amount");
+    // --- FIM DEBUG PRINT ---
 
     try {
       final response = await _dio.post(
@@ -101,41 +130,44 @@ class StripeBackendService {
           "amount": amount,
           "currency": "brl",
           "customer": customerId,
-          "payment_method_types[]":
-              "card", // Ou outros métodos que você suporta
-          // 'automatic_payment_methods[enabled]': 'true', // Alternativa mais moderna
-          "metadata[priceId]":
-              priceId, // Guarda o Price ID para referência futura
+          "payment_method_types[]": "card",
+          "metadata[priceId]": priceId,
         },
       );
       final clientSecret = response.data["client_secret"];
-      print("PaymentIntent criado (Backend Simulado): ${response.data["id"]}");
+      final paymentIntentId = response.data["id"];
+      // --- DEBUG PRINT ---
+      print(
+          ">>> BackendService: PaymentIntent criado: $paymentIntentId, client_secret: $clientSecret");
+      // --- FIM DEBUG PRINT ---
       return clientSecret;
     } catch (e) {
-      print("Erro (Backend Simulado) ao criar PaymentIntent: $e");
+      // --- DEBUG PRINT ---
+      print(">>> BackendService: ERRO (createPaymentIntent) - $e");
+      // --- FIM DEBUG PRINT ---
       if (e is DioException) {
-        print("Detalhes do erro Dio: ${e.response?.data}");
+        print(
+            ">>> BackendService: Detalhes DioException: ${e.response?.statusCode} - ${e.response?.data}");
       }
       return null;
     }
   }
 
-  /// (Backend) Cria uma Assinatura no Stripe.
   Future<Map<String, dynamic>?> createSubscription(
       String priceId, String customerId) async {
+    // --- DEBUG PRINT ---
+    print(
+        ">>> BackendService: createSubscription chamado para priceId: $priceId, customerId: $customerId");
+    // --- FIM DEBUG PRINT ---
     try {
-      // Cria a assinatura
       final response = await _dio.post(
         "$_stripeApiBaseUrl/subscriptions",
         data: {
           "customer": customerId,
           "items[0][price]": priceId,
-          "payment_behavior":
-              "default_incomplete", // Requer confirmação do cliente
-          "payment_settings[save_default_payment_method]":
-              "on_subscription", // Salva método p/ futuro
-          "expand[]":
-              "latest_invoice.payment_intent", // Pega o intent da 1a fatura
+          "payment_behavior": "default_incomplete",
+          "payment_settings[save_default_payment_method]": "on_subscription",
+          "expand[]": "latest_invoice.payment_intent",
           "metadata[priceId]": priceId,
         },
       );
@@ -143,166 +175,185 @@ class StripeBackendService {
       final subscription = response.data;
       final latestInvoice = subscription["latest_invoice"];
       final paymentIntent = latestInvoice?["payment_intent"];
+      final subscriptionId = subscription["id"];
+      final status = subscription["status"];
 
-      print("Assinatura criada (Backend Simulado): ${subscription['id']}");
+      // --- DEBUG PRINT ---
+      print(
+          ">>> BackendService: Assinatura criada: $subscriptionId, Status: $status");
+      if (paymentIntent != null) {
+        print(
+            ">>> BackendService: PaymentIntent da fatura: ${paymentIntent['id']}, client_secret: ${paymentIntent['client_secret']}");
+      } else {
+        print(
+            ">>> BackendService: Nenhum PaymentIntent associado à primeira fatura (Status: $status).");
+      }
+      // --- FIM DEBUG PRINT ---
 
       if (paymentIntent != null && paymentIntent["client_secret"] != null) {
         return {
-          "subscriptionId": subscription["id"],
+          "subscriptionId": subscriptionId,
           "clientSecret": paymentIntent["client_secret"],
-          "status":
-              subscription["status"], // Geralmente 'incomplete' inicialmente
+          "status": status,
         };
-      } else if (subscription['status'] == 'active') {
-        // Caso raro onde a assinatura pode ficar ativa imediatamente (ex: trial sem pagamento inicial)
-        print("Assinatura ${subscription['id']} ficou ativa imediatamente.");
-        // Simula o webhook de sucesso aqui mesmo para DEV
-        await handleSubscriptionWebhookEvent(subscription['id'], 'active',
-            subscription['current_period_end'] // Timestamp Unix
-            );
+      } else if (status == 'active') {
+        print(
+            ">>> BackendService: Assinatura $subscriptionId ativa imediatamente. Simulando webhook.");
+        await handleSubscriptionWebhookEvent(
+            subscriptionId, 'active', subscription['current_period_end']);
         return {
-          "subscriptionId": subscription["id"],
-          "clientSecret": null, // Não precisa de confirmação
-          "status": subscription["status"],
+          "subscriptionId": subscriptionId,
+          "clientSecret": null,
+          "status": status
         };
       } else {
         print(
-            "Erro (Backend Simulado): client_secret não encontrado na resposta da assinatura.");
+            ">>> BackendService: ERRO - client_secret não encontrado ou status inesperado ($status).");
         return null;
       }
     } catch (e) {
-      print("Erro (Backend Simulado) ao criar Assinatura: $e");
+      // --- DEBUG PRINT ---
+      print(">>> BackendService: ERRO (createSubscription) - $e");
+      // --- FIM DEBUG PRINT ---
       if (e is DioException) {
-        print("Detalhes do erro Dio: ${e.response?.data}");
+        print(
+            ">>> BackendService: Detalhes DioException: ${e.response?.statusCode} - ${e.response?.data}");
       }
       return null;
     }
   }
 
   // --- SIMULAÇÃO DE WEBHOOK HANDLER ---
-  // Em produção, isso seria uma Cloud Function separada exposta como endpoint HTTP
-  // e acionada pelos eventos do Stripe.
 
-  /// (Backend - Webhook Simulado) Processa evento de sucesso de PaymentIntent.
-  Future<void> handlePaymentIntentSucceeded(String paymentIntentId) async {
+  Future<void> handlePaymentIntentSucceeded(String identifier) async {
+    // Identificador pode ser o client_secret ou o paymentIntentId
+    String paymentIntentId = identifier;
+    // Se for o client_secret, extraia o ID (exemplo)
+    if (identifier.contains("_secret_")) {
+      paymentIntentId = identifier.split('_secret_').first;
+    }
+
+    // --- DEBUG PRINT ---
     print(
-        "Webhook Simulado: Processando payment_intent.succeeded para $paymentIntentId");
+        ">>> BackendService Webhook Sim: handlePaymentIntentSucceeded para PI ID: $paymentIntentId");
+    // --- FIM DEBUG PRINT ---
     try {
-      // 1. Recupera detalhes do PaymentIntent (opcional, pode já ter dados suficientes)
       final response =
           await _dio.get("$_stripeApiBaseUrl/payment_intents/$paymentIntentId");
       final paymentIntent = response.data;
       final customerId = paymentIntent['customer'];
-      final priceId =
-          paymentIntent['metadata']?['priceId']; // Recupera do metadata
+      final priceId = paymentIntent['metadata']?['priceId'];
 
       if (customerId == null) {
         print(
-            "Webhook Simulado Erro: Customer ID não encontrado no PaymentIntent $paymentIntentId");
+            ">>> BackendService Webhook Sim: ERRO - Customer ID não encontrado em $paymentIntentId");
         return;
       }
 
-      // 2. Encontra o usuário no Firestore pelo customerId
       final userId =
           await _firestoreService.findUserIdByStripeCustomerId(customerId);
       if (userId == null) {
         print(
-            "Webhook Simulado Erro: Usuário Firebase não encontrado para Stripe Customer $customerId");
+            ">>> BackendService Webhook Sim: ERRO - Usuário Firebase não encontrado para Customer $customerId");
         return;
       }
 
+      // --- DEBUG PRINT ---
       print(
-          "Webhook Simulado: Atualizando status para usuário $userId (Pagamento Único)");
+          ">>> BackendService Webhook Sim: Atualizando Firestore para userId $userId (Pagamento Único $priceId)");
+      // --- FIM DEBUG PRINT ---
 
-      // 3. Calcula a data de expiração baseado no priceId (exemplo simples)
       DateTime expirationDate = DateTime.now();
       if (priceId == stripePriceIdMonthly) {
-        expirationDate = expirationDate
-            .add(const Duration(days: 31)); // Aproximadamente 1 mês
+        expirationDate = expirationDate.add(const Duration(days: 31));
       } else if (priceId == stripePriceIdQuarterly) {
-        expirationDate = expirationDate
-            .add(const Duration(days: 92)); // Aproximadamente 3 meses
+        expirationDate = expirationDate.add(const Duration(days: 92));
       } else {
-        // Lógica para outros planos de pagamento único, se houver
-        expirationDate =
-            expirationDate.add(const Duration(days: 31)); // Default
+        expirationDate = expirationDate.add(const Duration(days: 31));
       }
 
-      // 4. Atualiza o Firestore
       await _firestoreService.updateUserSubscriptionStatus(
           userId: userId,
-          status: 'active', // Pagamento único concede acesso 'ativo'
+          status: 'active',
           endDate: Timestamp.fromDate(expirationDate),
-          subscriptionId: null, // Não é uma assinatura recorrente
-          customerId: customerId, // Salva o customerId
-          priceId: priceId // Salva o priceId comprado
-          );
-
+          subscriptionId: null,
+          customerId: customerId,
+          priceId: priceId);
+      // --- DEBUG PRINT ---
       print(
-          "Webhook Simulado: Usuário $userId atualizado para status 'active' (pagamento único) até $expirationDate");
+          ">>> BackendService Webhook Sim: Firestore atualizado para usuário $userId.");
+      // --- FIM DEBUG PRINT ---
     } catch (e) {
-      print("Webhook Simulado Erro (PaymentIntent): $e");
+      // --- DEBUG PRINT ---
+      print(
+          ">>> BackendService Webhook Sim: ERRO (handlePaymentIntentSucceeded) - $e");
+      // --- FIM DEBUG PRINT ---
       if (e is DioException) {
-        print("Detalhes do erro Dio: ${e.response?.data}");
+        print(
+            ">>> BackendService: Detalhes DioException: ${e.response?.statusCode} - ${e.response?.data}");
       }
     }
   }
 
-  /// (Backend - Webhook Simulado) Processa eventos de atualização de assinatura.
   Future<void> handleSubscriptionWebhookEvent(
       String subscriptionId, String status, int? currentPeriodEndUnix) async {
+    // --- DEBUG PRINT ---
     print(
-        "Webhook Simulado: Processando evento para Subscription $subscriptionId - Status: $status");
+        ">>> BackendService Webhook Sim: handleSubscriptionWebhookEvent para Sub ID: $subscriptionId, Status: $status");
+    // --- FIM DEBUG PRINT ---
     try {
-      // 1. Recupera a assinatura para obter o customerId
       final response =
           await _dio.get("$_stripeApiBaseUrl/subscriptions/$subscriptionId");
       final subscription = response.data;
       final customerId = subscription['customer'];
-      final priceId = subscription['items']?['data']?[0]?['price']
-          ?['id']; // Pega o priceId da assinatura
+      final priceId = subscription['items']?['data']?[0]?['price']?['id'];
 
       if (customerId == null) {
         print(
-            "Webhook Simulado Erro: Customer ID não encontrado na Assinatura $subscriptionId");
+            ">>> BackendService Webhook Sim: ERRO - Customer ID não encontrado em $subscriptionId");
         return;
       }
 
-      // 2. Encontra o usuário no Firestore pelo customerId
       final userId =
           await _firestoreService.findUserIdByStripeCustomerId(customerId);
       if (userId == null) {
         print(
-            "Webhook Simulado Erro: Usuário Firebase não encontrado para Stripe Customer $customerId");
+            ">>> BackendService Webhook Sim: ERRO - Usuário Firebase não encontrado para Customer $customerId");
         return;
       }
 
+      // --- DEBUG PRINT ---
       print(
-          "Webhook Simulado: Atualizando status para usuário $userId (Assinatura)");
+          ">>> BackendService Webhook Sim: Atualizando Firestore para userId $userId (Assinatura $priceId)");
+      // --- FIM DEBUG PRINT ---
 
-      // 3. Determina a data de expiração
       Timestamp? endDate;
-      if (currentPeriodEndUnix != null) {
-        endDate =
-            Timestamp.fromMillisecondsSinceEpoch(currentPeriodEndUnix * 1000);
+      // Usa o currentPeriodEnd da assinatura recuperada se o passado for nulo
+      final periodEnd =
+          currentPeriodEndUnix ?? subscription['current_period_end'];
+      if (periodEnd != null && periodEnd is int) {
+        endDate = Timestamp.fromMillisecondsSinceEpoch(periodEnd * 1000);
       }
 
-      // 4. Atualiza o Firestore
       await _firestoreService.updateUserSubscriptionStatus(
           userId: userId,
-          status: status, // 'active', 'canceled', 'past_due', etc.
+          status: status,
           endDate: endDate,
-          subscriptionId: subscriptionId, // Salva o ID da assinatura
+          subscriptionId: subscriptionId,
           customerId: customerId,
-          priceId: priceId // Salva o priceId da assinatura ativa
-          );
-
+          priceId: priceId);
+      // --- DEBUG PRINT ---
       print(
-          "Webhook Simulado: Status da assinatura do usuário $userId atualizado para '$status' ${endDate != null ? 'até ${endDate.toDate()}' : ''}");
+          ">>> BackendService Webhook Sim: Firestore atualizado para usuário $userId.");
+      // --- FIM DEBUG PRINT ---
     } catch (e) {
-      print("Webhook Simulado Erro (Subscription): $e");
+      // --- DEBUG PRINT ---
+      print(
+          ">>> BackendService Webhook Sim: ERRO (handleSubscriptionWebhookEvent) - $e");
+      // --- FIM DEBUG PRINT ---
       if (e is DioException) {
-        print("Detalhes do erro Dio: ${e.response?.data}");
+        print(
+            ">>> BackendService: Detalhes DioException: ${e.response?.statusCode} - ${e.response?.data}");
       }
     }
   }

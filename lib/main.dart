@@ -8,6 +8,8 @@ import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import './app_initialization.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppInitialization.init(); // Inicialização separada
@@ -20,6 +22,7 @@ class MyApp extends StatelessWidget {
     return StoreProvider(
       store: store,
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme, // Utilizar o tema personalizado
         home:
