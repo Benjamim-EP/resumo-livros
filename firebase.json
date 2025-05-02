@@ -1,1 +1,38 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"resumo-livros","appId":"1:225819514315:android:e15bf8d871ceaffe23d24e","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"resumo-livros","configurations":{"android":"1:225819514315:android:e15bf8d871ceaffe23d24e","ios":"1:225819514315:ios:cb9ebdb3a463ebcd23d24e","macos":"1:225819514315:ios:cb9ebdb3a463ebcd23d24e","web":"1:225819514315:web:07f01edca7c35aef23d24e","windows":"1:225819514315:web:0fb1d329c9ffe4df23d24e"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "resumo-livros",
+          "appId": "1:225819514315:android:e15bf8d871ceaffe23d24e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "resumo-livros",
+          "configurations": {
+            "android": "1:225819514315:android:e15bf8d871ceaffe23d24e",
+            "ios": "1:225819514315:ios:cb9ebdb3a463ebcd23d24e",
+            "macos": "1:225819514315:ios:cb9ebdb3a463ebcd23d24e",
+            "web": "1:225819514315:web:07f01edca7c35aef23d24e",
+            "windows": "1:225819514315:web:0fb1d329c9ffe4df23d24e"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "venv",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
+}

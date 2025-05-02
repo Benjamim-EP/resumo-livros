@@ -1,247 +1,96 @@
 // lib/services/stripe_service.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:resumo_dos_deuses_flutter/services/stripe_backend_service.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart'; // Para obter o store para despachar ações PÓS webhook
-import 'package:flutter_redux/flutter_redux.dart'; // Para obter o store
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Para despachar SubscriptionStatusUpdatedAction
+import 'package:flutter_redux/flutter_redux.dart'; // Para acessar o store pós-pagamento
+import 'package:resumo_dos_deuses_flutter/redux/store.dart'; // Para AppState e store
+// REMOVIDO: import 'package:resumo_dos_deuses_flutter/services/stripe_backend_service.dart'; // Não chama mais o backend simulado
+// REMOVIDO: import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Ações são despachadas pelo middleware ou listener
 import '../redux/actions.dart'; // Para LoadUserPremiumStatusAction, LoadUserDetailsAction
 
 class StripeService {
   StripeService._();
   static final StripeService instance = StripeService._();
-  final StripeBackendService _backendService = StripeBackendService();
+  // REMOVIDO: final StripeBackendService _backendService = StripeBackendService();
 
-  Future<void> initiatePayment(
-    String priceId,
-    String userId,
-    String email,
-    String nome,
-    BuildContext context,
-  ) async {
-    // --- DEBUG PRINT ---
+  /// Inicializa e apresenta o PaymentSheet usando o clientSecret recebido do backend.
+  Future<void> presentPaymentSheetWithSecret(
+      String clientSecret,
+      String customerId, // Recebe customerId criado/obtido pelo backend
+      BuildContext context, // Contexto para mostrar o sheet e dialogs
+      {required bool isSubscription, // Para mensagem de sucesso
+      required String identifier // ID da Sub/Intent para logs (opcional)
+      }) async {
     print(
-        '>>> StripeService: initiatePayment iniciado para priceId: $priceId, userId: $userId');
-    // --- FIM DEBUG PRINT ---
+        '>>> StripeService: presentPaymentSheetWithSecret iniciado. Identifier: $identifier');
+
     try {
-      // --- DEBUG PRINT ---
-      print(
-          '>>> StripeService: Chamando _backendService.getOrCreateCustomer...');
-      // --- FIM DEBUG PRINT ---
-      final customerId =
-          await _backendService.getOrCreateCustomer(email, nome, userId);
-      if (customerId == null) {
-        print(
-            '>>> StripeService: ERRO - CustomerId nulo retornado pelo backend.'); // DEBUG
-        _showErrorDialog(context, "Erro ao configurar cliente de pagamento.");
-        return;
-      }
-      // --- DEBUG PRINT ---
-      print('>>> StripeService: CustomerId obtido/criado: $customerId');
-      print(
-          '>>> StripeService: Chamando _backendService.createPaymentIntent...');
-      // --- FIM DEBUG PRINT ---
-      final clientSecret =
-          await _backendService.createPaymentIntent(priceId, customerId);
-      if (clientSecret == null) {
-        print(
-            '>>> StripeService: ERRO - clientSecret nulo retornado pelo backend.'); // DEBUG
-        _showErrorDialog(context, "Erro ao iniciar o pagamento.");
-        return;
-      }
-      // --- DEBUG PRINT ---
-      print('>>> StripeService: clientSecret obtido: $clientSecret');
+      // 1. Inicializa o PaymentSheet com os dados do backend
       print('>>> StripeService: Chamando Stripe.instance.initPaymentSheet...');
-      // --- FIM DEBUG PRINT ---
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
+          paymentIntentClientSecret:
+              clientSecret, // ESSENCIAL: Vindo do backend
           merchantDisplayName: "Septima",
-          customerId: customerId,
+          customerId: customerId, // Vindo do backend
+          // customerEphemeralKeySecret: ephemeralKey, // Se o backend gerar ephemeral keys
+          // testEnv: true, // Se estiver usando chaves de teste
+          // style: ThemeMode.dark,
         ),
       );
-      // --- DEBUG PRINT ---
       print('>>> StripeService: initPaymentSheet concluído.');
-      print('>>> StripeService: Chamando _presentAndConfirmPayment...');
-      // --- FIM DEBUG PRINT ---
-      await _presentAndConfirmPayment(context,
-          isSubscription: false, identifier: clientSecret, userId: userId);
-    } catch (e) {
-      // --- DEBUG PRINT ---
-      print(">>> StripeService: CATCH (initiatePayment) - Erro no fluxo: $e");
-      // --- FIM DEBUG PRINT ---
-      _showErrorDialog(
-          context, "Ocorreu um erro inesperado durante o pagamento.");
-    }
-  }
 
-  Future<void> initiateSubscription(
-    String priceId,
-    String userId,
-    String email,
-    String nome,
-    BuildContext context,
-  ) async {
-    // --- DEBUG PRINT ---
-    print(
-        '>>> StripeService: initiateSubscription iniciado para priceId: $priceId, userId: $userId');
-    // --- FIM DEBUG PRINT ---
-    try {
-      // --- DEBUG PRINT ---
-      print(
-          '>>> StripeService: Chamando _backendService.getOrCreateCustomer...');
-      // --- FIM DEBUG PRINT ---
-      final customerId =
-          await _backendService.getOrCreateCustomer(email, nome, userId);
-      if (customerId == null) {
-        print(
-            '>>> StripeService: ERRO - CustomerId nulo retornado pelo backend.'); // DEBUG
-        _showErrorDialog(context, "Erro ao configurar cliente de pagamento.");
-        return;
-      }
-      // --- DEBUG PRINT ---
-      print('>>> StripeService: CustomerId obtido/criado: $customerId');
-      print(
-          '>>> StripeService: Chamando _backendService.createSubscription...');
-      // --- FIM DEBUG PRINT ---
-      final subscriptionData =
-          await _backendService.createSubscription(priceId, customerId);
-      if (subscriptionData == null) {
-        print(
-            '>>> StripeService: ERRO - subscriptionData nulo retornado pelo backend.'); // DEBUG
-        _showErrorDialog(context, "Erro ao iniciar a assinatura.");
-        return;
-      }
-      // --- DEBUG PRINT ---
-      print('>>> StripeService: subscriptionData obtido: $subscriptionData');
-      // --- FIM DEBUG PRINT ---
-
-      final clientSecret = subscriptionData["clientSecret"];
-      final subscriptionId = subscriptionData["subscriptionId"];
-      final initialStatus = subscriptionData["status"];
-
-      if (clientSecret != null && initialStatus != 'active') {
-        // --- DEBUG PRINT ---
-        print(
-            '>>> StripeService: Assinatura requer confirmação. Chamando initPaymentSheet...');
-        // --- FIM DEBUG PRINT ---
-        await Stripe.instance.initPaymentSheet(
-          paymentSheetParameters: SetupPaymentSheetParameters(
-            paymentIntentClientSecret: clientSecret,
-            merchantDisplayName: "Septima",
-            customerId: customerId,
-          ),
-        );
-        // --- DEBUG PRINT ---
-        print('>>> StripeService: initPaymentSheet concluído.');
-        print('>>> StripeService: Chamando _presentAndConfirmPayment...');
-        // --- FIM DEBUG PRINT ---
-        await _presentAndConfirmPayment(context,
-            isSubscription: true, identifier: subscriptionId, userId: userId);
-      } else if (initialStatus == 'active') {
-        // --- DEBUG PRINT ---
-        print(
-            ">>> StripeService: Assinatura $subscriptionId ativa, sem necessidade de PaymentSheet.");
-        // --- FIM DEBUG PRINT ---
-        _showSuccessDialog(context, "Assinatura ativada com sucesso!");
-        // Dispara ações para recarregar estado do Firestore via Redux
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            final store = StoreProvider.of<AppState>(context, listen: false);
-            store.dispatch(LoadUserPremiumStatusAction());
-            store.dispatch(LoadUserDetailsAction());
-          }
-        });
-      } else {
-        print(
-            '>>> StripeService: ERRO - Status inesperado da assinatura: $initialStatus'); // DEBUG
-        _showErrorDialog(
-            context, "Status inesperado da assinatura após criação.");
-      }
-    } catch (e) {
-      // --- DEBUG PRINT ---
-      print(
-          ">>> StripeService: CATCH (initiateSubscription) - Erro no fluxo: $e");
-      // --- FIM DEBUG PRINT ---
-      _showErrorDialog(
-          context, "Ocorreu um erro inesperado durante a assinatura.");
-    }
-  }
-
-  Future<void> _presentAndConfirmPayment(BuildContext context,
-      {required bool isSubscription,
-      required String identifier,
-      required String userId}) async {
-    // --- DEBUG PRINT ---
-    print(
-        '>>> StripeService: _presentAndConfirmPayment iniciado. isSubscription: $isSubscription, identifier: $identifier');
-    // --- FIM DEBUG PRINT ---
-    try {
-      // --- DEBUG PRINT ---
+      // 2. Apresenta o PaymentSheet para o usuário
       print(
           '>>> StripeService: Chamando Stripe.instance.presentPaymentSheet...');
-      // --- FIM DEBUG PRINT ---
       await Stripe.instance.presentPaymentSheet();
-      // --- DEBUG PRINT ---
       print(
-          '>>> StripeService: presentPaymentSheet CONCLUÍDO (ou fechado pelo usuário).');
-      // --- FIM DEBUG PRINT ---
+          '>>> StripeService: presentPaymentSheet CONCLUÍDO (ou fechado pelo usuário). Pagamento/Confirmação bem-sucedida no frontend.');
 
-      // --- SIMULAÇÃO PÓS-PAGAMENTO (APENAS PARA DEV) ---
-      // --- DEBUG PRINT ---
-      print(">>> StripeService: SIMULANDO chamada de webhook para backend...");
-      // --- FIM DEBUG PRINT ---
-      if (isSubscription) {
-        await _backendService.handleSubscriptionWebhookEvent(
-            identifier, 'active', null);
-      } else {
-        await _backendService.handlePaymentIntentSucceeded(identifier);
-      }
-      // --- DEBUG PRINT ---
-      print('>>> StripeService: SIMULAÇÃO Webhook concluída.');
-      // --- FIM DEBUG PRINT ---
+      // 3. Feedback de Sucesso e Recarregamento do Estado
+      // A confirmação REAL e atualização do Firestore acontecem via Webhook -> Cloud Function.
+      // Aqui, apenas mostramos sucesso e disparamos ações para o app LER o estado atualizado.
+      _showSuccessDialog(context,
+          isSubscription ? "Assinatura iniciada!" : "Pagamento processado!");
 
-      // Força o recarregamento do estado do usuário APÓS a simulação do webhook
+      // Dispara ações para forçar o recarregamento do estado do usuário do Firestore
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
-          // --- DEBUG PRINT ---
           print(
               '>>> StripeService: Disparando ações Redux para recarregar estado do usuário (LoadUserPremiumStatusAction, LoadUserDetailsAction)');
-          // --- FIM DEBUG PRINT ---
           final store = StoreProvider.of<AppState>(context, listen: false);
-          store.dispatch(LoadUserPremiumStatusAction());
-          store.dispatch(LoadUserDetailsAction());
+          store.dispatch(
+              LoadUserPremiumStatusAction()); // Ou a ação que carrega o status
+          store.dispatch(LoadUserDetailsAction()); // Ou LoadUserStatsAction
         } else {
           print(
-              '>>> StripeService: ERRO - Contexto não montado após simulação de webhook.'); // DEBUG
+              '>>> StripeService: ERRO - Contexto não montado após presentPaymentSheet.');
         }
       });
-
-      _showSuccessDialog(context,
-          isSubscription ? "Assinatura confirmada!" : "Pagamento confirmado!");
     } on StripeException catch (e) {
-      // --- DEBUG PRINT ---
+      // Erro específico do Stripe (ex: cartão recusado, pagamento cancelado)
       print(
-          ">>> StripeService: CATCH StripeException em _presentAndConfirmPayment - ${e.error.code} - ${e.error.localizedMessage}");
-      // --- FIM DEBUG PRINT ---
+          ">>> StripeService: CATCH StripeException em presentPaymentSheetWithSecret - ${e.error.code} - ${e.error.localizedMessage}");
       _showErrorDialog(
           context, e.error.localizedMessage ?? "Erro durante o pagamento.");
+      // Opcional: Despachar ação de falha Redux se necessário
+      // StoreProvider.of<AppState>(context, listen: false).dispatch(StripePaymentFailedAction(e.error.localizedMessage ?? "Erro Stripe"));
     } catch (e) {
-      // --- DEBUG PRINT ---
+      // Outros erros inesperados
       print(
-          ">>> StripeService: CATCH Geral em _presentAndConfirmPayment - Erro inesperado: $e");
-      // --- FIM DEBUG PRINT ---
+          ">>> StripeService: CATCH Geral em presentPaymentSheetWithSecret - Erro inesperado: $e");
       _showErrorDialog(context, "Ocorreu um erro inesperado.");
+      // Opcional: Despachar ação de falha Redux
+      // StoreProvider.of<AppState>(context, listen: false).dispatch(StripePaymentFailedAction("Erro inesperado: $e"));
     }
   }
+
+  // REMOVIDO: Métodos initiatePayment, initiateSubscription e _presentAndConfirmPayment (lógica movida/adaptada)
 
   // --- Diálogos de Feedback (permanecem privados) ---
   void _showSuccessDialog(BuildContext context, String message) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        // --- DEBUG PRINT ---
         print(">>> StripeService: Mostrando diálogo de SUCESSO: $message");
-        // --- FIM DEBUG PRINT ---
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -257,7 +106,7 @@ class StripeService {
         );
       } else {
         print(
-            ">>> StripeService: ERRO - Contexto não montado ao tentar mostrar diálogo de sucesso."); // DEBUG
+            ">>> StripeService: ERRO - Contexto não montado ao tentar mostrar diálogo de sucesso.");
       }
     });
   }
@@ -265,9 +114,7 @@ class StripeService {
   void _showErrorDialog(BuildContext context, String message) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        // --- DEBUG PRINT ---
         print(">>> StripeService: Mostrando diálogo de ERRO: $message");
-        // --- FIM DEBUG PRINT ---
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -283,7 +130,7 @@ class StripeService {
         );
       } else {
         print(
-            ">>> StripeService: ERRO - Contexto não montado ao tentar mostrar diálogo de erro."); // DEBUG
+            ">>> StripeService: ERRO - Contexto não montado ao tentar mostrar diálogo de erro.");
       }
     });
   }

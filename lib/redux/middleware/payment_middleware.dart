@@ -1,52 +1,39 @@
 // lib/redux/middleware/payment_middleware.dart
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../actions/payment_actions.dart';
 import '../store.dart';
-import '../../services/stripe_service.dart'; // Serviço Frontend
+import '../../services/stripe_service.dart';
 import '../../main.dart';
-
-// --- DEFINIÇÃO DA GLOBAL KEY ---
-// Coloque isso em um arquivo acessível globalmente, como main.dart ou um arquivo de config
-// Exemplo: `final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();`
-// E importe aqui:
-// import 'caminho/para/seu/main_or_config.dart'; // Exemplo
-// Por agora, definimos aqui para o código compilar, mas mova para um local apropriado.
-//final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-// -----------------------------
+import '../actions.dart';
 
 List<Middleware<AppState>> createPaymentMiddleware() {
   final stripeFrontendService = StripeService.instance;
+  final functions = FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   return [
     TypedMiddleware<AppState, InitiateStripePaymentAction>(
-        _handleInitiatePayment(stripeFrontendService)),
+        _handleInitiatePayment(stripeFrontendService, functions)),
   ];
 }
 
 void Function(Store<AppState>, InitiateStripePaymentAction, NextDispatcher)
-    _handleInitiatePayment(StripeService stripeFrontendService) {
+    _handleInitiatePayment(
+        StripeService stripeFrontendService, FirebaseFunctions functions) {
   return (Store<AppState> store, InitiateStripePaymentAction action,
       NextDispatcher next) async {
-    // --- DEBUG PRINT ---
     print(
         '>>> Middleware: _handleInitiatePayment iniciado para priceId: ${action.priceId}, isSubscription: ${action.isSubscription}');
-    // --- FIM DEBUG PRINT ---
-    next(action); // Passa a ação adiante primeiro
+    next(action);
 
     final BuildContext? context = navigatorKey.currentContext;
-
-    // Obtém dados do usuário DO STORE
     final userId = store.state.userState.userId;
-    final email = store.state.userState.email;
-    final nome = store.state.userState.nome;
 
-    // --- DEBUG PRINT ---
     print(
         '>>> Middleware: Tentando obter context. navigatorKey.currentContext é: ${context == null ? "nulo" : "não nulo"}');
-    print(
-        '>>> Middleware: Dados do usuário do store: userId: $userId, email: $email, nome: $nome');
-    // --- FIM DEBUG PRINT ---
+    print('>>> Middleware: Dados do usuário do store: userId: $userId');
 
     if (context == null) {
       print(
@@ -56,39 +43,106 @@ void Function(Store<AppState>, InitiateStripePaymentAction, NextDispatcher)
       return;
     }
 
-    if (userId == null || email == null || nome == null) {
-      print(
-          ">>> Middleware: ERRO - Dados do usuário incompletos no estado Redux.");
+    if (userId == null) {
+      print(">>> Middleware: ERRO - Usuário não autenticado no estado Redux.");
       store.dispatch(
-          StripePaymentFailedAction("Erro: Informações do usuário ausentes."));
-      // Não mostre diálogo daqui, deixe a UI reagir à ação de falha se necessário
+          StripePaymentFailedAction("Erro: Usuário não autenticado."));
       return;
     }
 
+    // Mostra loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+
     try {
-      // --- DEBUG PRINT ---
       print(
-          '>>> Middleware: Chamando stripeFrontendService.initiate${action.isSubscription ? "Subscription" : "Payment"}...');
-      // --- FIM DEBUG PRINT ---
-      if (action.isSubscription) {
-        await stripeFrontendService.initiateSubscription(
-            action.priceId, userId, email, nome, context);
-      } else {
-        await stripeFrontendService.initiatePayment(
-            action.priceId, userId, email, nome, context);
+          '>>> Middleware: Chamando Cloud Function "create_stripe_checkout"...');
+      final HttpsCallable callable =
+          functions.httpsCallable('create_stripe_checkout');
+      final result = await callable.call<Map<String, dynamic>>(
+        {'priceId': action.priceId, 'isSubscription': action.isSubscription},
+      );
+      print(
+          '>>> Middleware: Resposta da Cloud Function recebida: ${result.data}');
+
+      // Fecha o loading ANTES de processar a resposta
+      // Importante verificar se o contexto ainda é válido APÓS o await
+      if (context.mounted)
+        Navigator.of(context).pop();
+      else {
+        print(
+            ">>> Middleware: Aviso - Contexto não montado após retorno da Cloud Function. Não foi possível fechar o diálogo de loading.");
+        // Se o contexto não estiver montado, não podemos continuar com segurança para mostrar o PaymentSheet
+        store.dispatch(StripePaymentFailedAction(
+            "Erro interno: Contexto inválido após processamento."));
+        return;
       }
-      // --- DEBUG PRINT ---
+
+      final clientSecret = result.data['clientSecret'] as String?;
+      final subscriptionId = result.data['subscriptionId'] as String?;
+      final customerId = result.data['customerId'] as String?;
+      final status = result.data['status'] as String?;
+
+      if (clientSecret != null && customerId != null) {
+        print(
+            '>>> Middleware: clientSecret recebido. Chamando stripeFrontendService.presentPaymentSheetWithSecret...');
+        await stripeFrontendService.presentPaymentSheetWithSecret(
+            clientSecret,
+            customerId,
+            context, // Passa o contexto que sabemos que está montado
+            isSubscription: action.isSubscription,
+            identifier: action.isSubscription ? subscriptionId! : clientSecret);
+        print(
+            '>>> Middleware: Chamada a presentPaymentSheetWithSecret concluída.');
+      } else if (status == 'active' && subscriptionId != null) {
+        print(
+            '>>> Middleware: Assinatura $subscriptionId ativa imediatamente.');
+        // REMOVIDO: stripeFrontendService.showSuccessDialog(...) daqui
+        // O diálogo de sucesso/erro será mostrado DENTRO de presentPaymentSheetWithSecret
+        // ou, neste caso 'active', podemos mostrar um diálogo genérico ou apenas atualizar o estado.
+        // Apenas atualiza o estado Redux, a UI reagirá.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // Garante que aconteça após o build atual
+          if (context.mounted) {
+            // Verifica de novo por segurança
+            final store = StoreProvider.of<AppState>(context, listen: false);
+            store.dispatch(LoadUserPremiumStatusAction());
+            store.dispatch(LoadUserDetailsAction());
+            // Opcional: Mostrar um SnackBar rápido em vez de diálogo
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Assinatura ativada!'),
+                  duration: Duration(seconds: 2)),
+            );
+          }
+        });
+      } else {
+        print(
+            '>>> Middleware: ERRO - Resposta inválida da Cloud Function: Faltando clientSecret/customerId ou status ativo.');
+        throw Exception("Resposta inesperada do servidor.");
+      }
+    } on FirebaseFunctionsException catch (e) {
+      // Garante fechar loading em erro
+      // Verifica se o contexto original ainda é válido ANTES de tentar fechar o diálogo
+      if (context.mounted) Navigator.of(context).pop();
       print(
-          '>>> Middleware: Chamada ao stripeFrontendService concluída (sucesso/erro tratado internamente no serviço).');
-      // --- FIM DEBUG PRINT ---
+          ">>> Middleware: CATCH FirebaseFunctionsException - ${e.code} - ${e.message}");
+      store.dispatch(StripePaymentFailedAction(
+          "Erro ao comunicar com o servidor (${e.code}): ${e.message ?? 'Erro desconhecido'}"));
+      // REMOVIDO: Chamada a showErrorDialog daqui
     } catch (e) {
-      // --- DEBUG PRINT ---
+      // Garante fechar loading em erro
+      if (context.mounted) Navigator.of(context).pop();
       print(
-          ">>> Middleware: CATCH - Erro ao chamar initiateSubscription/Payment: $e");
-      // --- FIM DEBUG PRINT ---
+          ">>> Middleware: CATCH Geral - Erro ao chamar/processar Cloud Function: $e");
       store.dispatch(StripePaymentFailedAction(
           "Erro ao iniciar ${action.isSubscription ? 'assinatura' : 'pagamento'}: $e"));
-      // Não mostre diálogo daqui
+      // REMOVIDO: Chamada a showErrorDialog daqui
     }
   };
 }
