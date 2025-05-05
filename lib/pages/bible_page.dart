@@ -1,3 +1,5 @@
+// lib/pages/bible_page.dart
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,8 +8,6 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.da
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
-// REMOVIDO: Importação de shared_preferences (se ainda existia para comentários do usuário)
-// import 'package:shared_preferences/shared_preferences.dart';
 
 class BiblePage extends StatefulWidget {
   const BiblePage({super.key});
@@ -17,16 +17,11 @@ class BiblePage extends StatefulWidget {
 }
 
 class _BiblePageState extends State<BiblePage> {
-  Map<String, dynamic>? booksMap; // Mapeamento dos livros da Bíblia
-  String? selectedBook; // Livro selecionado
-  int? selectedChapter; // Capítulo selecionado
-  String selectedTranslation = 'nvi'; // Tradução selecionada, padrão "nvi"
-
-  // REMOVIDO: Variáveis de estado dos comentários
-  // List<Map<String, dynamic>> chapterComments = [];
-  // Map<int, List<Map<String, dynamic>>> verseComments = {};
-
-  bool showBibleRoutes = false; // Variável para controlar a exibição
+  Map<String, dynamic>? booksMap;
+  String? selectedBook;
+  int? selectedChapter;
+  String selectedTranslation = 'nvi';
+  bool showBibleRoutes = false;
   final FlutterTts _flutterTts = FlutterTts();
 
   @override
@@ -43,20 +38,17 @@ class _BiblePageState extends State<BiblePage> {
         selectedBook = 'gn'; // Livro inicial padrão
         selectedChapter = 1; // Capítulo inicial padrão
       });
-      // REMOVIDO: Chamada para _updateChapterData()
     });
   }
 
-  Future<void> _speakChapter(List<String> chapterContent) async {
-    String textToSpeak = chapterContent.join(" ");
+  // <<< MODIFICAÇÃO MVP: Função para falar o capítulo baseado na lista de versos >>>
+  Future<void> _speakChapter(List<String> verses) async {
+    if (verses.isEmpty) return; // Não tenta falar se não houver versos
+    String textToSpeak = verses.join(" ");
+    await _flutterTts.stop(); // Para qualquer fala anterior
     await _flutterTts.speak(textToSpeak);
   }
-
-  // REMOVIDO: Função _updateChapterData() inteira
-
-  // REMOVIDO: Função _loadBooksMap() (já estava no helper)
-
-  // REMOVIDO: Funções _saveUserComment, _loadUserComments, _showUserCommentDialog, _showUserComments
+  // <<< FIM MODIFICAÇÃO MVP >>>
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +88,8 @@ class _BiblePageState extends State<BiblePage> {
                                   setState(() {
                                     selectedTranslation = value;
                                   });
+                                  _flutterTts
+                                      .stop(); // Para a fala ao mudar tradução
                                 },
                               );
                             },
@@ -114,6 +108,8 @@ class _BiblePageState extends State<BiblePage> {
                               setState(() {
                                 showBibleRoutes = !showBibleRoutes;
                               });
+                              _flutterTts
+                                  .stop(); // Para a fala ao mudar para rotas
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF272828),
@@ -142,7 +138,8 @@ class _BiblePageState extends State<BiblePage> {
                                   selectedChapter =
                                       1; // Reset chapter on book change
                                 });
-                                // REMOVIDO: Chamada para _updateChapterData()
+                                _flutterTts
+                                    .stop(); // Para a fala ao mudar livro
                               },
                             ),
                           ),
@@ -157,22 +154,21 @@ class _BiblePageState extends State<BiblePage> {
                                   setState(() {
                                     selectedChapter = value;
                                   });
-                                  // REMOVIDO: Chamada para _updateChapterData()
+                                  _flutterTts
+                                      .stop(); // Para a fala ao mudar capítulo
                                 },
                               ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // REMOVIDO: Botão "Ver Comentários do Capítulo"
-                      // const SizedBox(height: 16), // Removido espaçamento extra
                       if (selectedBook != null && selectedChapter != null)
                         Expanded(
-                          child: FutureBuilder<List<String>>(
-                            // Chave para forçar rebuild ao mudar livro/capítulo/tradução
+                          // <<< MODIFICAÇÃO MVP: FutureBuilder para carregar Map<String, dynamic> >>>
+                          child: FutureBuilder<Map<String, dynamic>>(
                             key: ValueKey(
                                 '$selectedBook-$selectedChapter-$selectedTranslation'),
-                            future: BiblePageHelper.loadChapterContent(
+                            future: BiblePageHelper.loadChapterData(
                                 selectedBook!,
                                 selectedChapter!,
                                 selectedTranslation),
@@ -187,12 +183,15 @@ class _BiblePageState extends State<BiblePage> {
                               } else if (snapshot.hasError) {
                                 return Center(
                                   child: Text(
-                                    'Erro ao carregar capítulo: ${snapshot.error}',
+                                    'Erro ao carregar dados do capítulo: ${snapshot.error}',
                                     style: const TextStyle(color: Colors.red),
                                   ),
                                 );
                               } else if (!snapshot.hasData ||
-                                  snapshot.data!.isEmpty) {
+                                  (snapshot.data?['verses'] as List?)
+                                          ?.isEmpty ==
+                                      true) {
+                                // Verifica se há versos
                                 return const Center(
                                   child: Text(
                                     'Capítulo não encontrado ou vazio.',
@@ -201,16 +200,21 @@ class _BiblePageState extends State<BiblePage> {
                                 );
                               }
 
-                              final chapterContent = snapshot.data!;
+                              // Extrai dados
+                              final chapterData = snapshot.data!;
+                              final List<Map<String, dynamic>> sections =
+                                  chapterData['sections'] ?? [];
+                              final List<String> allVerses =
+                                  chapterData['verses'] ?? [];
+
+                              // <<< FIM MODIFICAÇÃO MVP >>>
 
                               return Column(
                                 children: [
+                                  // <<< MODIFICAÇÃO MVP: Botão para ouvir o capítulo >>>
                                   ElevatedButton.icon(
-                                    onPressed: () {
-                                      if (chapterContent.isNotEmpty) {
-                                        _speakChapter(chapterContent);
-                                      }
-                                    },
+                                    onPressed: () => _speakChapter(
+                                        allVerses), // Passa a lista de versos
                                     icon: const Icon(Icons.volume_up,
                                         color: Colors.white),
                                     label: const Text("Ouvir Capítulo",
@@ -221,36 +225,125 @@ class _BiblePageState extends State<BiblePage> {
                                           horizontal: 16, vertical: 12),
                                     ),
                                   ),
+                                  // <<< FIM MODIFICAÇÃO MVP >>>
                                   const SizedBox(height: 16),
                                   Expanded(
+                                    // <<< MODIFICAÇÃO MVP: Renderiza seções ou versos diretamente >>>
                                     child: ListView.builder(
-                                      itemCount: chapterContent.length,
-                                      itemBuilder: (context, index) {
-                                        final verseNumber = index + 1;
-                                        final verseText = chapterContent[index];
+                                      // Se houver seções, itera por elas. Senão, trata como 1 seção contendo todos os versos.
+                                      itemCount: sections.isNotEmpty
+                                          ? sections.length
+                                          : 1,
+                                      itemBuilder: (context, sectionIndex) {
+                                        Widget sectionWidget;
 
-                                        // Chamada simplificada para buildVerseItem
-                                        return BiblePageWidgets.buildVerseItem(
-                                          verseNumber: verseNumber,
-                                          verseText: verseText,
-                                          // REMOVIDO: verseComments
-                                          selectedBook: selectedBook,
-                                          selectedChapter: selectedChapter,
-                                          context: context,
-                                          // REMOVIDO: onAddUserComment
-                                          // REMOVIDO: onViewUserComments
-                                        );
+                                        if (sections.isNotEmpty) {
+                                          // Renderiza uma seção específica
+                                          final section =
+                                              sections[sectionIndex];
+                                          final String sectionTitle =
+                                              section['title'];
+                                          final List<int> verseNumbers =
+                                              section['verses'] ?? [];
+
+                                          sectionWidget = Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              // Título da Seção
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    top: 16.0, bottom: 8.0),
+                                                child: Text(
+                                                  sectionTitle,
+                                                  style: const TextStyle(
+                                                    color: Color(
+                                                        0xFFCDE7BE), // Cor de destaque
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              // Versículos da Seção
+                                              ...verseNumbers
+                                                  .map((verseNumber) {
+                                                // Validação básica do índice do verso
+                                                if (verseNumber > 0 &&
+                                                    verseNumber <=
+                                                        allVerses.length) {
+                                                  final verseIndex =
+                                                      verseNumber - 1;
+                                                  final verseText =
+                                                      allVerses[verseIndex];
+                                                  return BiblePageWidgets
+                                                      .buildVerseItem(
+                                                    verseNumber: verseNumber,
+                                                    verseText: verseText,
+                                                    selectedBook: selectedBook,
+                                                    selectedChapter:
+                                                        selectedChapter,
+                                                    context: context,
+                                                  );
+                                                } else {
+                                                  // Caso o número do verso seja inválido
+                                                  return Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 4.0),
+                                                    child: Text(
+                                                        'Erro: Verso $verseNumber inválido.',
+                                                        style: const TextStyle(
+                                                            color: Colors
+                                                                .redAccent)),
+                                                  );
+                                                }
+                                              }).toList(),
+                                            ],
+                                          );
+                                        } else {
+                                          // Não há seções, renderiza todos os versos diretamente
+                                          sectionWidget = Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: List.generate(
+                                                allVerses.length, (verseIndex) {
+                                              final verseNumber =
+                                                  verseIndex + 1;
+                                              final verseText =
+                                                  allVerses[verseIndex];
+                                              return BiblePageWidgets
+                                                  .buildVerseItem(
+                                                verseNumber: verseNumber,
+                                                verseText: verseText,
+                                                selectedBook: selectedBook,
+                                                selectedChapter:
+                                                    selectedChapter,
+                                                context: context,
+                                              );
+                                            }),
+                                          );
+                                        }
+
+                                        return sectionWidget;
                                       },
                                     ),
+                                    // <<< FIM MODIFICAÇÃO MVP >>>
                                   ),
                                 ],
                               );
                             },
                           ),
+                          // <<< FIM MODIFICAÇÃO MVP >>>
                         ),
                     ],
                   ),
                 ),
     );
+  }
+
+  @override
+  void dispose() {
+    _flutterTts.stop(); // Garante que a fala pare ao sair da página
+    super.dispose();
   }
 }

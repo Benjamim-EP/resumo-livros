@@ -1,13 +1,15 @@
+//lib/components/bottomNavigationBar/bottomNavigationBar.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/chat_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/explore_page.dart';
+// import 'package:resumo_dos_deuses_flutter/pages/chat_page.dart'; // <<< MODIFICAÇÃO MVP: Não precisa importar se for substituído
+// import 'package:resumo_dos_deuses_flutter/pages/explore_page.dart'; // <<< MODIFICAÇÃO MVP: Não precisa importar se for substituído
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/hymns_page.dart';
+// import 'package:resumo_dos_deuses_flutter/pages/hymns_page.dart'; // <<< MODIFICAÇÃO MVP: Não precisa importar se for substituído
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
@@ -17,6 +19,43 @@ import 'package:firebase_auth/firebase_auth.dart'; // Importar FirebaseAuth
 import 'dart:async'; // Importar dart:async para StreamSubscription
 import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Importar a ação específica
 
+// <<< MODIFICAÇÃO MVP: Widget Placeholder >>>
+class _UnderConstructionPlaceholder extends StatelessWidget {
+  const _UnderConstructionPlaceholder({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Adicionado Scaffold para aparência consistente
+      appBar: AppBar(
+        title: const Text("Em Construção"),
+        backgroundColor: const Color(0xFF181A1A),
+      ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.construction, size: 80, color: Colors.amber),
+            SizedBox(height: 20),
+            Text(
+              'Esta seção está em construção!',
+              style: TextStyle(fontSize: 20, color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Volte em breve para novidades.',
+              style: TextStyle(fontSize: 16, color: Colors.white70),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+// <<< FIM MODIFICAÇÃO MVP >>>
+
 class MainAppScreen extends StatefulWidget {
   const MainAppScreen({super.key});
 
@@ -25,7 +64,9 @@ class MainAppScreen extends StatefulWidget {
 }
 
 class _MainAppScreenState extends State<MainAppScreen> {
-  int _selectedIndex = 1; // Iniciar na aba Explore por padrão
+  // <<< MODIFICAÇÃO MVP: Iniciar na User Page (índice 0) ou Bible (índice 2)
+  // Vamos manter User como inicial padrão (0)
+  int _selectedIndex = 0; // <<< MODIFICAÇÃO MVP: Iniciar na aba User
 
   // Chaves para cada Navigator
   final GlobalKey<NavigatorState> _userNavigatorKey =
@@ -51,23 +92,25 @@ class _MainAppScreenState extends State<MainAppScreen> {
   void initState() {
     super.initState();
 
-    // Carrega dados iniciais essenciais do usuário via Redux
-    // store.dispatch(LoadUserStatsAction()); // <- O listener abaixo pode substituir isso se carregar tudo
-    // store.dispatch(LoadUserDetailsAction()); // <- O listener abaixo pode substituir isso
-
     _setupUserListener(); // Configura o listener do Firestore
 
+    // <<< MODIFICAÇÃO MVP: Atualiza a lista _pages >>>
     _pages = [
+      // Índice 0: User (Ativo)
       _buildTabNavigator(_userNavigatorKey, UserPage()),
-      _buildTabNavigator(_exploreNavigatorKey, const Explore()),
+      // Índice 1: Explore (Em Construção)
+      _buildTabNavigator(
+          _exploreNavigatorKey, const _UnderConstructionPlaceholder()),
+      // Índice 2: Bible (Ativo)
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
-      _buildTabNavigator(_rotaNavigatorKey,
-          const HymnsPage()), // Ajustado para const se não tiver estado
-      _buildTabNavigator(_chatNavigatorKey, const ChatPage()),
+      // Índice 3: Cântico/Hymns (Em Construção)
+      _buildTabNavigator(
+          _rotaNavigatorKey, const _UnderConstructionPlaceholder()),
+      // Índice 4: Chat (Em Construção)
+      _buildTabNavigator(
+          _chatNavigatorKey, const _UnderConstructionPlaceholder()),
     ];
-
-    // Carrega o estado premium inicial (pode ser feito aqui ou no onInit do StoreConnector)
-    // _updatePremiumStatus(store.state.userState.userDetails); //<- Removido, onDidChange fará isso
+    // <<< FIM MODIFICAÇÃO MVP >>>
   }
 
   @override
@@ -81,53 +124,43 @@ class _MainAppScreenState extends State<MainAppScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final userId = user.uid;
-      // Não precisamos pegar o store aqui, ele será pego dentro do listen
+      final storeInstance = store; // Usa o store global importado
 
       print(">>> MainAppScreen: Configurando listener para usuário $userId");
 
-      // Cancela listener anterior, se houver
       _userDocSubscription?.cancel();
 
       _userDocSubscription = FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
-          .snapshots() // Escuta mudanças em TEMPO REAL
+          .snapshots()
           .listen((DocumentSnapshot snapshot) {
-        // Obter a instância do store AQUI, dentro do callback, para garantir que temos contexto se necessário
-        // Embora para despachar não precise do context, é uma boa prática.
-        final storeInstance = store; // Usa o store global importado
-
         if (snapshot.exists && snapshot.data() != null) {
           final userData = snapshot.data() as Map<String, dynamic>;
           print(
               ">>> MainAppScreen Listener: Dados do usuário atualizados no Firestore: Status='${userData['subscriptionStatus']}', EndDate='${(userData['subscriptionEndDate'] as Timestamp?)?.toDate()}'");
           final Timestamp? endDateTimestamp =
               userData['subscriptionEndDate'] as Timestamp?;
-          // 2. Converta para DateTime? (se o timestamp não for nulo)
           final DateTime? endDateDateTime = endDateTimestamp?.toDate();
-          // Despacha a ação específica com os dados da assinatura
+
           storeInstance.dispatch(SubscriptionStatusUpdatedAction(
             status: userData['subscriptionStatus'] ?? 'inactive',
-            endDate: endDateDateTime, // <<< PASSA O DateTime? CONVERTIDO
+            endDate: endDateDateTime,
             subscriptionId: userData['stripeSubscriptionId'] as String?,
             customerId: userData['stripeCustomerId'] as String?,
             priceId: userData['activePriceId'] as String?,
           ));
-          // Pode também despachar a ação geral se outras partes do app precisarem de TODOS os dados atualizados
-          // storeInstance.dispatch(UserDetailsLoadedAction(userData));
+          // Atualiza userDetails geral também, para garantir consistência
+          storeInstance.dispatch(UserDetailsLoadedAction(userData));
         } else {
           print(
               ">>> MainAppScreen Listener: Documento do usuário $userId não existe mais.");
-          // Se o documento for excluído, talvez despachar uma ação de logout?
-          // storeInstance.dispatch(UserLoggedOutAction()); // Exemplo
         }
       }, onError: (error) {
         print(
             ">>> MainAppScreen Listener: Erro ao ouvir documento do usuário: $error");
-        // Considerar despachar uma ação de erro
       }, onDone: () {
         print(">>> MainAppScreen Listener: Listener finalizado.");
-        // O listener pode ser finalizado se a stream for fechada (raro para snapshots)
       });
     } else {
       print(
@@ -135,11 +168,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
     }
   }
 
-  // Esta função agora será chamada automaticamente pelo onDidChange do StoreConnector
   void _updatePremiumStatus(Map<String, dynamic>? userDetails) {
-    if (!mounted) return; // Não atualiza estado se o widget não estiver montado
+    if (!mounted) return;
 
-    bool shouldBePremium = false; // Calcula o status baseado nos dados atuais
+    bool shouldBePremium = false;
     if (userDetails != null) {
       final status = userDetails['subscriptionStatus'] as String?;
       final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
@@ -150,22 +182,20 @@ class _MainAppScreenState extends State<MainAppScreen> {
           final now = DateTime.now();
           shouldBePremium = now.isBefore(expirationDate);
         } else {
-          // Ativo sem data de fim? Considerar premium (ex: trial vitalício?)
           shouldBePremium = true;
         }
       }
     }
 
-    // Atualiza o estado local APENAS se o status calculado mudou
     if (shouldBePremium != isPremium) {
       print(
           ">>> MainAppScreen: Atualizando estado isPremium de $isPremium para $shouldBePremium");
       setState(() {
         isPremium = shouldBePremium;
         if (!isPremium) {
-          _initBannerAd(); // Mostra banner se não for premium
+          _initBannerAd();
         } else {
-          _disposeBannerAd(); // Remove banner se for premium
+          _disposeBannerAd();
         }
       });
     } else {
@@ -183,8 +213,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 
   void _initBannerAd() {
-    if (_bannerAd != null || !mounted)
-      return; // Não recria se já existe ou se não está montado
+    if (_bannerAd != null || !mounted) return;
 
     print(">>> MainAppScreen: Inicializando banner Ad...");
     _bannerAd = ads.BannerAd(
@@ -196,7 +225,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
           if (!mounted) {
             ad.dispose();
             return;
-          } // Descarta se saiu da tela antes de carregar
+          }
           print(">>> MainAppScreen: Banner carregado com sucesso.");
           setState(() {
             _bannerAd = ad as ads.BannerAd;
@@ -209,7 +238,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
           if (mounted) {
             setState(() {
               _bannerAd = null;
-            }); // Garante que banner seja nulo no estado
+            });
           }
         },
       ),
@@ -221,7 +250,13 @@ class _MainAppScreenState extends State<MainAppScreen> {
     return Navigator(
       key: navigatorKey,
       onGenerateRoute: (settings) {
-        // Lógica de roteamento interno para cada aba
+        // <<< MODIFICAÇÃO MVP: Simplificado - Se for placeholder, só mostra ele >>>
+        if (child is _UnderConstructionPlaceholder) {
+          return MaterialPageRoute(builder: (_) => child, settings: settings);
+        }
+        // <<< FIM MODIFICAÇÃO MVP >>>
+
+        // Lógica de roteamento interno para cada aba ATIVA
         WidgetBuilder? builder;
         if (settings.name == '/bookDetails') {
           final bookId = settings.arguments as String?;
@@ -257,18 +292,25 @@ class _MainAppScreenState extends State<MainAppScreen> {
       case 4:
         return _chatNavigatorKey;
       default:
-        return _exploreNavigatorKey;
+        // <<< MODIFICAÇÃO MVP: Retorna a chave da User Page como padrão seguro
+        return _userNavigatorKey;
+      // <<< FIM MODIFICAÇÃO MVP >>>
     }
   }
 
   Future<bool> _onWillPop() async {
+    // <<< MODIFICAÇÃO MVP: Se a aba atual for uma desativada, permite sair direto >>>
+    if (_selectedIndex == 1 || _selectedIndex == 3 || _selectedIndex == 4) {
+      return true; // Permite fechar o app se estiver numa aba desativada
+    }
+    // <<< FIM MODIFICAÇÃO MVP >>>
+
     final currentNavigator = _currentNavigatorKey.currentState;
-    // Se o navigator da aba atual puder voltar, volte nele. Senão, permite fechar o app.
     if (currentNavigator != null && currentNavigator.canPop()) {
       currentNavigator.pop();
-      return false; // Impede que o WillPopScope feche o app
+      return false;
     }
-    return true; // Permite fechar o app
+    return true;
   }
 
   @override
@@ -278,22 +320,13 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
     return StoreConnector<AppState, Map<String, dynamic>?>(
       converter: (store) => store.state.userState.userDetails,
-      // ATENÇÃO: onInit aqui pode causar chamadas duplicadas se o listener já estiver ativo.
-      // É melhor confiar no listener para a atualização inicial após o login.
-      // Removido onInit para evitar redundância com o listener.
-      // onInit: (store) { ... },
-      // onDidChange REAGE a mudanças no estado Redux (causadas pelo listener)
       onDidChange: (previousViewModel, viewModel) {
         print(
             ">>> MainAppScreen StoreConnector.onDidChange: Estado Redux mudou.");
         _updatePremiumStatus(viewModel);
       },
-      // Rebuilda explicitamente quando o userDetails muda para garantir que _updatePremiumStatus seja chamado
-      rebuildOnChange: true, // Ou false se onDidChange for suficiente
+      rebuildOnChange: true,
       builder: (context, userDetails) {
-        // O builder agora confia que onDidChange atualizará o estado 'isPremium'
-        // Não precisa mais da verificação inicial de null aqui se o listener estiver ativo.
-
         return WillPopScope(
           onWillPop: _onWillPop,
           child: Scaffold(
@@ -304,10 +337,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
             bottomNavigationBar: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Exibe o banner SE não for premium E o banner estiver carregado
                 if (!isPremium && _bannerAd != null)
                   Container(
-                    alignment: Alignment.center, // Centraliza o anúncio
+                    alignment: Alignment.center,
                     width: _bannerAd!.size.width.toDouble(),
                     height: _bannerAd!.size.height.toDouble(),
                     child: ads.AdWidget(ad: _bannerAd!),
@@ -316,16 +348,12 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   type: BottomNavigationBarType.fixed,
                   currentIndex: _selectedIndex,
                   onTap: (index) {
-                    if (_selectedIndex == index) {
-                      // Se clicar na aba atual, volta para a raiz dela
-                      _currentNavigatorKey.currentState
-                          ?.popUntil((route) => route.isFirst);
-                    } else {
-                      // Muda para a nova aba
-                      setState(() {
-                        _selectedIndex = index;
-                      });
-                    }
+                    // <<< MODIFICAÇÃO MVP: Simplificado para sempre mudar de aba >>>
+                    // Não precisa mais do popUntil para as abas desativadas
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                    // <<< FIM MODIFICAÇÃO MVP >>>
                   },
                   selectedItemColor:
                       Colors.greenAccent, // Cor do item selecionado

@@ -304,6 +304,75 @@ flutter:
     - assets/Biblia/completa_traducoes/aa/jd/
     - assets/Biblia/completa_traducoes/aa/ap/
 
+    # Blocos
+    - assets/Biblia/blocos/gn/
+    - assets/Biblia/blocos/ex/
+    - assets/Biblia/blocos/lv/
+    - assets/Biblia/blocos/nm/
+    - assets/Biblia/blocos/dt/
+    - assets/Biblia/blocos/js/
+    - assets/Biblia/blocos/jz/
+    - assets/Biblia/blocos/rt/
+    - assets/Biblia/blocos/1sm/
+    - assets/Biblia/blocos/2sm/
+    - assets/Biblia/blocos/1rs/
+    - assets/Biblia/blocos/2rs/
+    - assets/Biblia/blocos/1cr/
+    - assets/Biblia/blocos/2cr/
+    - assets/Biblia/blocos/ed/
+    - assets/Biblia/blocos/ne/
+    - assets/Biblia/blocos/et/
+    - assets/Biblia/blocos/jo/
+    - assets/Biblia/blocos/sl/
+    - assets/Biblia/blocos/pv/
+    - assets/Biblia/blocos/ec/
+    - assets/Biblia/blocos/ct/
+    - assets/Biblia/blocos/is/
+    - assets/Biblia/blocos/jr/
+    - assets/Biblia/blocos/lm/
+    - assets/Biblia/blocos/ez/
+    - assets/Biblia/blocos/dn/
+    - assets/Biblia/blocos/os/
+    - assets/Biblia/blocos/jl/
+    - assets/Biblia/blocos/am/
+    - assets/Biblia/blocos/ob/
+    - assets/Biblia/blocos/jn/
+    - assets/Biblia/blocos/mq/
+    - assets/Biblia/blocos/na/
+    - assets/Biblia/blocos/hc/
+    - assets/Biblia/blocos/sf/
+    - assets/Biblia/blocos/ag/
+    - assets/Biblia/blocos/zc/
+    - assets/Biblia/blocos/ml/
+    - assets/Biblia/blocos/mt/
+    - assets/Biblia/blocos/mc/
+    - assets/Biblia/blocos/lc/
+    - assets/Biblia/blocos/jo/
+    - assets/Biblia/blocos/jó/
+    - assets/Biblia/blocos/atos/
+    - assets/Biblia/blocos/rm/
+    - assets/Biblia/blocos/1co/
+    - assets/Biblia/blocos/2co/
+    - assets/Biblia/blocos/gl/
+    - assets/Biblia/blocos/ef/
+    - assets/Biblia/blocos/fp/
+    - assets/Biblia/blocos/cl/
+    - assets/Biblia/blocos/1ts/
+    - assets/Biblia/blocos/2ts/
+    - assets/Biblia/blocos/1tm/
+    - assets/Biblia/blocos/2tm/
+    - assets/Biblia/blocos/tt/
+    - assets/Biblia/blocos/fm/
+    - assets/Biblia/blocos/hb/
+    - assets/Biblia/blocos/tg/
+    - assets/Biblia/blocos/1pe/
+    - assets/Biblia/blocos/2pe/
+    - assets/Biblia/blocos/1jo/
+    - assets/Biblia/blocos/2jo/
+    - assets/Biblia/blocos/3jo/
+    - assets/Biblia/blocos/jd/
+    - assets/Biblia/blocos/ap/
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
