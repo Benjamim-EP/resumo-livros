@@ -1,11 +1,11 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_redux/flutter_redux.dart';
+import 'package:flutter_redux/flutter_redux.dart'; // Para acessar o store nos modais
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/highlight_color_picker_modal.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/note_editor_modal.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart'; // Para salvar versículo
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/highlight_color_picker_modal.dart'; // Modal de cores
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/note_editor_modal.dart'; // Modal de notas
 
 class BiblePageWidgets {
   /// Botão para selecionar uma tradução específica.
@@ -111,34 +111,25 @@ class BiblePageWidgets {
     );
   }
 
-  /// Formata o texto do versículo, aplicando negrito aos marcadores "n."/(n.)
-  /// e cor de fundo se houver destaque.
-  static List<TextSpan> _formatVerseText(
-      String verseText, String? highlightColorHex) {
+  /// Formata o texto do versículo, aplicando negrito aos marcadores "n."/(n.).
+  /// Não aplica mais cor de fundo diretamente aos TextSpans.
+  static List<TextSpan> _formatVerseText(String verseText) {
     final List<TextSpan> spans = [];
-    // Regex ajustada para ser menos restritiva no início (pode capturar em mais locais)
-    // e garantir que captura o marcador completo. Adiciona lookbehind para evitar capturar dentro de palavras.
+    // Regex ajustada para ser menos restritiva no início e garantir que captura o marcador completo.
     final RegExp regex =
         RegExp(r'(?<![\w])((\d+\.)|(\(\d+\)))(?!\w)\s*', multiLine: true);
     int currentPosition = 0;
 
-    // Converte cor hexadecimal para Color, ou usa transparente
-    final backgroundColor = highlightColorHex != null
-        ? Color(int.parse(highlightColorHex.replaceFirst('#', '0xff')))
-        : Colors.transparent;
-
-    // Estilo base para o texto do versículo
-    TextStyle baseStyle = TextStyle(
+    // Estilo base para o texto do versículo (sem background)
+    const TextStyle baseStyle = TextStyle(
       color: Colors.white,
       fontSize: 16,
       height: 1.5,
-      backgroundColor: backgroundColor,
     );
-    // Estilo para os números formatados
-    TextStyle numberStyle = TextStyle(
+    // Estilo para os números formatados (sem background)
+    const TextStyle numberStyle = TextStyle(
       fontWeight: FontWeight.bold,
-      color: const Color(0xFFEAEAEA), // Cor um pouco mais clara para destaque
-      backgroundColor: backgroundColor,
+      color: Color(0xFFEAEAEA), // Cor um pouco mais clara para destaque
       fontSize: 16, // Mesmo tamanho da fonte base
       height: 1.5, // Mesma altura da linha base
     );
@@ -155,8 +146,7 @@ class BiblePageWidgets {
         text: match.group(1)!, // O número com ponto ou parênteses
         style: numberStyle,
       ));
-      // Adiciona um espaço APÓS o marcador, se houver espaço capturado (grupo 0 contém o espaço)
-      // Isso evita adicionar espaço duplo se o regex já capturou.
+      // Adiciona um espaço APÓS o marcador, se houver espaço capturado
       if (match.group(0)!.endsWith(' ')) {
         spans.add(TextSpan(text: ' ', style: baseStyle));
       }
@@ -178,7 +168,7 @@ class BiblePageWidgets {
     return spans;
   }
 
-  /// Constrói o widget para exibir um único versículo, com interações.
+  /// Constrói o widget para exibir um único versículo, com interações e destaque de fundo.
   static Widget buildVerseItem({
     required int verseNumber,
     required String verseText,
@@ -190,13 +180,14 @@ class BiblePageWidgets {
   }) {
     // Cria um ID único e consistente para o versículo
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
-    final String? currentHighlightColor = userHighlights[verseId];
+    final String? currentHighlightColorHex = userHighlights[verseId];
     final bool hasNote = userNotes.containsKey(verseId);
 
-    // Converte cor hexadecimal para Color, ou usa transparente
-    final backgroundColor = currentHighlightColor != null
-        ? Color(int.parse(currentHighlightColor.replaceFirst('#', '0xff')))
-            .withOpacity(0.35) // Leve opacidade no fundo geral
+    // Define a cor de fundo para o Container com base no destaque
+    final backgroundColor = currentHighlightColorHex != null
+        ? Color(int.parse(currentHighlightColorHex.replaceFirst('#', '0xff')))
+            .withOpacity(
+                0.30) // Ajuste a opacidade para o sombreamento desejado
         : Colors.transparent;
 
     return GestureDetector(
@@ -206,7 +197,7 @@ class BiblePageWidgets {
         _showVerseOptionsModal(
           context,
           verseId,
-          currentHighlightColor,
+          currentHighlightColorHex, // Passa o Hex original
           userNotes[verseId], // Passa o texto da nota atual
           selectedBook!,
           selectedChapter!,
@@ -215,47 +206,40 @@ class BiblePageWidgets {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: 6.0, horizontal: 4.0), // Adiciona padding horizontal
-        margin: const EdgeInsets.symmetric(
-            vertical: 1.0), // Pequeno espaço entre versículos
+        // Aplica a cor de fundo (sombreamento) aqui
+        padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
+        margin: const EdgeInsets.symmetric(vertical: 1.0),
         decoration: BoxDecoration(
-          // Aplica a cor de fundo do destaque aqui
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(
-              4), // Bordas levemente arredondadas para o destaque
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Número do Versículo
+            // Número do Versículo (sem fundo próprio)
             Text(
               '$verseNumber ',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
-                color: currentHighlightColor != null
-                    ? Colors.white.withOpacity(0.9)
-                    : const Color(0xFFB0B0B0), // Contraste melhor com fundo
+                color: Color(0xFFB0B0B0),
                 fontWeight: FontWeight.bold,
               ),
             ),
-            // Texto do Versículo (Formatado)
+            // Texto do Versículo (Formatado, sem fundo nos TextSpans)
             Expanded(
               child: RichText(
                 text: TextSpan(
-                  // O estilo base é definido dentro de _formatVerseText agora
-                  children: _formatVerseText(verseText, currentHighlightColor),
+                  // Chama _formatVerseText sem a cor de destaque
+                  children: _formatVerseText(verseText),
                 ),
               ),
             ),
             // Ícone de Nota (se houver)
             if (hasNote)
               Padding(
-                padding: const EdgeInsets.only(
-                    left: 5.0, right: 2.0, top: 2.0), // Ajuste fino do padding
+                padding: const EdgeInsets.only(left: 5.0, right: 2.0, top: 2.0),
                 child: Icon(Icons.note_alt_rounded,
-                    color: Colors.blueAccent[100],
-                    size: 16), // Ícone preenchido
+                    color: Colors.blueAccent[100], size: 16),
               ),
           ],
         ),
@@ -267,16 +251,15 @@ class BiblePageWidgets {
   static void _showVerseOptionsModal(
       BuildContext context,
       String verseId,
-      String? currentHighlightColor,
+      String? currentHighlightColor, // Recebe Hex
       String? currentNote,
       String bookAbbrev,
       int chapter,
       int verseNum,
       String verseText) {
-    // Recebe texto do versículo
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2C2F33), // Cor de fundo escura
+      backgroundColor: const Color(0xFF2C2F33),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -307,7 +290,7 @@ class BiblePageWidgets {
                           color: Colors.white70,
                           fontStyle: FontStyle.italic,
                           fontSize: 14),
-                      maxLines: 3, // Limita o preview
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -328,11 +311,9 @@ class BiblePageWidgets {
                         : "Destacar Versículo",
                     style: const TextStyle(color: Colors.white)),
                 onTap: () {
-                  Navigator.pop(modalContext); // Fecha modal de opções
+                  Navigator.pop(modalContext);
                   showDialog(
-                    // Abre seletor de cores
                     context: context,
-                    // Garante que o context original seja usado para o StoreProvider
                     builder: (_) => HighlightColorPickerModal(
                         initialColor: currentHighlightColor,
                         onColorSelected: (selectedColor) {
@@ -358,17 +339,14 @@ class BiblePageWidgets {
                     currentNote != null ? "Editar Nota" : "Adicionar Nota",
                     style: const TextStyle(color: Colors.white)),
                 onTap: () {
-                  Navigator.pop(modalContext); // Fecha modal de opções
+                  Navigator.pop(modalContext);
                   showDialog(
-                    // Abre editor de notas
                     context: context,
-                    // Garante que o context original seja usado para o StoreProvider
                     builder: (_) => NoteEditorModal(
                       verseId: verseId,
                       initialText: currentNote,
                       bookReference: "$bookAbbrev $chapter:$verseNum",
                       verseTextSample: verseText,
-                      // A lógica de salvar/deletar está dentro do NoteEditorModal agora
                     ),
                   );
                 },
@@ -401,7 +379,7 @@ class BiblePageWidgets {
                 onTap: () {
                   Navigator.pop(modalContext);
                   showDialog(
-                    context: context, // Usa o contexto original
+                    context: context,
                     builder: (dContext) => SaveVerseDialog(
                       bookAbbrev: bookAbbrev,
                       chapter: chapter,
