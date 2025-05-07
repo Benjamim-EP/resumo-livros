@@ -90,6 +90,8 @@ flutter:
     - assets/temp_book.jpg
 
     - assets/Biblia/completa_traducoes/abbrev_map.json
+    - assets/Biblia/book_variations_map.json
+    
     - assets/Biblia/completa_traducoes/nvi/
     - assets/Biblia/completa_traducoes/aa/
     - assets/Biblia/completa_traducoes/acf/
