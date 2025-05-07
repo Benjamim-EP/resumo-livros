@@ -500,4 +500,23 @@ class FirestoreService {
           "Erro ao atualizar status da assinatura no Firestore para $userId: $e");
     }
   }
+
+  Future<Map<String, dynamic>?> getSectionCommentary(
+      String commentaryDocId) async {
+    try {
+      final docSnapshot = await _db
+          .collection('commentary_sections')
+          .doc(commentaryDocId)
+          .get();
+      if (docSnapshot.exists) {
+        return docSnapshot.data();
+      } else {
+        print('Comentário da seção não encontrado: $commentaryDocId');
+        return null;
+      }
+    } catch (e) {
+      print('Erro ao buscar comentário da seção $commentaryDocId: $e');
+      return null;
+    }
+  }
 }
