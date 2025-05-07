@@ -1,4 +1,5 @@
-import 'package:intl/intl.dart';
+// lib/redux/middleware/user_middleware.dart
+
 import 'package:redux/redux.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../actions.dart';
@@ -8,8 +9,7 @@ import '../../services/local_storage_service.dart'; // Assumindo a criação
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();
-  final localStorageService =
-      LocalStorageService(); // Instanciação adicionada se for usar _handleUserLogin
+  final localStorageService = LocalStorageService();
 
   return [
     TypedMiddleware<AppState, LoadUserStatsAction>(
@@ -25,10 +25,8 @@ List<Middleware<AppState>> createUserMiddleware() {
         _saveTopicToCollection(firestoreService)),
     TypedMiddleware<AppState, SaveVerseToCollectionAction>(
         _saveVerseToCollection(firestoreService)),
-    TypedMiddleware<AppState, LoadBooksInProgressAction>(
-        _loadBooksInProgress(firestoreService)),
-    TypedMiddleware<AppState, LoadBooksDetailsAction>(_loadBooksDetails(
-        firestoreService)), // Carrega detalhes para a lista 'Lendo'
+    // TypedMiddleware<AppState, LoadBooksInProgressAction>(_loadBooksInProgress(firestoreService)), // Desativado
+    // TypedMiddleware<AppState, LoadBooksDetailsAction>(_loadBooksDetails(firestoreService)), // Desativado
     TypedMiddleware<AppState, UpdateUserFieldAction>(
         _updateUserField(firestoreService)),
     TypedMiddleware<AppState, SaveUserFeaturesAction>(
@@ -53,12 +51,16 @@ List<Middleware<AppState>> createUserMiddleware() {
         _loadUserNotes(firestoreService)),
     TypedMiddleware<AppState, SaveNoteAction>(_saveNote(firestoreService)),
     TypedMiddleware<AppState, DeleteNoteAction>(_deleteNote(firestoreService)),
+    // Histórico de Leitura
+    TypedMiddleware<AppState, RecordReadingHistoryAction>(
+        _handleRecordReadingHistory(firestoreService)),
+    TypedMiddleware<AppState, LoadReadingHistoryAction>(
+        _handleLoadReadingHistory(firestoreService)),
   ];
 }
 
 // --- Handlers ---
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, LoadUserStatsAction, NextDispatcher)
     _loadUserStats(FirestoreService firestoreService) {
   return (Store<AppState> store, LoadUserStatsAction action,
@@ -79,7 +81,6 @@ void Function(Store<AppState>, LoadUserStatsAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, LoadUserDetailsAction, NextDispatcher)
     _loadUserDetails(FirestoreService firestoreService) {
   return (Store<AppState> store, LoadUserDetailsAction action,
@@ -90,7 +91,8 @@ void Function(Store<AppState>, LoadUserDetailsAction, NextDispatcher)
     try {
       final details = await firestoreService.getUserDetails(userId);
       if (details != null) {
-        store.dispatch(UserDetailsLoadedAction(details));
+        store.dispatch(UserDetailsLoadedAction(
+            details)); // O reducer agora pega lastRead daqui
       } else {
         print('Usuário não encontrado no Firestore para details.');
       }
@@ -100,7 +102,6 @@ void Function(Store<AppState>, LoadUserDetailsAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, LoadUserPremiumStatusAction, NextDispatcher)
     _loadUserPremiumStatus(FirestoreService firestoreService) {
   return (Store<AppState> store, LoadUserPremiumStatusAction action,
@@ -110,30 +111,23 @@ void Function(Store<AppState>, LoadUserPremiumStatusAction, NextDispatcher)
     if (userId == null) return;
     try {
       final premiumStatus = await firestoreService.getUserPremiumStatus(userId);
-      store.dispatch(UserPremiumStatusLoadedAction(
-          premiumStatus ?? {})); // Envia mapa vazio se nulo
+      store.dispatch(UserPremiumStatusLoadedAction(premiumStatus ?? {}));
     } catch (e) {
       print('Erro ao carregar status premium do usuário: $e');
     }
   };
 }
 
-// Middleware para lidar com ações dinâmicas (LoadUserTopicCollectionsAction e LoadUserCollectionsAction)
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, dynamic, NextDispatcher)
     _loadUserCollectionsMiddleware(FirestoreService firestoreService) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
-    // Primeiro, passa a ação para o próximo middleware/reducer
     next(action);
-
-    // Verifica se a ação é uma das que queremos tratar
     if (action is LoadUserTopicCollectionsAction ||
         action is LoadUserCollectionsAction) {
       final userId = store.state.userState.userId;
       if (userId == null) return;
       try {
         final collections = await firestoreService.getUserCollections(userId);
-        // Despacha a ação específica correspondente
         if (action is LoadUserTopicCollectionsAction) {
           store.dispatch(UserTopicCollectionsLoadedAction(collections ?? {}));
         } else if (action is LoadUserCollectionsAction) {
@@ -146,7 +140,6 @@ void Function(Store<AppState>, dynamic, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, SaveTopicToCollectionAction, NextDispatcher)
     _saveTopicToCollection(FirestoreService firestoreService) {
   return (Store<AppState> store, SaveTopicToCollectionAction action,
@@ -154,11 +147,9 @@ void Function(Store<AppState>, SaveTopicToCollectionAction, NextDispatcher)
     next(action);
     final userId = store.state.userState.userId;
     if (userId == null) return;
-
     try {
       await firestoreService.saveTopicToCollection(
           userId, action.collectionName, action.topicId);
-      // Recarrega as coleções para atualizar o estado
       final collections = await firestoreService.getUserCollections(userId);
       store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
       print(
@@ -169,7 +160,6 @@ void Function(Store<AppState>, SaveTopicToCollectionAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, SaveVerseToCollectionAction, NextDispatcher)
     _saveVerseToCollection(FirestoreService firestoreService) {
   return (Store<AppState> store, SaveVerseToCollectionAction action,
@@ -177,13 +167,11 @@ void Function(Store<AppState>, SaveVerseToCollectionAction, NextDispatcher)
     next(action);
     final userId = store.state.userState.userId;
     if (userId == null) return;
-
     try {
       await firestoreService.saveVerseToCollection(
           userId, action.collectionName, action.verseId);
       final collections = await firestoreService.getUserCollections(userId);
-      store.dispatch(
-          UserCollectionsLoadedAction(collections ?? {})); // Atualiza Redux
+      store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
       print(
           'Versículo ${action.verseId} salvo na coleção "${action.collectionName}".');
     } catch (e) {
@@ -192,97 +180,17 @@ void Function(Store<AppState>, SaveVerseToCollectionAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
-void Function(Store<AppState>, LoadBooksInProgressAction, NextDispatcher)
-    _loadBooksInProgress(FirestoreService firestoreService) {
-  return (Store<AppState> store, LoadBooksInProgressAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) {
-      print("Usuário não autenticado.");
-      return;
-    }
-    try {
-      final booksProgressRaw =
-          await firestoreService.getBooksProgressRaw(userId);
-      final books = <Map<String, dynamic>>[];
-
-      print("📚 Dados brutos do Firestore (Progresso): $booksProgressRaw");
-
-      if (booksProgressRaw != null) {
-        for (final bookId in booksProgressRaw.keys) {
-          final bookProgress = booksProgressRaw[bookId];
-          if (bookProgress is Map<String, dynamic>) {
-            // Verifica se é um mapa
-            final chaptersIniciados =
-                bookProgress['chaptersIniciados'] as List<dynamic>? ?? [];
-            print("📖 Livro: $bookId, Capítulos Iniciados: $chaptersIniciados");
-            books.add({
-              'id': bookId,
-              'progress': bookProgress['progress'] ?? 0,
-              'chaptersIniciados': List<String>.from(chaptersIniciados
-                  .map((e) => e.toString())), // Garante lista de strings
-            });
-          } else {
-            print(
-                "⚠ Formato inesperado para o progresso do livro $bookId: $bookProgress");
-          }
-        }
-      }
-      store.dispatch(BooksInProgressLoadedAction(books));
-    } catch (e) {
-      print('❌ Erro ao carregar progresso dos livros: $e');
-    }
-  };
+// --- Middlewares de Progresso de Livro (Comentados) ---
+/*
+void Function(Store<AppState>, LoadBooksInProgressAction, NextDispatcher) _loadBooksInProgress(FirestoreService firestoreService) {
+  // ... (lógica original)
 }
 
-// CORRIGIDO: Tipo de retorno
-void Function(Store<AppState>, LoadBooksDetailsAction, NextDispatcher)
-    _loadBooksDetails(FirestoreService firestoreService) {
-  return (Store<AppState> store, LoadBooksDetailsAction action,
-      NextDispatcher next) async {
-    next(action);
-    final booksInProgress =
-        store.state.userState.booksInProgress; // Pega do estado Redux
-
-    if (booksInProgress.isEmpty) {
-      store.dispatch(LoadBooksDetailsFailureAction(
-          'Nenhum livro em progresso para carregar detalhes.'));
-      return;
-    }
-
-    try {
-      final List<Map<String, dynamic>> booksDetails = [];
-      for (final bookProgressInfo in booksInProgress) {
-        final bookId = bookProgressInfo['id'];
-        if (bookId == null) continue;
-
-        final bookData =
-            await firestoreService.getBookData(bookId); // Busca dados do livro
-
-        if (bookData != null) {
-          booksDetails.add({
-            'id': bookId,
-            'title': bookData['titulo'] ?? 'Título desconhecido',
-            'author': bookData['autorId'] ??
-                'Autor desconhecido', // Note que pode ser ID ou nome
-            'cover': bookData['cover'],
-            'progress': bookProgressInfo['progress'], // Pega do estado
-            'chaptersIniciados':
-                bookProgressInfo['chaptersIniciados'], // Pega do estado
-          });
-        }
-      }
-      store.dispatch(LoadBooksDetailsSuccessAction(booksDetails));
-    } catch (e) {
-      store.dispatch(LoadBooksDetailsFailureAction(
-          'Erro ao carregar detalhes dos livros em progresso: $e'));
-    }
-  };
+void Function(Store<AppState>, LoadBooksDetailsAction, NextDispatcher) _loadBooksDetails(FirestoreService firestoreService) {
+  // ... (lógica original)
 }
+*/
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
     _updateUserField(FirestoreService firestoreService) {
   return (Store<AppState> store, UpdateUserFieldAction action,
@@ -293,11 +201,9 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
     try {
       await firestoreService.updateUserField(
           userId, action.field, action.value);
-      // Recarrega os stats/detalhes para refletir a mudança no estado Redux
       final stats = await firestoreService.getUserStats(userId);
       if (stats != null) {
-        store.dispatch(UserStatsLoadedAction(
-            stats)); // Atualiza o estado com os dados do Firestore
+        store.dispatch(UserStatsLoadedAction(stats));
       }
       print('Campo "${action.field}" atualizado com sucesso.');
     } catch (e) {
@@ -306,7 +212,6 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, SaveUserFeaturesAction, NextDispatcher)
     _saveUserFeatures(FirestoreService firestoreService) {
   return (Store<AppState> store, SaveUserFeaturesAction action,
@@ -319,8 +224,7 @@ void Function(Store<AppState>, SaveUserFeaturesAction, NextDispatcher)
     }
     try {
       await firestoreService.updateUserFeatures(userId, action.features);
-      store.dispatch(UserFeaturesLoadedAction(
-          action.features)); // Atualiza Redux localmente
+      store.dispatch(UserFeaturesLoadedAction(action.features));
       print('Features do usuário salvas com sucesso.');
     } catch (e) {
       print('Erro ao salvar features do usuário: $e');
@@ -328,7 +232,6 @@ void Function(Store<AppState>, SaveUserFeaturesAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, CheckFirstLoginAction, NextDispatcher)
     _checkFirstLogin(FirestoreService firestoreService) {
   return (Store<AppState> store, CheckFirstLoginAction action,
@@ -344,7 +247,6 @@ void Function(Store<AppState>, CheckFirstLoginAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
     _loadTopicsContentUserSaves(FirestoreService firestoreService) {
   return (Store<AppState> store, LoadTopicsContentUserSavesAction action,
@@ -356,7 +258,6 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
           LoadTopicsContentUserSavesFailureAction("Usuário não autenticado"));
       return;
     }
-
     try {
       final topicSaves =
           await firestoreService.getUserCollections(userId) ?? {};
@@ -364,13 +265,11 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
 
       for (var entry in topicSaves.entries) {
         final collectionName = entry.key;
-        final ids = entry.value; // Lista de IDs (tópicos ou versículos)
-
+        final ids = entry.value;
         final List<Map<String, dynamic>> contentList = [];
         List<String> topicIdsToFetch = [];
         List<String> verseIdsToProcess = [];
 
-        // Separa IDs de tópicos e versículos
         for (var id in ids) {
           if (id.startsWith("bibleverses-")) {
             verseIdsToProcess.add(id);
@@ -379,14 +278,12 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
           }
         }
 
-        // Busca conteúdo dos tópicos no Firestore
         if (topicIdsToFetch.isNotEmpty) {
           final topicsData =
               await firestoreService.fetchTopicsByIds(topicIdsToFetch);
           contentList.addAll(topicsData);
         }
 
-        // Processa versículos da Bíblia (gera dados mock ou busca real se implementado)
         for (var verseId in verseIdsToProcess) {
           final parts = verseId.split("-");
           if (parts.length == 4) {
@@ -396,24 +293,19 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
             String bookName =
                 await firestoreService.getBookNameFromAbbrev(bookAbbrev) ??
                     bookAbbrev;
-            String verseText =
-                "Texto do versículo $chapter:$verse"; // Placeholder
-
+            // Considerar buscar o texto real do versículo aqui se necessário para a UI 'Salvos'
+            // String verseText = await BiblePageHelper.loadSingleVerseText(verseId.replaceFirst("bibleverses-", "").replaceAll("-", "_"), 'nvi');
             contentList.add({
               'id': verseId,
-              'cover':
-                  'assets/images/biblia_cover_placeholder.png', // Placeholder
-              'bookName': bookName,
-              'chapterName': chapter,
+              'cover': 'assets/images/biblia_cover_placeholder.png',
+              'bookName': bookName, 'chapterName': chapter,
               'titulo': "$bookName $chapter:$verse",
-              'conteudo': verseText,
+              'conteudo': "Versículo salvo", // Placeholder
             });
           }
         }
-
         topicsByCollection[collectionName] = contentList;
       }
-
       store.dispatch(
           LoadTopicsContentUserSavesSuccessAction(topicsByCollection));
     } catch (e) {
@@ -423,7 +315,6 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, DeleteTopicCollectionAction, NextDispatcher)
     _deleteTopicCollection(FirestoreService firestoreService) {
   return (Store<AppState> store, DeleteTopicCollectionAction action,
@@ -436,13 +327,14 @@ void Function(Store<AppState>, DeleteTopicCollectionAction, NextDispatcher)
           userId, action.collectionName);
       final collections = await firestoreService.getUserCollections(userId);
       store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
+      store.dispatch(
+          LoadTopicsContentUserSavesAction()); // Recarrega conteúdo após deletar
     } catch (e) {
       print('Erro ao excluir coleção de tópicos: $e');
     }
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(
         Store<AppState>, DeleteSingleTopicFromCollectionAction, NextDispatcher)
     _deleteSingleTopicFromCollection(FirestoreService firestoreService) {
@@ -456,13 +348,14 @@ void Function(
           userId, action.collectionName, action.topicId);
       final collections = await firestoreService.getUserCollections(userId);
       store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
+      store.dispatch(
+          LoadTopicsContentUserSavesAction()); // Recarrega conteúdo após deletar item
     } catch (e) {
       print('Erro ao excluir tópico da coleção: $e');
     }
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, AddDiaryEntryAction, NextDispatcher)
     _addDiaryEntry(FirestoreService firestoreService) {
   return (Store<AppState> store, AddDiaryEntryAction action,
@@ -473,14 +366,13 @@ void Function(Store<AppState>, AddDiaryEntryAction, NextDispatcher)
     try {
       await firestoreService.addDiaryEntry(
           userId, action.title, action.content);
-      store.dispatch(LoadUserDiariesAction());
+      store.dispatch(LoadUserDiariesAction()); // Recarrega após adicionar
     } catch (e) {
       print("Erro ao adicionar diário: $e");
     }
   };
 }
 
-// CORRIGIDO: Tipo de retorno
 void Function(Store<AppState>, LoadUserDiariesAction, NextDispatcher)
     _loadUserDiaries(FirestoreService firestoreService) {
   return (Store<AppState> store, LoadUserDiariesAction action,
@@ -488,7 +380,6 @@ void Function(Store<AppState>, LoadUserDiariesAction, NextDispatcher)
     next(action);
     final userId = store.state.userState.userId;
     if (userId == null) {
-      print("Usuário não autenticado. Não é possível carregar os diários.");
       store.dispatch(LoadUserDiariesFailureAction("Usuário não autenticado"));
       return;
     }
@@ -514,7 +405,6 @@ void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
       store.dispatch(UserHighlightsLoadedAction(highlights));
     } catch (e) {
       print("Erro ao carregar destaques do usuário: $e");
-      // Opcional: despachar ação de erro
     }
   };
 }
@@ -527,18 +417,14 @@ void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
     if (userId == null) return;
     try {
       if (action.colorHex == null) {
-        // Remover destaque
         await firestoreService.removeHighlight(userId, action.verseId);
       } else {
-        // Adicionar ou atualizar destaque
         await firestoreService.saveHighlight(
             userId, action.verseId, action.colorHex!);
       }
-      // Recarregar os destaques para atualizar o estado
-      store.dispatch(LoadUserHighlightsAction());
+      store.dispatch(LoadUserHighlightsAction()); // Recarrega após alteração
     } catch (e) {
       print("Erro ao adicionar/remover destaque: $e");
-      // Opcional: despachar ação de erro
     }
   };
 }
@@ -585,6 +471,66 @@ void Function(Store<AppState>, DeleteNoteAction, NextDispatcher) _deleteNote(
       store.dispatch(LoadUserNotesAction()); // Recarrega notas
     } catch (e) {
       print("Erro ao deletar nota: $e");
+    }
+  };
+}
+
+// --- Reading History Middlewares ---
+void Function(Store<AppState>, RecordReadingHistoryAction, NextDispatcher)
+    _handleRecordReadingHistory(FirestoreService firestoreService) {
+  return (Store<AppState> store, RecordReadingHistoryAction action,
+      NextDispatcher next) async {
+    // Atualiza o estado Redux imediatamente (otimista) para lastRead
+    store.dispatch(
+        UpdateLastReadLocationAction(action.bookAbbrev, action.chapter));
+    next(action);
+
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print("Histórico: Usuário não logado.");
+      return;
+    }
+
+    // Busca o nome do livro para salvar no histórico
+    String bookName = action.bookAbbrev.toUpperCase();
+    try {
+      // Tentativa de pegar do booksMap local da BiblePage (idealmente via estado Redux se disponível)
+      // Se não disponível, busca no Firestore
+      final bookData =
+          await firestoreService.getBookDataByAbbrev(action.bookAbbrev);
+      if (bookData != null) {
+        bookName = bookData['titulo'] ?? bookName;
+      }
+    } catch (e) {
+      print("Erro ao buscar nome do livro para histórico: $e");
+    }
+
+    try {
+      // Salva no Firestore
+      await firestoreService.addReadingHistoryEntry(
+          userId, action.bookAbbrev, action.chapter, bookName);
+      await firestoreService.updateLastReadLocation(
+          userId, action.bookAbbrev, action.chapter);
+    } catch (e) {
+      print('Erro ao salvar histórico/última leitura: $e');
+    }
+  };
+}
+
+void Function(Store<AppState>, LoadReadingHistoryAction, NextDispatcher)
+    _handleLoadReadingHistory(FirestoreService firestoreService) {
+  return (Store<AppState> store, LoadReadingHistoryAction action,
+      NextDispatcher next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+
+    try {
+      final history = await firestoreService.loadReadingHistory(userId);
+      store.dispatch(ReadingHistoryLoadedAction(history));
+    } catch (e) {
+      print('Erro ao carregar histórico de leitura: $e');
+      store.dispatch(ReadingHistoryLoadedAction([]));
     }
   };
 }

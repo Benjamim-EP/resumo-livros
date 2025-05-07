@@ -520,3 +520,24 @@ class SetInitialBibleLocationAction {
 
   SetInitialBibleLocationAction(this.bookAbbrev, this.chapter);
 }
+
+class RecordReadingHistoryAction {
+  final String bookAbbrev;
+  final int chapter;
+  RecordReadingHistoryAction(this.bookAbbrev, this.chapter);
+}
+
+class LoadReadingHistoryAction {}
+
+class ReadingHistoryLoadedAction {
+  final List<Map<String, dynamic>> history;
+  ReadingHistoryLoadedAction(this.history);
+}
+
+// Ação para atualizar o último local lido no estado Redux
+// (Pode ser disparada pelo middleware após salvar no Firestore)
+class UpdateLastReadLocationAction {
+  final String bookAbbrev;
+  final int chapter;
+  UpdateLastReadLocationAction(this.bookAbbrev, this.chapter);
+}

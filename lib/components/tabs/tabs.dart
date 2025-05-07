@@ -9,6 +9,7 @@ class Tabs extends StatelessWidget {
   final List<String> _tabs = const [
     'Lendo',
     'Salvos',
+    'Histórico',
     'Destaques',
     'Notas',
     'Diário'
@@ -17,17 +18,16 @@ class Tabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // <<< MODIFICAÇÃO: Usa a lista _tabs e ajusta o layout se necessário >>>
     return SingleChildScrollView(
-      // Permite rolagem se as abas não couberem
       scrollDirection: Axis.horizontal,
       child: Row(
-        // Usar MainAxisAlignment.start se quiser alinhar à esquerda com rolagem
-        mainAxisAlignment: MainAxisAlignment.spaceAround, // Ou spaceEvenly
+        mainAxisAlignment:
+            MainAxisAlignment.spaceAround, // Ou spaceEvenly, ou start
         children: _tabs.map((label) {
-          // Adiciona um pouco de padding horizontal para cada item
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            // Adiciona um padding para espaçamento, especialmente útil com rolagem
+            padding: const EdgeInsets.symmetric(
+                horizontal: 10.0), // Ajuste o padding
             child: TabItem(
               label: label,
               isSelected: selectedTab == label,
@@ -37,6 +37,5 @@ class Tabs extends StatelessWidget {
         }).toList(),
       ),
     );
-    // <<< FIM MODIFICAÇÃO >>>
   }
 }

@@ -132,6 +132,10 @@ class UserState {
   final String? initialBibleBook;
   final int? initialBibleChapter;
 
+  final List<Map<String, dynamic>> readingHistory; // Histórico carregado
+  final String? lastReadBookAbbrev; // Último livro lido na sessão/carregado
+  final int? lastReadChapter; // Último capítulo lido na sessão/carregado
+
   UserState({
     this.userId,
     this.email,
@@ -158,6 +162,9 @@ class UserState {
     this.userNotes = const {},
     this.initialBibleBook,
     this.initialBibleChapter,
+    this.readingHistory = const [],
+    this.lastReadBookAbbrev,
+    this.lastReadChapter,
   });
 
   UserState copyWith({
@@ -186,6 +193,9 @@ class UserState {
     Map<String, String>? userNotes,
     String? initialBibleBook,
     int? initialBibleChapter,
+    List<Map<String, dynamic>>? readingHistory,
+    String? lastReadBookAbbrev,
+    int? lastReadChapter,
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -215,6 +225,9 @@ class UserState {
       userNotes: userNotes ?? this.userNotes,
       initialBibleBook: initialBibleBook ?? this.initialBibleBook,
       initialBibleChapter: initialBibleChapter ?? this.initialBibleChapter,
+      readingHistory: readingHistory ?? this.readingHistory,
+      lastReadBookAbbrev: lastReadBookAbbrev ?? this.lastReadBookAbbrev,
+      lastReadChapter: lastReadChapter ?? this.lastReadChapter,
     );
   }
 }
@@ -392,6 +405,21 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(
         initialBibleBook: action.bookAbbrev,
         initialBibleChapter: action.chapter);
+  } else if (action is UserDetailsLoadedAction) {
+    // Ao carregar detalhes do usuário, também pega a última leitura do Firestore
+    return state.copyWith(
+        userDetails: action.userDetails,
+        lastReadBookAbbrev: action.userDetails['lastReadBookAbbrev'] as String?,
+        lastReadChapter: action.userDetails['lastReadChapter'] as int?);
+  } else if (action is ReadingHistoryLoadedAction) {
+    return state.copyWith(readingHistory: action.history);
+  } else if (action is UpdateLastReadLocationAction) {
+    // Atualiza o último lido no estado Redux
+    return state.copyWith(
+        lastReadBookAbbrev: action.bookAbbrev, lastReadChapter: action.chapter);
+  } else if (action is UserLoggedOutAction) {
+    // Limpa o histórico e último lido ao fazer logout
+    return UserState(); // Reseta para o estado inicial
   }
 
   return state;
