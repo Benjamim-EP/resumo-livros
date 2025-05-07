@@ -126,6 +126,12 @@ class UserState {
   final List<Map<String, dynamic>>
       userDiaries; // 🔹 Novo campo para armazenar os diários
 
+  final Map<String, String> userHighlights;
+  final Map<String, String> userNotes;
+
+  final String? initialBibleBook;
+  final int? initialBibleChapter;
+
   UserState({
     this.userId,
     this.email,
@@ -147,7 +153,11 @@ class UserState {
     this.rotaAtual = const [],
     this.userRoutes = const [],
     this.verseSaves = const {},
-    this.userDiaries = const [], // 🔹 Inicializa como lista vazia
+    this.userDiaries = const [],
+    this.userHighlights = const {},
+    this.userNotes = const {},
+    this.initialBibleBook,
+    this.initialBibleChapter,
   });
 
   UserState copyWith({
@@ -171,7 +181,11 @@ class UserState {
     List<Map<String, dynamic>>? rotaAtual,
     List<Map<String, dynamic>>? userRoutes,
     Map<String, List<Map<String, dynamic>>>? verseSaves,
-    List<Map<String, dynamic>>? userDiaries, // 🔹 Adiciona ao copyWith
+    List<Map<String, dynamic>>? userDiaries,
+    Map<String, String>? userHighlights,
+    Map<String, String>? userNotes,
+    String? initialBibleBook,
+    int? initialBibleChapter,
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -196,8 +210,11 @@ class UserState {
       rotaAtual: rotaAtual ?? this.rotaAtual,
       userRoutes: userRoutes ?? this.userRoutes,
       verseSaves: verseSaves ?? this.verseSaves,
-      userDiaries: userDiaries ??
-          this.userDiaries, // 🔹 Atualiza o estado com a nova lista de diários
+      userDiaries: userDiaries ?? this.userDiaries,
+      userHighlights: userHighlights ?? this.userHighlights,
+      userNotes: userNotes ?? this.userNotes,
+      initialBibleBook: initialBibleBook ?? this.initialBibleBook,
+      initialBibleChapter: initialBibleChapter ?? this.initialBibleChapter,
     );
   }
 }
@@ -357,6 +374,24 @@ UserState userReducer(UserState state, dynamic action) {
     //     "Reducer: Atualizando estado com dados da assinatura: Status=${action.status}, EndDate=${action.endDate?.toDate()}");
 
     return state.copyWith(userDetails: updatedDetails);
+  } else if (action is UserHighlightsLoadedAction) {
+    return state.copyWith(userHighlights: action.highlights);
+  } else if (action is ToggleHighlightAction) {
+    // A lógica de adicionar/remover/atualizar no Redux pode ser feita aqui
+    // após o middleware confirmar a operação no Firestore.
+    // Ou o middleware pode despachar UserHighlightsLoadedAction após a operação.
+    // Vamos optar pelo segundo para manter o reducer mais simples.
+    return state; // O middleware irá recarregar os highlights
+  } else if (action is UserNotesLoadedAction) {
+    return state.copyWith(userNotes: action.notes);
+  } else if (action is SaveNoteAction) {
+    return state; // Middleware recarrega
+  } else if (action is DeleteNoteAction) {
+    return state; // Middleware recarrega
+  } else if (action is SetInitialBibleLocationAction) {
+    return state.copyWith(
+        initialBibleBook: action.bookAbbrev,
+        initialBibleChapter: action.chapter);
   }
 
   return state;

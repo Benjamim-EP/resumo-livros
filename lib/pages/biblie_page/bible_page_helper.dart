@@ -76,4 +76,39 @@ class BiblePageHelper {
     // --- 3. Retornar os dados combinados ---
     return {'sections': sections, 'verses': verses};
   }
+
+  // <<< NOVO: Carrega o texto de um único versículo >>>
+  static Future<String> loadSingleVerseText(
+      String verseId, String translation) async {
+    final parts = verseId.split('_');
+    if (parts.length != 3) return "Referência inválida";
+
+    final bookAbbrev = parts[0];
+    final chapterStr = parts[1];
+    final verseStr = parts[2];
+
+    final chapter = int.tryParse(chapterStr);
+    final verse = int.tryParse(verseStr);
+
+    if (chapter == null || verse == null) return "Referência inválida";
+
+    try {
+      final String verseDataPath =
+          'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
+      final String verseData = await rootBundle.loadString(verseDataPath);
+      final decodedVerseData = json.decode(verseData);
+
+      if (decodedVerseData is List &&
+          verse > 0 &&
+          verse <= decodedVerseData.length) {
+        return decodedVerseData[verse - 1]
+            .toString(); // -1 pois a lista é 0-indexed
+      } else {
+        return "Texto não encontrado";
+      }
+    } catch (e) {
+      print('Erro ao carregar verso ($verseId, $translation): $e');
+      return "Erro ao carregar texto";
+    }
+  }
 }

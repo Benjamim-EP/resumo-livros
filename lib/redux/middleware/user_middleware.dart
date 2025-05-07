@@ -45,8 +45,14 @@ List<Middleware<AppState>> createUserMiddleware() {
         _addDiaryEntry(firestoreService)),
     TypedMiddleware<AppState, LoadUserDiariesAction>(
         _loadUserDiaries(firestoreService)),
-    // Exemplo de como usar com UserLoggedInAction (descomente se necessário)
-    // TypedMiddleware<AppState, UserLoggedInAction>(_handleUserLogin(localStorageService)),
+    TypedMiddleware<AppState, LoadUserHighlightsAction>(
+        _loadUserHighlights(firestoreService)),
+    TypedMiddleware<AppState, ToggleHighlightAction>(
+        _toggleHighlight(firestoreService)),
+    TypedMiddleware<AppState, LoadUserNotesAction>(
+        _loadUserNotes(firestoreService)),
+    TypedMiddleware<AppState, SaveNoteAction>(_saveNote(firestoreService)),
+    TypedMiddleware<AppState, DeleteNoteAction>(_deleteNote(firestoreService)),
   ];
 }
 
@@ -496,14 +502,89 @@ void Function(Store<AppState>, LoadUserDiariesAction, NextDispatcher)
   };
 }
 
-// Exemplo de como usar com UserLoggedInAction (descomente se necessário)
-/*
-// CORRIGIDO: Tipo de retorno
-void Function(Store<AppState>, UserLoggedInAction, NextDispatcher) _handleUserLogin(LocalStorageService localStorageService) {
-  return (Store<AppState> store, UserLoggedInAction action, NextDispatcher next) async {
-    await localStorageService.clearTopicsByFeature(action.userId);
-    print("Cache de tópicos limpo para o usuário ${action.userId} no login.");
+// --- Highlight Middlewares ---
+void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
+    _loadUserHighlights(FirestoreService firestoreService) {
+  return (store, action, next) async {
     next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      final highlights = await firestoreService.loadUserHighlights(userId);
+      store.dispatch(UserHighlightsLoadedAction(highlights));
+    } catch (e) {
+      print("Erro ao carregar destaques do usuário: $e");
+      // Opcional: despachar ação de erro
+    }
   };
 }
-*/
+
+void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
+    _toggleHighlight(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      if (action.colorHex == null) {
+        // Remover destaque
+        await firestoreService.removeHighlight(userId, action.verseId);
+      } else {
+        // Adicionar ou atualizar destaque
+        await firestoreService.saveHighlight(
+            userId, action.verseId, action.colorHex!);
+      }
+      // Recarregar os destaques para atualizar o estado
+      store.dispatch(LoadUserHighlightsAction());
+    } catch (e) {
+      print("Erro ao adicionar/remover destaque: $e");
+      // Opcional: despachar ação de erro
+    }
+  };
+}
+
+// --- Note Middlewares ---
+void Function(Store<AppState>, LoadUserNotesAction, NextDispatcher)
+    _loadUserNotes(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      final notes = await firestoreService.loadUserNotes(userId);
+      store.dispatch(UserNotesLoadedAction(notes));
+    } catch (e) {
+      print("Erro ao carregar notas do usuário: $e");
+    }
+  };
+}
+
+void Function(Store<AppState>, SaveNoteAction, NextDispatcher) _saveNote(
+    FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.saveNote(userId, action.verseId, action.text);
+      store.dispatch(LoadUserNotesAction()); // Recarrega notas
+    } catch (e) {
+      print("Erro ao salvar nota: $e");
+    }
+  };
+}
+
+void Function(Store<AppState>, DeleteNoteAction, NextDispatcher) _deleteNote(
+    FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.removeNote(userId, action.verseId);
+      store.dispatch(LoadUserNotesAction()); // Recarrega notas
+    } catch (e) {
+      print("Erro ao deletar nota: $e");
+    }
+  };
+}

@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_item_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
+import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
 
 class BiblePage extends StatefulWidget {
   const BiblePage({super.key});
@@ -22,6 +25,7 @@ class _BiblePageState extends State<BiblePage> {
   int? selectedChapter;
   String selectedTranslation = 'nvi';
   bool showBibleRoutes = false;
+  bool _initialLocationSet = false; // Flag para evitar múltiplas definições
 
   String? _selectedBookSlug;
   Map<String, String> _bookVariationsMap =
@@ -31,6 +35,79 @@ class _BiblePageState extends State<BiblePage> {
   void initState() {
     super.initState();
     _loadInitialData();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInitialNavigation(); // Verifica navegação após o primeiro frame
+      _loadUserDataIfNeeded();
+      final store = StoreProvider.of<AppState>(context, listen: false);
+      if (store.state.userState.userId != null) {
+        // Só carrega se não estiverem vazios ou se for a primeira vez (para evitar recargas desnecessárias)
+        if (store.state.userState.userHighlights.isEmpty) {
+          store.dispatch(LoadUserHighlightsAction());
+        }
+        if (store.state.userState.userNotes.isEmpty) {
+          store.dispatch(LoadUserNotesAction());
+        }
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Chama novamente se as dependências mudarem (ex: após login)
+    // Isso pode ser redundante com o StoreConnector, avalie se é necessário
+    _checkInitialNavigation();
+  }
+
+  void _checkInitialNavigation() {
+    if (!_initialLocationSet && mounted) {
+      // Verifica se já foi definido e se está montado
+      final store = StoreProvider.of<AppState>(context, listen: false);
+      final initialBook = store.state.userState.initialBibleBook;
+      final initialChapter = store.state.userState.initialBibleChapter;
+
+      if (initialBook != null && initialChapter != null) {
+        print(
+            ">>> BiblePage: Recebendo navegação inicial para $initialBook $initialChapter");
+        // Verifica se o livro/capítulo é válido antes de setar
+        if (booksMap != null && booksMap!.containsKey(initialBook)) {
+          final bookData = booksMap![initialBook];
+          if (initialChapter >= 1 &&
+              initialChapter <= (bookData['capitulos'] as int)) {
+            setState(() {
+              selectedBook = initialBook;
+              selectedChapter = initialChapter;
+              _updateSelectedBookSlug();
+              _initialLocationSet = true; // Marca como definido
+            });
+            // Limpa o estado Redux para não navegar novamente na próxima vez
+            store.dispatch(SetInitialBibleLocationAction(null, null));
+          } else {
+            print(
+                ">>> BiblePage: Capítulo inicial inválido recebido: $initialChapter");
+            store.dispatch(SetInitialBibleLocationAction(
+                null, null)); // Limpa mesmo se inválido
+          }
+        } else {
+          print(">>> BiblePage: Livro inicial inválido recebido: $initialBook");
+          store.dispatch(SetInitialBibleLocationAction(
+              null, null)); // Limpa mesmo se inválido
+        }
+      }
+    }
+  }
+
+  void _loadUserDataIfNeeded() {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    if (store.state.userState.userId != null) {
+      if (store.state.userState.userHighlights.isEmpty) {
+        store.dispatch(LoadUserHighlightsAction());
+      }
+      if (store.state.userState.userNotes.isEmpty) {
+        store.dispatch(LoadUserNotesAction());
+      }
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -326,15 +403,11 @@ class _BiblePageState extends State<BiblePage> {
 
   @override
   Widget build(BuildContext context) {
-    // A UI permanece a mesma da resposta anterior, apenas a lógica de _parseAndNavigate mudou.
-    // Certifique-se de que o booksMap e _bookVariationsMap sejam carregados antes de construir a UI principal.
     if (booksMap == null ||
-        _bookVariationsMap.isEmpty &&
-            ModalRoute.of(context)?.isCurrent == true) {
-      // Adicionado `ModalRoute.of(context)?.isCurrent == true`
-      // Mostra um loader enquanto os mapas essenciais não são carregados
+        (_bookVariationsMap.isEmpty &&
+            ModalRoute.of(context)?.isCurrent == true)) {
       return const Scaffold(
-          appBar: null, // Pode remover o AppBar aqui ou deixar um simples
+          appBar: null,
           body: Center(
               child: CircularProgressIndicator(color: Color(0xFFCDE7BE))));
     }
@@ -352,208 +425,228 @@ class _BiblePageState extends State<BiblePage> {
         ],
       ),
       body: Column(
-        // Mantém a Column principal
         children: [
+          // ... (Dropdowns de Tradução, Rotas, Livro, Capítulo e botões de navegação) ...
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.translate, size: 20),
-                  label: Text(selectedTranslation.toUpperCase(),
-                      style: const TextStyle(fontSize: 13)),
-                  onPressed: () {
-                    BiblePageWidgets.showTranslationSelection(
-                      context: context,
-                      selectedTranslation: selectedTranslation,
-                      onTranslationSelected: (value) {
-                        if (mounted) {
-                          setState(() => selectedTranslation = value);
-                        }
-                      },
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF272828),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    elevation: 2,
+              // Container para os botões de navegação e dropdowns
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        // ... (botão de tradução)
+                        icon: const Icon(Icons.translate, size: 20),
+                        label: Text(selectedTranslation.toUpperCase(),
+                            style: const TextStyle(fontSize: 13)),
+                        onPressed: () {
+                          BiblePageWidgets.showTranslationSelection(
+                            context: context,
+                            selectedTranslation: selectedTranslation,
+                            onTranslationSelected: (value) {
+                              if (mounted) {
+                                setState(() => selectedTranslation = value);
+                              }
+                            },
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF272828),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          elevation: 2,
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        // ... (botão de rotas)
+                        icon: const Icon(Icons.alt_route_outlined, size: 20),
+                        label:
+                            const Text("Rotas", style: TextStyle(fontSize: 13)),
+                        onPressed: () {
+                          if (mounted) {
+                            setState(() => showBibleRoutes = true);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF272828),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          elevation: 2,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.alt_route_outlined, size: 20),
-                  label: const Text("Rotas", style: TextStyle(fontSize: 13)),
-                  onPressed: () {
-                    if (mounted) {
-                      setState(() => showBibleRoutes = true);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF272828),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    elevation: 2,
+                  const SizedBox(
+                      height: 10), // Espaço entre as linhas de botões
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left,
+                            color: Colors.white, size: 32),
+                        onPressed: _previousChapter,
+                        tooltip: "Capítulo Anterior",
+                        splashRadius: 24,
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: UtilsBiblePage.buildBookDropdown(
+                          selectedBook: selectedBook,
+                          booksMap: booksMap,
+                          onChanged: (value) {
+                            if (mounted) {
+                              setState(() {
+                                selectedBook = value;
+                                selectedChapter = 1;
+                                _updateSelectedBookSlug();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (selectedBook != null)
+                        Expanded(
+                          flex: 2,
+                          child: UtilsBiblePage.buildChapterDropdown(
+                            selectedChapter: selectedChapter,
+                            booksMap: booksMap,
+                            selectedBook: selectedBook,
+                            onChanged: (value) {
+                              if (mounted) {
+                                setState(() => selectedChapter = value);
+                              }
+                            },
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right,
+                            color: Colors.white, size: 32),
+                        onPressed: _nextChapter,
+                        tooltip: "Próximo Capítulo",
+                        splashRadius: 24,
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left,
-                      color: Colors.white, size: 32),
-                  onPressed: _previousChapter,
-                  tooltip: "Capítulo Anterior",
-                  splashRadius: 24,
-                ),
-                Expanded(
-                  flex: 3,
-                  child: UtilsBiblePage.buildBookDropdown(
-                    selectedBook: selectedBook,
-                    booksMap: booksMap,
-                    onChanged: (value) {
-                      if (mounted) {
-                        setState(() {
-                          selectedBook = value;
-                          selectedChapter = 1;
-                          _updateSelectedBookSlug();
-                        });
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (selectedBook != null)
-                  Expanded(
-                    flex: 2,
-                    child: UtilsBiblePage.buildChapterDropdown(
-                      selectedChapter: selectedChapter,
-                      booksMap: booksMap,
-                      selectedBook: selectedBook,
-                      onChanged: (value) {
-                        if (mounted) {
-                          setState(() => selectedChapter = value);
-                        }
-                      },
-                    ),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right,
-                      color: Colors.white, size: 32),
-                  onPressed: _nextChapter,
-                  tooltip: "Próximo Capítulo",
-                  splashRadius: 24,
-                ),
-              ],
-            ),
-          ),
+                ],
+              )),
           if (selectedBook != null &&
               selectedChapter != null &&
               _selectedBookSlug != null)
             Expanded(
-              child: GestureDetector(
-                onHorizontalDragEnd: (DragEndDetails details) {
-                  if (details.primaryVelocity! > 300) {
-                    _previousChapter();
-                  } else if (details.primaryVelocity! < -300) {
-                    _nextChapter();
-                  }
-                },
-                child: FutureBuilder<Map<String, dynamic>>(
-                  key: ValueKey(
-                      '$selectedBook-$selectedChapter-$selectedTranslation'),
-                  future: BiblePageHelper.loadChapterData(
-                      selectedBook!, selectedChapter!, selectedTranslation),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                          child: CircularProgressIndicator(
-                              color: Color(0xFFCDE7BE)));
-                    } else if (snapshot.hasError) {
-                      return Center(
-                          child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                            'Erro ao carregar dados do capítulo: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center),
-                      ));
-                    } else if (!snapshot.hasData ||
-                        (snapshot.data!['verses'] as List).isEmpty) {
-                      return const Center(
-                          child: Text('Capítulo não encontrado ou vazio.',
-                              style: TextStyle(color: Colors.white70)));
-                    }
-
-                    final chapterData = snapshot.data!;
-                    final List<Map<String, dynamic>> sections =
-                        List<Map<String, dynamic>>.from(
-                            chapterData['sections'] ?? []);
-                    final List<String> allVerses =
-                        List<String>.from(chapterData['verses'] ?? []);
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.only(
-                          left: 16.0, right: 16.0, bottom: 16.0, top: 8.0),
-                      itemCount: sections.isNotEmpty
-                          ? sections.length
-                          : (allVerses.isNotEmpty ? 1 : 0),
-                      itemBuilder: (context, sectionIndex) {
-                        if (sections.isNotEmpty) {
-                          final section = sections[sectionIndex];
-                          final String sectionTitle =
-                              section['title'] ?? 'Seção';
-                          final List<int> verseNumbers =
-                              (section['verses'] as List?)?.cast<int>() ?? [];
-                          String versesRangeStr = "";
-                          if (verseNumbers.isNotEmpty) {
-                            verseNumbers.sort();
-                            versesRangeStr = verseNumbers.length == 1
-                                ? verseNumbers.first.toString()
-                                : "${verseNumbers.first}-${verseNumbers.last}";
-                          }
-                          return SectionItemWidget(
-                            sectionTitle: sectionTitle,
-                            verseNumbersInSection: verseNumbers,
-                            allVerseTextsInChapter: allVerses,
-                            bookSlug: _selectedBookSlug!,
-                            bookAbbrev: selectedBook!,
-                            chapterNumber: selectedChapter!,
-                            versesRangeStr: versesRangeStr,
-                          );
-                        } else if (allVerses.isNotEmpty) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children:
-                                List.generate(allVerses.length, (verseIndex) {
-                              final verseNumber = verseIndex + 1;
-                              final verseText = allVerses[verseIndex];
-                              return BiblePageWidgets.buildVerseItem(
-                                verseNumber: verseNumber,
-                                verseText: verseText,
-                                selectedBook: selectedBook,
-                                selectedChapter: selectedChapter,
-                                context: context,
-                              );
-                            }),
-                          );
+              child: StoreConnector<AppState, _ViewModel>(
+                // <<< ENVOLVE O FUTUREBUILDER COM STORECONNECTOR
+                converter: (store) => _ViewModel.fromStore(store),
+                builder: (context, vm) {
+                  return GestureDetector(
+                    onHorizontalDragEnd: (DragEndDetails details) {
+                      if (details.primaryVelocity! > 300) {
+                        _previousChapter();
+                      } else if (details.primaryVelocity! < -300) {
+                        _nextChapter();
+                      }
+                    },
+                    child: FutureBuilder<Map<String, dynamic>>(
+                      key: ValueKey(
+                          '$selectedBook-$selectedChapter-$selectedTranslation-${vm.userHighlights.hashCode}-${vm.userNotes.hashCode}'),
+                      future: BiblePageHelper.loadChapterData(
+                          selectedBook!, selectedChapter!, selectedTranslation),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator(
+                                  color: Color(0xFFCDE7BE)));
+                        } else if (snapshot.hasError) {
+                          return Center(
+                              child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                                'Erro ao carregar dados do capítulo: ${snapshot.error}',
+                                style: const TextStyle(color: Colors.red),
+                                textAlign: TextAlign.center),
+                          ));
+                        } else if (!snapshot.hasData ||
+                            (snapshot.data!['verses'] as List).isEmpty) {
+                          return const Center(
+                              child: Text('Capítulo não encontrado ou vazio.',
+                                  style: TextStyle(color: Colors.white70)));
                         }
-                        return const SizedBox.shrink();
+
+                        final chapterData = snapshot.data!;
+                        final List<Map<String, dynamic>> sections =
+                            List<Map<String, dynamic>>.from(
+                                chapterData['sections'] ?? []);
+                        final List<String> allVerses =
+                            List<String>.from(chapterData['verses'] ?? []);
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.only(
+                              left: 16.0, right: 16.0, bottom: 16.0, top: 8.0),
+                          itemCount: sections.isNotEmpty
+                              ? sections.length
+                              : (allVerses.isNotEmpty ? 1 : 0),
+                          itemBuilder: (context, sectionIndex) {
+                            if (sections.isNotEmpty) {
+                              final section = sections[sectionIndex];
+                              final String sectionTitle =
+                                  section['title'] ?? 'Seção';
+                              final List<int> verseNumbers =
+                                  (section['verses'] as List?)?.cast<int>() ??
+                                      [];
+                              String versesRangeStr = "";
+                              if (verseNumbers.isNotEmpty) {
+                                verseNumbers.sort();
+                                versesRangeStr = verseNumbers.length == 1
+                                    ? verseNumbers.first.toString()
+                                    : "${verseNumbers.first}-${verseNumbers.last}";
+                              }
+                              return SectionItemWidget(
+                                sectionTitle: sectionTitle,
+                                verseNumbersInSection: verseNumbers,
+                                allVerseTextsInChapter: allVerses,
+                                bookSlug: _selectedBookSlug!,
+                                bookAbbrev: selectedBook!,
+                                chapterNumber: selectedChapter!,
+                                versesRangeStr: versesRangeStr,
+                                // <<< Passa os dados do ViewModel (Redux) >>>
+                                userHighlights: vm.userHighlights,
+                                userNotes: vm.userNotes,
+                              );
+                            } else if (allVerses.isNotEmpty) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: List.generate(allVerses.length,
+                                    (verseIndex) {
+                                  final verseNumber = verseIndex + 1;
+                                  final verseText = allVerses[verseIndex];
+                                  return BiblePageWidgets.buildVerseItem(
+                                    verseNumber: verseNumber,
+                                    verseText: verseText,
+                                    selectedBook: selectedBook,
+                                    selectedChapter: selectedChapter,
+                                    context: context,
+                                    // <<< Passa os dados do ViewModel (Redux) >>>
+                                    userHighlights: vm.userHighlights,
+                                    userNotes: vm.userNotes,
+                                  );
+                                }),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
         ],
@@ -565,4 +658,43 @@ class _BiblePageState extends State<BiblePage> {
   void dispose() {
     super.dispose();
   }
+}
+
+// <<< ViewModel para o StoreConnector >>>
+class _ViewModel {
+  final Map<String, String> userHighlights;
+  final Map<String, String> userNotes;
+
+  _ViewModel({required this.userHighlights, required this.userNotes});
+
+  static _ViewModel fromStore(Store<AppState> store) {
+    return _ViewModel(
+      userHighlights: store.state.userState.userHighlights,
+      userNotes: store.state.userState.userNotes,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _ViewModel &&
+          runtimeType == other.runtimeType &&
+          mapEquals(userHighlights,
+              other.userHighlights) && // Usa mapEquals para comparar mapas
+          mapEquals(userNotes, other.userNotes);
+
+  @override
+  int get hashCode => userHighlights.hashCode ^ userNotes.hashCode;
+}
+
+// Função para comparar mapas (você pode precisar importar 'package:flutter/foundation.dart' para mapEquals)
+bool mapEquals<T, U>(Map<T, U>? a, Map<T, U>? b) {
+  if (a == null) return b == null;
+  if (b == null || a.length != b.length) return false;
+  for (final key in a.keys) {
+    if (!b.containsKey(key) || a[key] != b[key]) {
+      return false;
+    }
+  }
+  return true;
 }

@@ -519,4 +519,77 @@ class FirestoreService {
       return null;
     }
   }
+
+  // --- Highlight Methods ---
+  Future<void> saveHighlight(
+      String userId, String verseId, String colorHex) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('user_highlights')
+        .doc(verseId)
+        .set({
+      'verseId': verseId, // Redundante, mas pode ser útil para queries
+      'color': colorHex,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> removeHighlight(String userId, String verseId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('user_highlights')
+        .doc(verseId)
+        .delete();
+  }
+
+  Future<Map<String, String>> loadUserHighlights(String userId) async {
+    final snapshot = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('user_highlights')
+        .get();
+    Map<String, String> highlights = {};
+    for (var doc in snapshot.docs) {
+      highlights[doc.id] = doc.data()['color'] as String;
+    }
+    return highlights;
+  }
+
+  // --- Note Methods (a serem implementados de forma similar) ---
+  Future<void> saveNote(String userId, String verseId, String text) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('user_notes')
+        .doc(verseId)
+        .set({
+      'verseId': verseId,
+      'text': text,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> removeNote(String userId, String verseId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('user_notes')
+        .doc(verseId)
+        .delete();
+  }
+
+  Future<Map<String, String>> loadUserNotes(String userId) async {
+    final snapshot = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('user_notes')
+        .get();
+    Map<String, String> notes = {};
+    for (var doc in snapshot.docs) {
+      notes[doc.id] = doc.data()['text'] as String;
+    }
+    return notes;
+  }
 }

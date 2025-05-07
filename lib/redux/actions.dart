@@ -478,3 +478,45 @@ class SendMessageFailureAction {
   final String error;
   SendMessageFailureAction(this.error);
 }
+
+// Highlight Actions
+class LoadUserHighlightsAction {}
+
+class UserHighlightsLoadedAction {
+  final Map<String, String> highlights;
+  UserHighlightsLoadedAction(this.highlights);
+}
+
+class ToggleHighlightAction {
+  // Uma única ação para adicionar/remover/mudar cor
+  final String verseId;
+  final String? colorHex; // null para remover, cor para adicionar/mudar
+  ToggleHighlightAction(this.verseId, {this.colorHex});
+}
+
+// Note Actions
+class LoadUserNotesAction {}
+
+class UserNotesLoadedAction {
+  final Map<String, String> notes;
+  UserNotesLoadedAction(this.notes);
+}
+
+class SaveNoteAction {
+  final String verseId;
+  final String text;
+  SaveNoteAction(this.verseId, this.text);
+}
+
+class DeleteNoteAction {
+  final String verseId;
+  DeleteNoteAction(this.verseId);
+}
+
+class SetInitialBibleLocationAction {
+  final String? bookAbbrev;
+  final int? chapter;
+  // final int? verse; // Adicionar se precisar rolar para o verso específico
+
+  SetInitialBibleLocationAction(this.bookAbbrev, this.chapter);
+}

@@ -14,6 +14,8 @@ class SectionItemWidget extends StatefulWidget {
   final String bookAbbrev; // e.g., "gn" (para salvar versículo)
   final int chapterNumber;
   final String versesRangeStr; // e.g., "1-5" (para ID do Firestore)
+  final Map<String, String> userHighlights;
+  final Map<String, String> userNotes;
 
   const SectionItemWidget({
     Key? key,
@@ -24,6 +26,8 @@ class SectionItemWidget extends StatefulWidget {
     required this.bookAbbrev,
     required this.chapterNumber,
     required this.versesRangeStr,
+    required this.userHighlights,
+    required this.userNotes,
   }) : super(key: key);
 
   @override
@@ -53,7 +57,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
     });
 
     if (context.mounted) {
-      // Verifica se o widget ainda está na árvore
       if (commentaryData != null && commentaryData['commentary'] is List) {
         final List<Map<String, dynamic>> commentaryItems =
             List<Map<String, dynamic>>.from(commentaryData['commentary']);
@@ -61,7 +64,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
-          backgroundColor: Colors.transparent, // Modal terá sua própria cor
+          backgroundColor: Colors.transparent,
           builder: (_) => SectionCommentaryModal(
             sectionTitle: widget.sectionTitle,
             commentaryItems: commentaryItems,
@@ -74,7 +77,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
           backgroundColor: Colors.transparent,
           builder: (_) => SectionCommentaryModal(
             sectionTitle: widget.sectionTitle,
-            commentaryItems: const [], // Lista vazia se não houver comentário
+            commentaryItems: const [],
           ),
         );
       }
@@ -86,14 +89,13 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
-      color: const Color(0xFF272828), // Cor de fundo do card da seção
+      color: const Color(0xFF272828),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Título da Seção e Botão de Comentário
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -123,36 +125,31 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
             ),
             const Divider(color: Colors.white30),
             const SizedBox(height: 8),
-
-            // Lista de Versículos da Seção
             ListView.builder(
-              shrinkWrap:
-                  true, // Para que o ListView não tente ocupar todo o espaço vertical
-              physics:
-                  const NeverScrollableScrollPhysics(), // Desabilita scroll do ListView interno
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: widget.verseNumbersInSection.length,
               itemBuilder: (context, index) {
                 final verseNumber = widget.verseNumbersInSection[index];
-                // Validação básica do índice do verso
                 if (verseNumber > 0 &&
                     verseNumber <= widget.allVerseTextsInChapter.length) {
-                  final verseText = widget.allVerseTextsInChapter[
-                      verseNumber - 1]; // -1 porque a lista é 0-indexed
+                  final verseText =
+                      widget.allVerseTextsInChapter[verseNumber - 1];
                   return BiblePageWidgets.buildVerseItem(
                     verseNumber: verseNumber,
                     verseText: verseText,
-                    selectedBook:
-                        widget.bookAbbrev, // Passa o abbrev do livro atual
+                    selectedBook: widget.bookAbbrev,
                     selectedChapter: widget.chapterNumber,
                     context: context,
+                    // <<< Passando os dados do Redux >>>
+                    userHighlights: widget.userHighlights,
+                    userNotes: widget.userNotes,
                   );
                 } else {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                      'Erro: Verso $verseNumber inválido na seção.',
-                      style: const TextStyle(color: Colors.redAccent),
-                    ),
+                    child: Text('Erro: Verso $verseNumber inválido na seção.',
+                        style: const TextStyle(color: Colors.redAccent)),
                   );
                 }
               },

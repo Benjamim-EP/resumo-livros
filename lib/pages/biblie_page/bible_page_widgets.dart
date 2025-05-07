@@ -1,11 +1,14 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
+import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/highlight_color_picker_modal.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/note_editor_modal.dart';
 
 class BiblePageWidgets {
-  // ... (buildTranslationButton e showTranslationSelection permanecem iguais) ...
+  /// Botão para selecionar uma tradução específica.
   static Widget buildTranslationButton({
     required String translationKey,
     required String translationLabel,
@@ -13,25 +16,32 @@ class BiblePageWidgets {
     required VoidCallback onPressed,
   }) {
     final isSelected = selectedTranslation == translationKey;
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor:
-            isSelected ? const Color(0xFFCDE7BE) : const Color(0xFF272828),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    return Padding(
+      // Adiciona padding entre os botões
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isSelected ? const Color(0xFFCDE7BE) : const Color(0xFF272828),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 10), // Ajuste no padding
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          minimumSize: const Size(80, 40), // Garante um tamanho mínimo
         ),
-      ),
-      child: Text(
-        translationLabel,
-        style: TextStyle(
-          color: isSelected ? const Color(0xFF181A1A) : Colors.white,
+        child: Text(
+          translationLabel,
+          style: TextStyle(
+            color: isSelected ? const Color(0xFF181A1A) : Colors.white,
+          ),
         ),
       ),
     );
   }
 
+  /// Exibe um modal para o usuário selecionar a tradução da Bíblia.
   static void showTranslationSelection({
     required BuildContext context,
     required String selectedTranslation,
@@ -51,36 +61,49 @@ class BiblePageWidgets {
             children: [
               const Text(
                 "Escolha a Tradução",
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              buildTranslationButton(
-                translationKey: 'nvi',
-                translationLabel: 'NVI',
-                selectedTranslation: selectedTranslation,
-                onPressed: () {
-                  onTranslationSelected('nvi');
-                  Navigator.pop(context);
-                },
+              Wrap(
+                // Usa Wrap para melhor layout se houver muitas traduções
+                spacing: 8.0,
+                runSpacing: 8.0,
+                alignment: WrapAlignment.center,
+                children: [
+                  buildTranslationButton(
+                    translationKey: 'nvi',
+                    translationLabel: 'NVI',
+                    selectedTranslation: selectedTranslation,
+                    onPressed: () {
+                      onTranslationSelected('nvi');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  buildTranslationButton(
+                    translationKey: 'aa',
+                    translationLabel: 'AA',
+                    selectedTranslation: selectedTranslation,
+                    onPressed: () {
+                      onTranslationSelected('aa');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  buildTranslationButton(
+                    translationKey: 'acf',
+                    translationLabel: 'ACF',
+                    selectedTranslation: selectedTranslation,
+                    onPressed: () {
+                      onTranslationSelected('acf');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  // Adicione mais botões para outras traduções aqui
+                ],
               ),
-              buildTranslationButton(
-                translationKey: 'aa',
-                translationLabel: 'AA',
-                selectedTranslation: selectedTranslation,
-                onPressed: () {
-                  onTranslationSelected('aa');
-                  Navigator.pop(context);
-                },
-              ),
-              buildTranslationButton(
-                translationKey: 'acf',
-                translationLabel: 'ACF',
-                selectedTranslation: selectedTranslation,
-                onPressed: () {
-                  onTranslationSelected('acf');
-                  Navigator.pop(context);
-                },
-              ),
+              const SizedBox(height: 10),
             ],
           ),
         );
@@ -88,131 +111,310 @@ class BiblePageWidgets {
     );
   }
 
-  // <<< NOVO: Função para formatar o texto do versículo >>>
-  static List<TextSpan> _formatVerseText(String verseText) {
+  /// Formata o texto do versículo, aplicando negrito aos marcadores "n."/(n.)
+  /// e cor de fundo se houver destaque.
+  static List<TextSpan> _formatVerseText(
+      String verseText, String? highlightColorHex) {
     final List<TextSpan> spans = [];
-    // Regex para encontrar "n." ou "(n.)" no início de uma "linha" ou após certos caracteres.
-    // Esta regex pode precisar de ajustes dependendo da consistência da sua fonte de texto.
-    // A ideia é capturar o número e o ponto, e o texto seguinte.
-    // \b(\d+\.)\s* -> Captura "1. ", "2. ", etc. no início de uma palavra/linha.
-    // \b(\(\d+\))\s* -> Captura "(1)", "(2)", etc. no início de uma palavra/linha.
-    // (?<!\S) -> Negative lookbehind para garantir que não há caractere não-espaço antes (início de linha/parágrafo)
+    // Regex ajustada para ser menos restritiva no início (pode capturar em mais locais)
+    // e garantir que captura o marcador completo. Adiciona lookbehind para evitar capturar dentro de palavras.
     final RegExp regex =
-        RegExp(r'(?<!\S)((\d+\.)|(\(\d+\)))\s*', multiLine: true);
-
+        RegExp(r'(?<![\w])((\d+\.)|(\(\d+\)))(?!\w)\s*', multiLine: true);
     int currentPosition = 0;
+
+    // Converte cor hexadecimal para Color, ou usa transparente
+    final backgroundColor = highlightColorHex != null
+        ? Color(int.parse(highlightColorHex.replaceFirst('#', '0xff')))
+        : Colors.transparent;
+
+    // Estilo base para o texto do versículo
+    TextStyle baseStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 16,
+      height: 1.5,
+      backgroundColor: backgroundColor,
+    );
+    // Estilo para os números formatados
+    TextStyle numberStyle = TextStyle(
+      fontWeight: FontWeight.bold,
+      color: const Color(0xFFEAEAEA), // Cor um pouco mais clara para destaque
+      backgroundColor: backgroundColor,
+      fontSize: 16, // Mesmo tamanho da fonte base
+      height: 1.5, // Mesma altura da linha base
+    );
+
     for (final Match match in regex.allMatches(verseText)) {
-      // Adiciona o texto antes do marcador
+      // Adiciona texto antes do marcador
       if (match.start > currentPosition) {
-        spans.add(
-            TextSpan(text: verseText.substring(currentPosition, match.start)));
+        spans.add(TextSpan(
+            text: verseText.substring(currentPosition, match.start),
+            style: baseStyle));
       }
       // Adiciona o marcador em negrito
       spans.add(TextSpan(
         text: match.group(1)!, // O número com ponto ou parênteses
-        style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFFE0E0E0)), // Cor um pouco mais clara para o número
+        style: numberStyle,
       ));
-      // Adiciona um espaço após o marcador, se não estiver já incluído no match.group(0)
-      // e prepara para um novo parágrafo (na verdade, o RichText já lida com isso se houver \n)
-      // Se você quiser forçar uma nova linha visual após cada marcador,
-      // você pode adicionar um TextSpan(text: '\n') aqui, mas isso pode não ser o ideal
-      // para a leitura fluida. O RichText naturalmente quebra linhas.
-      // Se o seu texto original já tem quebras de linha, elas serão respeitadas.
-      // Se o texto é uma string contínua e você quer quebrar APÓS o "n.",
-      // a regex precisaria ser ajustada ou o processamento seria mais complexo.
-
-      // Para o efeito de "iniciar novo parágrafo", o mais simples é garantir que
-      // seu texto original tenha quebras de linha (\n) onde você quer os parágrafos.
-      // Se não tiver, a regex sozinha não cria parágrafos, apenas estiliza o número.
-
-      // Se o texto fonte não tiver \n e você quer que "n." inicie visualmente um novo bloco:
-      // Aqui, vamos assumir que o RichText com TextSpans já lida bem com a quebra de linha natural.
-      // Se você precisar FORÇAR uma quebra visual, pode adicionar \n ao texto antes do marcador.
-      // Por exemplo, processar o `verseText` para substituir " 1." por "\n1. " antes desta função.
-      // Ou, se a intenção é apenas que o texto após "1." continue normalmente:
-      spans.add(const TextSpan(
-          text: ' ')); // Adiciona um espaço após o número em negrito
+      // Adiciona um espaço APÓS o marcador, se houver espaço capturado (grupo 0 contém o espaço)
+      // Isso evita adicionar espaço duplo se o regex já capturou.
+      if (match.group(0)!.endsWith(' ')) {
+        spans.add(TextSpan(text: ' ', style: baseStyle));
+      }
 
       currentPosition = match.end;
     }
 
     // Adiciona o restante do texto
     if (currentPosition < verseText.length) {
-      spans.add(TextSpan(text: verseText.substring(currentPosition)));
+      spans.add(TextSpan(
+          text: verseText.substring(currentPosition), style: baseStyle));
     }
 
-    // Se spans estiver vazio (texto original não tinha marcadores), retorna o texto original simples
+    // Retorna o texto original se nenhuma formatação foi aplicada
     if (spans.isEmpty) {
-      return [TextSpan(text: verseText)];
+      return [TextSpan(text: verseText, style: baseStyle)];
     }
 
     return spans;
   }
-  // <<< FIM NOVO >>>
 
+  /// Constrói o widget para exibir um único versículo, com interações.
   static Widget buildVerseItem({
     required int verseNumber,
     required String verseText,
-    required String? selectedBook,
+    required String? selectedBook, // abbrev
     required int? selectedChapter,
     required BuildContext context,
+    required Map<String, String> userHighlights, // Vem do Redux
+    required Map<String, String> userNotes, // Vem do Redux
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          vertical: 6.0), // Aumentado o padding vertical
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$verseNumber ',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(
-                  0xFFB0B0B0), // Cor mais suave para o número do versículo
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Expanded(
-            // <<< MODIFICAÇÃO MVP: Usa RichText para formatar o texto >>>
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    height: 1.5), // Estilo padrão
-                children: _formatVerseText(verseText),
+    // Cria um ID único e consistente para o versículo
+    final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
+    final String? currentHighlightColor = userHighlights[verseId];
+    final bool hasNote = userNotes.containsKey(verseId);
+
+    // Converte cor hexadecimal para Color, ou usa transparente
+    final backgroundColor = currentHighlightColor != null
+        ? Color(int.parse(currentHighlightColor.replaceFirst('#', '0xff')))
+            .withOpacity(0.35) // Leve opacidade no fundo geral
+        : Colors.transparent;
+
+    return GestureDetector(
+      // Permite interações no versículo inteiro
+      onLongPress: () {
+        // Mostra o modal de opções ao pressionar longamente
+        _showVerseOptionsModal(
+          context,
+          verseId,
+          currentHighlightColor,
+          userNotes[verseId], // Passa o texto da nota atual
+          selectedBook!,
+          selectedChapter!,
+          verseNumber,
+          verseText, // Passa o texto original para o modal
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            vertical: 6.0, horizontal: 4.0), // Adiciona padding horizontal
+        margin: const EdgeInsets.symmetric(
+            vertical: 1.0), // Pequeno espaço entre versículos
+        decoration: BoxDecoration(
+          // Aplica a cor de fundo do destaque aqui
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(
+              4), // Bordas levemente arredondadas para o destaque
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Número do Versículo
+            Text(
+              '$verseNumber ',
+              style: TextStyle(
+                fontSize: 12,
+                color: currentHighlightColor != null
+                    ? Colors.white.withOpacity(0.9)
+                    : const Color(0xFFB0B0B0), // Contraste melhor com fundo
+                fontWeight: FontWeight.bold,
               ),
             ),
-            // <<< FIM MODIFICAÇÃO MVP >>>
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.bookmark_border,
-              color: Colors.white70,
-              size: 20, // Tamanho ligeiramente aumentado
+            // Texto do Versículo (Formatado)
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  // O estilo base é definido dentro de _formatVerseText agora
+                  children: _formatVerseText(verseText, currentHighlightColor),
+                ),
+              ),
             ),
-            onPressed: () {
-              if (selectedBook != null && selectedChapter != null) {
-                showDialog(
-                  context: context,
-                  builder: (context) => SaveVerseDialog(
-                    bookAbbrev: selectedBook,
-                    chapter: selectedChapter,
-                    verseNumber: verseNumber,
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Selecione livro e capítulo para salvar.")));
-              }
-            },
-            padding: const EdgeInsets.all(4), // Padding menor para o ícone
-            constraints: const BoxConstraints(),
-          ),
-        ],
+            // Ícone de Nota (se houver)
+            if (hasNote)
+              Padding(
+                padding: const EdgeInsets.only(
+                    left: 5.0, right: 2.0, top: 2.0), // Ajuste fino do padding
+                child: Icon(Icons.note_alt_rounded,
+                    color: Colors.blueAccent[100],
+                    size: 16), // Ícone preenchido
+              ),
+          ],
+        ),
       ),
+    );
+  }
+
+  /// Exibe um modal (BottomSheet) com opções para o versículo selecionado.
+  static void _showVerseOptionsModal(
+      BuildContext context,
+      String verseId,
+      String? currentHighlightColor,
+      String? currentNote,
+      String bookAbbrev,
+      int chapter,
+      int verseNum,
+      String verseText) {
+    // Recebe texto do versículo
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2C2F33), // Cor de fundo escura
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (modalContext) {
+        final store = StoreProvider.of<AppState>(context); // Acesso ao store
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabeçalho com referência e preview
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Opções para: $bookAbbrev $chapter:$verseNum",
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    Text(
+                      verseText,
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontStyle: FontStyle.italic,
+                          fontSize: 14),
+                      maxLines: 3, // Limita o preview
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Colors.white54, height: 25),
+
+              // Opção de Destaque
+              ListTile(
+                leading: Icon(Icons.format_paint_outlined,
+                    color: currentHighlightColor != null
+                        ? Color(int.parse(
+                            currentHighlightColor.replaceFirst('#', '0xff')))
+                        : Colors.white70),
+                title: Text(
+                    currentHighlightColor != null
+                        ? "Mudar/Remover Destaque"
+                        : "Destacar Versículo",
+                    style: const TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(modalContext); // Fecha modal de opções
+                  showDialog(
+                    // Abre seletor de cores
+                    context: context,
+                    // Garante que o context original seja usado para o StoreProvider
+                    builder: (_) => HighlightColorPickerModal(
+                        initialColor: currentHighlightColor,
+                        onColorSelected: (selectedColor) {
+                          store.dispatch(ToggleHighlightAction(verseId,
+                              colorHex: selectedColor));
+                        },
+                        onRemoveHighlight: () {
+                          store.dispatch(ToggleHighlightAction(
+                              verseId)); // colorHex null remove
+                        }),
+                  );
+                },
+              ),
+
+              // Opção de Nota
+              ListTile(
+                leading: Icon(
+                    currentNote != null
+                        ? Icons.edit_note_outlined
+                        : Icons.note_add_outlined,
+                    color: Colors.white70),
+                title: Text(
+                    currentNote != null ? "Editar Nota" : "Adicionar Nota",
+                    style: const TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(modalContext); // Fecha modal de opções
+                  showDialog(
+                    // Abre editor de notas
+                    context: context,
+                    // Garante que o context original seja usado para o StoreProvider
+                    builder: (_) => NoteEditorModal(
+                      verseId: verseId,
+                      initialText: currentNote,
+                      bookReference: "$bookAbbrev $chapter:$verseNum",
+                      verseTextSample: verseText,
+                      // A lógica de salvar/deletar está dentro do NoteEditorModal agora
+                    ),
+                  );
+                },
+              ),
+
+              // Opção de Remover Nota (Condicional)
+              if (currentNote != null)
+                ListTile(
+                  leading:
+                      const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  title: const Text("Remover Nota",
+                      style: TextStyle(color: Colors.redAccent)),
+                  onTap: () {
+                    store.dispatch(DeleteNoteAction(verseId));
+                    Navigator.pop(modalContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Nota removida.'),
+                          duration: Duration(seconds: 2)),
+                    );
+                  },
+                ),
+
+              // Opção de Salvar em Coleção (Bookmark)
+              ListTile(
+                leading: const Icon(Icons.bookmark_add_outlined,
+                    color: Colors.white70),
+                title: const Text("Salvar em Coleção",
+                    style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(modalContext);
+                  showDialog(
+                    context: context, // Usa o contexto original
+                    builder: (dContext) => SaveVerseDialog(
+                      bookAbbrev: bookAbbrev,
+                      chapter: chapter,
+                      verseNumber: verseNum,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10), // Espaço no final
+            ],
+          ),
+        );
+      },
     );
   }
 }
