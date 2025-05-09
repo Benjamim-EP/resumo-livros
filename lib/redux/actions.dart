@@ -541,3 +541,20 @@ class UpdateLastReadLocationAction {
   final int chapter;
   UpdateLastReadLocationAction(this.bookAbbrev, this.chapter);
 }
+
+class LoadUserCommentHighlightsAction {}
+
+class UserCommentHighlightsLoadedAction {
+  final List<Map<String, dynamic>> commentHighlights;
+  UserCommentHighlightsLoadedAction(this.commentHighlights);
+}
+
+class AddCommentHighlightAction {
+  final Map<String, dynamic> commentHighlightData;
+  AddCommentHighlightAction(this.commentHighlightData);
+}
+
+class RemoveCommentHighlightAction {
+  final String commentHighlightId;
+  RemoveCommentHighlightAction(this.commentHighlightId);
+}

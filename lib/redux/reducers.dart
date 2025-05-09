@@ -134,7 +134,9 @@ class UserState {
 
   final List<Map<String, dynamic>> readingHistory; // Histórico carregado
   final String? lastReadBookAbbrev; // Último livro lido na sessão/carregado
-  final int? lastReadChapter; // Último capítulo lido na sessão/carregado
+  final int? lastReadChapter; // Último capítulo lido na sessão/
+
+  final List<Map<String, dynamic>> userCommentHighlights;
 
   UserState({
     this.userId,
@@ -165,6 +167,7 @@ class UserState {
     this.readingHistory = const [],
     this.lastReadBookAbbrev,
     this.lastReadChapter,
+    this.userCommentHighlights = const [],
   });
 
   UserState copyWith({
@@ -196,6 +199,7 @@ class UserState {
     List<Map<String, dynamic>>? readingHistory,
     String? lastReadBookAbbrev,
     int? lastReadChapter,
+    List<Map<String, dynamic>>? userCommentHighlights, // NOVO
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -228,6 +232,8 @@ class UserState {
       readingHistory: readingHistory ?? this.readingHistory,
       lastReadBookAbbrev: lastReadBookAbbrev ?? this.lastReadBookAbbrev,
       lastReadChapter: lastReadChapter ?? this.lastReadChapter,
+      userCommentHighlights:
+          userCommentHighlights ?? this.userCommentHighlights,
     );
   }
 }
@@ -420,6 +426,11 @@ UserState userReducer(UserState state, dynamic action) {
   } else if (action is UserLoggedOutAction) {
     // Limpa o histórico e último lido ao fazer logout
     return UserState(); // Reseta para o estado inicial
+  } else if (action is UserCommentHighlightsLoadedAction) {
+    return state.copyWith(userCommentHighlights: action.commentHighlights);
+  } else if (action is UserLoggedOutAction) {
+    // Garante que limpa ao sair
+    return UserState(); // Reseta para o estado inicial, limpando userCommentHighlights
   }
 
   return state;

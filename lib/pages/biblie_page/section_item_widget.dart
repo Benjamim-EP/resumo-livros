@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_commentary_modal.dart';
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart'; // Importe o serviço
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para obter nome do livro
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;
@@ -52,35 +53,42 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
     final commentaryData =
         await _firestoreService.getSectionCommentary(commentaryDocId);
 
+    // Obter o nome completo do livro para passar ao modal
+    String bookFullName = widget.bookAbbrev.toUpperCase(); // Fallback
+    try {
+      final booksMap = await BiblePageHelper.loadBooksMap();
+      if (booksMap.containsKey(widget.bookAbbrev)) {
+        bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
+      }
+    } catch (e) {
+      print("Erro ao carregar nome do livro em SectionItemWidget: $e");
+    }
+
     setState(() {
       _isLoadingCommentary = false;
     });
 
     if (context.mounted) {
-      if (commentaryData != null && commentaryData['commentary'] is List) {
-        final List<Map<String, dynamic>> commentaryItems =
-            List<Map<String, dynamic>>.from(commentaryData['commentary']);
+      // Checa se o widget ainda está montado
+      final List<Map<String, dynamic>> commentaryItems =
+          (commentaryData != null && commentaryData['commentary'] is List)
+              ? List<Map<String, dynamic>>.from(commentaryData['commentary'])
+              : const [];
 
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => SectionCommentaryModal(
-            sectionTitle: widget.sectionTitle,
-            commentaryItems: commentaryItems,
-          ),
-        );
-      } else {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => SectionCommentaryModal(
-            sectionTitle: widget.sectionTitle,
-            commentaryItems: const [],
-          ),
-        );
-      }
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent, // O modal define sua própria cor
+        builder: (_) => SectionCommentaryModal(
+          sectionTitle: widget.sectionTitle,
+          commentaryItems: commentaryItems,
+          bookAbbrev: widget.bookAbbrev, // NOVO
+          bookSlug: widget.bookSlug, // NOVO
+          bookName: bookFullName, // NOVO
+          chapterNumber: widget.chapterNumber, // NOVO
+          versesRangeStr: widget.versesRangeStr, // NOVO
+        ),
+      );
     }
   }
 

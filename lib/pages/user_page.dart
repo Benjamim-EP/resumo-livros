@@ -1,6 +1,6 @@
 // lib/pages/user_page.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Import for mapEquals if needed (part of _ViewModel)
+import 'package:flutter/foundation.dart'; // Import for listEquals
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page/user_diary_page.dart';
@@ -13,55 +13,55 @@ import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:redux/redux.dart';
-import 'package:intl/intl.dart'; // Necessário para formatar datas do histórico
+import 'package:intl/intl.dart';
+
+// Enum para o tipo de destaque
+enum HighlightType { verses, comments }
 
 class UserPage extends StatefulWidget {
-  const UserPage({super.key}); // Correção: Use super(key: key)
+  const UserPage({super.key});
 
   @override
   _UserPageState createState() => _UserPageState();
 }
 
 class _UserPageState extends State<UserPage> {
-  // Variável local para o mapa de livros e estado de carregamento
   Map<String, dynamic>? _localBooksMap;
   bool _isLoadingBooksMap = true;
-
-  // Aba inicial
-  String _selectedTab = 'Histórico'; // Mude conforme necessário
+  String _selectedTab = 'Destaques';
+  HighlightType _selectedHighlightType = HighlightType.verses;
 
   @override
   void initState() {
     super.initState();
-    _loadLocalBooksMap(); // Carrega o mapa localmente
-    // Despacha ações iniciais (mantém as existentes)
+    _loadLocalBooksMap();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final store = StoreProvider.of<AppState>(context, listen: false);
-      if (store.state.userState.userId != null) {
-        store.dispatch(LoadUserStatsAction());
-        store.dispatch(LoadUserCollectionsAction());
-        // store.dispatch(LoadBooksInProgressAction()); // Removido temporariamente (foco na Bíblia)
-        store.dispatch(LoadUserDiariesAction());
-        if (store.state.userState.userHighlights.isEmpty) {
-          store.dispatch(LoadUserHighlightsAction());
+      final storeInstance = StoreProvider.of<AppState>(context, listen: false);
+      if (storeInstance.state.userState.userId != null) {
+        storeInstance.dispatch(LoadUserStatsAction());
+        storeInstance.dispatch(LoadUserCollectionsAction());
+        storeInstance.dispatch(LoadUserDiariesAction());
+
+        if (storeInstance.state.userState.userHighlights.isEmpty) {
+          storeInstance.dispatch(LoadUserHighlightsAction());
         }
-        if (store.state.userState.userNotes.isEmpty) {
-          store.dispatch(LoadUserNotesAction());
+        if (storeInstance.state.userState.userCommentHighlights.isEmpty) {
+          storeInstance.dispatch(LoadUserCommentHighlightsAction());
         }
-        // Carrega o histórico ao iniciar
-        if (store.state.userState.readingHistory.isEmpty) {
-          store.dispatch(LoadReadingHistoryAction());
+        if (storeInstance.state.userState.userNotes.isEmpty) {
+          storeInstance.dispatch(LoadUserNotesAction());
+        }
+        if (storeInstance.state.userState.readingHistory.isEmpty) {
+          storeInstance.dispatch(LoadReadingHistoryAction());
         }
       }
     });
   }
 
-  // Função para carregar o mapa de livros localmente
   Future<void> _loadLocalBooksMap() async {
     try {
       final map = await BiblePageHelper.loadBooksMap();
       if (mounted) {
-        // Verifica se o widget ainda está montado
         setState(() {
           _localBooksMap = map;
           _isLoadingBooksMap = false;
@@ -71,7 +71,7 @@ class _UserPageState extends State<UserPage> {
       print("Erro ao carregar booksMap localmente em UserPage: $e");
       if (mounted) {
         setState(() {
-          _isLoadingBooksMap = false; // Para o loading mesmo em caso de erro
+          _isLoadingBooksMap = false;
         });
       }
     }
@@ -83,40 +83,102 @@ class _UserPageState extends State<UserPage> {
     });
   }
 
-  // Função auxiliar para navegar para a Bíblia
   void _navigateToBibleVerse(String verseId) {
     final parts = verseId.split('_');
     if (parts.length == 3) {
       final bookAbbrev = parts[0];
       final chapter = int.tryParse(parts[1]);
-      final verse = int.tryParse(parts[2]);
-
-      if (chapter != null && verse != null) {
+      if (chapter != null) {
         StoreProvider.of<AppState>(context, listen: false)
             .dispatch(SetInitialBibleLocationAction(bookAbbrev, chapter));
-        print("Navegação para Bíblia solicitada: $bookAbbrev $chapter:$verse");
-        // TODO: Implementar mecanismo para MainAppScreen mudar para a aba 2 (Bíblia)
-        // Ex: Chamar um método via GlobalKey ou Provider, ou fazer MainAppScreen ouvir a action.
-        // Exemplo com notificação (simples, mas pode não ser ideal):
-        // TabNavigationNotification(2).dispatch(context);
+        print("Navegação para Bíblia solicitada: $bookAbbrev $chapter");
       }
     }
   }
 
+  Widget _buildCommentHighlightCard(
+      Map<String, dynamic> highlight, BuildContext context) {
+    final String selectedSnippet =
+        highlight['selectedSnippet'] ?? 'Trecho indisponível';
+    final String fullCommentText =
+        highlight['fullCommentText'] ?? 'Comentário completo indisponível';
+    final String referenceText =
+        highlight['verseReferenceText'] ?? 'Referência desconhecida';
+    final String highlightId = highlight['id'] ?? '';
+
+    return Card(
+      color: const Color(0xFF3A3C3C),
+      margin: const EdgeInsets.symmetric(vertical: 6.0),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '"${selectedSnippet}"',
+              style: const TextStyle(
+                color: Colors.amber, // Cor diferente para o trecho
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Contexto: ${fullCommentText.length > 100 ? fullCommentText.substring(0, 100) + "..." : fullCommentText}",
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    referenceText,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (highlightId.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.redAccent, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: "Remover Marcação",
+                    onPressed: () {
+                      StoreProvider.of<AppState>(context, listen: false)
+                          .dispatch(RemoveCommentHighlightAction(highlightId));
+                    },
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTabContent() {
-    // Verifica se o mapa local está carregado antes de construir as abas que dependem dele
-    if (_isLoadingBooksMap &&
-        (_selectedTab == 'Destaques' ||
-            _selectedTab == 'Notas' ||
-            _selectedTab == 'Histórico' ||
-            _selectedTab == 'Salvos')) {
+    if (_selectedTab == 'Destaques' &&
+        _selectedHighlightType == HighlightType.verses &&
+        _isLoadingBooksMap) {
       return const Center(
           child: CircularProgressIndicator(color: Color(0xFFCDE7BE)));
     }
-    // Verifica se ocorreu erro ao carregar o mapa
     if (_localBooksMap == null &&
-        (_selectedTab == 'Destaques' ||
-            _selectedTab == 'Notas' ||
+        (_selectedTab == 'Notas' ||
             _selectedTab == 'Histórico' ||
             _selectedTab == 'Salvos')) {
       return const Center(
@@ -125,7 +187,6 @@ class _UserPageState extends State<UserPage> {
     }
 
     switch (_selectedTab) {
-      // --- ABA LENDO (Desativada Temporariamente) ---
       case 'Lendo':
         return const Center(
           child: Text(
@@ -135,19 +196,18 @@ class _UserPageState extends State<UserPage> {
           ),
         );
 
-      // --- ABA SALVOS ---
       case 'Salvos':
         return StoreConnector<AppState,
             Map<String, List<Map<String, dynamic>>>>(
           converter: (store) => store.state.userState.savedTopicsContent,
           onInit: (store) {
-            // Garante que UserCollectionsLoadedAction já foi despachada ou despacha agora
-            if (store.state.userState.topicSaves.isEmpty) {
+            if (store.state.userState.topicSaves.isEmpty &&
+                store.state.userState.userId != null) {
               store.dispatch(LoadUserCollectionsAction());
             }
-            // Carrega o conteúdo se necessário
             if (store.state.userState.savedTopicsContent.isEmpty &&
-                store.state.userState.topicSaves.isNotEmpty) {
+                store.state.userState.topicSaves.isNotEmpty &&
+                store.state.userState.userId != null) {
               store.dispatch(LoadTopicsContentUserSavesAction());
             }
           },
@@ -160,13 +220,11 @@ class _UserPageState extends State<UserPage> {
                   child: Text("Nenhuma coleção salva.",
                       style: TextStyle(color: Colors.white70)));
             }
-            // Se tem coleções mas o conteúdo ainda não carregou
             if (savedTopicsContent.isEmpty && topicSavesMap.isNotEmpty) {
               return const Center(
                   child: CircularProgressIndicator(color: Color(0xFFCDE7BE)));
             }
 
-            // Se não tem conteúdo e não tem mais saves (após deletar a última coleção, por exemplo)
             if (savedTopicsContent.isEmpty && topicSavesMap.isEmpty) {
               return const Center(
                   child: Text("Nenhum tópico ou versículo salvo.",
@@ -187,8 +245,8 @@ class _UserPageState extends State<UserPage> {
                   child: ExpansionTile(
                     tilePadding: const EdgeInsets.symmetric(
                         horizontal: 16.0, vertical: 8.0),
-                    iconColor: Colors.white, // Cor do ícone de expansão
-                    collapsedIconColor: Colors.white70, // Cor quando fechado
+                    iconColor: Colors.white,
+                    collapsedIconColor: Colors.white70,
                     title: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -247,7 +305,6 @@ class _UserPageState extends State<UserPage> {
                           item['id']?.startsWith("bibleverses-") ?? false;
                       final String displayTitle =
                           item['titulo'] ?? 'Sem título';
-                      // Para versículos, busca o nome do livro do _localBooksMap
                       final String bookAbbrev =
                           isVerse ? (item['id']?.split('-')[1] ?? '') : '';
                       final String bookNameFromMap = _localBooksMap?[bookAbbrev]
@@ -255,8 +312,7 @@ class _UserPageState extends State<UserPage> {
                           bookAbbrev.toUpperCase();
                       final String displaySubtitle = isVerse
                           ? bookNameFromMap
-                          : (item['bookName'] ??
-                              'Origem desconhecida'); // Usa nome do livro para versículo
+                          : (item['bookName'] ?? 'Origem desconhecida');
 
                       final String? coverUrl = item['cover'];
                       final String itemId = item['id'] ?? 'unknown_id';
@@ -304,12 +360,10 @@ class _UserPageState extends State<UserPage> {
                         ),
                         onTap: () {
                           if (isVerse) {
-                            // Para versículos, extrai a referência do ID para navegação
-                            final parts =
-                                itemId.split('-'); // bibleverses-gn-1-1
+                            final parts = itemId.split('-');
                             if (parts.length == 4) {
                               final verseIdForNav =
-                                  "${parts[1]}_${parts[2]}_${parts[3]}"; // gn_1_1
+                                  "${parts[1]}_${parts[2]}_${parts[3]}";
                               _navigateToBibleVerse(verseIdForNav);
                             }
                           } else if (itemId != 'unknown_id') {
@@ -329,94 +383,178 @@ class _UserPageState extends State<UserPage> {
           },
         );
 
-      // --- ABA DESTAQUES ---
       case 'Destaques':
-        return StoreConnector<AppState, Map<String, String>>(
-          converter: (store) => store.state.userState.userHighlights,
-          builder: (context, highlights) {
-            if (highlights.isEmpty) {
-              return const Center(
-                  child: Text("Nenhum versículo destacado ainda.",
-                      style: TextStyle(color: Colors.white70)));
-            }
-            final highlightList = highlights.entries.toList();
-            return ListView.builder(
+        return Column(
+          children: [
+            Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              itemCount: highlightList.length,
-              itemBuilder: (context, index) {
-                final entry = highlightList[index];
-                final verseId = entry.key; // Formato: gn_1_1
-                final colorHex = entry.value;
-                final color =
-                    Color(int.parse(colorHex.replaceFirst('#', '0xff')));
-                final parts = verseId.split('_');
-                String referenceText = verseId;
-                if (parts.length == 3) {
-                  final bookName = _localBooksMap?[parts[0]]?['nome'] ??
-                      parts[0].toUpperCase();
-                  referenceText = "$bookName ${parts[1]}:${parts[2]}";
-                }
-                return Card(
-                  color: const Color(0xFF313333),
-                  margin: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    leading: Container(
-                        width: 10,
-                        decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(2))),
-                    title: Text(referenceText,
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: FutureBuilder<String>(
-                      future:
-                          BiblePageHelper.loadSingleVerseText(verseId, 'nvi'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting)
-                          return const Text("Carregando texto...",
-                              style: TextStyle(
-                                  color: Colors.white54, fontSize: 12));
-                        if (snapshot.hasError ||
-                            !snapshot.hasData ||
-                            snapshot.data!.isEmpty)
-                          return const Text("Texto indisponível",
-                              style: TextStyle(
-                                  color: Colors.redAccent, fontSize: 12));
-                        return Text(snapshot.data!,
-                            style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 13,
-                                backgroundColor: color.withOpacity(0.3)),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis);
-                      },
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.redAccent, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      tooltip: "Remover Destaque",
-                      onPressed: () {
-                        StoreProvider.of<AppState>(context, listen: false)
-                            .dispatch(ToggleHighlightAction(verseId));
-                      },
-                    ),
-                    onTap: () => _navigateToBibleVerse(verseId),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("Versículos",
+                      style: TextStyle(
+                          color: _selectedHighlightType == HighlightType.verses
+                              ? Colors.white
+                              : Colors.grey[600],
+                          fontWeight: FontWeight.bold)),
+                  Switch(
+                    value: _selectedHighlightType == HighlightType.comments,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedHighlightType = value
+                            ? HighlightType.comments
+                            : HighlightType.verses;
+                      });
+                    },
+                    activeColor: Theme.of(context).primaryColor,
+                    inactiveThumbColor: Colors.grey[400],
+                    inactiveTrackColor: Colors.grey.shade700,
                   ),
-                );
-              },
-            );
-          },
+                  Text("Comentários",
+                      style: TextStyle(
+                          color:
+                              _selectedHighlightType == HighlightType.comments
+                                  ? Colors.white
+                                  : Colors.grey[600],
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: StoreConnector<AppState, _HighlightsViewModel>(
+                converter: (store) => _HighlightsViewModel.fromStore(store),
+                builder: (context, highlightsVm) {
+                  if (_selectedHighlightType == HighlightType.verses) {
+                    if (_isLoadingBooksMap) {
+                      // Só mostra loader para versículos se booksMap não carregou
+                      return const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xFFCDE7BE)));
+                    }
+                    final highlights = highlightsVm.userVerseHighlights;
+                    if (highlights.isEmpty) {
+                      return const Center(
+                          child: Text("Nenhum versículo destacado ainda.",
+                              style: TextStyle(color: Colors.white70)));
+                    }
+                    final highlightList = highlights.entries.toList();
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      itemCount: highlightList.length,
+                      itemBuilder: (context, index) {
+                        final entry = highlightList[index];
+                        final verseId = entry.key;
+                        final colorHex = entry.value;
+                        final color = Color(
+                            int.parse(colorHex.replaceFirst('#', '0xff')));
+                        final parts = verseId.split('_');
+                        String referenceText = verseId;
+
+                        if (parts.length == 3 &&
+                            _localBooksMap != null &&
+                            _localBooksMap!.containsKey(parts[0])) {
+                          final bookData = _localBooksMap![parts[0]];
+                          referenceText =
+                              "${bookData?['nome'] ?? parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+                        } else if (parts.length == 3) {
+                          referenceText =
+                              "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+                        }
+
+                        return Card(
+                          color: const Color(0xFF313333),
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16.0, vertical: 8.0),
+                            leading: Container(
+                                width: 10,
+                                decoration: BoxDecoration(
+                                    color: color,
+                                    borderRadius: BorderRadius.circular(2))),
+                            title: Text(referenceText,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                            subtitle: FutureBuilder<String>(
+                              future: BiblePageHelper.loadSingleVerseText(
+                                  verseId, 'nvi'),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting)
+                                  return const Text("Carregando texto...",
+                                      style: TextStyle(
+                                          color: Colors.white54, fontSize: 12));
+                                if (snapshot.hasError ||
+                                    !snapshot.hasData ||
+                                    snapshot.data!.isEmpty)
+                                  return const Text("Texto indisponível",
+                                      style: TextStyle(
+                                          color: Colors.redAccent,
+                                          fontSize: 12));
+                                return Text(snapshot.data!,
+                                    style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: 13,
+                                        backgroundColor:
+                                            color.withOpacity(0.3)),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis);
+                              },
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: Colors.redAccent, size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              tooltip: "Remover Destaque",
+                              onPressed: () {
+                                StoreProvider.of<AppState>(context,
+                                        listen: false)
+                                    .dispatch(ToggleHighlightAction(verseId));
+                              },
+                            ),
+                            onTap: () => _navigateToBibleVerse(verseId),
+                          ),
+                        );
+                      },
+                    );
+                  } else {
+                    // HighlightType.comments
+                    final commentHighlights =
+                        highlightsVm.userCommentHighlights;
+                    if (commentHighlights.isEmpty) {
+                      return const Center(
+                          child: Text("Nenhum comentário marcado ainda.",
+                              style: TextStyle(color: Colors.white70)));
+                    }
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      itemCount: commentHighlights.length,
+                      itemBuilder: (context, index) {
+                        final highlight = commentHighlights[index];
+                        return _buildCommentHighlightCard(highlight, context);
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
         );
 
-      // --- ABA NOTAS ---
       case 'Notas':
         return StoreConnector<AppState, Map<String, String>>(
           converter: (store) => store.state.userState.userNotes,
+          onInit: (store) {
+            if (store.state.userState.userNotes.isEmpty &&
+                store.state.userState.userId != null) {
+              store.dispatch(LoadUserNotesAction());
+            }
+          },
           builder: (context, notes) {
             if (notes.isEmpty) {
               return const Center(
@@ -430,14 +568,19 @@ class _UserPageState extends State<UserPage> {
               itemCount: noteList.length,
               itemBuilder: (context, index) {
                 final entry = noteList[index];
-                final verseId = entry.key; // Formato: gn_1_1
+                final verseId = entry.key;
                 final noteText = entry.value;
                 final parts = verseId.split('_');
                 String referenceText = verseId;
-                if (parts.length == 3) {
-                  final bookName = _localBooksMap?[parts[0]]?['nome'] ??
-                      parts[0].toUpperCase();
-                  referenceText = "$bookName ${parts[1]}:${parts[2]}";
+                if (parts.length == 3 &&
+                    _localBooksMap != null &&
+                    _localBooksMap!.containsKey(parts[0])) {
+                  final bookData = _localBooksMap![parts[0]];
+                  referenceText =
+                      "${bookData?['nome'] ?? parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+                } else if (parts.length == 3) {
+                  referenceText =
+                      "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
                 }
                 return Card(
                   color: const Color(0xFF313333),
@@ -474,28 +617,17 @@ class _UserPageState extends State<UserPage> {
           },
         );
 
-      // --- ABA HISTÓRICO ---
       case 'Histórico':
         return StoreConnector<AppState, List<Map<String, dynamic>>>(
           converter: (store) => store.state.userState.readingHistory,
           onInit: (store) {
-            // Garante que o histórico seja carregado se não estiver no estado
-            if (store.state.userState.readingHistory.isEmpty) {
+            if (store.state.userState.readingHistory.isEmpty &&
+                store.state.userState.userId != null) {
               store.dispatch(LoadReadingHistoryAction());
             }
           },
           builder: (context, history) {
             if (history.isEmpty) {
-              // Mostra loading se a ação ainda não populou o estado
-              if (StoreProvider.of<AppState>(context)
-                  .state
-                  .userState
-                  .readingHistory
-                  .isEmpty) {
-                // Check again in case it loaded between converter and builder
-                return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFCDE7BE)));
-              }
               return const Center(
                   child: Text("Nenhum histórico de leitura encontrado.",
                       style: TextStyle(color: Colors.white70)));
@@ -511,7 +643,6 @@ class _UserPageState extends State<UserPage> {
                 final entry = history[index];
                 final bookAbbrev = entry['bookAbbrev'] ?? '?';
                 final chapter = entry['chapter'] ?? '?';
-                // Usa o mapa local para nome do livro
                 final bookName = _localBooksMap?[bookAbbrev]?['nome'] ??
                     bookAbbrev.toUpperCase();
                 final timestamp = entry['timestamp'] as DateTime?;
@@ -524,7 +655,7 @@ class _UserPageState extends State<UserPage> {
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16.0, vertical: 8.0),
                     leading: const Icon(Icons.history_edu_outlined,
-                        color: Colors.white70), // Ícone diferente
+                        color: Colors.white70),
                     title: Text(
                       "$bookName $chapter",
                       style: const TextStyle(
@@ -558,7 +689,6 @@ class _UserPageState extends State<UserPage> {
   }
 
   Widget _buildBookCard(Map<String, dynamic> bookDetails) {
-    // Desativado temporariamente
     num progressValue = bookDetails['progress'] ?? 0;
     final progress = (progressValue.clamp(0, 100)) / 100.0;
 
@@ -648,8 +778,13 @@ class _UserPageState extends State<UserPage> {
     return StoreConnector<AppState, _UserPageViewModel>(
       converter: (store) => _UserPageViewModel.fromStore(store),
       builder: (context, vm) {
-        // Mostra o loader principal se o mapa de livros ainda não carregou
-        if (_isLoadingBooksMap) {
+        bool shouldShowGlobalLoader = _isLoadingBooksMap &&
+            _selectedTab != 'Diário' &&
+            _selectedTab != 'Lendo' &&
+            !(_selectedTab == 'Destaques' &&
+                _selectedHighlightType == HighlightType.comments);
+
+        if (shouldShowGlobalLoader) {
           return Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               body: const Center(
@@ -657,22 +792,22 @@ class _UserPageState extends State<UserPage> {
         }
 
         final userDetails = vm.userDetails;
-        // final livros = vm.booksInProgressCount.toString(); // Desativado
         final topicosLidos = userDetails['Tópicos']?.toString() ?? '0';
 
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: RefreshIndicator(
             onRefresh: () async {
-              final store = StoreProvider.of<AppState>(context, listen: false);
+              final storeInstance =
+                  StoreProvider.of<AppState>(context, listen: false);
               if (vm.userId != null) {
-                store.dispatch(LoadUserStatsAction());
-                store.dispatch(LoadUserCollectionsAction());
-                store.dispatch(LoadUserDiariesAction());
-                store.dispatch(LoadUserHighlightsAction());
-                store.dispatch(LoadUserNotesAction());
-                store.dispatch(
-                    LoadReadingHistoryAction()); // Recarrega histórico
+                storeInstance.dispatch(LoadUserStatsAction());
+                storeInstance.dispatch(LoadUserCollectionsAction());
+                storeInstance.dispatch(LoadUserDiariesAction());
+                storeInstance.dispatch(LoadUserHighlightsAction());
+                storeInstance.dispatch(LoadUserCommentHighlightsAction());
+                storeInstance.dispatch(LoadUserNotesAction());
+                storeInstance.dispatch(LoadReadingHistoryAction());
               }
             },
             child: Column(
@@ -691,14 +826,13 @@ class _UserPageState extends State<UserPage> {
                         children: [
                           Expanded(
                             child: StatsContainer(
-                              livros: "0", // Fixo
+                              livros: "0",
                               topicos: topicosLidos,
                             ),
                           ),
                           Padding(
-                            // Adiciona padding ao botão de logout
                             padding: const EdgeInsets.only(left: 8.0),
-                            child: LogoutButton(), // Botão de logout
+                            child: LogoutButton(),
                           )
                         ],
                       ),
@@ -723,7 +857,6 @@ class _UserPageState extends State<UserPage> {
   }
 }
 
-// ViewModel para simplificar o StoreConnector principal
 class _UserPageViewModel {
   final String? userId;
   final Map<String, dynamic> userDetails;
@@ -765,7 +898,35 @@ class _UserPageViewModel {
       topicSavesCount.hashCode;
 }
 
-// Botão de Logout (Mantido como estava)
+class _HighlightsViewModel {
+  final Map<String, String> userVerseHighlights;
+  final List<Map<String, dynamic>> userCommentHighlights;
+
+  _HighlightsViewModel({
+    required this.userVerseHighlights,
+    required this.userCommentHighlights,
+  });
+
+  static _HighlightsViewModel fromStore(Store<AppState> store) {
+    return _HighlightsViewModel(
+      userVerseHighlights: store.state.userState.userHighlights,
+      userCommentHighlights: store.state.userState.userCommentHighlights,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _HighlightsViewModel &&
+          runtimeType == other.runtimeType &&
+          mapEquals(userVerseHighlights, other.userVerseHighlights) &&
+          listEquals(userCommentHighlights, other.userCommentHighlights);
+
+  @override
+  int get hashCode =>
+      userVerseHighlights.hashCode ^ userCommentHighlights.hashCode;
+}
+
 class LogoutButton extends StatelessWidget {
   const LogoutButton({super.key});
   @override
@@ -789,10 +950,6 @@ class LogoutButton extends StatelessWidget {
           size: 24,
         ),
         onPressed: () {
-          // Lógica de logout (ex: chamar FirebaseAuth.instance.signOut())
-          // Exemplo:
-          // FirebaseAuth.instance.signOut();
-          // Navega para a tela de login e remove todas as rotas anteriores
           Navigator.of(context).pushNamedAndRemoveUntil(
               '/login', (Route<dynamic> route) => false);
         },
@@ -800,16 +957,4 @@ class LogoutButton extends StatelessWidget {
       ),
     );
   }
-}
-
-// Função mapEquals (Mantida como estava)
-bool mapEquals<T, U>(Map<T, U>? a, Map<T, U>? b) {
-  if (a == null) return b == null;
-  if (b == null || a.length != b.length) return false;
-  for (final key in a.keys) {
-    if (!b.containsKey(key) || a[key] != b[key]) {
-      return false;
-    }
-  }
-  return true;
 }

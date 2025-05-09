@@ -9,7 +9,6 @@ import '../../services/local_storage_service.dart'; // Assumindo a criação
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();
-  final localStorageService = LocalStorageService();
 
   return [
     TypedMiddleware<AppState, LoadUserStatsAction>(
@@ -56,10 +55,82 @@ List<Middleware<AppState>> createUserMiddleware() {
         _handleRecordReadingHistory(firestoreService)),
     TypedMiddleware<AppState, LoadReadingHistoryAction>(
         _handleLoadReadingHistory(firestoreService)),
+
+    TypedMiddleware<AppState, LoadUserCommentHighlightsAction>(
+        _loadUserCommentHighlights(firestoreService)),
+    TypedMiddleware<AppState, AddCommentHighlightAction>(
+        _addCommentHighlight(firestoreService)),
+    TypedMiddleware<AppState, RemoveCommentHighlightAction>(
+        _removeCommentHighlight(firestoreService)),
   ];
 }
 
 // --- Handlers ---
+// --- Comment Highlight Middlewares ---
+void Function(Store<AppState>, LoadUserCommentHighlightsAction, NextDispatcher)
+    _loadUserCommentHighlights(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print(
+          "Middleware: Usuário não logado, não é possível carregar destaques de comentários.");
+      return;
+    }
+    try {
+      final highlights =
+          await firestoreService.loadUserCommentHighlights(userId);
+      store.dispatch(UserCommentHighlightsLoadedAction(highlights));
+    } catch (e) {
+      print("Erro no middleware ao carregar destaques de comentários: $e");
+      // Opcional: store.dispatch(LoadUserCommentHighlightsFailedAction(e.toString()));
+    }
+  };
+}
+
+void Function(Store<AppState>, AddCommentHighlightAction, NextDispatcher)
+    _addCommentHighlight(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print(
+          "Middleware: Usuário não logado, não é possível adicionar destaque de comentário.");
+      return;
+    }
+    try {
+      await firestoreService.addCommentHighlight(
+          userId, action.commentHighlightData);
+      store.dispatch(
+          LoadUserCommentHighlightsAction()); // Recarrega a lista para atualizar a UI
+    } catch (e) {
+      print("Erro no middleware ao adicionar destaque de comentário: $e");
+      // Opcional: store.dispatch(AddCommentHighlightFailedAction(e.toString()));
+    }
+  };
+}
+
+void Function(Store<AppState>, RemoveCommentHighlightAction, NextDispatcher)
+    _removeCommentHighlight(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print(
+          "Middleware: Usuário não logado, não é possível remover destaque de comentário.");
+      return;
+    }
+    try {
+      await firestoreService.removeCommentHighlight(
+          userId, action.commentHighlightId);
+      store.dispatch(
+          LoadUserCommentHighlightsAction()); // Recarrega a lista para atualizar a UI
+    } catch (e) {
+      print("Erro no middleware ao remover destaque de comentário: $e");
+      // Opcional: store.dispatch(RemoveCommentHighlightFailedAction(e.toString()));
+    }
+  };
+}
 
 void Function(Store<AppState>, LoadUserStatsAction, NextDispatcher)
     _loadUserStats(FirestoreService firestoreService) {

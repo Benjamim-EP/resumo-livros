@@ -46,6 +46,66 @@ class FirestoreService {
     }
   }
 
+  // --- Comment Highlight Methods ---
+  Future<List<Map<String, dynamic>>> loadUserCommentHighlights(
+      String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('comment_highlights') // Nome da subcoleção
+          .orderBy('timestamp', descending: true)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id, // Importante para remoção posterior
+          ...data,
+        };
+      }).toList();
+    } catch (e) {
+      print("FirestoreService: Erro ao carregar destaques de comentários: $e");
+      return [];
+    }
+  }
+
+  Future<DocumentReference> addCommentHighlight(
+      String userId, Map<String, dynamic> highlightData) async {
+    try {
+      final dataWithTimestamp = {
+        ...highlightData,
+        'timestamp': highlightData['timestamp'] ?? FieldValue.serverTimestamp(),
+      };
+      final docRef = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('comment_highlights')
+          .add(dataWithTimestamp);
+      print(
+          "FirestoreService: Destaque de comentário adicionado com ID: ${docRef.id}");
+      return docRef;
+    } catch (e) {
+      print("FirestoreService: Erro ao adicionar destaque de comentário: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> removeCommentHighlight(String userId, String highlightId) async {
+    try {
+      await _db
+          .collection('users')
+          .doc(userId)
+          .collection('comment_highlights')
+          .doc(highlightId)
+          .delete();
+      print("FirestoreService: Destaque de comentário removido: $highlightId");
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao remover destaque de comentário $highlightId: $e");
+      rethrow;
+    }
+  }
+
   /// Busca todos os detalhes do documento do usuário.
   Future<Map<String, dynamic>?> getUserDetails(String userId) async {
     try {
