@@ -5,14 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_item_widget.dart'; // Certifique-se que este widget aceita userHighlights e userNotes
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_item_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter/foundation.dart'; // for mapEquals
-// Removido import de 'package:intl/intl.dart'; - Não usado diretamente aqui
 
 class BiblePage extends StatefulWidget {
   const BiblePage({super.key});
@@ -27,117 +26,98 @@ class _BiblePageState extends State<BiblePage> {
   int? selectedChapter;
   bool _initialLocationSet = false;
 
-  // Estados para Comparação
   String selectedTranslation1 = 'nvi';
   String? selectedTranslation2 = 'acf';
   bool _isCompareModeActive = false;
-
-  // Estado para Modo Foco
   bool _isFocusModeActive = false;
-
-  // Flag para evitar despachos repetidos de histórico
   String? _lastRecordedHistoryRef;
-
-  // Removido: bool showBibleRoutes = false; A navegação de rotas agora é externa
-
   String? _selectedBookSlug;
   Map<String, String> _bookVariationsMap = {};
-
   ValueKey _futureBuilderKey = const ValueKey('initial');
 
   @override
   void initState() {
     super.initState();
     _loadInitialData().then((_) {
-      // Só chama _checkInitialNavigation após _loadInitialData garantir que booksMap existe
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkInitialNavigation();
-        _loadUserDataIfNeeded();
+        if (mounted) {
+          // Adicionado verificação de montado aqui também
+          _checkInitialNavigation();
+          _loadUserDataIfNeeded();
+        }
       });
     });
   }
 
   void _updateFutureBuilderKey() {
-    _futureBuilderKey = ValueKey(
-        '$selectedBook-$selectedChapter-$selectedTranslation1-${_isCompareModeActive ? selectedTranslation2 : 'single'}');
+    if (mounted) {
+      setState(() {
+        _futureBuilderKey = ValueKey(
+            '$selectedBook-$selectedChapter-$selectedTranslation1-${_isCompareModeActive ? selectedTranslation2 : 'single'}-${DateTime.now().millisecondsSinceEpoch}'); // Adiciona timestamp para forçar reconstrução
+      });
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Chama novamente se as dependências mudarem (ex: após login)
-    // e se a localização inicial ainda não foi definida.
-    _checkInitialNavigation();
+    if (mounted) {
+      // Adicionado verificação
+      _checkInitialNavigation();
+    }
   }
 
   void _checkInitialNavigation() {
-    // Executa apenas se a localização não foi definida E o widget está montado E o booksMap carregou
     if (!_initialLocationSet && mounted && booksMap != null) {
       final store = StoreProvider.of<AppState>(context, listen: false);
       final initialBookNav = store.state.userState.initialBibleBook;
       final initialChapterNav = store.state.userState.initialBibleChapter;
 
-      String? targetBook = initialBookNav;
-      int? targetChapter = initialChapterNav;
+      String targetBook =
+          initialBookNav ?? store.state.userState.lastReadBookAbbrev ?? 'gn';
+      int targetChapter =
+          initialChapterNav ?? store.state.userState.lastReadChapter ?? 1;
 
-      // Se não há navegação específica vinda de uma ação, tenta usar a última leitura do Redux
-      if (targetBook == null || targetChapter == null) {
-        targetBook = store.state.userState.lastReadBookAbbrev;
-        targetChapter = store.state.userState.lastReadChapter;
-        print(
-            ">>> BiblePage: Usando última leitura do Redux: $targetBook $targetChapter");
-      } else {
-        print(
-            ">>> BiblePage: Recebendo navegação inicial de ação: $targetBook $targetChapter");
-      }
+      print(
+          ">>> BiblePage _checkInitialNavigation: Tentando ir para $targetBook $targetChapter. initialNav: $initialBookNav/$initialChapterNav, lastRead: ${store.state.userState.lastReadBookAbbrev}/${store.state.userState.lastReadChapter}");
 
-      // Limpa a navegação inicial da ação Redux (se veio de lá) para não reutilizar
       if (initialBookNav != null || initialChapterNav != null) {
         store.dispatch(SetInitialBibleLocationAction(null, null));
       }
 
-      // Define padrão se ainda não houver alvo
-      targetBook ??= 'gn';
-      targetChapter ??= 1;
+      String finalBookToNavigate = 'gn';
+      int finalChapterToNavigate = 1;
 
-      // Valida e aplica o alvo (livro/capítulo)
       if (booksMap!.containsKey(targetBook)) {
         final bookData = booksMap![targetBook];
         if (targetChapter >= 1 &&
             targetChapter <= (bookData['capitulos'] as int)) {
-          // Aplica a navegação ou última leitura
-          setState(() {
-            selectedBook = targetBook;
-            selectedChapter = targetChapter;
-            _updateSelectedBookSlug();
-            _initialLocationSet = true; // Marca como definido
-            _updateFutureBuilderKey();
-            _recordHistory(selectedBook!, selectedChapter!); // Grava ao definir
-          });
+          finalBookToNavigate = targetBook;
+          finalChapterToNavigate = targetChapter;
         } else {
-          print(">>> BiblePage: Capítulo alvo inválido: $targetChapter");
-          // Se o capítulo alvo for inválido, volta pro padrão
-          setState(() {
-            selectedBook = 'gn';
-            selectedChapter = 1;
-            _updateSelectedBookSlug();
-            _initialLocationSet = true;
-            _updateFutureBuilderKey();
-            _recordHistory(selectedBook!, selectedChapter!); // Grava ao definir
-          });
+          print(
+              ">>> BiblePage _checkInitialNavigation: Capítulo alvo ($targetChapter) inválido para $targetBook. Usando padrão.");
         }
       } else {
-        print(">>> BiblePage: Livro alvo inválido: $targetBook");
-        // Se o livro alvo for inválido, volta pro padrão
+        print(
+            ">>> BiblePage _checkInitialNavigation: Livro alvo ($targetBook) inválido. Usando padrão.");
+      }
+
+      print(
+          ">>> BiblePage _checkInitialNavigation: Estado antes do setState: selectedBook=$selectedBook, selectedChapter=$selectedChapter");
+      if (mounted) {
         setState(() {
-          selectedBook = 'gn';
-          selectedChapter = 1;
+          selectedBook = finalBookToNavigate;
+          selectedChapter = finalChapterToNavigate;
           _updateSelectedBookSlug();
           _initialLocationSet = true;
-          _updateFutureBuilderKey();
-          _recordHistory(selectedBook!, selectedChapter!); // Grava ao definir
+          // _updateFutureBuilderKey(); // Será chamado após _recordHistory para garantir a ordem
         });
       }
+      print(
+          ">>> BiblePage _checkInitialNavigation: Estado APÓS setState: selectedBook=$selectedBook, selectedChapter=$selectedChapter. Gravando histórico...");
+      _recordHistory(finalBookToNavigate, finalChapterToNavigate);
+      _updateFutureBuilderKey(); // Chamar após o registro do histórico inicial
     } else if (booksMap == null && mounted) {
       print(">>> BiblePage: booksMap ainda nulo em _checkInitialNavigation.");
     }
@@ -161,11 +141,6 @@ class _BiblePageState extends State<BiblePage> {
     if (mounted) {
       setState(() {
         booksMap = map;
-        // Não define selectedBook/Chapter aqui, deixa para _checkInitialNavigation
-        // selectedBook = 'gn';
-        // selectedChapter = 1;
-        // _updateSelectedBookSlug(); // Será chamado em _checkInitialNavigation
-        // _updateFutureBuilderKey(); // Será chamado em _checkInitialNavigation
       });
     }
   }
@@ -175,11 +150,19 @@ class _BiblePageState extends State<BiblePage> {
       final String jsonString =
           await rootBundle.loadString('assets/Biblia/book_variations_map.json');
       final Map<String, dynamic> decodedJson = json.decode(jsonString);
-      _bookVariationsMap =
-          decodedJson.map((key, value) => MapEntry(key, value.toString()));
+      if (mounted) {
+        setState(() {
+          _bookVariationsMap =
+              decodedJson.map((key, value) => MapEntry(key, value.toString()));
+        });
+      }
     } catch (e) {
       print("Erro ao carregar book_variations_map.json: $e");
-      _bookVariationsMap = {};
+      if (mounted) {
+        setState(() {
+          _bookVariationsMap = {};
+        });
+      }
     }
   }
 
@@ -187,25 +170,53 @@ class _BiblePageState extends State<BiblePage> {
     if (selectedBook != null &&
         booksMap != null &&
         booksMap![selectedBook] != null) {
-      _selectedBookSlug = booksMap![selectedBook]?['slug'] as String?;
+      if (mounted) {
+        setState(() {
+          _selectedBookSlug = booksMap![selectedBook]?['slug'] as String?;
+        });
+      }
     } else {
-      _selectedBookSlug = null;
+      if (mounted) {
+        setState(() {
+          _selectedBookSlug = null;
+        });
+      }
     }
-    // Não chama _updateFutureBuilderKey aqui, será chamado no setState principal
+  }
+
+  void _recordHistory(String bookAbbrev, int chapter) {
+    final currentRef = "${bookAbbrev}_$chapter";
+    // Força o registro se for diferente do último gravado OU se _lastRecordedHistoryRef for null (primeira vez)
+    if (_lastRecordedHistoryRef == null ||
+        _lastRecordedHistoryRef != currentRef) {
+      print(
+          ">>> BiblePage _recordHistory: Gravando histórico para $currentRef. Último gravado: $_lastRecordedHistoryRef");
+      if (context.mounted) {
+        // Garante que o contexto é válido
+        StoreProvider.of<AppState>(context, listen: false)
+            .dispatch(RecordReadingHistoryAction(bookAbbrev, chapter));
+      }
+      _lastRecordedHistoryRef = currentRef; // Atualiza aqui
+    } else {
+      print(
+          ">>> BiblePage _recordHistory: Histórico para $currentRef já gravado recentemente (Last: $_lastRecordedHistoryRef)");
+    }
   }
 
   void _navigateToChapter(String bookAbbrev, int chapter) {
     if (booksMap != null && booksMap!.containsKey(bookAbbrev)) {
       final bookData = booksMap![bookAbbrev];
       if (chapter >= 1 && chapter <= (bookData['capitulos'] as int)) {
+        print(
+            ">>> _navigateToChapter: Tentando navegar para $bookAbbrev $chapter. Estado anterior: $selectedBook $selectedChapter");
         if (mounted) {
           setState(() {
             selectedBook = bookAbbrev;
             selectedChapter = chapter;
-            _updateSelectedBookSlug();
-            _updateFutureBuilderKey();
-            _recordHistory(bookAbbrev, chapter); // Grava histórico
+            _updateSelectedBookSlug(); // Deve ser chamado dentro do setState ou se o estado realmente mudar
           });
+          _recordHistory(bookAbbrev, chapter);
+          _updateFutureBuilderKey(); // Chamar após registrar o histórico
         }
       } else {
         if (mounted) {
@@ -225,79 +236,80 @@ class _BiblePageState extends State<BiblePage> {
   void _previousChapter() {
     if (selectedBook == null || selectedChapter == null || booksMap == null)
       return;
+    print(">>> _previousChapter: Estado ATUAL: $selectedBook $selectedChapter");
+
+    String newBookAbbrev = selectedBook!;
+    int newChapter = selectedChapter!;
+    bool bookChanged = false;
+
     if (selectedChapter! > 1) {
-      final newChapter = selectedChapter! - 1;
-      if (mounted) {
-        setState(() {
-          selectedChapter = newChapter;
-          _updateFutureBuilderKey();
-          _recordHistory(selectedBook!, newChapter); // Grava histórico
-        });
-      }
+      newChapter = selectedChapter! - 1;
+      print(
+          ">>> _previousChapter: Capítulo anterior no MESMO livro: $newChapter");
     } else {
       List<String> bookKeys = booksMap!.keys.toList();
       int currentBookIndex = bookKeys.indexOf(selectedBook!);
       if (currentBookIndex > 0) {
-        String prevBookAbbrev = bookKeys[currentBookIndex - 1];
-        int lastChapterOfPrevBook =
-            booksMap![prevBookAbbrev]['capitulos'] as int;
-        if (mounted) {
-          setState(() {
-            selectedBook = prevBookAbbrev;
-            selectedChapter = lastChapterOfPrevBook;
-            _updateSelectedBookSlug();
-            _updateFutureBuilderKey();
-            _recordHistory(
-                prevBookAbbrev, lastChapterOfPrevBook); // Grava histórico
-          });
-        }
+        newBookAbbrev = bookKeys[currentBookIndex - 1];
+        newChapter = booksMap![newBookAbbrev]['capitulos'] as int;
+        bookChanged = true;
+        print(
+            ">>> _previousChapter: Indo para o ÚLTIMO capítulo do livro ANTERIOR: $newBookAbbrev $newChapter");
+      } else {
+        print(
+            ">>> _previousChapter: Já está no primeiro capítulo do primeiro livro.");
+        return;
       }
+    }
+
+    if (mounted) {
+      setState(() {
+        selectedBook = newBookAbbrev;
+        selectedChapter = newChapter;
+        if (bookChanged) _updateSelectedBookSlug();
+      });
+      _recordHistory(newBookAbbrev, newChapter);
+      _updateFutureBuilderKey();
     }
   }
 
   void _nextChapter() {
     if (selectedBook == null || selectedChapter == null || booksMap == null)
       return;
+    print(">>> _nextChapter: Estado ATUAL: $selectedBook $selectedChapter");
+
+    String newBookAbbrev = selectedBook!;
+    int newChapter = selectedChapter!;
+    bool bookChanged = false;
     int totalChaptersInCurrentBook =
         booksMap![selectedBook!]['capitulos'] as int;
+
     if (selectedChapter! < totalChaptersInCurrentBook) {
-      final newChapter = selectedChapter! + 1;
-      if (mounted) {
-        setState(() {
-          selectedChapter = newChapter;
-          _updateFutureBuilderKey();
-          _recordHistory(selectedBook!, newChapter); // Grava histórico
-        });
-      }
+      newChapter = selectedChapter! + 1;
+      print(">>> _nextChapter: Próximo capítulo no MESMO livro: $newChapter");
     } else {
       List<String> bookKeys = booksMap!.keys.toList();
       int currentBookIndex = bookKeys.indexOf(selectedBook!);
       if (currentBookIndex < bookKeys.length - 1) {
-        String nextBookAbbrev = bookKeys[currentBookIndex + 1];
-        if (mounted) {
-          setState(() {
-            selectedBook = nextBookAbbrev;
-            selectedChapter = 1;
-            _updateSelectedBookSlug();
-            _updateFutureBuilderKey();
-            _recordHistory(nextBookAbbrev, 1); // Grava histórico
-          });
-        }
+        newBookAbbrev = bookKeys[currentBookIndex + 1];
+        newChapter = 1;
+        bookChanged = true;
+        print(
+            ">>> _nextChapter: Indo para o PRIMEIRO capítulo do PRÓXIMO livro: $newBookAbbrev $newChapter");
+      } else {
+        print(">>> _nextChapter: Já está no último capítulo do último livro.");
+        return;
       }
     }
-  }
 
-  // Função helper para despachar ação de histórico, evitando duplicação rápida
-  void _recordHistory(String bookAbbrev, int chapter) {
-    final currentRef = "${bookAbbrev}_$chapter";
-    if (_lastRecordedHistoryRef != currentRef) {
-      print(">>> BiblePage: Gravando histórico para $currentRef");
-      StoreProvider.of<AppState>(context, listen: false)
-          .dispatch(RecordReadingHistoryAction(bookAbbrev, chapter));
-      _lastRecordedHistoryRef = currentRef;
-    } else {
-      print(
-          ">>> BiblePage: Histórico para $currentRef já gravado recentemente.");
+    if (mounted) {
+      setState(() {
+        selectedBook = newBookAbbrev;
+        selectedChapter = newChapter;
+        if (bookChanged) _updateSelectedBookSlug();
+      });
+      _recordHistory(newBookAbbrev, newChapter);
+      _updateFutureBuilderKey();
     }
   }
 
@@ -330,9 +342,8 @@ class _BiblePageState extends State<BiblePage> {
                   textInputAction: TextInputAction.search,
                   onSubmitted: (value) =>
                       _parseAndNavigate(value, dialogContext, (newError) {
-                    if (mounted) {
+                    if (mounted)
                       setDialogState(() => errorTextInDialog = newError);
-                    }
                   }),
                 ),
                 const SizedBox(height: 8),
@@ -348,9 +359,8 @@ class _BiblePageState extends State<BiblePage> {
                 TextButton(
                     onPressed: () => _parseAndNavigate(
                             controller.text, dialogContext, (newError) {
-                          if (mounted) {
+                          if (mounted)
                             setDialogState(() => errorTextInDialog = newError);
-                          }
                         }),
                     child: const Text("Ir",
                         style: TextStyle(color: Colors.green))),
@@ -413,8 +423,7 @@ class _BiblePageState extends State<BiblePage> {
     if (booksMap != null && booksMap!.containsKey(bookAbbrev)) {
       final bookData = booksMap![bookAbbrev];
       if (chapter >= 1 && chapter <= (bookData['capitulos'] as int)) {
-        _navigateToChapter(bookAbbrev,
-            chapter); // Chama a função que atualiza o estado e grava histórico
+        _navigateToChapter(bookAbbrev, chapter);
         if (Navigator.canPop(dialogContext)) {
           Navigator.of(dialogContext).pop();
         }
@@ -429,18 +438,17 @@ class _BiblePageState extends State<BiblePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Espera o booksMap carregar antes de construir a UI principal
-    if (booksMap == null) {
+    if (booksMap == null || selectedBook == null || selectedChapter == null) {
       return const Scaffold(
-          appBar: null,
+          appBar: null, // Ou um AppBar simples de "Carregando..."
           body: Center(
               child: CircularProgressIndicator(color: Color(0xFFCDE7BE))));
     }
 
     String appBarTitle = 'Bíblia';
-    if (_isFocusModeActive && selectedBook != null) {
+    if (_isFocusModeActive) {
       appBarTitle = booksMap?[selectedBook]?['nome'] ?? 'Bíblia';
-      if (selectedChapter != null) appBarTitle += ' $selectedChapter';
+      appBarTitle += ' $selectedChapter';
     } else if (_isCompareModeActive) {
       appBarTitle = 'Comparar Traduções';
     }
@@ -458,7 +466,8 @@ class _BiblePageState extends State<BiblePage> {
             ),
             tooltip: _isFocusModeActive ? "Sair do Modo Foco" : "Modo Leitura",
             onPressed: () {
-              setState(() => _isFocusModeActive = !_isFocusModeActive);
+              if (mounted)
+                setState(() => _isFocusModeActive = !_isFocusModeActive);
             },
           ),
           Visibility(
@@ -475,15 +484,17 @@ class _BiblePageState extends State<BiblePage> {
                     ? "Desativar Comparação"
                     : "Comparar Traduções",
                 onPressed: () {
-                  setState(() {
-                    _isCompareModeActive = !_isCompareModeActive;
+                  if (mounted) {
+                    setState(() {
+                      _isCompareModeActive = !_isCompareModeActive;
+                      if (_isCompareModeActive &&
+                          selectedTranslation1 == selectedTranslation2) {
+                        selectedTranslation2 =
+                            (selectedTranslation1 == 'nvi') ? 'acf' : 'nvi';
+                      }
+                    });
                     _updateFutureBuilderKey();
-                    if (_isCompareModeActive &&
-                        selectedTranslation1 == selectedTranslation2) {
-                      selectedTranslation2 =
-                          (selectedTranslation1 == 'nvi') ? 'acf' : 'nvi';
-                    }
-                  });
+                  }
                 },
               ),
               IconButton(
@@ -517,10 +528,9 @@ class _BiblePageState extends State<BiblePage> {
                                     onTranslationSelected: (value) {
                                       if (mounted &&
                                           value != selectedTranslation2) {
-                                        setState(() {
-                                          selectedTranslation1 = value;
-                                          _updateFutureBuilderKey();
-                                        });
+                                        setState(
+                                            () => selectedTranslation1 = value);
+                                        _updateFutureBuilderKey();
                                       }
                                     }),
                             style: ElevatedButton.styleFrom(
@@ -545,10 +555,9 @@ class _BiblePageState extends State<BiblePage> {
                                       onTranslationSelected: (value) {
                                         if (mounted &&
                                             value != selectedTranslation1) {
-                                          setState(() {
-                                            selectedTranslation2 = value;
-                                            _updateFutureBuilderKey();
-                                          });
+                                          setState(() =>
+                                              selectedTranslation2 = value);
+                                          _updateFutureBuilderKey();
                                         }
                                       }),
                               style: ElevatedButton.styleFrom(
@@ -565,11 +574,12 @@ class _BiblePageState extends State<BiblePage> {
                             label: const Text("Rotas",
                                 style: TextStyle(fontSize: 12)),
                             onPressed: () {
-                              // Ação para abrir página/modal de rotas
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          "Navegação para Rotas (a implementar)")));
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            "Navegação para Rotas (a implementar)")));
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF272828),
@@ -594,10 +604,8 @@ class _BiblePageState extends State<BiblePage> {
                             selectedBook: selectedBook,
                             booksMap: booksMap,
                             onChanged: (value) {
-                              if (mounted && value != null) {
-                                _navigateToChapter(value,
-                                    1); /* Vai para o cap 1 do novo livro */
-                              }
+                              if (mounted && value != null)
+                                _navigateToChapter(value, 1);
                             })),
                     const SizedBox(width: 8),
                     if (selectedBook != null)
@@ -608,7 +616,9 @@ class _BiblePageState extends State<BiblePage> {
                               booksMap: booksMap,
                               selectedBook: selectedBook,
                               onChanged: (value) {
-                                if (mounted && value != null) {
+                                if (mounted &&
+                                    value != null &&
+                                    selectedBook != null) {
                                   _navigateToChapter(selectedBook!, value);
                                 }
                               })),
@@ -627,7 +637,15 @@ class _BiblePageState extends State<BiblePage> {
             Expanded(
                 child: StoreConnector<AppState, _ViewModel>(
                     converter: (store) => _ViewModel.fromStore(store),
+                    // Otimização: só reconstruir se os highlights ou notas mudarem
+                    // Isso pode ser complexo se a estrutura dos dados for profunda.
+                    // Por enquanto, o rebuildOnChange: true é mais simples.
+                    // Se houver problemas de performance, considere um `distinct`
+                    // ou um `equals` mais granular no ViewModel.
+                    rebuildOnChange: true, // Pode otimizar se necessário
                     builder: (context, vm) {
+                      print(
+                          ">>> BiblePage StoreConnector REBUILDING para $selectedBook $selectedChapter. Highlights: ${vm.userHighlights.length}, Notes: ${vm.userNotes.length}");
                       return FutureBuilder<Map<String, dynamic>>(
                         key: _futureBuilderKey,
                         future: BiblePageHelper.loadChapterDataComparison(
@@ -673,7 +691,6 @@ class _BiblePageState extends State<BiblePage> {
                           }
 
                           if (!_isCompareModeActive) {
-                            // --- Modo de Coluna Única ---
                             return ListView.builder(
                               padding: EdgeInsets.only(
                                   left: 16.0,
@@ -686,27 +703,30 @@ class _BiblePageState extends State<BiblePage> {
                               itemBuilder: (context, sectionIndex) {
                                 if (sections.isNotEmpty) {
                                   final section = sections[sectionIndex];
-                                  final String sectionTitle =
-                                      section['title'] ?? 'Seção';
-                                  final List<int> verseNumbers =
-                                      (section['verses'] as List?)
-                                              ?.cast<int>() ??
-                                          [];
-                                  String versesRangeStr = "";
-                                  if (verseNumbers.isNotEmpty) {
-                                    verseNumbers.sort();
-                                    versesRangeStr = verseNumbers.length == 1
-                                        ? verseNumbers.first.toString()
-                                        : "${verseNumbers.first}-${verseNumbers.last}";
-                                  }
                                   return SectionItemWidget(
-                                    sectionTitle: sectionTitle,
-                                    verseNumbersInSection: verseNumbers,
+                                    sectionTitle: section['title'] ?? 'Seção',
+                                    verseNumbersInSection:
+                                        (section['verses'] as List?)
+                                                ?.cast<int>() ??
+                                            [],
                                     allVerseTextsInChapter: verses1,
                                     bookSlug: _selectedBookSlug!,
                                     bookAbbrev: selectedBook!,
                                     chapterNumber: selectedChapter!,
-                                    versesRangeStr: versesRangeStr,
+                                    versesRangeStr: (section['verses'] as List?)
+                                                ?.cast<int>()
+                                                .isNotEmpty ??
+                                            false
+                                        ? ((section['verses'] as List)
+                                                    .cast<int>()
+                                                    .length ==
+                                                1
+                                            ? (section['verses'] as List)
+                                                .cast<int>()
+                                                .first
+                                                .toString()
+                                            : "${(section['verses'] as List).cast<int>().first}-${(section['verses'] as List).cast<int>().last}")
+                                        : "",
                                     userHighlights: vm.userHighlights,
                                     userNotes: vm.userNotes,
                                   );
@@ -716,11 +736,9 @@ class _BiblePageState extends State<BiblePage> {
                                           CrossAxisAlignment.start,
                                       children: List.generate(verses1.length,
                                           (verseIndex) {
-                                        final verseNumber = verseIndex + 1;
-                                        final verseText = verses1[verseIndex];
                                         return BiblePageWidgets.buildVerseItem(
-                                          verseNumber: verseNumber,
-                                          verseText: verseText,
+                                          verseNumber: verseIndex + 1,
+                                          verseText: verses1[verseIndex],
                                           selectedBook: selectedBook,
                                           selectedChapter: selectedChapter,
                                           context: context,
@@ -733,7 +751,6 @@ class _BiblePageState extends State<BiblePage> {
                               },
                             );
                           } else {
-                            // --- Modo de Comparação ---
                             if (verses2.isEmpty) {
                               return const Center(
                                   child: Text(
@@ -851,11 +868,12 @@ class _BiblePageState extends State<BiblePage> {
 
   @override
   void dispose() {
+    // Não precisa cancelar _userDocSubscription aqui, pois ele não é mais usado
+    // e as outras inicializações e listeners são gerenciados pelo ciclo de vida do widget.
     super.dispose();
   }
 }
 
-// ViewModel para o StoreConnector
 class _ViewModel {
   final Map<String, String> userHighlights;
   final Map<String, String> userNotes;
@@ -881,14 +899,13 @@ class _ViewModel {
   int get hashCode => userHighlights.hashCode ^ userNotes.hashCode;
 }
 
-// Função mapEquals
-bool mapEquals<T, U>(Map<T, U>? a, Map<T, U>? b) {
-  if (a == null) return b == null;
-  if (b == null || a.length != b.length) return false;
-  for (final key in a.keys) {
-    if (!b.containsKey(key) || a[key] != b[key]) {
-      return false;
-    }
-  }
-  return true;
-}
+// bool mapEquals<T, U>(Map<T, U>? a, Map<T, U>? b) {
+//   if (a == null) return b == null;
+//   if (b == null || a.length != b.length) return false;
+//   for (final key in a.keys) {
+//     if (!b.containsKey(key) || a[key] != b[key]) {
+//       return false;
+//     }
+//   }
+//   return true;
+// }
