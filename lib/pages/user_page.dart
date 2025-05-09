@@ -1,6 +1,6 @@
 // lib/pages/user_page.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Import for listEquals
+import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page/user_diary_page.dart';
@@ -14,7 +14,6 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.da
 import 'package:redux/redux.dart';
 import 'package:intl/intl.dart';
 
-// Enum para o tipo de destaque (mantido)
 enum HighlightType { verses, comments }
 
 class UserPage extends StatefulWidget {
@@ -27,7 +26,7 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   Map<String, dynamic>? _localBooksMap;
   bool _isLoadingBooksMap = true;
-  String _selectedTab = 'Destaques'; // Aba padrão
+  String _selectedTab = 'Destaques';
   HighlightType _selectedHighlightType = HighlightType.verses;
 
   @override
@@ -77,21 +76,26 @@ class _UserPageState extends State<UserPage> {
   }
 
   void _onTabSelected(String tab) {
-    setState(() {
-      _selectedTab = tab;
-    });
+    if (mounted) {
+      setState(() {
+        _selectedTab = tab;
+      });
+    }
   }
 
-  void _navigateToBibleVerse(String verseId) {
+  void _navigateToBibleVerseAndTab(String verseId) {
     final parts = verseId.split('_');
     if (parts.length == 3) {
       final bookAbbrev = parts[0];
       final chapter = int.tryParse(parts[1]);
-      if (chapter != null) {
-        StoreProvider.of<AppState>(context, listen: false)
-            .dispatch(SetInitialBibleLocationAction(bookAbbrev, chapter));
+      if (chapter != null && context.mounted) {
+        // Adicionado context.mounted
+        final store = StoreProvider.of<AppState>(context, listen: false);
+        store.dispatch(SetInitialBibleLocationAction(bookAbbrev, chapter));
+        store.dispatch(
+            RequestBottomNavChangeAction(2)); // Assumindo que Bíblia é índice 2
         print(
-            "Navegação para Bíblia solicitada: $bookAbbrev $chapter. A UI da Bíblia deve lidar com isso.");
+            "UserPage: Solicitação para ir para Bíblia: $bookAbbrev $chapter, Aba 2");
       }
     }
   }
@@ -159,8 +163,11 @@ class _UserPageState extends State<UserPage> {
                     constraints: const BoxConstraints(),
                     tooltip: "Remover Marcação do Comentário",
                     onPressed: () {
-                      StoreProvider.of<AppState>(context, listen: false)
-                          .dispatch(RemoveCommentHighlightAction(highlightId));
+                      if (context.mounted) {
+                        StoreProvider.of<AppState>(context, listen: false)
+                            .dispatch(
+                                RemoveCommentHighlightAction(highlightId));
+                      }
                     },
                   ),
               ],
@@ -316,12 +323,14 @@ class _UserPageState extends State<UserPage> {
                                                     color: Colors.white70))),
                                         TextButton(
                                             onPressed: () {
-                                              StoreProvider.of<AppState>(
-                                                      context,
-                                                      listen: false)
-                                                  .dispatch(
-                                                      DeleteTopicCollectionAction(
-                                                          collectionName));
+                                              if (context.mounted) {
+                                                StoreProvider.of<AppState>(
+                                                        context,
+                                                        listen: false)
+                                                    .dispatch(
+                                                        DeleteTopicCollectionAction(
+                                                            collectionName));
+                                              }
                                               Navigator.pop(dContext);
                                             },
                                             child: const Text("Excluir",
@@ -348,7 +357,6 @@ class _UserPageState extends State<UserPage> {
                       final String displaySubtitle = isVerse
                           ? "$bookNameFromMap ${item['id']?.split('-')[2]}"
                           : (item['bookName'] ?? 'Origem desconhecida');
-
                       final String? coverUrl = item['cover'];
                       final String itemId = item['id'] ?? 'unknown_id';
 
@@ -398,9 +406,12 @@ class _UserPageState extends State<UserPage> {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {
-                            StoreProvider.of<AppState>(context, listen: false)
-                                .dispatch(DeleteSingleTopicFromCollectionAction(
-                                    collectionName, itemId));
+                            if (context.mounted) {
+                              StoreProvider.of<AppState>(context, listen: false)
+                                  .dispatch(
+                                      DeleteSingleTopicFromCollectionAction(
+                                          collectionName, itemId));
+                            }
                           },
                         ),
                         onTap: () {
@@ -409,7 +420,7 @@ class _UserPageState extends State<UserPage> {
                             if (parts.length == 4) {
                               final verseIdForNav =
                                   "${parts[1]}_${parts[2]}_${parts[3]}";
-                              _navigateToBibleVerse(verseIdForNav);
+                              _navigateToBibleVerseAndTab(verseIdForNav);
                             }
                           } else if (itemId != 'unknown_id') {
                             Navigator.push(
@@ -447,9 +458,11 @@ class _UserPageState extends State<UserPage> {
                 ],
                 selected: <HighlightType>{_selectedHighlightType},
                 onSelectionChanged: (Set<HighlightType> newSelection) {
-                  setState(() {
-                    _selectedHighlightType = newSelection.first;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _selectedHighlightType = newSelection.first;
+                    });
+                  }
                 },
                 style: SegmentedButton.styleFrom(
                   backgroundColor: Colors.grey[800],
@@ -558,12 +571,14 @@ class _UserPageState extends State<UserPage> {
                               constraints: const BoxConstraints(),
                               tooltip: "Remover Destaque",
                               onPressed: () {
-                                StoreProvider.of<AppState>(context,
-                                        listen: false)
-                                    .dispatch(ToggleHighlightAction(verseId));
+                                if (context.mounted) {
+                                  StoreProvider.of<AppState>(context,
+                                          listen: false)
+                                      .dispatch(ToggleHighlightAction(verseId));
+                                }
                               },
                             ),
-                            onTap: () => _navigateToBibleVerse(verseId),
+                            onTap: () => _navigateToBibleVerseAndTab(verseId),
                           ),
                         );
                       },
@@ -661,11 +676,13 @@ class _UserPageState extends State<UserPage> {
                       constraints: const BoxConstraints(),
                       tooltip: "Remover Nota",
                       onPressed: () {
-                        StoreProvider.of<AppState>(context, listen: false)
-                            .dispatch(DeleteNoteAction(verseId));
+                        if (context.mounted) {
+                          StoreProvider.of<AppState>(context, listen: false)
+                              .dispatch(DeleteNoteAction(verseId));
+                        }
                       },
                     ),
-                    onTap: () => _navigateToBibleVerse(verseId),
+                    onTap: () => _navigateToBibleVerseAndTab(verseId),
                   ),
                 );
               },
@@ -688,9 +705,7 @@ class _UserPageState extends State<UserPage> {
                   child: Text("Nenhum histórico de leitura encontrado.",
                       style: TextStyle(color: Colors.white70, fontSize: 16)));
             }
-
             final DateFormat formatter = DateFormat('dd/MM/yy \'às\' HH:mm');
-
             return ListView.builder(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -725,8 +740,7 @@ class _UserPageState extends State<UserPage> {
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(
                         timestamp != null
-                            ? formatter
-                                .format(timestamp.toLocal()) // Use toLocal()
+                            ? formatter.format(timestamp.toLocal())
                             : "Data indisponível",
                         style: TextStyle(
                             color: Colors.white.withOpacity(0.7), fontSize: 13),
@@ -734,7 +748,7 @@ class _UserPageState extends State<UserPage> {
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios,
                         size: 18, color: Colors.white70),
-                    onTap: () => _navigateToBibleVerse(verseIdForNav),
+                    onTap: () => _navigateToBibleVerseAndTab(verseIdForNav),
                   ),
                 );
               },
@@ -893,7 +907,8 @@ class _UserPageState extends State<UserPage> {
             onRefresh: () async {
               final storeInstance =
                   StoreProvider.of<AppState>(context, listen: false);
-              if (vm.userId != null) {
+              if (vm.userId != null && context.mounted) {
+                // Adicionado context.mounted
                 storeInstance.dispatch(LoadUserStatsAction());
                 storeInstance.dispatch(LoadUserCollectionsAction());
                 storeInstance.dispatch(LoadUserDiariesAction());
@@ -930,9 +945,11 @@ class _UserPageState extends State<UserPage> {
                                   size: 28),
                               tooltip: 'Configurações',
                               onPressed: () {
-                                // Alterado para usar o Navigator raiz
-                                Navigator.of(context, rootNavigator: true)
-                                    .pushNamed('/userSettings');
+                                if (context.mounted) {
+                                  // Adicionado context.mounted
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pushNamed('/userSettings');
+                                }
                               },
                             ),
                           ],

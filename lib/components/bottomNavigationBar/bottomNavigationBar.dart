@@ -1,5 +1,6 @@
 //lib/components/bottomNavigationBar/bottomNavigationBar.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
@@ -18,6 +19,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Importar FirebaseAuth
 import 'dart:async'; // Importar dart:async para StreamSubscription
 import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Importar a ação específica
+import 'package:redux/redux.dart';
 
 // <<< MODIFICAÇÃO MVP: Widget Placeholder >>>
 class _UnderConstructionPlaceholder extends StatelessWidget {
@@ -316,17 +318,36 @@ class _MainAppScreenState extends State<MainAppScreen> {
   @override
   Widget build(BuildContext context) {
     print(
-        ">>> MainAppScreen Build: Estado atual isPremium=$isPremium, bannerAd=${_bannerAd != null}");
+        ">>> MainAppScreen Build: Estado atual isPremium=$isPremium, bannerAd=${_bannerAd != null}, selectedIndex=$_selectedIndex");
 
-    return StoreConnector<AppState, Map<String, dynamic>?>(
-      converter: (store) => store.state.userState.userDetails,
-      onDidChange: (previousViewModel, viewModel) {
+    return StoreConnector<AppState, _MainAppScreenViewModel>(
+      converter: (store) => _MainAppScreenViewModel.fromStore(store),
+      // Usaremos onDidChange para reagir à mudança do targetBottomNavIndex
+      onDidChange: (previousViewModel, newViewModel) {
         print(
             ">>> MainAppScreen StoreConnector.onDidChange: Estado Redux mudou.");
-        _updatePremiumStatus(viewModel);
+        if (previousViewModel?.userDetails != newViewModel.userDetails) {
+          _updatePremiumStatus(newViewModel.userDetails);
+        }
+
+        // Verifica se a aba alvo mudou e se é válida
+        if (newViewModel.targetBottomNavIndex != null &&
+            newViewModel.targetBottomNavIndex != _selectedIndex) {
+          print(
+              ">>> MainAppScreen: targetBottomNavIndex mudou para ${newViewModel.targetBottomNavIndex}. Atualizando _selectedIndex.");
+          setState(() {
+            _selectedIndex = newViewModel.targetBottomNavIndex!;
+          });
+          // Limpa o targetBottomNavIndex para não ficar trocando de aba repetidamente
+          StoreProvider.of<AppState>(context, listen: false)
+              .dispatch(ClearTargetBottomNavAction());
+        }
       },
+      // Não precisamos reconstruir o widget inteiro por causa do targetBottomNavIndex,
+      // pois o onDidChange já lida com a lógica. Mas manter true é seguro.
       rebuildOnChange: true,
-      builder: (context, userDetails) {
+      builder: (context, viewModel) {
+        // Renomeado para viewModel
         return WillPopScope(
           onWillPop: _onWillPop,
           child: Scaffold(
@@ -348,33 +369,28 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   type: BottomNavigationBarType.fixed,
                   currentIndex: _selectedIndex,
                   onTap: (index) {
-                    // <<< MODIFICAÇÃO MVP: Simplificado para sempre mudar de aba >>>
-                    // Não precisa mais do popUntil para as abas desativadas
                     setState(() {
                       _selectedIndex = index;
                     });
-                    // <<< FIM MODIFICAÇÃO MVP >>>
+                    // Se o usuário clicar numa aba, limpamos qualquer navegação programática pendente
+                    StoreProvider.of<AppState>(context, listen: false)
+                        .dispatch(ClearTargetBottomNavAction());
                   },
-                  selectedItemColor:
-                      Colors.greenAccent, // Cor do item selecionado
-                  unselectedItemColor:
-                      Colors.white70, // Cor dos itens não selecionados
-                  backgroundColor: Colors.black, // Fundo da barra
+                  selectedItemColor: Colors.greenAccent,
+                  unselectedItemColor: Colors.white70,
+                  backgroundColor: Colors.black,
                   items: const [
                     BottomNavigationBarItem(
                         icon: Icon(Icons.account_circle), label: 'User'),
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.explore_outlined),
-                        label: 'Explore'), // Ícone Explore
+                        icon: Icon(Icons.explore_outlined), label: 'Explore'),
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.book_outlined),
-                        label: 'Bible'), // Ícone Bíblia
+                        icon: Icon(Icons.book_outlined), label: 'Bible'),
                     BottomNavigationBarItem(
                         icon: Icon(Icons.music_note_outlined),
-                        label: 'Cântico'), // Ícone Hino/Cântico
+                        label: 'Cântico'),
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.chat_bubble_outline),
-                        label: 'Chat'), // Ícone Chat
+                        icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
                   ],
                 ),
               ],
@@ -384,4 +400,34 @@ class _MainAppScreenState extends State<MainAppScreen> {
       },
     );
   }
+}
+
+class _MainAppScreenViewModel {
+  final Map<String, dynamic>? userDetails;
+  final int? targetBottomNavIndex;
+
+  _MainAppScreenViewModel({
+    this.userDetails,
+    this.targetBottomNavIndex,
+  });
+
+  static _MainAppScreenViewModel fromStore(Store<AppState> store) {
+    return _MainAppScreenViewModel(
+      userDetails: store.state.userState.userDetails,
+      targetBottomNavIndex: store.state.userState.targetBottomNavIndex,
+    );
+  }
+
+  // Adicionar operador == e hashCode para otimizar o StoreConnector
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _MainAppScreenViewModel &&
+          runtimeType == other.runtimeType &&
+          mapEquals(
+              userDetails, other.userDetails) && // Usar mapEquals para mapas
+          targetBottomNavIndex == other.targetBottomNavIndex;
+
+  @override
+  int get hashCode => userDetails.hashCode ^ targetBottomNavIndex.hashCode;
 }

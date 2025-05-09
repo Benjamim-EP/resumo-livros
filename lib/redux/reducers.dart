@@ -138,6 +138,8 @@ class UserState {
 
   final List<Map<String, dynamic>> userCommentHighlights;
 
+  final int? targetBottomNavIndex;
+
   UserState({
     this.userId,
     this.email,
@@ -168,6 +170,7 @@ class UserState {
     this.lastReadBookAbbrev,
     this.lastReadChapter,
     this.userCommentHighlights = const [],
+    this.targetBottomNavIndex,
   });
 
   UserState copyWith({
@@ -200,6 +203,8 @@ class UserState {
     String? lastReadBookAbbrev,
     int? lastReadChapter,
     List<Map<String, dynamic>>? userCommentHighlights, // NOVO
+    int? targetBottomNavIndex, // NOVO
+    bool clearTargetBottomNavIndex = false,
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -234,6 +239,9 @@ class UserState {
       lastReadChapter: lastReadChapter ?? this.lastReadChapter,
       userCommentHighlights:
           userCommentHighlights ?? this.userCommentHighlights,
+      targetBottomNavIndex: clearTargetBottomNavIndex
+          ? null
+          : (targetBottomNavIndex ?? this.targetBottomNavIndex),
     );
   }
 }
@@ -438,6 +446,12 @@ UserState userReducer(UserState state, dynamic action) {
     // retornar UserState() é o mais comum e seguro.
     print("Reducer: UserLoggedOutAction recebida. Resetando UserState.");
     return UserState(); // Retorna o estado inicial, usuário deslogado
+  } else if (action is RequestBottomNavChangeAction) {
+    // NOVA AÇÃO
+    return state.copyWith(targetBottomNavIndex: action.index);
+  } else if (action is ClearTargetBottomNavAction) {
+    // NOVA AÇÃO
+    return state.copyWith(clearTargetBottomNavIndex: true);
   }
   return state;
 }

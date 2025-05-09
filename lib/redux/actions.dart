@@ -558,3 +558,10 @@ class RemoveCommentHighlightAction {
   final String commentHighlightId;
   RemoveCommentHighlightAction(this.commentHighlightId);
 }
+
+class RequestBottomNavChangeAction {
+  final int index;
+  RequestBottomNavChangeAction(this.index);
+}
+
+class ClearTargetBottomNavAction {}
