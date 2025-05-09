@@ -431,8 +431,14 @@ UserState userReducer(UserState state, dynamic action) {
   } else if (action is UserLoggedOutAction) {
     // Garante que limpa ao sair
     return UserState(); // Reseta para o estado inicial, limpando userCommentHighlights
+  } else if (action is UserLoggedOutAction) {
+    // Limpa todos os dados do usuário, mas mantém o estado de não logado.
+    // Preserva o userId e email se precisar deles para a tela de login (opcional).
+    // Para uma limpeza completa e redirecionamento para o login,
+    // retornar UserState() é o mais comum e seguro.
+    print("Reducer: UserLoggedOutAction recebida. Resetando UserState.");
+    return UserState(); // Retorna o estado inicial, usuário deslogado
   }
-
   return state;
 }
 

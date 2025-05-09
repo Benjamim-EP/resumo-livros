@@ -1,3 +1,4 @@
+//components/tabs/tabs.dart
 import 'package:flutter/material.dart';
 import 'tab_item.dart';
 

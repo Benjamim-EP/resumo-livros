@@ -6,7 +6,6 @@ import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page/user_diary_page.dart';
 import '../components/avatar/profile_picture.dart';
 import '../components/user/user_info.dart';
-import '../components/stats/stat_item.dart';
 import '../components/tabs/tabs.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
@@ -15,7 +14,7 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.da
 import 'package:redux/redux.dart';
 import 'package:intl/intl.dart';
 
-// Enum para o tipo de destaque
+// Enum para o tipo de destaque (mantido)
 enum HighlightType { verses, comments }
 
 class UserPage extends StatefulWidget {
@@ -28,7 +27,7 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   Map<String, dynamic>? _localBooksMap;
   bool _isLoadingBooksMap = true;
-  String _selectedTab = 'Destaques';
+  String _selectedTab = 'Destaques'; // Aba padrão
   HighlightType _selectedHighlightType = HighlightType.verses;
 
   @override
@@ -41,7 +40,7 @@ class _UserPageState extends State<UserPage> {
         storeInstance.dispatch(LoadUserStatsAction());
         storeInstance.dispatch(LoadUserCollectionsAction());
         storeInstance.dispatch(LoadUserDiariesAction());
-
+        storeInstance.dispatch(LoadReadingHistoryAction());
         if (storeInstance.state.userState.userHighlights.isEmpty) {
           storeInstance.dispatch(LoadUserHighlightsAction());
         }
@@ -51,8 +50,8 @@ class _UserPageState extends State<UserPage> {
         if (storeInstance.state.userState.userNotes.isEmpty) {
           storeInstance.dispatch(LoadUserNotesAction());
         }
-        if (storeInstance.state.userState.readingHistory.isEmpty) {
-          storeInstance.dispatch(LoadReadingHistoryAction());
+        if (storeInstance.state.userState.booksInProgressDetails.isEmpty) {
+          storeInstance.dispatch(LoadBooksDetailsAction());
         }
       }
     });
@@ -91,7 +90,8 @@ class _UserPageState extends State<UserPage> {
       if (chapter != null) {
         StoreProvider.of<AppState>(context, listen: false)
             .dispatch(SetInitialBibleLocationAction(bookAbbrev, chapter));
-        print("Navegação para Bíblia solicitada: $bookAbbrev $chapter");
+        print(
+            "Navegação para Bíblia solicitada: $bookAbbrev $chapter. A UI da Bíblia deve lidar com isso.");
       }
     }
   }
@@ -110,7 +110,7 @@ class _UserPageState extends State<UserPage> {
       color: const Color(0xFF3A3C3C),
       margin: const EdgeInsets.symmetric(vertical: 6.0),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -119,24 +119,25 @@ class _UserPageState extends State<UserPage> {
             Text(
               '"${selectedSnippet}"',
               style: const TextStyle(
-                color: Colors.amber, // Cor diferente para o trecho
-                fontSize: 15,
+                color: Colors.amber,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              "Contexto: ${fullCommentText.length > 100 ? fullCommentText.substring(0, 100) + "..." : fullCommentText}",
+              "No contexto de: ${fullCommentText.length > 100 ? fullCommentText.substring(0, 100) + "..." : fullCommentText}",
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 12,
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 13,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -153,10 +154,10 @@ class _UserPageState extends State<UserPage> {
                 if (highlightId.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.delete_outline,
-                        color: Colors.redAccent, size: 20),
+                        color: Colors.redAccent, size: 22),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    tooltip: "Remover Marcação",
+                    tooltip: "Remover Marcação do Comentário",
                     onPressed: () {
                       StoreProvider.of<AppState>(context, listen: false)
                           .dispatch(RemoveCommentHighlightAction(highlightId));
@@ -188,12 +189,41 @@ class _UserPageState extends State<UserPage> {
 
     switch (_selectedTab) {
       case 'Lendo':
-        return const Center(
-          child: Text(
-            'Seção de Livros em Leitura (Desativada Temporariamente)',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
+        return StoreConnector<AppState, List<Map<String, dynamic>>>(
+          converter: (store) => store.state.userState.booksInProgressDetails,
+          onInit: (store) {
+            if (store.state.userState.booksInProgressDetails.isEmpty &&
+                store.state.userState.userId != null) {
+              store.dispatch(LoadBooksDetailsAction());
+            }
+          },
+          builder: (context, booksInProgressDetails) {
+            if (booksInProgressDetails.isEmpty) {
+              return const Center(
+                  child: Text("Nenhum livro em progresso.",
+                      style: TextStyle(color: Colors.white70, fontSize: 16)));
+            }
+            return ListView.builder(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              itemCount: booksInProgressDetails.length,
+              itemBuilder: (context, index) {
+                final book = booksInProgressDetails[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            BookDetailsPage(bookId: book['id'] as String),
+                      ),
+                    );
+                  },
+                  child: _buildBookCard(book),
+                );
+              },
+            );
+          },
         );
 
       case 'Salvos':
@@ -218,21 +248,21 @@ class _UserPageState extends State<UserPage> {
             if (topicSavesMap.isEmpty) {
               return const Center(
                   child: Text("Nenhuma coleção salva.",
-                      style: TextStyle(color: Colors.white70)));
+                      style: TextStyle(color: Colors.white70, fontSize: 16)));
             }
             if (savedTopicsContent.isEmpty && topicSavesMap.isNotEmpty) {
               return const Center(
                   child: CircularProgressIndicator(color: Color(0xFFCDE7BE)));
             }
-
             if (savedTopicsContent.isEmpty && topicSavesMap.isEmpty) {
               return const Center(
                   child: Text("Nenhum tópico ou versículo salvo.",
-                      style: TextStyle(color: Colors.white70)));
+                      style: TextStyle(color: Colors.white70, fontSize: 16)));
             }
 
             return ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               children: savedTopicsContent.entries.map((entry) {
                 final collectionName = entry.key;
                 final items = entry.value;
@@ -251,10 +281,14 @@ class _UserPageState extends State<UserPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                            child: Text(collectionName,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold))),
+                            child: Text(
+                          collectionName,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                        )),
                         IconButton(
                           icon: const Icon(Icons.delete_sweep_outlined,
                               color: Colors.redAccent),
@@ -299,7 +333,8 @@ class _UserPageState extends State<UserPage> {
                         ),
                       ],
                     ),
-                    childrenPadding: const EdgeInsets.only(bottom: 8.0),
+                    childrenPadding: const EdgeInsets.only(
+                        bottom: 8.0, left: 8.0, right: 8.0),
                     children: items.map((item) {
                       final bool isVerse =
                           item['id']?.startsWith("bibleverses-") ?? false;
@@ -311,7 +346,7 @@ class _UserPageState extends State<UserPage> {
                               ?['nome'] ??
                           bookAbbrev.toUpperCase();
                       final String displaySubtitle = isVerse
-                          ? bookNameFromMap
+                          ? "$bookNameFromMap ${item['id']?.split('-')[2]}"
                           : (item['bookName'] ?? 'Origem desconhecida');
 
                       final String? coverUrl = item['cover'];
@@ -319,36 +354,46 @@ class _UserPageState extends State<UserPage> {
 
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 4.0),
+                            horizontal: 8.0, vertical: 6.0),
                         leading: coverUrl != null && coverUrl.isNotEmpty
-                            ? (coverUrl.startsWith('assets/')
-                                ? Image.asset(coverUrl,
-                                    width: 50, height: 50, fit: BoxFit.cover)
-                                : Image.network(coverUrl,
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Icon(
-                                        isVerse
-                                            ? Icons.book_outlined
-                                            : Icons.topic_outlined,
-                                        color: Colors.grey,
-                                        size: 40)))
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(6.0),
+                                child: (coverUrl.startsWith('assets/')
+                                    ? Image.asset(coverUrl,
+                                        width: 45,
+                                        height: 45,
+                                        fit: BoxFit.cover)
+                                    : Image.network(coverUrl,
+                                        width: 45,
+                                        height: 45,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Icon(
+                                            isVerse
+                                                ? Icons.menu_book_rounded
+                                                : Icons.article_outlined,
+                                            color: Colors.grey[600],
+                                            size: 35))))
                             : Icon(
                                 isVerse
-                                    ? Icons.book_outlined
-                                    : Icons.topic_outlined,
-                                color: Colors.grey,
-                                size: 40),
-                        title: Text(displayTitle,
-                            style: const TextStyle(color: Colors.white)),
+                                    ? Icons.menu_book_rounded
+                                    : Icons.article_outlined,
+                                color: Colors.grey[600],
+                                size: 35),
+                        title: Text(
+                          displayTitle,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 15),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         subtitle: displaySubtitle.isNotEmpty
                             ? Text(displaySubtitle,
-                                style: const TextStyle(color: Colors.grey))
+                                style: TextStyle(
+                                    color: Colors.grey[400], fontSize: 12))
                             : null,
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline,
-                              color: Colors.redAccent, size: 20),
+                              color: Colors.redAccent, size: 22),
                           tooltip: "Remover Item",
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -388,37 +433,30 @@ class _UserPageState extends State<UserPage> {
           children: [
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Versículos",
-                      style: TextStyle(
-                          color: _selectedHighlightType == HighlightType.verses
-                              ? Colors.white
-                              : Colors.grey[600],
-                          fontWeight: FontWeight.bold)),
-                  Switch(
-                    value: _selectedHighlightType == HighlightType.comments,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedHighlightType = value
-                            ? HighlightType.comments
-                            : HighlightType.verses;
-                      });
-                    },
-                    activeColor: Theme.of(context).primaryColor,
-                    inactiveThumbColor: Colors.grey[400],
-                    inactiveTrackColor: Colors.grey.shade700,
-                  ),
-                  Text("Comentários",
-                      style: TextStyle(
-                          color:
-                              _selectedHighlightType == HighlightType.comments
-                                  ? Colors.white
-                                  : Colors.grey[600],
-                          fontWeight: FontWeight.bold)),
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              child: SegmentedButton<HighlightType>(
+                segments: const <ButtonSegment<HighlightType>>[
+                  ButtonSegment<HighlightType>(
+                      value: HighlightType.verses,
+                      label: Text('Versículos'),
+                      icon: Icon(Icons.menu_book)),
+                  ButtonSegment<HighlightType>(
+                      value: HighlightType.comments,
+                      label: Text('Comentários'),
+                      icon: Icon(Icons.comment_bank_outlined)),
                 ],
+                selected: <HighlightType>{_selectedHighlightType},
+                onSelectionChanged: (Set<HighlightType> newSelection) {
+                  setState(() {
+                    _selectedHighlightType = newSelection.first;
+                  });
+                },
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: Colors.grey[800],
+                  foregroundColor: Colors.white,
+                  selectedForegroundColor: Colors.black,
+                  selectedBackgroundColor: Theme.of(context).primaryColor,
+                ),
               ),
             ),
             Expanded(
@@ -427,7 +465,6 @@ class _UserPageState extends State<UserPage> {
                 builder: (context, highlightsVm) {
                   if (_selectedHighlightType == HighlightType.verses) {
                     if (_isLoadingBooksMap) {
-                      // Só mostra loader para versículos se booksMap não carregou
                       return const Center(
                           child: CircularProgressIndicator(
                               color: Color(0xFFCDE7BE)));
@@ -436,7 +473,8 @@ class _UserPageState extends State<UserPage> {
                     if (highlights.isEmpty) {
                       return const Center(
                           child: Text("Nenhum versículo destacado ainda.",
-                              style: TextStyle(color: Colors.white70)));
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 16)));
                     }
                     final highlightList = highlights.entries.toList();
                     return ListView.builder(
@@ -466,18 +504,21 @@ class _UserPageState extends State<UserPage> {
                         return Card(
                           color: const Color(0xFF313333),
                           margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 8.0),
+                                horizontal: 16.0, vertical: 10.0),
                             leading: Container(
-                                width: 10,
+                                width: 12,
                                 decoration: BoxDecoration(
                                     color: color,
-                                    borderRadius: BorderRadius.circular(2))),
+                                    borderRadius: BorderRadius.circular(4))),
                             title: Text(referenceText,
                                 style: const TextStyle(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold)),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15)),
                             subtitle: FutureBuilder<String>(
                               future: BiblePageHelper.loadSingleVerseText(
                                   verseId, 'nvi'),
@@ -494,19 +535,25 @@ class _UserPageState extends State<UserPage> {
                                       style: TextStyle(
                                           color: Colors.redAccent,
                                           fontSize: 12));
-                                return Text(snapshot.data!,
-                                    style: TextStyle(
-                                        color: Colors.white.withOpacity(0.8),
-                                        fontSize: 13,
-                                        backgroundColor:
-                                            color.withOpacity(0.3)),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis);
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.25),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(snapshot.data!,
+                                      style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 14),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis),
+                                );
                               },
                             ),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline,
-                                  color: Colors.redAccent, size: 20),
+                                  color: Colors.redAccent, size: 22),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               tooltip: "Remover Destaque",
@@ -522,13 +569,13 @@ class _UserPageState extends State<UserPage> {
                       },
                     );
                   } else {
-                    // HighlightType.comments
                     final commentHighlights =
                         highlightsVm.userCommentHighlights;
                     if (commentHighlights.isEmpty) {
                       return const Center(
                           child: Text("Nenhum comentário marcado ainda.",
-                              style: TextStyle(color: Colors.white70)));
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 16)));
                     }
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
@@ -559,7 +606,7 @@ class _UserPageState extends State<UserPage> {
             if (notes.isEmpty) {
               return const Center(
                   child: Text("Nenhuma nota adicionada ainda.",
-                      style: TextStyle(color: Colors.white70)));
+                      style: TextStyle(color: Colors.white70, fontSize: 16)));
             }
             final noteList = notes.entries.toList();
             return ListView.builder(
@@ -585,22 +632,31 @@ class _UserPageState extends State<UserPage> {
                 return Card(
                   color: const Color(0xFF313333),
                   margin: const EdgeInsets.symmetric(vertical: 4.0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                        horizontal: 16.0, vertical: 10.0),
                     leading: const Icon(Icons.note_alt_outlined,
-                        color: Colors.blueAccent),
+                        color: Colors.blueAccent, size: 28),
                     title: Text(referenceText,
                         style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text(noteText,
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.9), fontSize: 13),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15)),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(noteText,
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14,
+                              height: 1.4),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis),
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline,
-                          color: Colors.redAccent, size: 20),
+                          color: Colors.redAccent, size: 22),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       tooltip: "Remover Nota",
@@ -630,10 +686,10 @@ class _UserPageState extends State<UserPage> {
             if (history.isEmpty) {
               return const Center(
                   child: Text("Nenhum histórico de leitura encontrado.",
-                      style: TextStyle(color: Colors.white70)));
+                      style: TextStyle(color: Colors.white70, fontSize: 16)));
             }
 
-            final DateFormat formatter = DateFormat('dd/MM/yy HH:mm');
+            final DateFormat formatter = DateFormat('dd/MM/yy \'às\' HH:mm');
 
             return ListView.builder(
               padding:
@@ -651,25 +707,33 @@ class _UserPageState extends State<UserPage> {
                 return Card(
                   color: const Color(0xFF313333),
                   margin: const EdgeInsets.symmetric(vertical: 4.0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                        horizontal: 16.0, vertical: 10.0),
                     leading: const Icon(Icons.history_edu_outlined,
-                        color: Colors.white70),
+                        color: Colors.white70, size: 28),
                     title: Text(
                       "$bookName $chapter",
                       style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15),
                     ),
-                    subtitle: Text(
-                      timestamp != null
-                          ? formatter.format(timestamp)
-                          : "Data indisponível",
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.7), fontSize: 12),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        timestamp != null
+                            ? formatter
+                                .format(timestamp.toLocal()) // Use toLocal()
+                            : "Data indisponível",
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.7), fontSize: 13),
+                      ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios,
-                        size: 16, color: Colors.white70),
+                        size: 18, color: Colors.white70),
                     onTap: () => _navigateToBibleVerse(verseIdForNav),
                   ),
                 );
@@ -684,20 +748,26 @@ class _UserPageState extends State<UserPage> {
       default:
         return const Center(
             child: Text('Conteúdo não disponível.',
-                style: TextStyle(color: Colors.white)));
+                style: TextStyle(color: Colors.white, fontSize: 16)));
     }
   }
 
   Widget _buildBookCard(Map<String, dynamic> bookDetails) {
-    num progressValue = bookDetails['progress'] ?? 0;
-    final progress = (progressValue.clamp(0, 100)) / 100.0;
+    num progressValueNum = 0;
+    if (bookDetails['progress'] is num) {
+      progressValueNum = bookDetails['progress'];
+    } else if (bookDetails['progress'] is String) {
+      progressValueNum = num.tryParse(bookDetails['progress'] as String) ?? 0;
+    }
+    final double progress = (progressValueNum.clamp(0, 100)) / 100.0;
 
     return Card(
       color: const Color(0xFF313333),
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 3,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(12.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -707,18 +777,26 @@ class _UserPageState extends State<UserPage> {
                       bookDetails['cover'].isNotEmpty)
                   ? Image.network(
                       bookDetails['cover'],
-                      width: 60,
-                      height: 90,
+                      width: 70,
+                      height: 105,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.book, size: 60, color: Colors.grey),
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 70,
+                        height: 105,
+                        color: Colors.grey[700],
+                        child: Icon(Icons.book_outlined,
+                            size: 40, color: Colors.grey[400]),
+                      ),
                     )
-                  : const SizedBox(
-                      width: 60,
-                      height: 90,
-                      child: Icon(Icons.book, size: 60, color: Colors.grey)),
+                  : Container(
+                      width: 70,
+                      height: 105,
+                      color: Colors.grey[700],
+                      child: Icon(Icons.book_outlined,
+                          size: 40, color: Colors.grey[400]),
+                    ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -728,45 +806,61 @@ class _UserPageState extends State<UserPage> {
                     bookDetails['title'] ?? 'Sem título',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     bookDetails['author'] != null &&
                             bookDetails['author'].isNotEmpty
-                        ? '${bookDetails['author']}'
+                        ? 'Por: ${bookDetails['author']}'
                         : 'Autor desconhecido',
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 12,
+                      fontSize: 13,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   if (progress > 0)
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 6,
-                      borderRadius: BorderRadius.circular(15),
-                      backgroundColor: Colors.grey.shade700,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF4CAF50),
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(15),
+                          backgroundColor: Colors.grey.shade700,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${(progress * 100).toStringAsFixed(0)}% concluído",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     )
                   else
-                    const Text("Não iniciado",
+                    Text("Não iniciado",
                         style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 10,
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 11,
                             fontStyle: FontStyle.italic)),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios,
+                color: Colors.white54, size: 18),
           ],
         ),
       ),
@@ -791,12 +885,11 @@ class _UserPageState extends State<UserPage> {
                   child: CircularProgressIndicator(color: Color(0xFFCDE7BE))));
         }
 
-        final userDetails = vm.userDetails;
-        final topicosLidos = userDetails['Tópicos']?.toString() ?? '0';
-
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: RefreshIndicator(
+            color: Theme.of(context).primaryColor,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             onRefresh: () async {
               final storeInstance =
                   StoreProvider.of<AppState>(context, listen: false);
@@ -808,47 +901,57 @@ class _UserPageState extends State<UserPage> {
                 storeInstance.dispatch(LoadUserCommentHighlightsAction());
                 storeInstance.dispatch(LoadUserNotesAction());
                 storeInstance.dispatch(LoadReadingHistoryAction());
+                storeInstance.dispatch(LoadBooksDetailsAction());
               }
             },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: kToolbarHeight - 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    children: [
-                      ProfilePicture(),
-                      const SizedBox(height: 16),
-                      UserInfo(),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: StatsContainer(
-                              livros: "0",
-                              topicos: topicosLidos,
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 0),
+                    child: Column(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  ProfilePicture(),
+                                  const SizedBox(height: 12),
+                                  UserInfo(),
+                                ],
+                              ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: LogoutButton(),
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Tabs(
-                        onTabSelected: _onTabSelected,
-                        selectedTab: _selectedTab,
-                      ),
-                      const Divider(color: Colors.white24, height: 1),
-                    ],
+                            IconButton(
+                              icon: Icon(Icons.settings_outlined,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 28),
+                              tooltip: 'Configurações',
+                              onPressed: () {
+                                // Alterado para usar o Navigator raiz
+                                Navigator.of(context, rootNavigator: true)
+                                    .pushNamed('/userSettings');
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Tabs(
+                          onTabSelected: _onTabSelected,
+                          selectedTab: _selectedTab,
+                        ),
+                        const Divider(
+                            color: Colors.white24, height: 1, thickness: 0.5),
+                      ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildTabContent(),
-                ),
-              ],
+                  Expanded(
+                    child: _buildTabContent(),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -860,23 +963,27 @@ class _UserPageState extends State<UserPage> {
 class _UserPageViewModel {
   final String? userId;
   final Map<String, dynamic> userDetails;
-  final int booksInProgressCount;
   final int topicSavesCount;
+  final int userDiariesCount;
 
   _UserPageViewModel({
     required this.userId,
     required this.userDetails,
-    required this.booksInProgressCount,
     required this.topicSavesCount,
+    required this.userDiariesCount,
   });
 
   static _UserPageViewModel fromStore(Store<AppState> store) {
+    int totalSavedItems = 0;
+    store.state.userState.topicSaves.forEach((collectionName, items) {
+      totalSavedItems += items.length;
+    });
+
     return _UserPageViewModel(
       userId: store.state.userState.userId,
       userDetails: store.state.userState.userDetails ?? {},
-      booksInProgressCount: store.state.userState.booksInProgress.length,
-      topicSavesCount: store.state.userState.topicSaves.values
-          .fold<int>(0, (prev, list) => prev + list.length),
+      topicSavesCount: totalSavedItems,
+      userDiariesCount: store.state.userState.userDiaries.length,
     );
   }
 
@@ -887,15 +994,15 @@ class _UserPageViewModel {
           runtimeType == other.runtimeType &&
           userId == other.userId &&
           mapEquals(userDetails, other.userDetails) &&
-          booksInProgressCount == other.booksInProgressCount &&
-          topicSavesCount == other.topicSavesCount;
+          topicSavesCount == other.topicSavesCount &&
+          userDiariesCount == other.userDiariesCount;
 
   @override
   int get hashCode =>
       userId.hashCode ^
       userDetails.hashCode ^
-      booksInProgressCount.hashCode ^
-      topicSavesCount.hashCode;
+      topicSavesCount.hashCode ^
+      userDiariesCount.hashCode;
 }
 
 class _HighlightsViewModel {
@@ -925,36 +1032,4 @@ class _HighlightsViewModel {
   @override
   int get hashCode =>
       userVerseHighlights.hashCode ^ userCommentHighlights.hashCode;
-}
-
-class LogoutButton extends StatelessWidget {
-  const LogoutButton({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 180, 115, 110),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: const Icon(
-          Icons.logout,
-          color: Colors.white,
-          size: 24,
-        ),
-        onPressed: () {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-              '/login', (Route<dynamic> route) => false);
-        },
-        tooltip: 'Sair',
-      ),
-    );
-  }
 }

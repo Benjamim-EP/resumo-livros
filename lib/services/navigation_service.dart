@@ -1,14 +1,16 @@
+// lib/services/navigation_service.dart
 import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/components/bottomNavigationBar/bottomNavigationBar.dart';
 import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/login_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/explore_page.dart';
+// import 'package:resumo_dos_deuses_flutter/pages/explore_page.dart'; // Se não estiver usando, pode remover
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/start_screen_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/signup_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/splashViews/finalform_view.dart';
 import 'package:resumo_dos_deuses_flutter/pages/tribe_selection_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/user_settings_page.dart'; // Importar a nova página
 
 class NavigationService {
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -47,8 +49,11 @@ class NavigationService {
         return MaterialPageRoute(
           builder: (_) => TribeSelectionPage(tribos: tribos),
         );
+      case '/userSettings': // Nova rota
+        return MaterialPageRoute(builder: (_) => const UserSettingsPage());
       default:
-        return MaterialPageRoute(builder: (_) => LoginPage());
+        return MaterialPageRoute(
+            builder: (_) => LoginPage()); // Ou StartScreenPage como padrão
     }
   }
 }
