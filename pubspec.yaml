@@ -83,6 +83,8 @@ flutter:
     - assets/Biblia/rotas_biblia/profeciasdesuavinda.json
     - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json
+    
+    - 
 
     - assets/hinos/hinos.json
 
@@ -401,6 +403,12 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
+    
+    - family: NotoSansHebrew
+      fonts:
+        - asset: assets/fonts/NotoSansHebrew-Regular.ttf # Adapte o caminho
+        - asset: assets/fonts/NotoSansHebrew-Bold.ttf
+          weight: 700
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
