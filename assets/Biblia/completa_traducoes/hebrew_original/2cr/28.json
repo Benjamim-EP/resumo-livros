@@ -1,0 +1,2290 @@
+[
+  [
+    {
+      "text": "בֶּן",
+      "strong": "H1121",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "עֶשְׂרִ֤ים",
+      "strong": "H6242",
+      "morph": "HAcbpa"
+    },
+    {
+      "text": "שָׁנָה֙",
+      "strong": "H8141",
+      "morph": "HNcfsa"
+    },
+    {
+      "text": "אָחָ֣ז",
+      "strong": "H271",
+      "morph": "HNp"
+    },
+    {
+      "text": "בְּ/מָלְכ֔/וֹ",
+      "strong": "H4427",
+      "morph": "HR/Vqc/Sp3ms"
+    },
+    {
+      "text": "וְ/שֵׁשׁ",
+      "strong": "H8337",
+      "morph": "HC/Acfsa"
+    },
+    {
+      "text": "עֶשְׂרֵ֣ה",
+      "strong": "H6240",
+      "morph": "HAcfsa"
+    },
+    {
+      "text": "שָׁנָ֔ה",
+      "strong": "H8141",
+      "morph": "HNcfsa"
+    },
+    {
+      "text": "מָלַ֖ךְ",
+      "strong": "H4427",
+      "morph": "HVqp3ms"
+    },
+    {
+      "text": "בִּ/ירוּשָׁלִָ֑ם",
+      "strong": "H3389",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "וְ/לֹא",
+      "strong": "H3808",
+      "morph": "HC/Tn"
+    },
+    {
+      "text": "עָשָׂ֧ה",
+      "strong": "H6213",
+      "morph": "HVqp3ms"
+    },
+    {
+      "text": "הַ/יָּשָׁ֛ר",
+      "strong": "H3477",
+      "morph": "HTd/Aamsa"
+    },
+    {
+      "text": "בְּ/עֵינֵ֥י",
+      "strong": "H5869",
+      "morph": "HR/Ncbdc"
+    },
+    {
+      "text": "יְהוָ֖ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "כְּ/דָוִ֥יד",
+      "strong": "H1732",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "אָבִֽי/ו",
+      "strong": "H1",
+      "morph": "HNcmsc/Sp3ms"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יֵּ֕לֶךְ",
+      "strong": "H3212",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "בְּ/דַרְכֵ֖י",
+      "strong": "H1870",
+      "morph": "HR/Ncbpc"
+    },
+    {
+      "text": "מַלְכֵ֣י",
+      "strong": "H4428",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "יִשְׂרָאֵ֑ל",
+      "strong": "H3478",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/גַ֧ם",
+      "strong": "H1571",
+      "morph": "HC/Ta"
+    },
+    {
+      "text": "מַסֵּכ֛וֹת",
+      "strong": "H4541",
+      "morph": "HNcfpa"
+    },
+    {
+      "text": "עָשָׂ֖ה",
+      "strong": "H6213",
+      "morph": "HVqp3ms"
+    },
+    {
+      "text": "לַ/בְּעָלִֽים",
+      "strong": "H1168",
+      "morph": "HRd/Np"
+    }
+  ],
+  [
+    {
+      "text": "וְ/ה֥וּא",
+      "strong": "H1931",
+      "morph": "HC/Pp3ms"
+    },
+    {
+      "text": "הִקְטִ֖יר",
+      "strong": "H6999",
+      "morph": "HVhp3ms"
+    },
+    {
+      "text": "בְּ/גֵ֣יא",
+      "strong": "H1516",
+      "morph": "HR/Ncbsc"
+    },
+    {
+      "text": "בֶן",
+      "strong": "H1121",
+      "morph": "HNp"
+    },
+    {
+      "text": "הִנֹּ֑ם",
+      "strong": "H2011",
+      "morph": "HNp"
+    },
+    {
+      "text": "וַ/יַּבְעֵ֤ר",
+      "strong": "H1197",
+      "morph": "HC/Vhw3ms"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "בָּנָי/ו֙",
+      "strong": "H1121",
+      "morph": "HNcmpc/Sp3ms"
+    },
+    {
+      "text": "בָּ/אֵ֔שׁ",
+      "strong": "H784",
+      "morph": "HRd/Ncbsa"
+    },
+    {
+      "text": "כְּ/תֹֽעֲבוֹת֙",
+      "strong": "H8441",
+      "morph": "HR/Ncfpc"
+    },
+    {
+      "text": "הַ/גּוֹיִ֔ם",
+      "strong": "H1471",
+      "morph": "HTd/Ncmpa"
+    },
+    {
+      "text": "אֲשֶׁר֙",
+      "strong": "H834",
+      "morph": "HTr"
+    },
+    {
+      "text": "הֹרִ֣ישׁ",
+      "strong": "H3423",
+      "morph": "HVhp3ms"
+    },
+    {
+      "text": "יְהוָ֔ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "מִ/פְּנֵ֖י",
+      "strong": "H6440",
+      "morph": "HR/Ncbpc"
+    },
+    {
+      "text": "בְּנֵ֥י",
+      "strong": "H1121",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "יִשְׂרָאֵֽל",
+      "strong": "H3478",
+      "morph": "HNp"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יְזַבֵּ֧חַ",
+      "strong": "H2076",
+      "morph": "HC/Vpw3ms"
+    },
+    {
+      "text": "וַ/יְקַטֵּ֛ר",
+      "strong": "H6999",
+      "morph": "HC/Vpw3ms"
+    },
+    {
+      "text": "בַּ/בָּמ֖וֹת",
+      "strong": "H1116",
+      "morph": "HRd/Ncfpa"
+    },
+    {
+      "text": "וְ/עַל",
+      "strong": "H5921",
+      "morph": "HC/R"
+    },
+    {
+      "text": "הַ/גְּבָע֑וֹת",
+      "strong": "H1389",
+      "morph": "HTd/Ncfpa"
+    },
+    {
+      "text": "וְ/תַ֖חַת",
+      "strong": "H8478",
+      "morph": "HC/R"
+    },
+    {
+      "text": "כָּל",
+      "strong": "H3605",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "עֵ֥ץ",
+      "strong": "H6086",
+      "morph": "HNcmsa"
+    },
+    {
+      "text": "רַעֲנָֽן",
+      "strong": "H7488",
+      "morph": "HAamsa"
+    }
+  ],
+  [
+    {
+      "text": "וַֽ/יִּתְּנֵ֜/הוּ",
+      "strong": "H5414",
+      "morph": "HC/Vqw3ms/Sp3ms"
+    },
+    {
+      "text": "יְהוָ֣ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֱלֹהָי/ו֮",
+      "strong": "H430",
+      "morph": "HNcmpc/Sp3ms"
+    },
+    {
+      "text": "בְּ/יַ֣ד",
+      "strong": "H3027",
+      "morph": "HR/Ncbsc"
+    },
+    {
+      "text": "מֶ֣לֶךְ",
+      "strong": "H4428",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "אֲרָם֒",
+      "strong": "H758",
+      "morph": "HNp"
+    },
+    {
+      "text": "וַ/יַּ֨כּוּ",
+      "strong": "H5221",
+      "morph": "HC/Vhw3mp"
+    },
+    {
+      "text": "ב֔/וֹ",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "וַ/יִּשְׁבּ֤וּ",
+      "strong": "H7617",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "מִמֶּ֨/נּוּ֙",
+      "strong": "H4480",
+      "morph": "HR/Sp1cp"
+    },
+    {
+      "text": "שִׁבְיָ֣ה",
+      "strong": "H7633",
+      "morph": "HNcbsa"
+    },
+    {
+      "text": "גְדוֹלָ֔ה",
+      "strong": "H1419",
+      "morph": "HAafsa"
+    },
+    {
+      "text": "וַ/יָּבִ֖יאוּ",
+      "strong": "H935",
+      "morph": "HC/Vhw3mp"
+    },
+    {
+      "text": "דַּרְמָ֑שֶׂק",
+      "strong": "H1834",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ֠/גַם",
+      "strong": "H1571",
+      "morph": "HC/Ta"
+    },
+    {
+      "text": "בְּ/יַד",
+      "strong": "H3027",
+      "morph": "HR/Ncbsc"
+    },
+    {
+      "text": "מֶ֤לֶךְ",
+      "strong": "H4428",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "יִשְׂרָאֵל֙",
+      "strong": "H3478",
+      "morph": "HNp"
+    },
+    {
+      "text": "נִתָּ֔ן",
+      "strong": "H5414",
+      "morph": "HVNrmsa"
+    },
+    {
+      "text": "וַ/יַּךְ",
+      "strong": "H5221",
+      "morph": "HC/Vhw3ms"
+    },
+    {
+      "text": "בּ֖/וֹ",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "מַכָּ֥ה",
+      "strong": "H4347",
+      "morph": "HNcfsa"
+    },
+    {
+      "text": "גְדוֹלָֽה",
+      "strong": "H1419",
+      "morph": "HAafsa"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יַּהֲרֹג֩",
+      "strong": "H2026",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "פֶּ֨קַח",
+      "strong": "H6492",
+      "morph": "HNp"
+    },
+    {
+      "text": "בֶּן",
+      "strong": "H1121",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "רְמַלְיָ֜הוּ",
+      "strong": "H7425",
+      "morph": "HNp"
+    },
+    {
+      "text": "בִּֽ/יהוּדָ֗ה",
+      "strong": "H3063",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "מֵאָ֨ה",
+      "strong": "H3967",
+      "morph": "HAcbsa"
+    },
+    {
+      "text": "וְ/עֶשְׂרִ֥ים",
+      "strong": "H6242",
+      "morph": "HC/Acbpa"
+    },
+    {
+      "text": "אֶ֛לֶף",
+      "strong": "H505",
+      "morph": "HAcbsa"
+    },
+    {
+      "text": "בְּ/י֥וֹם",
+      "strong": "H3117",
+      "morph": "HR/Ncmsa"
+    },
+    {
+      "text": "אֶחָ֖ד",
+      "strong": "H259",
+      "morph": "HAcmsa"
+    },
+    {
+      "text": "הַ/כֹּ֣ל",
+      "strong": "H3605",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "בְּנֵי",
+      "strong": "H1121",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "חָ֑יִל",
+      "strong": "H2428",
+      "morph": "HNcmsa"
+    },
+    {
+      "text": "בְּ/עָזְבָ֕/ם",
+      "strong": "H5800",
+      "morph": "HR/Vqc/Sp3mp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "יְהוָ֖ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֱלֹהֵ֥י",
+      "strong": "H430",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "אֲבוֹתָֽ/ם",
+      "strong": "H1",
+      "morph": "HNcmpc/Sp3mp"
+    }
+  ],
+  [
+    {
+      "text": "וַֽ/יַּהֲרֹ֞ג",
+      "strong": "H2026",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "זִכְרִ֣י",
+      "strong": "H2147",
+      "morph": "HNp"
+    },
+    {
+      "text": "גִּבּ֣וֹר",
+      "strong": "H1368",
+      "morph": "HAamsc"
+    },
+    {
+      "text": "אֶפְרַ֗יִם",
+      "strong": "H669",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "מַעֲשֵׂיָ֨הוּ֙",
+      "strong": "H4641",
+      "morph": "HNp"
+    },
+    {
+      "text": "בֶּן",
+      "strong": "H1121",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "הַ/מֶּ֔לֶךְ",
+      "strong": "H4428",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "עַזְרִיקָ֖ם",
+      "strong": "H5840",
+      "morph": "HNp"
+    },
+    {
+      "text": "נְגִ֣יד",
+      "strong": "H5057",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "הַ/בָּ֑יִת",
+      "strong": "H1004",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "אֶלְקָנָ֖ה",
+      "strong": "H511",
+      "morph": "HNp"
+    },
+    {
+      "text": "מִשְׁנֵ֥ה",
+      "strong": "H4932",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "הַ/מֶּֽלֶךְ",
+      "strong": "H4428",
+      "morph": "HTd/Ncmsa"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יִּשְׁבּוּ֩",
+      "strong": "H7617",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "בְנֵֽי",
+      "strong": "H1121",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "יִשְׂרָאֵ֨ל",
+      "strong": "H3478",
+      "morph": "HNp"
+    },
+    {
+      "text": "מֵֽ/אֲחֵי/הֶ֜ם",
+      "strong": "H251",
+      "morph": "HR/Ncmpc/Sp3mp"
+    },
+    {
+      "text": "מָאתַ֣יִם",
+      "strong": "H3967",
+      "morph": "HAcbda"
+    },
+    {
+      "text": "אֶ֗לֶף",
+      "strong": "H505",
+      "morph": "HAcbsa"
+    },
+    {
+      "text": "נָשִׁים֙",
+      "strong": "H802",
+      "morph": "HNcfpa"
+    },
+    {
+      "text": "בָּנִ֣ים",
+      "strong": "H1121",
+      "morph": "HNcmpa"
+    },
+    {
+      "text": "וּ/בָנ֔וֹת",
+      "strong": "H1323",
+      "morph": "HC/Ncfpa"
+    },
+    {
+      "text": "וְ/גַם",
+      "strong": "H1571",
+      "morph": "HC/Ta"
+    },
+    {
+      "text": "שָׁלָ֥ל",
+      "strong": "H7998",
+      "morph": "HNcmsa"
+    },
+    {
+      "text": "רָ֖ב",
+      "strong": "H7227",
+      "morph": "HAamsa"
+    },
+    {
+      "text": "בָּזְז֣וּ",
+      "strong": "H962",
+      "morph": "HVqp3cp"
+    },
+    {
+      "text": "מֵ/הֶ֑ם",
+      "morph": "HR/Sp3mp"
+    },
+    {
+      "text": "וַ/יָּבִ֥יאוּ",
+      "strong": "H935",
+      "morph": "HC/Vhw3mp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "הַ/שָּׁלָ֖ל",
+      "strong": "H7998",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "לְ/שֹׁמְרֽוֹן",
+      "strong": "H8111",
+      "morph": "HR/Np"
+    }
+  ],
+  [
+    {
+      "text": "וְ֠/שָׁם",
+      "strong": "H8033",
+      "morph": "HC/D"
+    },
+    {
+      "text": "הָיָ֨ה",
+      "strong": "H1961",
+      "morph": "HVqp3ms"
+    },
+    {
+      "text": "נָבִ֥יא",
+      "strong": "H5030",
+      "morph": "HNcmsa"
+    },
+    {
+      "text": "לַֽ/יהוָה֮",
+      "strong": "H3068",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "עֹדֵ֣ד",
+      "strong": "H5752",
+      "morph": "HNp"
+    },
+    {
+      "text": "שְׁמ/וֹ֒",
+      "strong": "H8034",
+      "morph": "HNcmsc/Sp3ms"
+    },
+    {
+      "text": "וַ/יֵּצֵ֗א",
+      "strong": "H3318",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "לִ/פְנֵ֤י",
+      "strong": "H6440",
+      "morph": "HR/Ncbpc"
+    },
+    {
+      "text": "הַ/צָּבָא֙",
+      "strong": "H6635",
+      "morph": "HTd/Ncbsa"
+    },
+    {
+      "text": "הַ/בָּ֣א",
+      "strong": "H935",
+      "morph": "HTd/Vqrmsa"
+    },
+    {
+      "text": "לְ/שֹׁמְר֔וֹן",
+      "strong": "H8111",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "וַ/יֹּ֣אמֶר",
+      "strong": "H559",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "לָ/הֶ֗ם",
+      "morph": "HR/Sp3mp"
+    },
+    {
+      "text": "הִ֠נֵּה",
+      "strong": "H2009",
+      "morph": "HTm"
+    },
+    {
+      "text": "בַּ/חֲמַ֨ת",
+      "strong": "H2534",
+      "morph": "HR/Ncfsc"
+    },
+    {
+      "text": "יְהוָ֧ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֱלֹהֵֽי",
+      "strong": "H430",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "אֲבוֹתֵי/כֶ֛ם",
+      "strong": "H1",
+      "morph": "HNcmpc/Sp2mp"
+    },
+    {
+      "text": "עַל",
+      "strong": "H5921",
+      "morph": "HR"
+    },
+    {
+      "text": "יְהוּדָ֖ה",
+      "strong": "H3063",
+      "morph": "HNp"
+    },
+    {
+      "text": "נְתָנָ֣/ם",
+      "strong": "H5414",
+      "morph": "HVqp3ms/Sp3mp"
+    },
+    {
+      "text": "בְּ/יֶדְ/כֶ֑ם",
+      "strong": "H3027",
+      "morph": "HR/Ncbsc/Sp2mp"
+    },
+    {
+      "text": "וַ/תַּֽהַרְגוּ",
+      "strong": "H2026",
+      "morph": "HC/Vqw2mp"
+    },
+    {
+      "text": "בָ֣/ם",
+      "morph": "HR/Sp3mp"
+    },
+    {
+      "text": "בְ/זַ֔עַף",
+      "strong": "H2197",
+      "morph": "HR/Ncmsa"
+    },
+    {
+      "text": "עַ֥ד",
+      "strong": "H5704",
+      "morph": "HR"
+    },
+    {
+      "text": "לַ/שָּׁמַ֖יִם",
+      "strong": "H8064",
+      "morph": "HRd/Ncmpa"
+    },
+    {
+      "text": "הִגִּֽיעַ",
+      "strong": "H5060",
+      "morph": "HVhp3ms"
+    }
+  ],
+  [
+    {
+      "text": "וְ֠/עַתָּה",
+      "strong": "H6258",
+      "morph": "HC/D"
+    },
+    {
+      "text": "בְּנֵֽי",
+      "strong": "H1121",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "יְהוּדָ֤ה",
+      "strong": "H3063",
+      "morph": "HNp"
+    },
+    {
+      "text": "וִֽ/ירוּשָׁלִַ֨ם֙",
+      "strong": "H3389",
+      "morph": "HC/Np"
+    },
+    {
+      "text": "אַתֶּ֣ם",
+      "strong": "H859",
+      "morph": "HPp2mp"
+    },
+    {
+      "text": "אֹמְרִ֔ים",
+      "strong": "H559",
+      "morph": "HVqrmpa"
+    },
+    {
+      "text": "לִ/כְבֹּ֛שׁ",
+      "strong": "H3533",
+      "morph": "HR/Vqc"
+    },
+    {
+      "text": "לַ/עֲבָדִ֥ים",
+      "strong": "H5650",
+      "morph": "HR/Ncmpa"
+    },
+    {
+      "text": "וְ/לִ/שְׁפָח֖וֹת",
+      "strong": "H8198",
+      "morph": "HC/R/Ncfpa"
+    },
+    {
+      "text": "לָ/כֶ֑ם",
+      "morph": "HR/Sp2mp"
+    },
+    {
+      "text": "הֲ/לֹ֤א",
+      "strong": "H3808",
+      "morph": "HTi/Tn"
+    },
+    {
+      "text": "רַק",
+      "strong": "H7535",
+      "morph": "HTa"
+    },
+    {
+      "text": "אַתֶּם֙",
+      "strong": "H859",
+      "morph": "HPp2mp"
+    },
+    {
+      "text": "עִמָּ/כֶ֣ם",
+      "strong": "H5973",
+      "morph": "HR/Sp2mp"
+    },
+    {
+      "text": "אֲשָׁמ֔וֹת",
+      "strong": "H819",
+      "morph": "HNcfpa"
+    },
+    {
+      "text": "לַ/יהוָ֖ה",
+      "strong": "H3068",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "אֱלֹהֵי/כֶֽם",
+      "strong": "H430",
+      "morph": "HNcmpc/Sp2mp"
+    }
+  ],
+  [
+    {
+      "text": "וְ/עַתָּ֣ה",
+      "strong": "H6258",
+      "morph": "HC/D"
+    },
+    {
+      "text": "שְׁמָע֔וּ/נִי",
+      "strong": "H8085",
+      "morph": "HVqv2mp/Sp1cs"
+    },
+    {
+      "text": "וְ/הָשִׁ֨יבוּ֙",
+      "strong": "H7725",
+      "morph": "HC/Vhv2mp"
+    },
+    {
+      "text": "הַ/שִּׁבְיָ֔ה",
+      "strong": "H7633",
+      "morph": "HTd/Ncbsa"
+    },
+    {
+      "text": "אֲשֶׁ֥ר",
+      "strong": "H834",
+      "morph": "HTr"
+    },
+    {
+      "text": "שְׁבִיתֶ֖ם",
+      "strong": "H7617",
+      "morph": "HVqp2mp"
+    },
+    {
+      "text": "מֵ/אֲחֵי/כֶ֑ם",
+      "strong": "H251",
+      "morph": "HR/Ncmpc/Sp2mp"
+    },
+    {
+      "text": "כִּ֛י",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "חֲר֥וֹן",
+      "strong": "H2740",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "אַף",
+      "strong": "H639",
+      "morph": "HTa"
+    },
+    {
+      "text": "יְהוָ֖ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "עֲלֵי/כֶֽם",
+      "strong": "H5921",
+      "morph": "HR/Sp2mp"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יָּקֻ֨מוּ",
+      "strong": "H6965",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "אֲנָשִׁ֜ים",
+      "strong": "H376",
+      "morph": "HNcmpa"
+    },
+    {
+      "text": "מֵ/רָאשֵׁ֣י",
+      "strong": "H7218",
+      "morph": "HR/Ncmpc"
+    },
+    {
+      "text": "בְנֵֽי",
+      "strong": "H1121",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "אֶפְרַ֗יִם",
+      "strong": "H669",
+      "morph": "HNp"
+    },
+    {
+      "text": "עֲזַרְיָ֤הוּ",
+      "strong": "H5838",
+      "morph": "HNp"
+    },
+    {
+      "text": "בֶן",
+      "strong": "H1121",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "יְהֽוֹחָנָן֙",
+      "strong": "H3076",
+      "morph": "HNp"
+    },
+    {
+      "text": "בֶּרֶכְיָ֣הוּ",
+      "strong": "H1296",
+      "morph": "HNp"
+    },
+    {
+      "text": "בֶן",
+      "strong": "H1121",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "מְשִׁלֵּמ֔וֹת",
+      "strong": "H4919",
+      "morph": "HNp"
+    },
+    {
+      "text": "וִֽ/יחִזְקִיָּ֨הוּ֙",
+      "strong": "H3169",
+      "morph": "HC/Np"
+    },
+    {
+      "text": "בֶּן",
+      "strong": "H1121",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "שַׁלֻּ֔ם",
+      "strong": "H7967",
+      "morph": "HNp"
+    },
+    {
+      "text": "וַ/עֲמָשָׂ֖א",
+      "strong": "H6021",
+      "morph": "HC/Np"
+    },
+    {
+      "text": "בֶּן",
+      "strong": "H1121",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "חַדְלָ֑י",
+      "strong": "H2311",
+      "morph": "HNp"
+    },
+    {
+      "text": "עַל",
+      "strong": "H5921",
+      "morph": "HR"
+    },
+    {
+      "text": "הַ/בָּאִ֖ים",
+      "strong": "H935",
+      "morph": "HTd/Vqrmpa"
+    },
+    {
+      "text": "מִן",
+      "strong": "H4480",
+      "morph": "HR"
+    },
+    {
+      "text": "הַ/צָּבָֽא",
+      "strong": "H6635",
+      "morph": "HTd/Ncbsa"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יֹּאמְר֣וּ",
+      "strong": "H559",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "לָ/הֶ֗ם",
+      "morph": "HR/Sp3mp"
+    },
+    {
+      "text": "לֹא",
+      "strong": "H3808",
+      "morph": "HTn"
+    },
+    {
+      "text": "תָבִ֤יאוּ",
+      "strong": "H935",
+      "morph": "HVhi2mp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "הַ/שִּׁבְיָה֙",
+      "strong": "H7633",
+      "morph": "HTd/Ncbsa"
+    },
+    {
+      "text": "הֵ֔נָּה",
+      "strong": "H2008",
+      "morph": "HD"
+    },
+    {
+      "text": "כִּי֩",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "לְ/אַשְׁמַ֨ת",
+      "strong": "H819",
+      "morph": "HR/Ncfsc"
+    },
+    {
+      "text": "יְהוָ֤ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "עָלֵ֨י/נוּ֙",
+      "strong": "H5921",
+      "morph": "HR/Sp1cp"
+    },
+    {
+      "text": "אַתֶּ֣ם",
+      "strong": "H859",
+      "morph": "HPp2mp"
+    },
+    {
+      "text": "אֹמְרִ֔ים",
+      "strong": "H559",
+      "morph": "HVqrmpa"
+    },
+    {
+      "text": "לְ/הֹסִ֥יף",
+      "strong": "H3254",
+      "morph": "HR/Vhc"
+    },
+    {
+      "text": "עַל",
+      "strong": "H5921",
+      "morph": "HR"
+    },
+    {
+      "text": "חַטֹּאתֵ֖י/נוּ",
+      "strong": "H2403",
+      "morph": "HNcfpc/Sp1cp"
+    },
+    {
+      "text": "וְ/עַל",
+      "strong": "H5921",
+      "morph": "HC/R"
+    },
+    {
+      "text": "אַשְׁמָתֵ֑י/נוּ",
+      "strong": "H819",
+      "morph": "HNcfsc/Sp1cp"
+    },
+    {
+      "text": "כִּֽי",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "רַבָּ֤ה",
+      "strong": "H7227",
+      "morph": "HAafsa"
+    },
+    {
+      "text": "אַשְׁמָה֙",
+      "strong": "H819",
+      "morph": "HNcfsa"
+    },
+    {
+      "text": "לָ֔/נוּ",
+      "morph": "HR/Sp1cp"
+    },
+    {
+      "text": "וַ/חֲר֥וֹן",
+      "strong": "H2740",
+      "morph": "HC/Ncmsc"
+    },
+    {
+      "text": "אָ֖ף",
+      "strong": "H639",
+      "morph": "HNcmsa"
+    },
+    {
+      "text": "עַל",
+      "strong": "H5921",
+      "morph": "HR"
+    },
+    {
+      "text": "יִשְׂרָאֵֽל",
+      "strong": "H3478",
+      "morph": "HNp"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יַּעֲזֹ֣ב",
+      "strong": "H5800",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "הֶֽ/חָל֗וּץ",
+      "strong": "H2502",
+      "morph": "HTd/Vqsmsa"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "הַ/שִּׁבְיָה֙",
+      "strong": "H7633",
+      "morph": "HTd/Ncbsa"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "הַ/בִּזָּ֔ה",
+      "strong": "H961",
+      "morph": "HTd/Ncfsa"
+    },
+    {
+      "text": "לִ/פְנֵ֥י",
+      "strong": "H6440",
+      "morph": "HR/Ncbpc"
+    },
+    {
+      "text": "הַ/שָּׂרִ֖ים",
+      "strong": "H8269",
+      "morph": "HTd/Ncmpa"
+    },
+    {
+      "text": "וְ/כָל",
+      "strong": "H3605",
+      "morph": "HC/Ncmsc"
+    },
+    {
+      "text": "הַ/קָּהָֽל",
+      "strong": "H6951",
+      "morph": "HTd/Ncmsa"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יָּקֻ֣מוּ",
+      "strong": "H6965",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "הָ/אֲנָשִׁים֩",
+      "strong": "H376",
+      "morph": "HTd/Ncmpa"
+    },
+    {
+      "text": "אֲשֶׁר",
+      "strong": "H834",
+      "morph": "HTr"
+    },
+    {
+      "text": "נִקְּב֨וּ",
+      "strong": "H5344",
+      "morph": "HVNp3cp"
+    },
+    {
+      "text": "בְ/שֵׁמ֜וֹת",
+      "strong": "H8034",
+      "morph": "HR/Ncmpa"
+    },
+    {
+      "text": "וַ/יַּחֲזִ֣יקוּ",
+      "strong": "H2388",
+      "morph": "HC/Vhw3mp"
+    },
+    {
+      "text": "בַ/שִּׁבְיָ֗ה",
+      "strong": "H7633",
+      "morph": "HRd/Ncbsa"
+    },
+    {
+      "text": "וְ/כָֽל",
+      "strong": "H3605",
+      "morph": "HC/Ncmsc"
+    },
+    {
+      "text": "מַעֲרֻמֵּי/הֶם֮",
+      "strong": "H4636",
+      "morph": "HNcmpc/Sp3mp"
+    },
+    {
+      "text": "הִלְבִּ֣ישׁוּ",
+      "strong": "H3847",
+      "morph": "HVhp3cp"
+    },
+    {
+      "text": "מִן",
+      "strong": "H4480",
+      "morph": "HR"
+    },
+    {
+      "text": "הַ/שָּׁלָל֒",
+      "strong": "H7998",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "וַ/יַּלְבִּשׁ֣וּ/ם",
+      "strong": "H3847",
+      "morph": "HC/Vhw3mp/Sp3mp"
+    },
+    {
+      "text": "וַ֠/יַּנְעִלוּ/ם",
+      "strong": "H5274",
+      "morph": "HC/Vhw3mp/Sp3mp"
+    },
+    {
+      "text": "וַ/יַּאֲכִל֨וּ/ם",
+      "strong": "H398",
+      "morph": "HC/Vhw3mp/Sp3mp"
+    },
+    {
+      "text": "וַ/יַּשְׁק֜וּ/ם",
+      "strong": "H8248",
+      "morph": "HC/Vhw3mp/Sp3mp"
+    },
+    {
+      "text": "וַ/יְסֻכ֗וּ/ם",
+      "strong": "H5480",
+      "morph": "HC/Vqw3mp/Sp3mp"
+    },
+    {
+      "text": "וַ/יְנַהֲל֤וּ/ם",
+      "strong": "H5095",
+      "morph": "HC/Vpw3mp/Sp3mp"
+    },
+    {
+      "text": "בַּ/חֲמֹרִים֙",
+      "strong": "H2543",
+      "morph": "HR/Ncbpa"
+    },
+    {
+      "text": "לְ/כָל",
+      "strong": "H3605",
+      "morph": "HR/Ncmsc"
+    },
+    {
+      "text": "כּוֹשֵׁ֔ל",
+      "strong": "H3782",
+      "morph": "HVqrmsa"
+    },
+    {
+      "text": "וַ/יְבִיא֛וּ/ם",
+      "strong": "H935",
+      "morph": "HC/Vhw3mp/Sp3mp"
+    },
+    {
+      "text": "יְרֵח֥וֹ",
+      "strong": "H3405",
+      "morph": "HNp"
+    },
+    {
+      "text": "עִיר",
+      "strong": "H5892",
+      "morph": "HNcfsc"
+    },
+    {
+      "text": "הַ/תְּמָרִ֖ים",
+      "strong": "H8558",
+      "morph": "HTd/Ncmpa"
+    },
+    {
+      "text": "אֵ֣צֶל",
+      "strong": "H681",
+      "morph": "HR"
+    },
+    {
+      "text": "אֲחֵי/הֶ֑ם",
+      "strong": "H251",
+      "morph": "HNcmpc/Sp3mp"
+    },
+    {
+      "text": "וַ/יָּשׁ֖וּבוּ",
+      "strong": "H7725",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "שֹׁמְרֽוֹן",
+      "strong": "H8111",
+      "morph": "HNp"
+    }
+  ],
+  [
+    {
+      "text": "בָּ/עֵ֣ת",
+      "strong": "H6256",
+      "morph": "HRd/Ncbsa"
+    },
+    {
+      "text": "הַ/הִ֗יא",
+      "strong": "H1931",
+      "morph": "HTd/Pp3fs"
+    },
+    {
+      "text": "שָׁלַ֞ח",
+      "strong": "H7971",
+      "morph": "HVqp3ms"
+    },
+    {
+      "text": "הַ/מֶּ֧לֶךְ",
+      "strong": "H4428",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "אָחָ֛ז",
+      "strong": "H271",
+      "morph": "HNp"
+    },
+    {
+      "text": "עַל",
+      "strong": "H5921",
+      "morph": "HR"
+    },
+    {
+      "text": "מַלְכֵ֥י",
+      "strong": "H4428",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "אַשּׁ֖וּר",
+      "strong": "H804",
+      "morph": "HNp"
+    },
+    {
+      "text": "לַ/עְזֹ֥ר",
+      "strong": "H5826",
+      "morph": "HR/Vqc"
+    },
+    {
+      "text": "לֽ/וֹ",
+      "morph": "HR/Sp3ms"
+    }
+  ],
+  [
+    {
+      "text": "וְ/ע֥וֹד",
+      "strong": "H5750",
+      "morph": "HC/D"
+    },
+    {
+      "text": "אֲדוֹמִ֖ים",
+      "strong": "H130",
+      "morph": "HNgmpa"
+    },
+    {
+      "text": "בָּ֑אוּ",
+      "strong": "H935",
+      "morph": "HVqp3cp"
+    },
+    {
+      "text": "וַ/יַּכּ֥וּ",
+      "strong": "H5221",
+      "morph": "HC/Vhw3mp"
+    },
+    {
+      "text": "בִ/יהוּדָ֖ה",
+      "strong": "H3063",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "וַ/יִּשְׁבּוּ",
+      "strong": "H7617",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "שֶֽׁבִי",
+      "strong": "H7628",
+      "morph": "HNcbsa"
+    }
+  ],
+  [
+    {
+      "text": "וּ/פְלִשְׁתִּ֣ים",
+      "strong": "H6430",
+      "morph": "HC/Ngmpa"
+    },
+    {
+      "text": "פָּשְׁט֗וּ",
+      "strong": "H6584",
+      "morph": "HVqp3cp"
+    },
+    {
+      "text": "בְּ/עָרֵ֨י",
+      "strong": "H5892",
+      "morph": "HR/Ncfpc"
+    },
+    {
+      "text": "הַ/שְּׁפֵלָ֣ה",
+      "strong": "H8219",
+      "morph": "HTd/Ncfsa"
+    },
+    {
+      "text": "וְ/הַ/נֶּגֶב֮",
+      "strong": "H5045",
+      "morph": "HC/Td/Ncmsa"
+    },
+    {
+      "text": "לִֽ/יהוּדָה֒",
+      "strong": "H3063",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "וַֽ֠/יִּלְכְּדוּ",
+      "strong": "H3920",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "בֵּֽית",
+      "strong": "H1053",
+      "morph": "HNp"
+    },
+    {
+      "text": "שֶׁ֨מֶשׁ",
+      "strong": "H1053",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "אַיָּל֜וֹן",
+      "strong": "H357",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "הַ/גְּדֵר֗וֹת",
+      "strong": "H1450",
+      "morph": "HTd/Np"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "שׂוֹכ֤וֹ",
+      "strong": "H7755",
+      "morph": "HNp"
+    },
+    {
+      "text": "וּ/בְנוֹתֶ֨י/הָ֙",
+      "strong": "H1323",
+      "morph": "HC/Ncfpc/Sp3fs"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "תִּמְנָ֣ה",
+      "strong": "H8553",
+      "morph": "HNp"
+    },
+    {
+      "text": "וּ/בְנוֹתֶ֔י/הָ",
+      "strong": "H1323",
+      "morph": "HC/Ncfpc/Sp3fs"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "גִּמְז֖וֹ",
+      "strong": "H1579",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "בְּנֹתֶ֑י/הָ",
+      "strong": "H1323",
+      "morph": "HNcfpc/Sp3fs"
+    },
+    {
+      "text": "וַ/יֵּשְׁב֖וּ",
+      "strong": "H3427",
+      "morph": "HC/Vqw3mp"
+    },
+    {
+      "text": "שָֽׁם",
+      "strong": "H8033",
+      "morph": "HD"
+    }
+  ],
+  [
+    {
+      "text": "כִּֽי",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "הִכְנִ֤יעַ",
+      "strong": "H3665",
+      "morph": "HVhp3ms"
+    },
+    {
+      "text": "יְהוָה֙",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "יְהוּדָ֔ה",
+      "strong": "H3063",
+      "morph": "HNp"
+    },
+    {
+      "text": "בַּ/עֲב֖וּר",
+      "strong": "H5668",
+      "morph": "HR/Ncmsc"
+    },
+    {
+      "text": "אָחָ֣ז",
+      "strong": "H271",
+      "morph": "HNp"
+    },
+    {
+      "text": "מֶֽלֶךְ",
+      "strong": "H4428",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "יִשְׂרָאֵ֑ל",
+      "strong": "H3478",
+      "morph": "HNp"
+    },
+    {
+      "text": "כִּ֤י",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "הִפְרִ֨יעַ֙",
+      "strong": "H6544",
+      "morph": "HVhp3ms"
+    },
+    {
+      "text": "בִּֽ/יהוּדָ֔ה",
+      "strong": "H3063",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "וּ/מָע֥וֹל",
+      "strong": "H4603",
+      "morph": "HC/Vqa"
+    },
+    {
+      "text": "מַ֖עַל",
+      "strong": "H4604",
+      "morph": "HNcmsa"
+    },
+    {
+      "text": "בַּ/יהוָֽה",
+      "strong": "H3068",
+      "morph": "HR/Np"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יָּבֹ֣א",
+      "strong": "H935",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "עָלָ֔י/ו",
+      "strong": "H5921",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "תִּלְּגַ֥ת",
+      "strong": "H8407",
+      "morph": "HNp"
+    },
+    {
+      "text": "פִּלְנְאֶ֖סֶר",
+      "strong": "H8407",
+      "morph": "HNp"
+    },
+    {
+      "text": "מֶ֣לֶךְ",
+      "strong": "H4428",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "אַשּׁ֑וּר",
+      "strong": "H804",
+      "morph": "HNp"
+    },
+    {
+      "text": "וַ/יָּ֥צַר",
+      "strong": "H6696",
+      "morph": "HC/Vhw3ms"
+    },
+    {
+      "text": "ל֖/וֹ",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "וְ/לֹ֥א",
+      "strong": "H3808",
+      "morph": "HC/Tn"
+    },
+    {
+      "text": "חֲזָקֽ/וֹ",
+      "strong": "H2388",
+      "morph": "HVqp3ms/Sp3ms"
+    }
+  ],
+  [
+    {
+      "text": "כִּֽי",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "חָלַ֤ק",
+      "strong": "H2505",
+      "morph": "HVqp3ms"
+    },
+    {
+      "text": "אָחָז֙",
+      "strong": "H271",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "בֵּ֣ית",
+      "strong": "H1004",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "יְהוָ֔ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/אֶת",
+      "strong": "H853",
+      "morph": "HC/To"
+    },
+    {
+      "text": "בֵּ֥ית",
+      "strong": "H1004",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "הַ/מֶּ֖לֶךְ",
+      "strong": "H4428",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "וְ/הַ/שָּׂרִ֑ים",
+      "strong": "H8269",
+      "morph": "HC/Td/Ncmpa"
+    },
+    {
+      "text": "וַ/יִּתֵּן֙",
+      "strong": "H5414",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "לְ/מֶ֣לֶךְ",
+      "strong": "H4428",
+      "morph": "HR/Ncmsc"
+    },
+    {
+      "text": "אַשּׁ֔וּר",
+      "strong": "H804",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/לֹ֥א",
+      "strong": "H3808",
+      "morph": "HC/Tn"
+    },
+    {
+      "text": "לְ/עֶזְרָ֖ה",
+      "strong": "H5833",
+      "morph": "HR/Ncfsa"
+    },
+    {
+      "text": "לֽ/וֹ",
+      "morph": "HR/Sp3ms"
+    }
+  ],
+  [
+    {
+      "text": "וּ/בְ/עֵת֙",
+      "strong": "H6256",
+      "morph": "HC/R/Ncbsc"
+    },
+    {
+      "text": "הָצֵ֣ר",
+      "strong": "H6887",
+      "morph": "HVhc"
+    },
+    {
+      "text": "ל֔/וֹ",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "וַ/יּ֖וֹסֶף",
+      "strong": "H3254",
+      "morph": "HC/Vhw3ms"
+    },
+    {
+      "text": "לִ/מְע֣וֹל",
+      "strong": "H4603",
+      "morph": "HR/Vqc"
+    },
+    {
+      "text": "בַּ/יהוָ֑ה",
+      "strong": "H3068",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "ה֖וּא",
+      "strong": "H1931",
+      "morph": "HPp3ms"
+    },
+    {
+      "text": "הַ/מֶּ֥לֶךְ",
+      "strong": "H4428",
+      "morph": "HTd/Ncmsa"
+    },
+    {
+      "text": "אָחָֽז",
+      "strong": "H271",
+      "morph": "HNp"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יִּזְבַּ֗ח",
+      "strong": "H2076",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "לֵֽ/אלֹהֵ֣י",
+      "strong": "H430",
+      "morph": "HR/Ncmpc"
+    },
+    {
+      "text": "דַרְמֶשֶׂק֮",
+      "strong": "H1834",
+      "morph": "HNp"
+    },
+    {
+      "text": "הַ/מַּכִּ֣ים",
+      "strong": "H5221",
+      "morph": "HTd/Vhrmpa"
+    },
+    {
+      "text": "בּ/וֹ֒",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "וַ/יֹּ֗אמֶר",
+      "strong": "H559",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "כִּ֠י",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "אֱלֹהֵ֤י",
+      "strong": "H430",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "מַלְכֵֽי",
+      "strong": "H4428",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "אֲרָם֙",
+      "strong": "H758",
+      "morph": "HNp"
+    },
+    {
+      "text": "הֵ֚ם",
+      "strong": "H1992",
+      "morph": "HPp3mp"
+    },
+    {
+      "text": "מַעְזְרִ֣ים",
+      "strong": "H5826",
+      "morph": "HVhrmpa"
+    },
+    {
+      "text": "אוֹתָ֔/ם",
+      "strong": "H853",
+      "morph": "HTo/Sp3mp"
+    },
+    {
+      "text": "לָ/הֶ֥ם",
+      "morph": "HR/Sp3mp"
+    },
+    {
+      "text": "אֲזַבֵּ֖חַ",
+      "strong": "H2076",
+      "morph": "HVpi1cs"
+    },
+    {
+      "text": "וְ/יַעְזְר֑וּ/נִי",
+      "strong": "H5826",
+      "morph": "HC/Vhi3mp/Sp1cs"
+    },
+    {
+      "text": "וְ/הֵ֛ם",
+      "strong": "H1992",
+      "morph": "HC/Pp3mp"
+    },
+    {
+      "text": "הָֽיוּ",
+      "strong": "H1961",
+      "morph": "HVqp3cp"
+    },
+    {
+      "text": "ל֥/וֹ",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "לְ/הַכְשִׁיל֖/וֹ",
+      "strong": "H3782",
+      "morph": "HR/Vhc/Sp3ms"
+    },
+    {
+      "text": "וּ/לְ/כָל",
+      "strong": "H3605",
+      "morph": "HC/R/Ncmsc"
+    },
+    {
+      "text": "יִשְׂרָאֵֽל",
+      "strong": "H3478",
+      "morph": "HNp"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יֶּאֱסֹ֨ף",
+      "strong": "H622",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "אָחָ֜ז",
+      "strong": "H271",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "כְּלֵ֣י",
+      "strong": "H3627",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "בֵית",
+      "strong": "H1004",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "הָֽ/אֱלֹהִ֗ים",
+      "strong": "H430",
+      "morph": "HTd/Ncmpa"
+    },
+    {
+      "text": "וַ/יְקַצֵּץ֙",
+      "strong": "H7112",
+      "morph": "HC/Vpw3ms"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "כְּלֵ֣י",
+      "strong": "H3627",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "בֵית",
+      "strong": "H1004",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "הָֽ/אֱלֹהִ֔ים",
+      "strong": "H430",
+      "morph": "HTd/Ncmpa"
+    },
+    {
+      "text": "וַ/יִּסְגֹּ֖ר",
+      "strong": "H5462",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "דַּלְת֣וֹת",
+      "strong": "H1817",
+      "morph": "HNcfpc"
+    },
+    {
+      "text": "בֵּית",
+      "strong": "H1004",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "יְהוָ֑ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "וַ/יַּ֨עַשׂ",
+      "strong": "H6213",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "ל֧/וֹ",
+      "morph": "HR/Sp3ms"
+    },
+    {
+      "text": "מִזְבְּח֛וֹת",
+      "strong": "H4196",
+      "morph": "HNcmpa"
+    },
+    {
+      "text": "בְּ/כָל",
+      "strong": "H3605",
+      "morph": "HR/Ncmsc"
+    },
+    {
+      "text": "פִּנָּ֖ה",
+      "strong": "H6438",
+      "morph": "HNcfsa"
+    },
+    {
+      "text": "בִּ/ירוּשָׁלִָֽם",
+      "strong": "H3389",
+      "morph": "HR/Np"
+    }
+  ],
+  [
+    {
+      "text": "וּ/בְ/כָל",
+      "strong": "H3605",
+      "morph": "HC/R/Ncmsc"
+    },
+    {
+      "text": "עִ֨יר",
+      "strong": "H5892",
+      "morph": "HNcfsa"
+    },
+    {
+      "text": "וָ/עִ֤יר",
+      "strong": "H5892",
+      "morph": "HC/Ncfsa"
+    },
+    {
+      "text": "לִֽ/יהוּדָה֙",
+      "strong": "H3063",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "עָשָׂ֣ה",
+      "strong": "H6213",
+      "morph": "HVqp3ms"
+    },
+    {
+      "text": "בָמ֔וֹת",
+      "strong": "H1116",
+      "morph": "HNcfpa"
+    },
+    {
+      "text": "לְ/קַטֵּ֖ר",
+      "strong": "H6999",
+      "morph": "HR/Vpc"
+    },
+    {
+      "text": "לֵֽ/אלֹהִ֣ים",
+      "strong": "H430",
+      "morph": "HR/Ncmpa"
+    },
+    {
+      "text": "אֲחֵרִ֑ים",
+      "strong": "H312",
+      "morph": "HAampa"
+    },
+    {
+      "text": "וַ/יַּכְעֵ֕ס",
+      "strong": "H3707",
+      "morph": "HC/Vhw3ms"
+    },
+    {
+      "text": "אֶת",
+      "strong": "H853",
+      "morph": "HTo"
+    },
+    {
+      "text": "יְהוָ֖ה",
+      "strong": "H3068",
+      "morph": "HNp"
+    },
+    {
+      "text": "אֱלֹהֵ֥י",
+      "strong": "H430",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "אֲבֹתָֽי/ו",
+      "strong": "H1",
+      "morph": "HNcmpc/Sp3ms"
+    }
+  ],
+  [
+    {
+      "text": "וְ/יֶ֤תֶר",
+      "strong": "H3499",
+      "morph": "HC/Ncmsc"
+    },
+    {
+      "text": "דְּבָרָי/ו֙",
+      "strong": "H1697",
+      "morph": "HNcmpc/Sp3ms"
+    },
+    {
+      "text": "וְ/כָל",
+      "strong": "H3605",
+      "morph": "HC/Ncmsc"
+    },
+    {
+      "text": "דְּרָכָ֔י/ו",
+      "strong": "H1870",
+      "morph": "HNcbpc/Sp3ms"
+    },
+    {
+      "text": "הָ/רִאשֹׁנִ֖ים",
+      "strong": "H7223",
+      "morph": "HTd/Aampa"
+    },
+    {
+      "text": "וְ/הָ/אַחֲרוֹנִ֑ים",
+      "strong": "H314",
+      "morph": "HC/Td/Aampa"
+    },
+    {
+      "text": "הִנָּ֣/ם",
+      "strong": "H2005",
+      "morph": "HTm/Sp3mp"
+    },
+    {
+      "text": "כְּתוּבִ֔ים",
+      "strong": "H3789",
+      "morph": "HVqsmpa"
+    },
+    {
+      "text": "עַל",
+      "strong": "H5921",
+      "morph": "HR"
+    },
+    {
+      "text": "סֵ֥פֶר",
+      "strong": "H5612",
+      "morph": "HNcmsc"
+    },
+    {
+      "text": "מַלְכֵֽי",
+      "strong": "H4428",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "יְהוּדָ֖ה",
+      "strong": "H3063",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/יִשְׂרָאֵֽל",
+      "strong": "H3478",
+      "morph": "HC/Np"
+    }
+  ],
+  [
+    {
+      "text": "וַ/יִּשְׁכַּ֨ב",
+      "strong": "H7901",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "אָחָ֜ז",
+      "strong": "H271",
+      "morph": "HNp"
+    },
+    {
+      "text": "עִם",
+      "strong": "H5973",
+      "morph": "HR"
+    },
+    {
+      "text": "אֲבֹתָ֗י/ו",
+      "strong": "H1",
+      "morph": "HNcmpc/Sp3ms"
+    },
+    {
+      "text": "וַֽ/יִּקְבְּרֻ֤/הוּ",
+      "strong": "H6912",
+      "morph": "HC/Vqw3mp/Sp3ms"
+    },
+    {
+      "text": "בָ/עִיר֙",
+      "strong": "H5892",
+      "morph": "HRd/Ncfsa"
+    },
+    {
+      "text": "בִּ/יר֣וּשָׁלִַ֔ם",
+      "strong": "H3389",
+      "morph": "HR/Np"
+    },
+    {
+      "text": "כִּ֚י",
+      "strong": "H3588",
+      "morph": "HC"
+    },
+    {
+      "text": "לֹ֣א",
+      "strong": "H3808",
+      "morph": "HTn"
+    },
+    {
+      "text": "הֱבִיאֻ֔/הוּ",
+      "strong": "H935",
+      "morph": "HVhp3cp/Sp3ms"
+    },
+    {
+      "text": "לְ/קִבְרֵ֖י",
+      "strong": "H6913",
+      "morph": "HR/Ncmpc"
+    },
+    {
+      "text": "מַלְכֵ֣י",
+      "strong": "H4428",
+      "morph": "HNcmpc"
+    },
+    {
+      "text": "יִשְׂרָאֵ֑ל",
+      "strong": "H3478",
+      "morph": "HNp"
+    },
+    {
+      "text": "וַ/יִּמְלֹ֛ךְ",
+      "strong": "H4427",
+      "morph": "HC/Vqw3ms"
+    },
+    {
+      "text": "יְחִזְקִיָּ֥הֽוּ",
+      "strong": "H2396",
+      "morph": "HNp"
+    },
+    {
+      "text": "בְנ֖/וֹ",
+      "strong": "H1121",
+      "morph": "HNcmsc/Sp3ms"
+    },
+    {
+      "text": "תַּחְתָּֽי/ו",
+      "strong": "H8478",
+      "morph": "HR/Sp3ms"
+    }
+  ]
+]

@@ -1,0 +1,58 @@
+[ // Array de versículos (índice 0 = versículo 1, etc.)
+  // ... versículos 1-37 omitidos para brevidade ...
+  [ // Versículo 38 (1Chr.7.38) - uma lista de objetos de palavra
+    {
+      "text": "וּ/בְנֵ֖י",
+      "strong": "H1121", // Derivado de "c/1121 a"
+      "morph": "HC/Ncmpc"
+    },
+    {
+      "text": "יֶ֑תֶר",
+      "strong": "H3500", // Derivado de "3500"
+      "morph": "HNp"
+    },
+    {
+      "text": "יְפֻנֶּ֥ה",
+      "strong": "H3312",
+      "morph": "HNp"
+    },
+    {
+      "text": "וּ/פִסְפָּ֖ה",
+      "strong": "H6462", // Derivado de "c/6462"
+      "morph": "HC/Np"
+    },
+    {
+      "text": "וַ/אְרָֽא",
+      "strong": "H690",  // Derivado de "c/690"
+      "morph": "HC/Np"
+    }
+  ],
+  [ // Versículo 39 (1Chr.7.39)
+    {
+      "text": "וּ/בְנֵ֖י",
+      "strong": "H1121",
+      "morph": "HC/Ncmpc"
+    },
+    {
+      "text": "עֻלָּ֑א",
+      "strong": "H5925",
+      "morph": "HNp"
+    },
+    {
+      "text": "אָרַ֥ח",
+      "strong": "H733",
+      "morph": "HNp"
+    },
+    {
+      "text": "וְ/חַנִּיאֵ֖ל",
+      "strong": "H2592", // Derivado de "c/2592"
+      "morph": "HC/Np"
+    },
+    {
+      "text": "וְ/רִצְיָֽא",
+      "strong": "H7525", // Derivado de "c/7525"
+      "morph": "HC/Np"
+    }
+  ]
+  // ... mais versículos ...
+]

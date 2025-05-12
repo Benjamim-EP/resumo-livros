@@ -2,33 +2,34 @@
 import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_commentary_modal.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart'; // Importe o serviço
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para obter nome do livro
+import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;
-  final List<int>
-      verseNumbersInSection; // Números dos versos na seção (ex: [1,2,3,4,5])
-  final List<String>
-      allVerseTextsInChapter; // Todos os textos dos versos do capítulo
-  final String bookSlug; // e.g., "genesis" (para ID do Firestore)
-  final String bookAbbrev; // e.g., "gn" (para salvar versículo)
+  final List<int> verseNumbersInSection;
+  final dynamic
+      allVerseDataInChapter; // Pode ser List<String> ou List<List<Map<String, String>>>
+  final String bookSlug;
+  final String bookAbbrev;
   final int chapterNumber;
-  final String versesRangeStr; // e.g., "1-5" (para ID do Firestore)
+  final String versesRangeStr;
   final Map<String, String> userHighlights;
   final Map<String, String> userNotes;
+  final bool isHebrew; // Novo: Indica se a tradução atual é hebraico
 
   const SectionItemWidget({
     Key? key,
     required this.sectionTitle,
     required this.verseNumbersInSection,
-    required this.allVerseTextsInChapter,
+    required this.allVerseDataInChapter, // Nome alterado para clareza
     required this.bookSlug,
     required this.bookAbbrev,
     required this.chapterNumber,
     required this.versesRangeStr,
     required this.userHighlights,
     required this.userNotes,
+    this.isHebrew = false, // Novo: Padrão para false
   }) : super(key: key);
 
   @override
@@ -40,21 +41,15 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
   bool _isLoadingCommentary = false;
 
   String _generateCommentaryDocId() {
-    // ID: {book_slug}_c{chapter}_v{verses_range_str}
     return "${widget.bookSlug}_c${widget.chapterNumber}_v${widget.versesRangeStr}";
   }
 
   Future<void> _showCommentary(BuildContext context) async {
-    setState(() {
-      _isLoadingCommentary = true;
-    });
-
+    setState(() => _isLoadingCommentary = true);
     final commentaryDocId = _generateCommentaryDocId();
     final commentaryData =
         await _firestoreService.getSectionCommentary(commentaryDocId);
-
-    // Obter o nome completo do livro para passar ao modal
-    String bookFullName = widget.bookAbbrev.toUpperCase(); // Fallback
+    String bookFullName = widget.bookAbbrev.toUpperCase();
     try {
       final booksMap = await BiblePageHelper.loadBooksMap();
       if (booksMap.containsKey(widget.bookAbbrev)) {
@@ -63,30 +58,25 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
     } catch (e) {
       print("Erro ao carregar nome do livro em SectionItemWidget: $e");
     }
-
-    setState(() {
-      _isLoadingCommentary = false;
-    });
+    setState(() => _isLoadingCommentary = false);
 
     if (context.mounted) {
-      // Checa se o widget ainda está montado
       final List<Map<String, dynamic>> commentaryItems =
           (commentaryData != null && commentaryData['commentary'] is List)
               ? List<Map<String, dynamic>>.from(commentaryData['commentary'])
               : const [];
-
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent, // O modal define sua própria cor
+        backgroundColor: Colors.transparent,
         builder: (_) => SectionCommentaryModal(
           sectionTitle: widget.sectionTitle,
           commentaryItems: commentaryItems,
-          bookAbbrev: widget.bookAbbrev, // NOVO
-          bookSlug: widget.bookSlug, // NOVO
-          bookName: bookFullName, // NOVO
-          chapterNumber: widget.chapterNumber, // NOVO
-          versesRangeStr: widget.versesRangeStr, // NOVO
+          bookAbbrev: widget.bookAbbrev,
+          bookSlug: widget.bookSlug,
+          bookName: bookFullName,
+          chapterNumber: widget.chapterNumber,
+          versesRangeStr: widget.versesRangeStr,
         ),
       );
     }
@@ -111,10 +101,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
                   child: Text(
                     widget.sectionTitle,
                     style: const TextStyle(
-                      color: Color(0xFFCDE7BE),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Color(0xFFCDE7BE),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
                 _isLoadingCommentary
@@ -139,19 +128,39 @@ class _SectionItemWidgetState extends State<SectionItemWidget> {
               itemCount: widget.verseNumbersInSection.length,
               itemBuilder: (context, index) {
                 final verseNumber = widget.verseNumbersInSection[index];
-                if (verseNumber > 0 &&
-                    verseNumber <= widget.allVerseTextsInChapter.length) {
-                  final verseText =
-                      widget.allVerseTextsInChapter[verseNumber - 1];
+                dynamic
+                    verseDataItem; // Pode ser String ou List<Map<String, String>>
+
+                // Acessa o dado do verso corretamente
+                if (widget.isHebrew) {
+                  if (widget.allVerseDataInChapter
+                          is List<List<Map<String, String>>> &&
+                      verseNumber > 0 &&
+                      verseNumber <=
+                          (widget.allVerseDataInChapter as List).length) {
+                    verseDataItem = (widget.allVerseDataInChapter
+                        as List<List<Map<String, String>>>)[verseNumber - 1];
+                  }
+                } else {
+                  if (widget.allVerseDataInChapter is List<String> &&
+                      verseNumber > 0 &&
+                      verseNumber <=
+                          (widget.allVerseDataInChapter as List).length) {
+                    verseDataItem = (widget.allVerseDataInChapter
+                        as List<String>)[verseNumber - 1];
+                  }
+                }
+
+                if (verseDataItem != null) {
                   return BiblePageWidgets.buildVerseItem(
                     verseNumber: verseNumber,
-                    verseText: verseText,
+                    verseData: verseDataItem,
                     selectedBook: widget.bookAbbrev,
                     selectedChapter: widget.chapterNumber,
                     context: context,
-                    // <<< Passando os dados do Redux >>>
                     userHighlights: widget.userHighlights,
                     userNotes: widget.userNotes,
+                    isHebrew: widget.isHebrew, // Passa a flag
                   );
                 } else {
                   return Padding(

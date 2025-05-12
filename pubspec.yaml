@@ -83,8 +83,6 @@ flutter:
     - assets/Biblia/rotas_biblia/profeciasdesuavinda.json
     - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json
-    
-    - 
 
     - assets/hinos/hinos.json
 
@@ -308,6 +306,46 @@ flutter:
     - assets/Biblia/completa_traducoes/aa/jd/
     - assets/Biblia/completa_traducoes/aa/ap/
 
+    - assets/Biblia/completa_traducoes/hebrew_original/gn/
+    - assets/Biblia/completa_traducoes/hebrew_original/ex/
+    - assets/Biblia/completa_traducoes/hebrew_original/lv/
+    - assets/Biblia/completa_traducoes/hebrew_original/nm/
+    - assets/Biblia/completa_traducoes/hebrew_original/dt/
+    - assets/Biblia/completa_traducoes/hebrew_original/js/
+    - assets/Biblia/completa_traducoes/hebrew_original/jz/
+    - assets/Biblia/completa_traducoes/hebrew_original/rt/
+    - assets/Biblia/completa_traducoes/hebrew_original/1sm/
+    - assets/Biblia/completa_traducoes/hebrew_original/2sm/
+    - assets/Biblia/completa_traducoes/hebrew_original/1rs/
+    - assets/Biblia/completa_traducoes/hebrew_original/2rs/
+    - assets/Biblia/completa_traducoes/hebrew_original/1cr/
+    - assets/Biblia/completa_traducoes/hebrew_original/2cr/
+    - assets/Biblia/completa_traducoes/hebrew_original/ed/
+    - assets/Biblia/completa_traducoes/hebrew_original/ne/
+    - assets/Biblia/completa_traducoes/hebrew_original/et/
+    - assets/Biblia/completa_traducoes/hebrew_original/jó/
+    - assets/Biblia/completa_traducoes/hebrew_original/sl/
+    - assets/Biblia/completa_traducoes/hebrew_original/pv/
+    - assets/Biblia/completa_traducoes/hebrew_original/ec/
+    - assets/Biblia/completa_traducoes/hebrew_original/ct/
+    - assets/Biblia/completa_traducoes/hebrew_original/is/
+    - assets/Biblia/completa_traducoes/hebrew_original/jr/
+    - assets/Biblia/completa_traducoes/hebrew_original/lm/
+    - assets/Biblia/completa_traducoes/hebrew_original/ez/
+    - assets/Biblia/completa_traducoes/hebrew_original/dn/
+    - assets/Biblia/completa_traducoes/hebrew_original/os/
+    - assets/Biblia/completa_traducoes/hebrew_original/jl/
+    - assets/Biblia/completa_traducoes/hebrew_original/am/
+    - assets/Biblia/completa_traducoes/hebrew_original/ob/
+    - assets/Biblia/completa_traducoes/hebrew_original/jn/
+    - assets/Biblia/completa_traducoes/hebrew_original/mq/
+    - assets/Biblia/completa_traducoes/hebrew_original/na/
+    - assets/Biblia/completa_traducoes/hebrew_original/hc/
+    - assets/Biblia/completa_traducoes/hebrew_original/sf/
+    - assets/Biblia/completa_traducoes/hebrew_original/ag/
+    - assets/Biblia/completa_traducoes/hebrew_original/zc/
+    - assets/Biblia/completa_traducoes/hebrew_original/ml/
+
     # Blocos
     - assets/Biblia/blocos/gn/
     - assets/Biblia/blocos/ex/
@@ -402,13 +440,12 @@ flutter:
           weight: 600
     - family: Inter
       fonts:
-        - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
-    
+        - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf  
     - family: NotoSansHebrew
       fonts:
         - asset: assets/fonts/NotoSansHebrew-Regular.ttf # Adapte o caminho
         - asset: assets/fonts/NotoSansHebrew-Bold.ttf
           weight: 700
-  #
+          
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

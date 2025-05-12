@@ -3,7 +3,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_item_widget.dart';
@@ -11,6 +10,7 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/study_hub_page.dart'
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter/foundation.dart'; // for mapEquals
 
@@ -91,21 +91,23 @@ class _BiblePageState extends State<BiblePage> {
   String? _selectedBookSlug;
   Map<String, String> _bookVariationsMap = {};
 
-  ValueKey _futureBuilderKey = const ValueKey('initial_bible_key_state_v3');
-  bool _hasProcessedInitialNavigation = false; // <<< NOVA FLAG DE CONTROLE
+  ValueKey _futureBuilderKey =
+      const ValueKey('initial_bible_key_state_v4'); // Atualizado
+  bool _hasProcessedInitialNavigation = false;
 
   @override
   void initState() {
     super.initState();
     print(">>> BiblePage initState: Iniciando...");
     _loadInitialData();
+    // _loadUserDataIfNeeded e _processIntentOrInitialLoad agora são chamados pelo StoreConnector
   }
 
   void _updateFutureBuilderKey() {
     if (mounted) {
       setState(() {
         _futureBuilderKey = ValueKey(
-            '$selectedBook-$selectedChapter-$selectedTranslation1-${_isCompareModeActive ? selectedTranslation2 : 'single'}-${DateTime.now().millisecondsSinceEpoch}');
+            '$selectedBook-$selectedChapter-$selectedTranslation1-${_isCompareModeActive ? selectedTranslation2 : 'single'}-${_selectedBookSlug ?? 'no_slug'}-${DateTime.now().millisecondsSinceEpoch}');
         print(
             ">>> BiblePage: _futureBuilderKey ATUALIZADA para: $_futureBuilderKey");
       });
@@ -124,22 +126,23 @@ class _BiblePageState extends State<BiblePage> {
       setState(() {
         selectedBook = book;
         selectedChapter = chapter;
-        _updateSelectedBookSlug();
+        _updateSelectedBookSlug(); // Atualiza o slug se o livro mudou
       });
     }
+    // Atualiza a chave do FutureBuilder e grava o histórico se houve mudança ou se forçado
     if (changed || forceKeyUpdate) {
       _updateFutureBuilderKey();
       _recordHistory(book, chapter);
     }
     print(
-        ">>> BiblePage _applyNavigationState: Estado após setState: selectedBook: $selectedBook, selectedChapter: $selectedChapter");
+        ">>> BiblePage _applyNavigationState: Estado após setState: selectedBook: $selectedBook, selectedChapter: $selectedChapter, slug: $_selectedBookSlug");
   }
 
   void _processIntentOrInitialLoad(
       BuildContext context, _BiblePageViewModel vm) {
     if (!mounted || booksMap == null) {
       print(
-          ">>> BiblePage _processIntentOrInitialLoad: Abortado (não montado ou booksMap nulo)");
+          ">>> BiblePage _processIntentOrInitialLoad: Abortado (não montado ou booksMap nulo). Montado: $mounted, BooksMap: ${booksMap != null}");
       return;
     }
 
@@ -148,20 +151,22 @@ class _BiblePageState extends State<BiblePage> {
     int targetChapter;
     bool isFromIntent = false;
 
-    // Prioriza um intent vindo do Redux
     if (vm.initialBook != null && vm.initialChapter != null) {
       print(
           ">>> BiblePage _processIntentOrInitialLoad: Usando intent do Redux: ${vm.initialBook} ${vm.initialChapter}");
       targetBook = vm.initialBook!;
       targetChapter = vm.initialChapter!;
       isFromIntent = true;
+      // Limpa o intent no Redux APÓS usá-lo para evitar loop se a página for reconstruída rapidamente
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) store.dispatch(SetInitialBibleLocationAction(null, null));
-        print(
-            ">>> BiblePage _processIntentOrInitialLoad: Intent do Redux limpo.");
+        if (mounted) {
+          // Verifica se ainda está montado antes de despachar
+          store.dispatch(SetInitialBibleLocationAction(null, null));
+          print(
+              ">>> BiblePage _processIntentOrInitialLoad: Intent do Redux limpo (post-frame).");
+        }
       });
     } else {
-      // Se não há intent, usa o último lido ou o padrão (selectedBook/Chapter ou 'gn' 1)
       targetBook = vm.lastReadBookAbbrev ?? selectedBook ?? 'gn';
       targetChapter = vm.lastReadChapter ?? selectedChapter ?? 1;
       print(
@@ -173,9 +178,12 @@ class _BiblePageState extends State<BiblePage> {
       final bookData = booksMap![targetBook];
       if (targetChapter < 1 || targetChapter > (bookData['capitulos'] as int)) {
         print(
-            ">>> BiblePage _processIntentOrInitialLoad: Capítulo alvo ($targetChapter) inválido para $targetBook. Revertendo para gn 1.");
-        targetBook = 'gn';
-        targetChapter = 1;
+            ">>> BiblePage _processIntentOrInitialLoad: Capítulo alvo ($targetChapter) inválido para $targetBook. Revertendo para $targetBook 1 (ou gn 1 se livro também inválido).");
+        targetChapter = 1; // Reverte para capítulo 1 do livro alvo
+        if (!booksMap!.containsKey(targetBook)) {
+          // Se o livro alvo também era inválido
+          targetBook = 'gn';
+        }
       }
     } else {
       print(
@@ -186,17 +194,16 @@ class _BiblePageState extends State<BiblePage> {
 
     print(
         ">>> BiblePage _processIntentOrInitialLoad: Navegando para $targetBook $targetChapter. Veio de intent: $isFromIntent");
-    // Chama _applyNavigationState para atualizar selectedBook/Chapter e a UI
     _applyNavigationState(targetBook, targetChapter,
-        forceKeyUpdate: isFromIntent);
+        forceKeyUpdate: isFromIntent ||
+            selectedBook ==
+                null); // Força se for intent ou se selectedBook ainda não foi definido
 
-    // Marca que a lógica de navegação inicial/intent foi processada para este ciclo de vida do StoreConnector
-    // ou até que um novo intent significativo chegue.
     if (!_hasProcessedInitialNavigation &&
-        (selectedBook != null && selectedChapter != null)) {
+        selectedBook != null &&
+        selectedChapter != null) {
       _hasProcessedInitialNavigation = true;
-      _loadUserDataIfNeeded(
-          context); // Carrega dados do usuário após definir a localização
+      _loadUserDataIfNeeded(context);
       print(
           ">>> BiblePage _processIntentOrInitialLoad: _hasProcessedInitialNavigation definido como true.");
     }
@@ -218,11 +225,13 @@ class _BiblePageState extends State<BiblePage> {
   Future<void> _loadInitialData() async {
     await _loadBookVariationsMap();
     final map = await BiblePageHelper.loadBooksMap();
+    await BiblePageHelper.getStrongsLexicon(); // Pré-carrega o léxico
     if (mounted) {
       setState(() {
         booksMap = map;
-        // A definição de selectedBook/Chapter será feita pelo StoreConnector
       });
+      // A navegação inicial será acionada pelo StoreConnector.onDidChange
+      // quando o _hasProcessedInitialNavigation for false e booksMap estiver carregado.
     }
   }
 
@@ -239,11 +248,7 @@ class _BiblePageState extends State<BiblePage> {
       }
     } catch (e) {
       print("Erro ao carregar book_variations_map.json: $e");
-      if (mounted) {
-        setState(() {
-          _bookVariationsMap = {};
-        });
-      }
+      if (mounted) setState(() => _bookVariationsMap = {});
     }
   }
 
@@ -260,6 +265,7 @@ class _BiblePageState extends State<BiblePage> {
   void _recordHistory(String bookAbbrev, int chapter) {
     final currentRef = "${bookAbbrev}_$chapter";
     if (_lastRecordedHistoryRef != currentRef) {
+      // Não grava se for o mesmo do último gravado
       print(
           ">>> BiblePage _recordHistory: Gravando histórico para $currentRef. Último gravado: $_lastRecordedHistoryRef");
       if (context.mounted) {
@@ -267,12 +273,14 @@ class _BiblePageState extends State<BiblePage> {
             .dispatch(RecordReadingHistoryAction(bookAbbrev, chapter));
       }
       _lastRecordedHistoryRef = currentRef;
+    } else {
+      print(
+          ">>> BiblePage _recordHistory: Histórico para $currentRef já é o último gravado. Não regravando.");
     }
   }
 
   void _navigateToChapter(String bookAbbrev, int chapter) {
-    _applyNavigationState(bookAbbrev, chapter,
-        forceKeyUpdate: true); // Força key update em navegação explícita
+    _applyNavigationState(bookAbbrev, chapter, forceKeyUpdate: true);
   }
 
   void _previousChapter() {
@@ -280,7 +288,6 @@ class _BiblePageState extends State<BiblePage> {
       return;
     String newBookAbbrev = selectedBook!;
     int newChapter = selectedChapter!;
-
     if (selectedChapter! > 1) {
       newChapter = selectedChapter! - 1;
     } else {
@@ -293,7 +300,7 @@ class _BiblePageState extends State<BiblePage> {
         return;
       }
     }
-    _applyNavigationState(newBookAbbrev, newChapter);
+    _applyNavigationState(newBookAbbrev, newChapter, forceKeyUpdate: true);
   }
 
   void _nextChapter() {
@@ -316,7 +323,7 @@ class _BiblePageState extends State<BiblePage> {
         return;
       }
     }
-    _applyNavigationState(newBookAbbrev, newChapter);
+    _applyNavigationState(newBookAbbrev, newChapter, forceKeyUpdate: true);
   }
 
   Future<void> _showGoToDialog() async {
@@ -348,9 +355,8 @@ class _BiblePageState extends State<BiblePage> {
                   textInputAction: TextInputAction.search,
                   onSubmitted: (value) =>
                       _parseAndNavigate(value, dialogContext, (newError) {
-                    if (mounted) {
+                    if (mounted)
                       setDialogState(() => errorTextInDialog = newError);
-                    }
                   }),
                 ),
                 const SizedBox(height: 8),
@@ -366,9 +372,8 @@ class _BiblePageState extends State<BiblePage> {
                 TextButton(
                     onPressed: () => _parseAndNavigate(
                             controller.text, dialogContext, (newError) {
-                          if (mounted) {
+                          if (mounted)
                             setDialogState(() => errorTextInDialog = newError);
-                          }
                         }),
                     child: const Text("Ir",
                         style: TextStyle(color: Colors.green))),
@@ -449,6 +454,19 @@ class _BiblePageState extends State<BiblePage> {
     return StoreConnector<AppState, _BiblePageViewModel>(
       converter: (store) => _BiblePageViewModel.fromStore(store),
       onInit: (store) {
+        // A primeira chamada para _processIntentOrInitialLoad será feita no primeiro build
+        // do StoreConnector se booksMap já estiver carregado.
+        // Caso contrário, será chamada no onDidChange quando booksMap carregar.
+        if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
+          print(
+              ">>> BiblePage StoreConnector onInit: booksMap já carregado. Chamando _processIntentOrInitialLoad.");
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // Garante que o build inicial complete
+            if (mounted && !_hasProcessedInitialNavigation)
+              _processIntentOrInitialLoad(
+                  context, _BiblePageViewModel.fromStore(store));
+          });
+        }
         _loadUserDataIfNeeded(context);
       },
       onDidChange: (previousViewModel, newViewModel) {
@@ -456,26 +474,24 @@ class _BiblePageState extends State<BiblePage> {
             ">>> BiblePage StoreConnector onDidChange: ViewModel mudou. InitialBook: ${newViewModel.initialBook}, LastRead: ${newViewModel.lastReadBookAbbrev}");
         if (mounted && booksMap != null) {
           // Se é a primeira vez que onDidChange roda E a navegação inicial ainda não foi processada
+          // E booksMap já está disponível
           if (!_hasProcessedInitialNavigation) {
             print(
                 ">>> BiblePage onDidChange: Processando navegação inicial (primeira vez ou após booksMap carregar).");
-            _processIntentOrInitialLoad(context, newViewModel);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_hasProcessedInitialNavigation)
+                _processIntentOrInitialLoad(context, newViewModel);
+            });
           }
           // Se houve uma mudança no intent de navegação do Redux
           else if (newViewModel.initialBook != previousViewModel?.initialBook ||
               newViewModel.initialChapter !=
                   previousViewModel?.initialChapter) {
-            // Apenas processa se initialBook e initialChapter forem ambos não nulos (indicando um novo intent real)
             if (newViewModel.initialBook != null &&
                 newViewModel.initialChapter != null) {
               print(
                   ">>> BiblePage onDidChange: Novo intent de navegação do Redux detectado: ${newViewModel.initialBook} ${newViewModel.initialChapter}.");
               _processIntentOrInitialLoad(context, newViewModel);
-            } else if (previousViewModel?.initialBook != null &&
-                previousViewModel?.initialChapter != null) {
-              // O intent foi limpo, o que é esperado. Não faz nada aqui.
-              print(
-                  ">>> BiblePage onDidChange: Intent do Redux foi limpo. Nenhuma ação de navegação necessária por esta mudança.");
             }
           }
 
@@ -501,19 +517,19 @@ class _BiblePageState extends State<BiblePage> {
                 child: CircularProgressIndicator(color: Color(0xFFCDE7BE))),
           );
         }
-        // Adiciona um atraso para permitir que o onDidChange processe a navegação inicial se ainda não o fez
-        if (!_hasProcessedInitialNavigation && booksMap != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_hasProcessedInitialNavigation) {
-              // Verifica novamente
-              print(
-                  ">>> BiblePage builder (postFrame): _hasProcessedInitialNavigation ainda é false. Tentando processar.");
-              _processIntentOrInitialLoad(context, viewModel);
-            }
-          });
-        }
 
+        // Se selectedBook ou selectedChapter ainda não foram definidos (esperando _processIntentOrInitialLoad)
         if (selectedBook == null || selectedChapter == null) {
+          // Tenta processar a navegação inicial se ainda não o fez e o booksMap está pronto
+          if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_hasProcessedInitialNavigation) {
+                print(
+                    ">>> BiblePage builder (postFrame - selectedBook/Chapter nulo): _hasProcessedInitialNavigation ainda é false. Tentando processar.");
+                _processIntentOrInitialLoad(context, viewModel);
+              }
+            });
+          }
           print(
               ">>> BiblePage builder: selectedBook ou selectedChapter NULO. Mostrando loader de localização...");
           return Scaffold(
@@ -536,7 +552,11 @@ class _BiblePageState extends State<BiblePage> {
           appBarTitle = 'Comparar Traduções';
         }
 
-        // ... (O resto do seu método build continua aqui, como antes)
+        bool isCurrentTranslation1Hebrew =
+            selectedTranslation1 == 'hebrew_original';
+        bool isCurrentTranslation2Hebrew =
+            selectedTranslation2 == 'hebrew_original';
+
         return Scaffold(
           appBar: AppBar(
             title: Text(appBarTitle),
@@ -753,25 +773,31 @@ class _BiblePageState extends State<BiblePage> {
                         padding: const EdgeInsets.all(16.0),
                         child: Text(
                             'Erro ao carregar dados do capítulo: ${snapshot.error ?? 'Dados não encontrados'}',
-                            style: const TextStyle(color: Colors.red),
+                            style: const TextStyle(color: Colors.redAccent),
                             textAlign: TextAlign.center),
                       ));
                     }
                     final chapterData = snapshot.data!;
                     final List<Map<String, dynamic>> sections =
                         chapterData['sectionStructure'] ?? [];
-                    final Map<String, List<String>> verseTextsMap =
-                        chapterData['verseTexts'] ?? {};
-                    final List<String> verses1 =
-                        verseTextsMap[selectedTranslation1] ?? [];
-                    final List<String> verses2 =
+                    final Map<String, dynamic> verseDataMap =
+                        chapterData['verseData'] ?? {}; // Alterado
+                    final dynamic verses1Data =
+                        verseDataMap[selectedTranslation1]; // Alterado
+                    final dynamic verses2Data =
                         (_isCompareModeActive && selectedTranslation2 != null)
-                            ? (verseTextsMap[selectedTranslation2!] ?? [])
-                            : [];
-                    if (verses1.isEmpty) {
-                      return const Center(
+                            ? verseDataMap[selectedTranslation2!] // Alterado
+                            : null;
+
+                    if ((isCurrentTranslation1Hebrew &&
+                            (verses1Data == null ||
+                                (verses1Data as List).isEmpty)) ||
+                        (!isCurrentTranslation1Hebrew &&
+                            (verses1Data == null ||
+                                (verses1Data as List<String>).isEmpty))) {
+                      return Center(
                           child: Text(
-                              'Capítulo não encontrado ou vazio para a tradução principal.',
+                              'Capítulo não encontrado para $selectedTranslation1.',
                               style: TextStyle(color: Colors.white70)));
                     }
 
@@ -784,7 +810,10 @@ class _BiblePageState extends State<BiblePage> {
                             top: _isFocusModeActive ? 8.0 : 0.0),
                         itemCount: sections.isNotEmpty
                             ? sections.length
-                            : (verses1.isNotEmpty ? 1 : 0),
+                            : (verses1Data != null &&
+                                    (verses1Data as List).isNotEmpty
+                                ? 1
+                                : 0),
                         itemBuilder: (context, sectionIndex) {
                           if (sections.isNotEmpty) {
                             final section = sections[sectionIndex];
@@ -793,7 +822,8 @@ class _BiblePageState extends State<BiblePage> {
                               verseNumbersInSection:
                                   (section['verses'] as List?)?.cast<int>() ??
                                       [],
-                              allVerseTextsInChapter: verses1,
+                              allVerseDataInChapter:
+                                  verses1Data, // Passa o dado dinâmico
                               bookSlug: _selectedBookSlug!,
                               bookAbbrev: selectedBook!,
                               chapterNumber: selectedChapter!,
@@ -813,20 +843,28 @@ class _BiblePageState extends State<BiblePage> {
                                   : "",
                               userHighlights: viewModel.userHighlights,
                               userNotes: viewModel.userNotes,
+                              isHebrew:
+                                  isCurrentTranslation1Hebrew, // Passa a flag
                             );
-                          } else if (verses1.isNotEmpty) {
+                          } else if (verses1Data != null &&
+                              (verses1Data as List).isNotEmpty) {
+                            // Renderiza todos os versos se não houver seções
+                            final List listData = verses1Data as List;
                             return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children:
-                                    List.generate(verses1.length, (verseIndex) {
+                                children: List.generate(listData.length,
+                                    (verseIndex) {
                                   return BiblePageWidgets.buildVerseItem(
                                     verseNumber: verseIndex + 1,
-                                    verseText: verses1[verseIndex],
+                                    verseData: listData[
+                                        verseIndex], // Passa o item da lista (String ou List<Map>)
                                     selectedBook: selectedBook,
                                     selectedChapter: selectedChapter,
                                     context: context,
                                     userHighlights: viewModel.userHighlights,
                                     userNotes: viewModel.userNotes,
+                                    isHebrew:
+                                        isCurrentTranslation1Hebrew, // Passa a flag
                                   );
                                 }));
                           }
@@ -834,15 +872,22 @@ class _BiblePageState extends State<BiblePage> {
                         },
                       );
                     } else {
-                      if (verses2.isEmpty && selectedTranslation2 != null) {
+                      // Modo Comparação
+                      if (verses2Data == null ||
+                          (verses2Data as List).isEmpty &&
+                              selectedTranslation2 != null) {
                         return Center(
                             child: Text(
-                                'Tradução "$selectedTranslation2" não encontrada ou vazia para este capítulo.',
+                                'Tradução "$selectedTranslation2" não encontrada para este capítulo.',
                                 style: TextStyle(color: Colors.orangeAccent)));
                       }
-                      final maxVerseCount = verses1.length > verses2.length
-                          ? verses1.length
-                          : verses2.length;
+                      final list1Data = verses1Data as List;
+                      final list2Data = verses2Data as List?; // Pode ser nulo
+                      final maxVerseCount =
+                          list1Data.length > (list2Data?.length ?? 0)
+                              ? list1Data.length
+                              : (list2Data?.length ?? 0);
+
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -850,22 +895,24 @@ class _BiblePageState extends State<BiblePage> {
                               child: _buildComparisonColumn(
                                   context,
                                   sections,
-                                  verses1,
+                                  list1Data,
                                   maxVerseCount,
                                   viewModel.userHighlights,
                                   viewModel.userNotes,
-                                  selectedTranslation1)),
+                                  selectedTranslation1,
+                                  isHebrew: isCurrentTranslation1Hebrew)),
                           const VerticalDivider(
                               width: 1, color: Colors.white24, thickness: 0.5),
                           Expanded(
                               child: _buildComparisonColumn(
                                   context,
                                   sections,
-                                  verses2,
-                                  maxVerseCount,
+                                  list2Data ?? [],
+                                  maxVerseCount, // Passa lista vazia se nulo
                                   viewModel.userHighlights,
                                   viewModel.userNotes,
-                                  selectedTranslation2!)),
+                                  selectedTranslation2!,
+                                  isHebrew: isCurrentTranslation2Hebrew)),
                         ],
                       );
                     }
@@ -881,12 +928,14 @@ class _BiblePageState extends State<BiblePage> {
   Widget _buildComparisonColumn(
       BuildContext context,
       List<Map<String, dynamic>> sections,
-      List<String> verseTexts,
+      List
+          verseColumnData, // Agora é List (pode ser List<String> ou List<List<Map>>)
       int maxVerseCount,
       Map<String, String> userHighlights,
       Map<String, String> userNotes,
-      String currentTranslation) {
-    if (verseTexts.isEmpty &&
+      String currentTranslation,
+      {bool isHebrew = false}) {
+    if (verseColumnData.isEmpty &&
         sections.isEmpty &&
         currentTranslation.isNotEmpty) {
       return Center(
@@ -907,7 +956,7 @@ class _BiblePageState extends State<BiblePage> {
           top: _isFocusModeActive ? 8.0 : 0.0),
       itemCount: sections.isNotEmpty
           ? sections.length
-          : (verseTexts.isNotEmpty ? 1 : 0),
+          : (verseColumnData.isNotEmpty ? 1 : 0),
       itemBuilder: (context, sectionIndex) {
         if (sections.isNotEmpty) {
           final section = sections[sectionIndex];
@@ -928,36 +977,41 @@ class _BiblePageState extends State<BiblePage> {
               ),
               ...verseNumbers.map((verseNumber) {
                 final verseIndex = verseNumber - 1;
-                final verseText =
-                    (verseIndex >= 0 && verseIndex < verseTexts.length)
-                        ? verseTexts[verseIndex]
-                        : "[Texto indisponível]";
+                final dynamic verseDataItem =
+                    (verseIndex >= 0 && verseIndex < verseColumnData.length)
+                        ? verseColumnData[verseIndex]
+                        : (isHebrew
+                            ? []
+                            : "[Texto Indisponível]"); // Fallback apropriado
                 return BiblePageWidgets.buildVerseItem(
                   verseNumber: verseNumber,
-                  verseText: verseText,
+                  verseData: verseDataItem,
                   selectedBook: selectedBook,
                   selectedChapter: selectedChapter,
                   context: context,
                   userHighlights: userHighlights,
                   userNotes: userNotes,
+                  isHebrew: isHebrew,
                 );
               }).toList(),
             ],
           );
-        } else if (verseTexts.isNotEmpty) {
+        } else if (verseColumnData.isNotEmpty) {
           return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(verseTexts.length, (verseIndex) {
+              children: List.generate(verseColumnData.length, (verseIndex) {
+                // Usa verseColumnData.length
                 final verseNumber = verseIndex + 1;
-                final verseText = verseTexts[verseIndex];
+                final dynamic verseDataItem = verseColumnData[verseIndex];
                 return BiblePageWidgets.buildVerseItem(
                   verseNumber: verseNumber,
-                  verseText: verseText,
+                  verseData: verseDataItem,
                   selectedBook: selectedBook,
                   selectedChapter: selectedChapter,
                   context: context,
                   userHighlights: userHighlights,
                   userNotes: userNotes,
+                  isHebrew: isHebrew,
                 );
               }));
         }
