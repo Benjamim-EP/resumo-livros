@@ -91,6 +91,7 @@ flutter:
 
     - assets/Biblia/completa_traducoes/abbrev_map.json
     - assets/Biblia/book_variations_map.json
+    - assets/Biblia/completa_traducoes/hebrew_strong_lexicon_traduzido.json
     
     - assets/Biblia/completa_traducoes/nvi/
     - assets/Biblia/completa_traducoes/aa/

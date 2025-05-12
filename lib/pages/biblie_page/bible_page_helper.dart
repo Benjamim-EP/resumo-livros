@@ -16,7 +16,7 @@ class BiblePageHelper {
     if (_strongsLexicon == null) {
       try {
         final String data = await rootBundle.loadString(
-            'assets/Biblia/dicionarios/hebrew_strong_lexicon_traduzido.json'); // Caminho correto
+            'assets/Biblia/completa_traducoes/hebrew_strong_lexicon_traduzido.json'); // Caminho correto
         _strongsLexicon = json.decode(data);
         print("Léxico de Strong Hebraico carregado e cacheado.");
       } catch (e) {

@@ -19,8 +19,7 @@ class BiblePageWidgets {
   }) {
     final isSelected = selectedTranslation == translationKey;
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          vertical: 4.0, horizontal: 4.0), // Espaçamento horizontal também
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -175,14 +174,15 @@ class BiblePageWidgets {
 
     Widget verseContentWidget;
     String verseTextForModal = "";
+    List<Map<String, String>> hebrewWordsDataForLexicon =
+        []; // Para passar ao modal do léxico
 
     if (isHebrew && verseData is List<Map<String, String>>) {
+      hebrewWordsDataForLexicon = verseData;
       List<TextSpan> hebrewSpans = [];
       for (var wordData in verseData) {
         final text = wordData['text'] ?? '';
-        final strong = wordData['strong'] ?? '';
-        final cleanText =
-            text.replaceAll(RegExp(r'[/\\]'), ''); // Remove barras para o modal
+        final cleanText = text.replaceAll(RegExp(r'[/\\]'), '');
         verseTextForModal += "$cleanText ";
 
         hebrewSpans.add(
@@ -191,14 +191,10 @@ class BiblePageWidgets {
             style: const TextStyle(
               fontSize: 20,
               color: Colors.white,
-              fontFamily: 'NotoSansHebrew', // Use a fonte Hebraica aqui
+              fontFamily:
+                  'NotoSansHebrew', // Certifique-se que esta fonte está configurada
             ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                if (strong.isNotEmpty) {
-                  _showStrongsInfoModal(context, strong, text);
-                }
-              },
+            // TapGestureRecognizer por palavra removido, pois o léxico é por versículo
           ),
         );
       }
@@ -256,19 +252,33 @@ class BiblePageWidgets {
                 child: Icon(Icons.note_alt_rounded,
                     color: Colors.blueAccent[100], size: 16),
               ),
+            if (isHebrew && hebrewWordsDataForLexicon.isNotEmpty)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                iconSize: 20,
+                icon: const Icon(Icons.translate_outlined,
+                    color: Colors.cyanAccent),
+                tooltip: "Léxico do Versículo",
+                onPressed: () {
+                  _showVerseLexiconModal(context, selectedBook!,
+                      selectedChapter!, verseNumber, hebrewWordsDataForLexicon);
+                },
+              ),
           ],
         ),
       ),
     );
   }
 
-  /// Mostra informações do Léxico de Strong em um modal.
-  static void _showStrongsInfoModal(BuildContext context,
-      String strongNumberWithPrefix, String hebrewWord) async {
-    // Remove prefixos como "H" ou "c/" se existirem, para obter apenas o número
-    final String strongNumber =
-        strongNumberWithPrefix.replaceAll(RegExp(r'^[Hc]/'), '');
-
+  /// Mostra informações do Léxico de Strong em um modal para um versículo inteiro.
+  static void _showVerseLexiconModal(
+    BuildContext context,
+    String bookAbbrev,
+    int chapter,
+    int verseNum,
+    List<Map<String, String>> hebrewWords,
+  ) async {
     final lexicon = await BiblePageHelper.getStrongsLexicon();
     if (lexicon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -276,79 +286,138 @@ class BiblePageWidgets {
       return;
     }
 
-    final entry = lexicon[strongNumber]
-        as Map<String, dynamic>?; // Busca pelo número puro
-
-    if (entry == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              "Informações de Strong não encontradas para $strongNumber")));
-      return;
-    }
-    final transliteration = entry['transliteration'] ?? 'N/A';
-    final definitionsPt =
-        (entry['definitions_pt'] as List<dynamic>?)?.cast<String>() ??
-            ['Nenhuma definição em português.'];
-    final originalLemma =
-        entry['lemma_hebrew'] ?? hebrewWord; // Use hebrewWord como fallback
-
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2C2F33),
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF232538),
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (modalContext) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Informações de Strong: $strongNumber",
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("Palavra Hebraica: $hebrewWord (Lema: $originalLemma)",
-                    style: const TextStyle(
-                        color: Colors.amber,
-                        fontSize: 17,
-                        fontFamily: 'NotoSansHebrew')), // Aumentado
-                Text("Transliteração: $transliteration",
-                    style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        fontStyle: FontStyle.italic)), // Aumentado
-                const SizedBox(height: 12),
-                const Text("Definições em Português:",
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500)), // Aumentado
-                ...definitionsPt.map((def) => Padding(
-                      padding: const EdgeInsets.only(top: 4.0, left: 8.0),
-                      child: Text("• $def",
-                          style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15)), // Aumentado
-                    )),
-                const SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(modalContext),
-                    child: const Text("Fechar",
-                        style: TextStyle(
-                            color: Colors.greenAccent,
-                            fontSize: 15)), // Aumentado
-                  ),
-                )
-              ],
-            ),
-          ),
-        );
+        return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.4,
+            maxChildSize: 0.9,
+            expand: false,
+            builder: (_, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF232538),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[700],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      child: Text(
+                        "Léxico para: $bookAbbrev $chapter:$verseNum",
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const Divider(color: Colors.white30, height: 1),
+                    Expanded(
+                      child: ListView.separated(
+                        controller: scrollController,
+                        itemCount: hebrewWords.length,
+                        padding: const EdgeInsets.all(16.0),
+                        separatorBuilder: (context, index) =>
+                            const Divider(color: Colors.white24, height: 20),
+                        itemBuilder: (context, index) {
+                          final wordData = hebrewWords[index];
+                          final hebrewText = wordData['text'] ?? '';
+                          final strongNumberWithPrefix =
+                              wordData['strong'] ?? '';
+                          final morph = wordData['morph'] ?? 'N/A';
+                          final String strongNumber = strongNumberWithPrefix
+                              .replaceAll(RegExp(r'^[Hc]/'), '');
+                          final lexiconEntry =
+                              lexicon[strongNumber] as Map<String, dynamic>?;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                hebrewText,
+                                textDirection: TextDirection.rtl,
+                                style: const TextStyle(
+                                    fontFamily: 'NotoSansHebrew',
+                                    fontSize: 22,
+                                    color: Colors.amber),
+                              ),
+                              if (lexiconEntry != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                    "Strong: H$strongNumber (${lexiconEntry['transliteration'] ?? 'N/A'})",
+                                    style: TextStyle(
+                                        color: Colors.cyanAccent[100],
+                                        fontSize: 14)),
+                                Text("Morfologia: $morph",
+                                    style: TextStyle(
+                                        color: Colors.white70, fontSize: 13)),
+                                const SizedBox(height: 6),
+                                const Text("Definições (PT):",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500)),
+                                ...((lexiconEntry['definitions_pt']
+                                                as List<dynamic>?)
+                                            ?.cast<String>() ??
+                                        ['N/A'])
+                                    .map((def) => Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 8.0, top: 2.0),
+                                          child: Text("• $def",
+                                              style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 13)),
+                                        ))
+                                    .toList(),
+                              ] else if (strongNumber.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text("Strong: $strongNumberWithPrefix",
+                                    style: TextStyle(
+                                        color: Colors.cyanAccent[100],
+                                        fontSize: 14)),
+                                Text("Morfologia: $morph",
+                                    style: TextStyle(
+                                        color: Colors.white70, fontSize: 13)),
+                                const Text(
+                                    "Definição de Strong não encontrada.",
+                                    style: TextStyle(
+                                        color: Colors.orangeAccent,
+                                        fontSize: 13)),
+                              ] else if (morph != 'N/A' &&
+                                  morph.isNotEmpty) ...[
+                                // Mostrar morfologia mesmo sem Strong
+                                const SizedBox(height: 4),
+                                Text("Morfologia: $morph",
+                                    style: TextStyle(
+                                        color: Colors.white70, fontSize: 13)),
+                              ]
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            });
       },
     );
   }
