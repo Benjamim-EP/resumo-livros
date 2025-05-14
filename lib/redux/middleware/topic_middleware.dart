@@ -9,10 +9,13 @@ List<Middleware<AppState>> createTopicMiddleware() {
 
   return [
     TypedMiddleware<AppState, LoadTopicContentAction>(
-        _loadTopicContent(firestoreService)),
+            _loadTopicContent(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadSimilarTopicsAction>(
-        _loadSimilarTopics(firestoreService)),
-    TypedMiddleware<AppState, LoadTopicsAction>(_loadTopics(firestoreService)),
+            _loadSimilarTopics(firestoreService))
+        .call,
+    TypedMiddleware<AppState, LoadTopicsAction>(_loadTopics(firestoreService))
+        .call,
   ];
 }
 

@@ -3,6 +3,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 
 // Componente que exibe um texto em formato Markdown
 class MarkdownViewer extends StatelessWidget {
+  const MarkdownViewer({super.key});
+
   @override
   Widget build(BuildContext context) {
     // O texto de exemplo que será exibido como Markdown
@@ -25,8 +27,8 @@ class MarkdownViewer extends StatelessWidget {
     return Markdown(
       data: markdownText, // Renderiza o conteúdo Markdown
       styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-        p: TextStyle(fontSize: 16), // Personalizando o estilo do texto
-        listBullet: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        p: const TextStyle(fontSize: 16), // Personalizando o estilo do texto
+        listBullet: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/services/user_service.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';

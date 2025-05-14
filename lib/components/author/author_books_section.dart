@@ -56,7 +56,7 @@ class BookCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.star, color: Colors.amber, size: 18),
+                      const Icon(Icons.star, color: Colors.amber, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         ratingScore,

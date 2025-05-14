@@ -5,7 +5,11 @@ class TabItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  TabItem({required this.label, required this.isSelected, required this.onTap});
+  const TabItem(
+      {super.key,
+      required this.label,
+      required this.isSelected,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {

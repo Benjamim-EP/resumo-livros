@@ -9,11 +9,11 @@ class ShowAllIcon extends StatelessWidget {
     return Container(
       width: 24, // Define a largura e altura do círculo
       height: 24,
-      decoration: BoxDecoration(
-        color: const Color(0xFFCDE7BE), // Cor de fundo verde
+      decoration: const BoxDecoration(
+        color: Color(0xFFCDE7BE), // Cor de fundo verde
         shape: BoxShape.circle, // Define a forma do Container como um círculo
       ),
-      child: Icon(
+      child: const Icon(
         Icons.chevron_right, // Ícone de Chevron Right
         size: 16, // Tamanho do ícone
         color: Colors.black, // Cor do ícone: preto

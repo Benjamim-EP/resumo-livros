@@ -4,8 +4,7 @@ import 'package:flutter_svg/svg.dart';
 class MoodDiaryVew extends StatelessWidget {
   final AnimationController animationController;
 
-  const MoodDiaryVew({Key? key, required this.animationController})
-      : super(key: key);
+  const MoodDiaryVew({super.key, required this.animationController});
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +15,8 @@ class MoodDiaryVew extends StatelessWidget {
     final image1Size = svgWidth * 0.5;
     final image2Size = svgWidth * 0.6;
     final textFontSize = screenWidth * 0.03;
-    final _firstHalfAnimation =
-        Tween<Offset>(begin: Offset(1, 0), end: Offset(0, 0))
+    final firstHalfAnimation =
+        Tween<Offset>(begin: const Offset(1, 0), end: const Offset(0, 0))
             .animate(CurvedAnimation(
       parent: animationController,
       curve: const Interval(
@@ -38,7 +37,7 @@ class MoodDiaryVew extends StatelessWidget {
     ));
 
     return SlideTransition(
-      position: _firstHalfAnimation,
+      position: firstHalfAnimation,
       child: SlideTransition(
         position: secondHalfAnimation,
         child: Padding(

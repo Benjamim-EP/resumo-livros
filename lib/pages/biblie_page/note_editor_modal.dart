@@ -11,12 +11,12 @@ class NoteEditorModal extends StatefulWidget {
   final String verseTextSample;
 
   const NoteEditorModal({
-    Key? key,
+    super.key,
     required this.verseId,
     this.initialText,
     required this.bookReference,
     required this.verseTextSample,
-  }) : super(key: key);
+  });
 
   @override
   State<NoteEditorModal> createState() => _NoteEditorModalState();

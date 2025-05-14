@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class TopicTitle extends StatelessWidget {
   final String title;
 
-  const TopicTitle({required this.title, Key? key}) : super(key: key);
+  const TopicTitle({required this.title, super.key});
 
   @override
   Widget build(BuildContext context) {

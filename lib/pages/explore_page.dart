@@ -189,8 +189,9 @@ class _ExploreState extends State<Explore> {
                     converter: (store) {
                       final userDetails = store.state.userState.userDetails;
 
-                      if (userDetails == null)
+                      if (userDetails == null) {
                         return false; // Se não há dados, assume que não é premium
+                      }
 
                       final premiumData =
                           userDetails['isPremium'] as Map<String, dynamic>?;
@@ -446,7 +447,7 @@ class _ExploreState extends State<Explore> {
                         ),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             );

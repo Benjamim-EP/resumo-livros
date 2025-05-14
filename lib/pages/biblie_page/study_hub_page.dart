@@ -170,8 +170,9 @@ class StudyHubPage extends StatelessWidget {
                           ? Icons.hourglass_empty_outlined
                           : Icons
                               .article_outlined, // Ícone diferente para placeholder
-                      color:
-                          isPlaceholder ? Colors.white38 : Color(0xFFCDE7BE)),
+                      color: isPlaceholder
+                          ? Colors.white38
+                          : const Color(0xFFCDE7BE)),
                   title: Text(
                     item['title'],
                     style: TextStyle(

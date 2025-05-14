@@ -8,7 +8,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 
 class StartScreenPage extends StatefulWidget {
-  const StartScreenPage({Key? key}) : super(key: key);
+  const StartScreenPage({super.key});
 
   @override
   _SelectTribePageState createState() => _SelectTribePageState();
@@ -153,10 +153,10 @@ class _CenterNextButton extends StatefulWidget {
   final VoidCallback onNext;
 
   const _CenterNextButton({
-    Key? key,
+    super.key,
     required this.animationController,
     required this.onNext,
-  }) : super(key: key);
+  });
 
   @override
   State<_CenterNextButton> createState() => _CenterNextButtonState();
@@ -246,11 +246,11 @@ class _TopBackSkipView extends StatelessWidget {
   final VoidCallback onBack;
 
   const _TopBackSkipView({
-    Key? key,
+    super.key,
     required this.animationController,
     required this.onSkip,
     required this.onBack,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

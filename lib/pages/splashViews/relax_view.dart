@@ -4,8 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 class RelaxView extends StatelessWidget {
   final AnimationController animationController;
 
-  const RelaxView({Key? key, required this.animationController})
-      : super(key: key);
+  const RelaxView({super.key, required this.animationController});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +16,7 @@ class RelaxView extends StatelessWidget {
     final image2Size = svgWidth * 0.6;
     final textFontSize = screenWidth * 0.03;
 
-    final _firstHalfAnimation =
+    final firstHalfAnimation =
         Tween<Offset>(begin: const Offset(0, 1), end: const Offset(0, 0))
             .animate(
       CurvedAnimation(
@@ -26,7 +25,7 @@ class RelaxView extends StatelessWidget {
       ),
     );
 
-    final _secondHalfAnimation =
+    final secondHalfAnimation =
         Tween<Offset>(begin: const Offset(0, 0), end: const Offset(-1, 0))
             .animate(
       CurvedAnimation(
@@ -36,9 +35,9 @@ class RelaxView extends StatelessWidget {
     );
 
     return SlideTransition(
-      position: _firstHalfAnimation,
+      position: firstHalfAnimation,
       child: SlideTransition(
-        position: _secondHalfAnimation,
+        position: secondHalfAnimation,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 100),
           child: Center(

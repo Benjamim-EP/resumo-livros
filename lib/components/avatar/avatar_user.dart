@@ -43,10 +43,7 @@ class Avatar extends StatelessWidget {
           backgroundColor:
               Colors.grey[300], // Cor de fundo enquanto carrega ou se falhar
           backgroundImage:
-              backgroundImage, // Será null se estivermos usando childIcon
-          child: backgroundImage == null
-              ? childIcon
-              : null, // Mostra childIcon se backgroundImage for null
+              backgroundImage, // Mostra childIcon se backgroundImage for null
           onBackgroundImageError: backgroundImage != null
               ? (dynamic exception, StackTrace? stackTrace) {
                   // Se a NetworkImage do usuário falhar, poderia tentar o placeholder aqui,
@@ -54,7 +51,8 @@ class Avatar extends StatelessWidget {
                   // Por agora, o backgroundColor e um possível ícone já servem de fallback.
                   print("Erro ao carregar a imagem do usuário: $exception");
                 }
-              : null,
+              : null, // Será null se estivermos usando childIcon
+          child: backgroundImage == null ? childIcon : null,
         ),
         // Borda ao redor da imagem
         Container(

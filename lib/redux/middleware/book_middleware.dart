@@ -11,13 +11,17 @@ List<Middleware<AppState>> createBookMiddleware() {
 
   return [
     TypedMiddleware<AppState, LoadBookDetailsAction>(
-        _loadBookDetails(bookService)),
+            _loadBookDetails(bookService))
+        .call,
     TypedMiddleware<AppState, StartBookProgressAction>(
-        _handleStartBookProgress(firestoreService)),
+            _handleStartBookProgress(firestoreService))
+        .call,
     TypedMiddleware<AppState, MarkTopicAsReadAction>(
-        _handleMarkTopicAsRead(firestoreService)),
+            _handleMarkTopicAsRead(firestoreService))
+        .call,
     TypedMiddleware<AppState, CheckBookProgressAction>(
-        _checkBookProgress(firestoreService)),
+            _checkBookProgress(firestoreService))
+        .call,
     // A ação BooksLoadedByTagAction pode ser acionada por TagMiddleware ou aqui, dependendo da lógica
     // Se for acionada após TagsLoadedAction, pertence a TagMiddleware.
     // Se for uma ação independente para carregar livros de uma tag específica, pode ficar aqui.

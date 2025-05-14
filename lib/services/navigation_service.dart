@@ -18,7 +18,7 @@ class NavigationService {
       case '/login':
         return MaterialPageRoute(builder: (_) => LoginPage());
       case '/signup':
-        return MaterialPageRoute(builder: (_) => SignUpEmailPage());
+        return MaterialPageRoute(builder: (_) => const SignUpEmailPage());
       case '/mainAppScreen':
         return MaterialPageRoute(builder: (_) => const MainAppScreen());
       case '/bookDetails':

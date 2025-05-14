@@ -9,11 +9,13 @@ List<Middleware<AppState>> createAuthorMiddleware() {
   final bookService = BookService();
 
   return [
-    TypedMiddleware<AppState, LoadAuthorsAction>(_loadAuthors(authorService)),
+    TypedMiddleware<AppState, LoadAuthorsAction>(_loadAuthors(authorService))
+        .call,
     TypedMiddleware<AppState, LoadAuthorDetailsAction>(
-        _loadAuthorDetails(authorService, bookService)),
-    TypedMiddleware<AppState, ClearAuthorDetailsAction>(
-        _clearAuthorDetails), // Middleware para limpar
+            _loadAuthorDetails(authorService, bookService))
+        .call,
+    TypedMiddleware<AppState, ClearAuthorDetailsAction>(_clearAuthorDetails)
+        .call, // Middleware para limpar
   ];
 }
 

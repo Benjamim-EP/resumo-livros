@@ -5,6 +5,7 @@ class TagButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const TagButton({
+    super.key,
     required this.label,
     required this.onPressed,
   });
@@ -15,12 +16,6 @@ class TagButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: FilledButton.tonal(
         onPressed: onPressed,
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10, // Reduzindo o tamanho da fonte
-          ),
-        ),
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           // Usando as cores do tema atual
@@ -36,6 +31,12 @@ class TagButton extends StatelessWidget {
               ?.resolve({}),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10, // Reduzindo o tamanho da fonte
           ),
         ),
       ),

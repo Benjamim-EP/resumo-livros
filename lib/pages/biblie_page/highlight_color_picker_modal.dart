@@ -7,11 +7,11 @@ class HighlightColorPickerModal extends StatelessWidget {
   final VoidCallback onRemoveHighlight;
 
   const HighlightColorPickerModal({
-    Key? key,
+    super.key,
     this.initialColor,
     required this.onColorSelected,
     required this.onRemoveHighlight,
-  }) : super(key: key);
+  });
 
   // Cores predefinidas para o picker
   static const List<String> _defaultColorsHex = [

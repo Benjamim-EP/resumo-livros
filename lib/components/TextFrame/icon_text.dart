@@ -4,8 +4,7 @@ class IconText extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const IconText({required this.icon, required this.color, Key? key})
-      : super(key: key);
+  const IconText({required this.icon, required this.color, super.key});
 
   @override
   Widget build(BuildContext context) {

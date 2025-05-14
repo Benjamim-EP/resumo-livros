@@ -16,8 +16,8 @@ List<Middleware<AppState>> createPaymentMiddleware() {
 
   return [
     TypedMiddleware<AppState, InitiateStripePaymentAction>(
-        _handleInitiatePayment(
-            stripeFrontendService, functions)), // Passa functions
+            _handleInitiatePayment(stripeFrontendService, functions))
+        .call, // Passa functions
   ];
 }
 

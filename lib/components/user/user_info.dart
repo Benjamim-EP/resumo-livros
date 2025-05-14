@@ -5,6 +5,8 @@ import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 // Não precisaremos mais de UpdateUserFieldAction ou showDialog aqui
 
 class UserInfo extends StatelessWidget {
+  const UserInfo({super.key});
+
   // Removida a função _editField, pois a edição será em outra página
 
   @override

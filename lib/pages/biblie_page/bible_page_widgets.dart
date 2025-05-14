@@ -141,7 +141,7 @@ class BiblePageWidgets {
       }
       spans.add(TextSpan(text: match.group(1)!, style: numberStyle));
       if (match.group(0)!.endsWith(' ')) {
-        spans.add(TextSpan(text: ' ', style: baseStyle));
+        spans.add(const TextSpan(text: ' ', style: baseStyle));
       }
       currentPosition = match.end;
     }
@@ -366,7 +366,7 @@ class BiblePageWidgets {
                                         color: Colors.cyanAccent[100],
                                         fontSize: 14)),
                                 Text("Morfologia: $morph",
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                         color: Colors.white70, fontSize: 13)),
                                 const SizedBox(height: 6),
                                 const Text("Definições (PT):",
@@ -385,8 +385,7 @@ class BiblePageWidgets {
                                               style: const TextStyle(
                                                   color: Colors.white70,
                                                   fontSize: 13)),
-                                        ))
-                                    .toList(),
+                                        )),
                               ] else if (strongNumber.isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text("Strong: $strongNumberWithPrefix",
@@ -394,7 +393,7 @@ class BiblePageWidgets {
                                         color: Colors.cyanAccent[100],
                                         fontSize: 14)),
                                 Text("Morfologia: $morph",
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                         color: Colors.white70, fontSize: 13)),
                                 const Text(
                                     "Definição de Strong não encontrada.",
@@ -406,7 +405,7 @@ class BiblePageWidgets {
                                 // Mostrar morfologia mesmo sem Strong
                                 const SizedBox(height: 4),
                                 Text("Morfologia: $morph",
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                         color: Colors.white70, fontSize: 13)),
                               ]
                             ],

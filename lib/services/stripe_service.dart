@@ -1,9 +1,6 @@
 // lib/services/stripe_service.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import '../redux/actions.dart';
 
 class StripeService {
   StripeService._();

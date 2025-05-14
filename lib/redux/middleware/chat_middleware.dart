@@ -13,8 +13,9 @@ List<Middleware<AppState>> createChatMiddleware() {
   final firestoreService = FirestoreService();
 
   return [
-    TypedMiddleware<AppState, SendMessageAction>(
-        _handleSendMessage(openAIService, pineconeService, firestoreService)),
+    TypedMiddleware<AppState, SendMessageAction>(_handleSendMessage(
+            openAIService, pineconeService, firestoreService))
+        .call,
   ];
 }
 

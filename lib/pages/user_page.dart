@@ -121,7 +121,7 @@ class _UserPageState extends State<UserPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"${selectedSnippet}"',
+              '"$selectedSnippet"',
               style: const TextStyle(
                 color: Colors.amber,
                 fontSize: 16,
@@ -133,7 +133,7 @@ class _UserPageState extends State<UserPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              "No contexto de: ${fullCommentText.length > 100 ? fullCommentText.substring(0, 100) + "..." : fullCommentText}",
+              "No contexto de: ${fullCommentText.length > 100 ? "${fullCommentText.substring(0, 100)}..." : fullCommentText}",
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 13,
@@ -312,8 +312,8 @@ class _UserPageState extends State<UserPage> {
                                               TextStyle(color: Colors.white)),
                                       content: Text(
                                           "Tem certeza que deseja excluir a coleção '$collectionName' e todos os seus itens?",
-                                          style:
-                                              TextStyle(color: Colors.white70)),
+                                          style: const TextStyle(
+                                              color: Colors.white70)),
                                       actions: [
                                         TextButton(
                                             onPressed: () =>
@@ -537,17 +537,19 @@ class _UserPageState extends State<UserPage> {
                                   verseId, 'nvi'),
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState ==
-                                    ConnectionState.waiting)
+                                    ConnectionState.waiting) {
                                   return const Text("Carregando texto...",
                                       style: TextStyle(
                                           color: Colors.white54, fontSize: 12));
+                                }
                                 if (snapshot.hasError ||
                                     !snapshot.hasData ||
-                                    snapshot.data!.isEmpty)
+                                    snapshot.data!.isEmpty) {
                                   return const Text("Texto indisponível",
                                       style: TextStyle(
                                           color: Colors.redAccent,
                                           fontSize: 12));
+                                }
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 3),

@@ -3,6 +3,8 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 
 class AuthorDescriptionData extends StatelessWidget {
+  const AuthorDescriptionData({super.key});
+
   @override
   Widget build(BuildContext context) {
     return StoreConnector<AppState, Map<String, dynamic>?>(
@@ -43,12 +45,12 @@ class AuthorDescriptionData extends StatelessWidget {
                   ),
                   InfoButton(
                     icon: Icons.favorite,
-                    label: '${curtidas}',
+                    label: '$curtidas',
                     color: Colors.redAccent,
                   ),
                   InfoButton(
                     icon: Icons.group,
-                    label: '${leitoresSemanais}',
+                    label: '$leitoresSemanais',
                     color: Colors.greenAccent,
                   ),
                 ],

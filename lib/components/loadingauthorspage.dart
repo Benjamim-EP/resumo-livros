@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 class AuthorPageLoadingPlaceholder extends StatelessWidget {
-  const AuthorPageLoadingPlaceholder({Key? key}) : super(key: key);
+  const AuthorPageLoadingPlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {

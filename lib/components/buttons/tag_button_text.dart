@@ -6,6 +6,7 @@ class TagButtonText extends StatelessWidget {
   final VoidCallback onPressed;
 
   const TagButtonText({
+    super.key,
     required this.label,
     required this.onPressed,
   });
@@ -16,13 +17,6 @@ class TagButtonText extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: FilledButton.tonal(
         onPressed: onPressed,
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10, // Reduzindo o tamanho da fonte
-            fontFamily: 'Abel',
-          ),
-        ),
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(
               horizontal: 10,
@@ -34,6 +28,13 @@ class TagButtonText extends StatelessWidget {
           minimumSize: const Size(60, 30), // Tamanho mínimo do botão
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20), // Mantendo as bordas
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10, // Reduzindo o tamanho da fonte
+            fontFamily: 'Abel',
           ),
         ),
       ),

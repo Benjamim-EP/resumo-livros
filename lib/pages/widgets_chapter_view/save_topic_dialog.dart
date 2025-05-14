@@ -75,7 +75,7 @@ class _SaveTopicDialogState extends State<SaveTopicDialog> {
                         }
                       },
                     );
-                  }).toList(),
+                  }),
                 const SizedBox(height: 16),
                 TextField(
                   controller: collectionController,

@@ -10,17 +10,16 @@ class HymnsPage extends StatefulWidget {
   _HymnsPageState createState() => _HymnsPageState();
 }
 
-class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMixin {
+class _HymnsPageState extends State<HymnsPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   List<Map<String, dynamic>> _hymns = [];
   List<Map<String, dynamic>> _songs = [];
-  List<Map<String, dynamic>> _displayedHymns = [];
+  final List<Map<String, dynamic>> _displayedHymns = [];
   int _loadedHymnCount = 0;
   final int _loadAmount = 20;
   final ScrollController _scrollController = ScrollController();
-
-  
 
   @override
   void initState() {
@@ -51,14 +50,12 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
 
   Future<void> _loadSongs() async {
     try {
-      final String data = await rootBundle.loadString('assets/hinos/canticos_avulsos.json');
+      final String data =
+          await rootBundle.loadString('assets/hinos/canticos_avulsos.json');
       final List<dynamic> jsonData = json.decode(data);
 
       List<Map<String, dynamic>> songsList = jsonData.map((entry) {
-        return {
-          "title": entry["title"],
-          "verses": entry["verses"]
-        };
+        return {"title": entry["title"], "verses": entry["verses"]};
       }).toList();
 
       setState(() {
@@ -80,7 +77,8 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       _loadMoreHymns();
     }
   }
@@ -132,7 +130,9 @@ class _HymnsPageState extends State<HymnsPage> with SingleTickerProviderStateMix
 
   Widget _buildSongsList() {
     return _songs.isEmpty
-        ? const Center(child: Text("Nenhum cântico disponível", style: TextStyle(color: Colors.white70)))
+        ? const Center(
+            child: Text("Nenhum cântico disponível",
+                style: TextStyle(color: Colors.white70)))
         : ListView.builder(
             itemCount: _songs.length,
             itemBuilder: (context, index) {

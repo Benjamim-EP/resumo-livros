@@ -5,12 +5,11 @@ class IconCounter extends StatelessWidget {
   final Color backgroundColor;
 
   const IconCounter(
-      {required this.count, required this.backgroundColor, Key? key})
-      : super(key: key);
+      {required this.count, required this.backgroundColor, super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 33.5,
       height: 14.5,
       child: Stack(

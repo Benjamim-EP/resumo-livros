@@ -284,8 +284,9 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _previousChapter() {
-    if (selectedBook == null || selectedChapter == null || booksMap == null)
+    if (selectedBook == null || selectedChapter == null || booksMap == null) {
       return;
+    }
     String newBookAbbrev = selectedBook!;
     int newChapter = selectedChapter!;
     if (selectedChapter! > 1) {
@@ -304,8 +305,9 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _nextChapter() {
-    if (selectedBook == null || selectedChapter == null || booksMap == null)
+    if (selectedBook == null || selectedChapter == null || booksMap == null) {
       return;
+    }
     String newBookAbbrev = selectedBook!;
     int newChapter = selectedChapter!;
     int totalChaptersInCurrentBook =
@@ -355,8 +357,9 @@ class _BiblePageState extends State<BiblePage> {
                   textInputAction: TextInputAction.search,
                   onSubmitted: (value) =>
                       _parseAndNavigate(value, dialogContext, (newError) {
-                    if (mounted)
+                    if (mounted) {
                       setDialogState(() => errorTextInDialog = newError);
+                    }
                   }),
                 ),
                 const SizedBox(height: 8),
@@ -372,8 +375,9 @@ class _BiblePageState extends State<BiblePage> {
                 TextButton(
                     onPressed: () => _parseAndNavigate(
                             controller.text, dialogContext, (newError) {
-                          if (mounted)
+                          if (mounted) {
                             setDialogState(() => errorTextInDialog = newError);
+                          }
                         }),
                     child: const Text("Ir",
                         style: TextStyle(color: Colors.green))),
@@ -462,9 +466,10 @@ class _BiblePageState extends State<BiblePage> {
               ">>> BiblePage StoreConnector onInit: booksMap já carregado. Chamando _processIntentOrInitialLoad.");
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // Garante que o build inicial complete
-            if (mounted && !_hasProcessedInitialNavigation)
+            if (mounted && !_hasProcessedInitialNavigation) {
               _processIntentOrInitialLoad(
                   context, _BiblePageViewModel.fromStore(store));
+            }
           });
         }
         _loadUserDataIfNeeded(context);
@@ -479,8 +484,9 @@ class _BiblePageState extends State<BiblePage> {
             print(
                 ">>> BiblePage onDidChange: Processando navegação inicial (primeira vez ou após booksMap carregar).");
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && !_hasProcessedInitialNavigation)
+              if (mounted && !_hasProcessedInitialNavigation) {
                 _processIntentOrInitialLoad(context, newViewModel);
+              }
             });
           }
           // Se houve uma mudança no intent de navegação do Redux
@@ -574,8 +580,9 @@ class _BiblePageState extends State<BiblePage> {
                 tooltip:
                     _isFocusModeActive ? "Sair do Modo Foco" : "Modo Leitura",
                 onPressed: () {
-                  if (mounted)
+                  if (mounted) {
                     setState(() => _isFocusModeActive = !_isFocusModeActive);
+                  }
                 },
               ),
               Visibility(
@@ -690,12 +697,13 @@ class _BiblePageState extends State<BiblePage> {
                                 label: const Text("Estudos",
                                     style: TextStyle(fontSize: 12)),
                                 onPressed: () {
-                                  if (mounted)
+                                  if (mounted) {
                                     Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
                                                 const StudyHubPage()));
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF272828),
@@ -721,8 +729,9 @@ class _BiblePageState extends State<BiblePage> {
                                 selectedBook: selectedBook,
                                 booksMap: booksMap,
                                 onChanged: (value) {
-                                  if (mounted && value != null)
+                                  if (mounted && value != null) {
                                     _navigateToChapter(value, 1);
+                                  }
                                 })),
                         const SizedBox(width: 8),
                         if (selectedBook != null)
@@ -798,7 +807,7 @@ class _BiblePageState extends State<BiblePage> {
                       return Center(
                           child: Text(
                               'Capítulo não encontrado para $selectedTranslation1.',
-                              style: TextStyle(color: Colors.white70)));
+                              style: const TextStyle(color: Colors.white70)));
                     }
 
                     if (!_isCompareModeActive) {
@@ -849,7 +858,7 @@ class _BiblePageState extends State<BiblePage> {
                           } else if (verses1Data != null &&
                               (verses1Data as List).isNotEmpty) {
                             // Renderiza todos os versos se não houver seções
-                            final List listData = verses1Data as List;
+                            final List listData = verses1Data;
                             return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: List.generate(listData.length,
@@ -879,7 +888,8 @@ class _BiblePageState extends State<BiblePage> {
                         return Center(
                             child: Text(
                                 'Tradução "$selectedTranslation2" não encontrada para este capítulo.',
-                                style: TextStyle(color: Colors.orangeAccent)));
+                                style: const TextStyle(
+                                    color: Colors.orangeAccent)));
                       }
                       final list1Data = verses1Data as List;
                       final list2Data = verses2Data as List?; // Pode ser nulo
@@ -943,7 +953,7 @@ class _BiblePageState extends State<BiblePage> {
         padding: const EdgeInsets.all(8.0),
         child: Text(
           "Tradução '$currentTranslation' indisponível para este capítulo.",
-          style: TextStyle(color: Colors.white54, fontSize: 13),
+          style: const TextStyle(color: Colors.white54, fontSize: 13),
           textAlign: TextAlign.center,
         ),
       ));
@@ -993,7 +1003,7 @@ class _BiblePageState extends State<BiblePage> {
                   userNotes: userNotes,
                   isHebrew: isHebrew,
                 );
-              }).toList(),
+              }),
             ],
           );
         } else if (verseColumnData.isNotEmpty) {

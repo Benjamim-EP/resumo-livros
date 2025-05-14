@@ -3,23 +3,23 @@ import 'package:flutter/material.dart';
 class WelcomeView extends StatelessWidget {
   final AnimationController animationController;
 
-  const WelcomeView({Key? key, required this.animationController})
-      : super(key: key);
+  const WelcomeView({super.key, required this.animationController});
 
   @override
   Widget build(BuildContext context) {
-    final animation = Tween<Offset>(begin: Offset(-1, 0), end: Offset(0, 0))
-        .animate(CurvedAnimation(
+    final animation =
+        Tween<Offset>(begin: const Offset(-1, 0), end: const Offset(0, 0))
+            .animate(CurvedAnimation(
       parent: animationController,
       curve: const Interval(0.4, 0.6, curve: Curves.fastOutSlowIn),
     ));
 
     return SlideTransition(
       position: animation,
-      child: Center(
+      child: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Text(
               "Parabéns!",
               style: TextStyle(

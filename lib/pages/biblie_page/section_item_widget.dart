@@ -19,7 +19,7 @@ class SectionItemWidget extends StatefulWidget {
   final bool isHebrew; // Novo: Indica se a tradução atual é hebraico
 
   const SectionItemWidget({
-    Key? key,
+    super.key,
     required this.sectionTitle,
     required this.verseNumbersInSection,
     required this.allVerseDataInChapter, // Nome alterado para clareza
@@ -30,7 +30,7 @@ class SectionItemWidget extends StatefulWidget {
     required this.userHighlights,
     required this.userNotes,
     this.isHebrew = false, // Novo: Padrão para false
-  }) : super(key: key);
+  });
 
   @override
   State<SectionItemWidget> createState() => _SectionItemWidgetState();

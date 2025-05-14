@@ -44,7 +44,8 @@ class _SaveVerseDialogState extends State<SaveVerseDialog> {
       },
       converter: (store) => store.state.userState.topicSaves,
       builder: (context, topicSaves) {
-        final verseId = "bibleverses-${widget.bookAbbrev}-${widget.chapter}-${widget.verseNumber}";
+        final verseId =
+            "bibleverses-${widget.bookAbbrev}-${widget.chapter}-${widget.verseNumber}";
 
         return AlertDialog(
           backgroundColor: const Color(0xFF2C2F33),
@@ -70,7 +71,8 @@ class _SaveVerseDialogState extends State<SaveVerseDialog> {
                       onTap: () {
                         if (!topicSaves[collectionName]!.contains(verseId)) {
                           StoreProvider.of<AppState>(context).dispatch(
-                            SaveVerseToCollectionAction(collectionName, verseId),
+                            SaveVerseToCollectionAction(
+                                collectionName, verseId),
                           );
                           Navigator.of(context).pop();
                         } else {
@@ -82,7 +84,7 @@ class _SaveVerseDialogState extends State<SaveVerseDialog> {
                         }
                       },
                     );
-                  }).toList(),
+                  }),
                 const SizedBox(height: 16),
                 TextField(
                   controller: collectionController,

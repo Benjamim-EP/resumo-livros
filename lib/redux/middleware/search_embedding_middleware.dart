@@ -12,10 +12,11 @@ List<Middleware<AppState>> createSearchEmbeddingMiddleware() {
 
   return [
     TypedMiddleware<AppState, EmbedAndSearchFeaturesAction>(
-        _handleEmbedAndSearchFeatures(openAIService,
-            pineconeService)), // Este pode ser obsoleto se FetchTribeTopicsAction o substitui
-    TypedMiddleware<AppState, SearchByQueryAction>(
-        _handleSearchByQuery(openAIService, pineconeService, firestoreService)),
+            _handleEmbedAndSearchFeatures(openAIService, pineconeService))
+        .call, // Este pode ser obsoleto se FetchTribeTopicsAction o substitui
+    TypedMiddleware<AppState, SearchByQueryAction>(_handleSearchByQuery(
+            openAIService, pineconeService, firestoreService))
+        .call,
   ];
 }
 
@@ -31,7 +32,7 @@ void Function(Store<AppState>, EmbedAndSearchFeaturesAction, NextDispatcher)
     try {
       List<Map<String, dynamic>> allMatches = [];
       for (var entry in action.features.entries) {
-        if (entry.value is String && (entry.value as String).isNotEmpty) {
+        if ((entry.value).isNotEmpty) {
           final embedding = await openAIService.generateEmbedding(entry.value);
           final results = await pineconeService.queryPinecone(
               embedding, 100); // Ajuste topK

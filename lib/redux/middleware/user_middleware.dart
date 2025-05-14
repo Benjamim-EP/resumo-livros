@@ -12,56 +12,79 @@ List<Middleware<AppState>> createUserMiddleware() {
 
   return [
     TypedMiddleware<AppState, LoadUserStatsAction>(
-        _loadUserStats(firestoreService)),
+            _loadUserStats(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadUserDetailsAction>(
-        _loadUserDetails(firestoreService)),
+            _loadUserDetails(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadUserPremiumStatusAction>(
-        _loadUserPremiumStatus(firestoreService)),
+            _loadUserPremiumStatus(firestoreService))
+        .call,
     // Ação dinâmica para _loadUserCollections
     TypedMiddleware<AppState, dynamic>(
-        _loadUserCollectionsMiddleware(firestoreService)),
+            _loadUserCollectionsMiddleware(firestoreService))
+        .call,
     TypedMiddleware<AppState, SaveTopicToCollectionAction>(
-        _saveTopicToCollection(firestoreService)),
+            _saveTopicToCollection(firestoreService))
+        .call,
     TypedMiddleware<AppState, SaveVerseToCollectionAction>(
-        _saveVerseToCollection(firestoreService)),
+            _saveVerseToCollection(firestoreService))
+        .call,
     // TypedMiddleware<AppState, LoadBooksInProgressAction>(_loadBooksInProgress(firestoreService)), // Desativado
     // TypedMiddleware<AppState, LoadBooksDetailsAction>(_loadBooksDetails(firestoreService)), // Desativado
     TypedMiddleware<AppState, UpdateUserFieldAction>(
-        _updateUserField(firestoreService)),
+            _updateUserField(firestoreService))
+        .call,
     TypedMiddleware<AppState, SaveUserFeaturesAction>(
-        _saveUserFeatures(firestoreService)),
+            _saveUserFeatures(firestoreService))
+        .call,
     TypedMiddleware<AppState, CheckFirstLoginAction>(
-        _checkFirstLogin(firestoreService)),
+            _checkFirstLogin(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadTopicsContentUserSavesAction>(
-        _loadTopicsContentUserSaves(firestoreService)),
+            _loadTopicsContentUserSaves(firestoreService))
+        .call,
     TypedMiddleware<AppState, DeleteTopicCollectionAction>(
-        _deleteTopicCollection(firestoreService)),
+            _deleteTopicCollection(firestoreService))
+        .call,
     TypedMiddleware<AppState, DeleteSingleTopicFromCollectionAction>(
-        _deleteSingleTopicFromCollection(firestoreService)),
+            _deleteSingleTopicFromCollection(firestoreService))
+        .call,
     TypedMiddleware<AppState, AddDiaryEntryAction>(
-        _addDiaryEntry(firestoreService)),
+            _addDiaryEntry(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadUserDiariesAction>(
-        _loadUserDiaries(firestoreService)),
+            _loadUserDiaries(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadUserHighlightsAction>(
-        _loadUserHighlights(firestoreService)),
+            _loadUserHighlights(firestoreService))
+        .call,
     TypedMiddleware<AppState, ToggleHighlightAction>(
-        _toggleHighlight(firestoreService)),
+            _toggleHighlight(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadUserNotesAction>(
-        _loadUserNotes(firestoreService)),
-    TypedMiddleware<AppState, SaveNoteAction>(_saveNote(firestoreService)),
-    TypedMiddleware<AppState, DeleteNoteAction>(_deleteNote(firestoreService)),
+            _loadUserNotes(firestoreService))
+        .call,
+    TypedMiddleware<AppState, SaveNoteAction>(_saveNote(firestoreService)).call,
+    TypedMiddleware<AppState, DeleteNoteAction>(_deleteNote(firestoreService))
+        .call,
     // Histórico de Leitura
     TypedMiddleware<AppState, RecordReadingHistoryAction>(
-        _handleRecordReadingHistory(firestoreService)),
+            _handleRecordReadingHistory(firestoreService))
+        .call,
     TypedMiddleware<AppState, LoadReadingHistoryAction>(
-        _handleLoadReadingHistory(firestoreService)),
+            _handleLoadReadingHistory(firestoreService))
+        .call,
 
     TypedMiddleware<AppState, LoadUserCommentHighlightsAction>(
-        _loadUserCommentHighlights(firestoreService)),
+            _loadUserCommentHighlights(firestoreService))
+        .call,
     TypedMiddleware<AppState, AddCommentHighlightAction>(
-        _addCommentHighlight(firestoreService)),
+            _addCommentHighlight(firestoreService))
+        .call,
     TypedMiddleware<AppState, RemoveCommentHighlightAction>(
-        _removeCommentHighlight(firestoreService)),
+            _removeCommentHighlight(firestoreService))
+        .call,
   ];
 }
 

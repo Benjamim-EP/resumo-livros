@@ -14,7 +14,7 @@ class SectionCommentaryModal extends StatefulWidget {
   final String versesRangeStr;
 
   const SectionCommentaryModal({
-    Key? key,
+    super.key,
     required this.sectionTitle,
     required this.commentaryItems,
     required this.bookAbbrev,
@@ -22,7 +22,7 @@ class SectionCommentaryModal extends StatefulWidget {
     required this.bookName,
     required this.chapterNumber,
     required this.versesRangeStr,
-  }) : super(key: key);
+  });
 
   @override
   State<SectionCommentaryModal> createState() => _SectionCommentaryModalState();

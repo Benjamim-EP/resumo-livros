@@ -6,7 +6,7 @@ class ButtonSelectionWidget extends StatelessWidget {
       onTabSelected; // Callback para notificar o índice selecionado
 
   ButtonSelectionWidget(
-      {required this.selectedIndex, required this.onTabSelected});
+      {super.key, required this.selectedIndex, required this.onTabSelected});
 
   final List<String> _options = ["Livros", "Rotas", "Reviews", "Similares"];
 

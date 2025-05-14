@@ -8,7 +8,8 @@ class ProfeciasDeSuaVindaPage extends StatefulWidget {
   const ProfeciasDeSuaVindaPage({super.key, required this.profecias});
 
   @override
-  _ProfeciasDeSuaVindaPageState createState() => _ProfeciasDeSuaVindaPageState();
+  _ProfeciasDeSuaVindaPageState createState() =>
+      _ProfeciasDeSuaVindaPageState();
 }
 
 class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
@@ -22,8 +23,8 @@ class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
 
   Future<void> _loadAbbrevMap() async {
     try {
-      final String jsonString =
-          await rootBundle.loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
+      final String jsonString = await rootBundle
+          .loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
       setState(() {
         abbrevMap = json.decode(jsonString);
       });
@@ -61,8 +62,10 @@ class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                     children: [
-                      _buildSection("Antigo Testamento", profecia['referencias_antigo_testamento']),
-                      _buildSection("Novo Testamento", profecia['cumprimento_novo_testamento']),
+                      _buildSection("Antigo Testamento",
+                          profecia['referencias_antigo_testamento']),
+                      _buildSection("Novo Testamento",
+                          profecia['cumprimento_novo_testamento']),
                     ],
                   ),
                 );
@@ -72,7 +75,8 @@ class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
   }
 
   Widget _buildSection(String title, List<dynamic>? referencias) {
-    if (referencias == null || referencias.isEmpty) return const SizedBox.shrink();
+    if (referencias == null || referencias.isEmpty)
+      return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -81,10 +85,13 @@ class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
         children: [
           Text(
             title,
-            style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          ...referencias.map((ref) => _buildReferenceTile(ref)).toList(),
+          ...referencias.map((ref) => _buildReferenceTile(ref)),
           const SizedBox(height: 8),
         ],
       ),
@@ -104,10 +111,12 @@ class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
           children: snapshot.hasData
               ? snapshot.data!.map((verse) {
                   return Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 4),
+                    padding:
+                        const EdgeInsets.only(left: 16, right: 16, bottom: 4),
                     child: Text(
                       verse,
-                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   );
                 }).toList()
@@ -126,7 +135,8 @@ class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
     try {
       if (abbrevMap == null) return [];
 
-      final match = RegExp(r'([^\d]+)\s(\d+):(\d+)(?:-(\d+))?').firstMatch(reference);
+      final match =
+          RegExp(r'([^\d]+)\s(\d+):(\d+)(?:-(\d+))?').firstMatch(reference);
       if (match == null) return [];
 
       final bookName = match.group(1)?.trim();

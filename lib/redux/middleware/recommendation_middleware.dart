@@ -16,12 +16,15 @@ List<Middleware<AppState>> createRecommendationMiddleware() {
 
   return [
     TypedMiddleware<AppState, LoadWeeklyRecommendationsAction>(
-        _loadWeeklyRecommendations(firestoreService)),
+            _loadWeeklyRecommendations(firestoreService))
+        .call,
     TypedMiddleware<AppState, FetchTribeTopicsAction>(_handleFetchTribeTopics(
-        firestoreService, openAIService, pineconeService)),
+            firestoreService, openAIService, pineconeService))
+        .call,
     TypedMiddleware<AppState, LoadTopicsByFeatureAction>(
-        _handleLoadTopicsByFeature(firestoreService, openAIService,
-            pineconeService, localStorageService)),
+            _handleLoadTopicsByFeature(firestoreService, openAIService,
+                pineconeService, localStorageService))
+        .call,
   ];
 }
 

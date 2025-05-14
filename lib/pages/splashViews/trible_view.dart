@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 class TribeView extends StatelessWidget {
   final AnimationController animationController;
 
-  const TribeView({Key? key, required this.animationController})
-      : super(key: key);
+  const TribeView({super.key, required this.animationController});
 
   @override
   Widget build(BuildContext context) {
-    final animation = Tween<Offset>(begin: Offset(1, 0), end: Offset(0, 0))
-        .animate(CurvedAnimation(
+    final animation =
+        Tween<Offset>(begin: const Offset(1, 0), end: const Offset(0, 0))
+            .animate(CurvedAnimation(
       parent: animationController,
       curve: const Interval(0.2, 0.4, curve: Curves.fastOutSlowIn),
     ));

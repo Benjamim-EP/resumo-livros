@@ -42,14 +42,12 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: greenThemePrimary,
         secondary: greenThemeSecondary,
-        surface: greenThemeSecondary, // Cor de superfície (cards, etc.)
-        background: greenThemeBackground,
+        surface: greenThemeSecondary,
         error: Colors.redAccent,
         onPrimary:
             greenThemeBackground, // Texto sobre a cor primária (verde claro)
         onSecondary: greenThemeTextPrimary,
-        onSurface: greenThemeTextPrimary, // Texto sobre superfícies
-        onBackground: greenThemeTextPrimary,
+        onSurface: greenThemeTextPrimary,
         onError: greenThemeTextPrimary,
       ),
       appBarTheme: const AppBarTheme(
@@ -62,7 +60,7 @@ class AppTheme {
             color: greenThemeTextPrimary,
             fontWeight: FontWeight.w600),
       ),
-      textTheme: TextTheme(
+      textTheme: const TextTheme(
         displayLarge: TextStyle(
             fontFamily: fontPrimary,
             fontSize: 28,
@@ -117,7 +115,7 @@ class AppTheme {
         filled: true,
         fillColor: greenThemeSecondary.withOpacity(0.5),
         hintStyle: TextStyle(color: greenThemeTextSecondary.withOpacity(0.7)),
-        labelStyle: TextStyle(color: greenThemeTextSecondary),
+        labelStyle: const TextStyle(color: greenThemeTextSecondary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
@@ -128,7 +126,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: greenThemeSecondary, width: 1),
+          borderSide: const BorderSide(color: greenThemeSecondary, width: 1),
         ),
       ),
       cardTheme: CardTheme(
@@ -165,51 +163,49 @@ class AppTheme {
         primary: septimaCoralIntense,
         secondary: septimaCoralDark,
         surface: septimaGraphiteSurface,
-        background: septimaGraphiteDarkBg,
         error: Colors.redAccent.shade100,
         onPrimary: septimaWhite,
         onSecondary: septimaWhite,
         onSurface: septimaWhite,
-        onBackground: septimaWhite,
         onError: septimaBlack,
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: septimaGraphiteDarkBg,
         foregroundColor: septimaWhite,
         elevation: 0,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
             fontFamily: fontLogo,
             fontSize: 22,
             color: septimaWhite,
             fontWeight: FontWeight.normal),
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(
+        displayLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 34,
             color: septimaSalmonLight,
             fontWeight: FontWeight.normal),
-        displayMedium: TextStyle(
+        displayMedium: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 28,
             color: septimaSalmonLight,
             fontWeight: FontWeight.normal),
-        displaySmall: TextStyle(
+        displaySmall: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 24,
             color: septimaSalmonLight,
             fontWeight: FontWeight.normal),
-        headlineMedium: TextStyle(
+        headlineMedium: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 22,
             color: septimaWhite,
             fontWeight: FontWeight.normal),
-        headlineSmall: TextStyle(
+        headlineSmall: const TextStyle(
             fontFamily: fontSecondary,
             fontSize: 20,
             color: septimaWhite,
             fontWeight: FontWeight.w600), // Usando Poppins para subtítulos
-        titleLarge: TextStyle(
+        titleLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 18,
             color: septimaWhite,
@@ -219,12 +215,12 @@ class AppTheme {
             fontSize: 16,
             color: septimaWhite.withOpacity(0.9),
             height: 1.5),
-        bodyMedium: TextStyle(
+        bodyMedium: const TextStyle(
             fontFamily: fontPrimary,
             fontSize: 14,
             color: septimaGreyText,
             height: 1.4),
-        labelLarge: TextStyle(
+        labelLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 16,
             fontWeight: FontWeight.normal,
@@ -263,7 +259,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: septimaGraphiteSurface, width: 1),
+          borderSide: const BorderSide(color: septimaGraphiteSurface, width: 1),
         ),
       ),
       cardTheme: CardTheme(
@@ -272,14 +268,14 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: septimaBlack,
         selectedItemColor: septimaCoralIntense,
         unselectedItemColor: septimaGreyText,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: const TextStyle(
-            fontFamily: fontPrimary, fontWeight: FontWeight.w500),
-        unselectedLabelStyle: const TextStyle(fontFamily: fontPrimary),
+        selectedLabelStyle:
+            TextStyle(fontFamily: fontPrimary, fontWeight: FontWeight.w500),
+        unselectedLabelStyle: TextStyle(fontFamily: fontPrimary),
       ),
       tabBarTheme: const TabBarTheme(
         labelColor: septimaCoralIntense,
@@ -306,52 +302,50 @@ class AppTheme {
       colorScheme: ColorScheme.light(
         primary: septimaCoralIntense,
         secondary: septimaCoralDark,
-        surface: septimaWhite, // Cards e superfícies
-        background: Colors.grey.shade50,
+        surface: septimaWhite,
         error: Colors.red.shade700,
         onPrimary: septimaWhite,
         onSecondary: septimaWhite,
         onSurface: septimaBlack,
-        onBackground: septimaBlack,
         onError: septimaWhite,
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: septimaCoralDark, // AppBar com cor da marca
         foregroundColor: septimaWhite,
         elevation: 1,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
             fontFamily: fontLogo,
             fontSize: 22,
             color: septimaWhite,
             fontWeight: FontWeight.normal),
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(
+        displayLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 34,
             color: septimaBordoDark,
             fontWeight: FontWeight.normal),
-        displayMedium: TextStyle(
+        displayMedium: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 28,
             color: septimaBordoDark,
             fontWeight: FontWeight.normal),
-        displaySmall: TextStyle(
+        displaySmall: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 24,
             color: septimaBordoDark,
             fontWeight: FontWeight.normal),
-        headlineMedium: TextStyle(
+        headlineMedium: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 22,
             color: septimaGraphiteDarkBg,
             fontWeight: FontWeight.normal),
-        headlineSmall: TextStyle(
+        headlineSmall: const TextStyle(
             fontFamily: fontSecondary,
             fontSize: 20,
             color: septimaGraphiteDarkBg,
             fontWeight: FontWeight.w600),
-        titleLarge: TextStyle(
+        titleLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 18,
             color: septimaGraphiteDarkBg,
@@ -366,7 +360,7 @@ class AppTheme {
             fontSize: 14,
             color: septimaGraphiteDarkBg.withOpacity(0.70),
             height: 1.4),
-        labelLarge: TextStyle(
+        labelLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 16,
             fontWeight: FontWeight.normal,

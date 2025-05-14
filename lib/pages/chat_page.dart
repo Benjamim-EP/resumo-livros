@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:resumo_dos_deuses_flutter/pages/chat_page/message_model.dart';
-import 'package:resumo_dos_deuses_flutter/pages/chat_page/openai_chat_service.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -23,12 +22,13 @@ class _ChatPageState extends State<ChatPage> {
 
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
-    
+
     String userMessage = _messageController.text.trim();
     _messageController.clear();
 
     // 🔹 Dispara a action do Redux para processar a mensagem
-    StoreProvider.of<AppState>(context).dispatch(SendMessageAction(userMessage));
+    StoreProvider.of<AppState>(context)
+        .dispatch(SendMessageAction(userMessage));
   }
 
   @override

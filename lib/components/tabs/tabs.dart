@@ -15,7 +15,8 @@ class Tabs extends StatelessWidget {
     'Notas',
     'Diário'
   ];
-  Tabs({required this.onTabSelected, required this.selectedTab});
+  const Tabs(
+      {super.key, required this.onTabSelected, required this.selectedTab});
 
   @override
   Widget build(BuildContext context) {

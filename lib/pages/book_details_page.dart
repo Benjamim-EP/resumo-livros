@@ -12,14 +12,6 @@ class BookDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (bookId == null) {
-      // Verifica se bookId é nulo
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes do Livro'),
@@ -65,7 +57,7 @@ class BookDetailsPage extends StatelessWidget {
           final chapters = book['chapters'] as List<dynamic>? ?? [];
 
           final chaptersIniciados =
-              (bookProgress?['chaptersIniciados'] as List<dynamic>?) ?? [];
+              (bookProgress['chaptersIniciados'] as List<dynamic>?) ?? [];
           print(
               "📖 Capitulos iniciados carregados: $chaptersIniciados"); // Debug
           return SingleChildScrollView(

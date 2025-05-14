@@ -81,8 +81,9 @@ class AuthCheck extends StatelessWidget {
                   migratedData['firstLogin'] ?? false; // Usa migratedData
               store.dispatch(FirstLoginSuccessAction(isFirstLogin));
 
-              if (!context.mounted)
+              if (!context.mounted) {
                 return; // Verifica novamente antes de navegar
+              }
               if (isFirstLogin) {
                 Navigator.pushReplacementNamed(context, '/finalForm');
               } else {

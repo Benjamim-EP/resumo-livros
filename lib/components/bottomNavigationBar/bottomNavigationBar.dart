@@ -60,7 +60,7 @@ class _UserCoinsViewModel {
 }
 
 class _UnderConstructionPlaceholder extends StatelessWidget {
-  const _UnderConstructionPlaceholder({Key? key}) : super(key: key);
+  const _UnderConstructionPlaceholder({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -210,8 +210,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 
   void _initBannerAd() {
-    if (_bannerAd != null || !mounted || _isPremiumFromState)
+    if (_bannerAd != null || !mounted || _isPremiumFromState) {
       return; // Não carrega se for premium
+    }
     _bannerAd = ads.BannerAd(
       adUnitId: AdHelper.bannerAdUnitId,
       size: ads.AdSize.banner,
@@ -228,10 +229,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
         },
         onAdFailedToLoad: (ad, err) {
           ad.dispose();
-          if (mounted)
+          if (mounted) {
             setState(() {
               _bannerAd = null;
             });
+          }
         },
       ),
     )..load();
@@ -357,7 +359,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.monetization_on,
+                          const Icon(Icons.monetization_on,
                               color: Colors.amber, size: 22),
                           const SizedBox(width: 4),
                           Text(
@@ -377,8 +379,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
                               },
                             )
                           else
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
+                            const Padding(
+                              padding: EdgeInsets.only(left: 8.0),
                               child: Icon(
                                 Icons.check_circle,
                                 color: Colors.green,

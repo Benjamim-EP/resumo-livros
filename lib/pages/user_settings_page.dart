@@ -194,7 +194,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       controller: _nameController,
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Nome',
                         // Estilos de label, filled, border, prefixIcon herdam do inputDecorationTheme
                       ),

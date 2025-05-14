@@ -9,6 +9,8 @@ import '../services/sign_in_google.dart';
 import '../services/sign_email.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -67,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
         // Redireciona para o AuthCheck após o login
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AuthCheck()),
+          MaterialPageRoute(builder: (context) => const AuthCheck()),
         );
       } else {
         setState(() {

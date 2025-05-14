@@ -111,8 +111,9 @@ class _ChapterViewPageState extends State<ChapterViewPage> {
     final prefs = await SharedPreferences.getInstance();
     final key = 'reading_${widget.bookId}';
 
-    if (prefs.getBool(key) == true)
+    if (prefs.getBool(key) == true) {
       return; // 🔹 Evita acessar o Firestore se já está salvo
+    }
 
     StoreProvider.of<AppState>(context)
         .dispatch(MarkBookAsReadingAction(widget.bookId));

@@ -32,7 +32,8 @@ List<Middleware<AppState>> createAdMiddleware() {
 
   return [
     TypedMiddleware<AppState, RequestRewardedAdAction>(
-        _handleRequestRewardedAd(adHelper, firestoreService)),
+            _handleRequestRewardedAd(adHelper, firestoreService))
+        .call,
   ];
 }
 

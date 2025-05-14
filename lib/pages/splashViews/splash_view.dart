@@ -4,8 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 class SplashView extends StatefulWidget {
   final AnimationController animationController;
 
-  const SplashView({Key? key, required this.animationController})
-      : super(key: key);
+  const SplashView({super.key, required this.animationController});
 
   @override
   _SplashViewState createState() => _SplashViewState();
@@ -14,7 +13,7 @@ class SplashView extends StatefulWidget {
 class _SplashViewState extends State<SplashView> {
   @override
   Widget build(BuildContext context) {
-    final _introductionAnimation = Tween<Offset>(
+    final introductionAnimation = Tween<Offset>(
       begin: const Offset(0, 0),
       end: const Offset(0.0, -1.0),
     ).animate(
@@ -32,7 +31,7 @@ class _SplashViewState extends State<SplashView> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return SlideTransition(
-      position: _introductionAnimation,
+      position: introductionAnimation,
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,

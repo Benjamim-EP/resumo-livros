@@ -9,8 +9,8 @@ const String _themePreferenceKey = 'app_theme_preference';
 
 List<Middleware<AppState>> createThemeMiddleware() {
   return [
-    TypedMiddleware<AppState, SetThemeAction>(_saveThemePreference),
-    TypedMiddleware<AppState, LoadSavedThemeAction>(_loadThemePreference),
+    TypedMiddleware<AppState, SetThemeAction>(_saveThemePreference).call,
+    TypedMiddleware<AppState, LoadSavedThemeAction>(_loadThemePreference).call,
   ];
 }
 

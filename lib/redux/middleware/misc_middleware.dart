@@ -11,10 +11,12 @@ List<Middleware<AppState>> createMiscMiddleware() {
   return [
     // Se UserLoggedInAction disparar LoadTagsAction, este middleware será chamado
     // TypedMiddleware<AppState, LoadTagsAction, NextDispatcher)(_loadTags(tagService)), // Exemplo
-    TypedMiddleware<AppState, TagsLoadedAction>(_handleTagsLoaded(
-        firestoreService)), // Exemplo de como lidar com tags carregadas
+    TypedMiddleware<AppState, TagsLoadedAction>(
+            _handleTagsLoaded(firestoreService))
+        .call, // Exemplo de como lidar com tags carregadas
     TypedMiddleware<AppState, LoadUserRoutesAction>(
-        _loadUserRoutes(firestoreService)),
+            _loadUserRoutes(firestoreService))
+        .call,
     // Middleware para AddTopicToRouteAction e ClearRouteAction geralmente não são necessários
     // pois a lógica principal ocorre nos reducers. A menos que precise salvar no Firestore
     // TypedMiddleware<AppState, AddTopicToRouteAction, NextDispatcher)(_handleAddTopicToRoute),

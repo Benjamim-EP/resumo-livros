@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 class LoadingBooksPlaceholder extends StatelessWidget {
-  const LoadingBooksPlaceholder({Key? key}) : super(key: key);
+  const LoadingBooksPlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {

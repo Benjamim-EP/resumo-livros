@@ -80,4 +80,5 @@ Future<User?> signInWithGoogle(BuildContext context) async {
   } catch (e) {
     print('Erro geral no login com Google: $e');
   }
+  return null;
 }

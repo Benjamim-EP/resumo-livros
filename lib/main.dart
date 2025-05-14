@@ -21,6 +21,8 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return StoreProvider(
@@ -34,7 +36,7 @@ class MyApp extends StatelessWidget {
             navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
             theme: activeTheme, // Aplica o tema ativo do Redux
-            home: AuthCheck(),
+            home: const AuthCheck(),
             onGenerateRoute: NavigationService.generateRoute,
             routes: {
               '/mainAppScreen': (context) => const MainAppScreen(),

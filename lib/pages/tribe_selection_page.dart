@@ -7,7 +7,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 class TribeSelectionPage extends StatelessWidget {
   final Map<String, String> tribos;
 
-  TribeSelectionPage({Key? key, required this.tribos}) : super(key: key);
+  TribeSelectionPage({super.key, required this.tribos});
 
   final Map<String, String> _triboImageMap = {
     'Aser': 'assets/images/tribos/aser.webp',
