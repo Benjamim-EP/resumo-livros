@@ -1,5 +1,7 @@
 // redux/actions.dart
 // Define as ações para carregar livros e alterar a página
+import 'package:resumo_dos_deuses_flutter/redux/reducers.dart';
+
 class LoadBooksAction {
   final int page;
   LoadBooksAction(this.page);
@@ -565,3 +567,12 @@ class RequestBottomNavChangeAction {
 }
 
 class ClearTargetBottomNavAction {}
+
+// Ações para o Tema
+class SetThemeAction {
+  final AppThemeOption themeOption;
+  SetThemeAction(this.themeOption);
+}
+
+// Ação para ser despachada na inicialização para carregar o tema salvo
+class LoadSavedThemeAction {}

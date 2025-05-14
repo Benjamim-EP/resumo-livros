@@ -447,6 +447,11 @@ flutter:
         - asset: assets/fonts/NotoSansHebrew-Regular.ttf # Adapte o caminho
         - asset: assets/fonts/NotoSansHebrew-Bold.ttf
           weight: 700
+    - family: ASTRO867 # Nome que você usará no código
+      fonts:
+        - asset: assets/fonts/ASTRO867.ttf # Caminho para o arquivo da fonte
+        # - asset: assets/fonts/ASTRO867-Bold.ttf # Se tiver variações de peso
+        #   weight: 700
           
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

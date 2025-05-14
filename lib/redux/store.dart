@@ -11,6 +11,7 @@ import 'middleware/search_embedding_middleware.dart';
 import 'middleware/chat_middleware.dart';
 import 'middleware/recommendation_middleware.dart';
 import 'middleware/misc_middleware.dart';
+import 'middleware/theme_middleware.dart';
 
 class AppState {
   final BooksState booksState;
@@ -18,6 +19,7 @@ class AppState {
   final AuthorState authorState;
   final TopicState topicState;
   final ChatState chatState; // 🔹 Adicionando ChatState
+  final ThemeState themeState;
 
   AppState({
     required this.booksState,
@@ -25,6 +27,7 @@ class AppState {
     required this.authorState,
     required this.topicState,
     required this.chatState,
+    required this.themeState, // NOVO
   });
 
   AppState copyWith({
@@ -33,6 +36,7 @@ class AppState {
     AuthorState? authorState,
     TopicState? topicState,
     ChatState? chatState,
+    ThemeState? themeState, // NOVO
   }) {
     return AppState(
       booksState: booksState ?? this.booksState,
@@ -40,6 +44,7 @@ class AppState {
       authorState: authorState ?? this.authorState,
       topicState: topicState ?? this.topicState,
       chatState: chatState ?? this.chatState,
+      themeState: themeState ?? this.themeState, // NOVO
     );
   }
 }
@@ -51,6 +56,8 @@ AppState appReducer(AppState state, dynamic action) {
     authorState: authorReducer(state.authorState, action),
     topicState: topicReducer(state.topicState, action),
     chatState: chatReducer(state.chatState, action), // 🔹 Adicionado aqui
+    themeState:
+        themeReducer(state.themeState, action), // NOVO: Adicionar o themeReduce
   );
 }
 
@@ -63,6 +70,7 @@ final Store<AppState> store = Store<AppState>(
     authorState: AuthorState(),
     topicState: TopicState(),
     chatState: ChatState(),
+    themeState: ThemeState.initial(), // NOVO: Usa o factory do ThemeState
   ),
   middleware: [
     // Combina todos os middlewares dos arquivos separados
@@ -75,5 +83,6 @@ final Store<AppState> store = Store<AppState>(
     ...createRecommendationMiddleware(),
     ...createMiscMiddleware(),
     ...createPaymentMiddleware(),
+    ...createThemeMiddleware(), // NOVO: Adicionando o middleware de tema
   ],
 );

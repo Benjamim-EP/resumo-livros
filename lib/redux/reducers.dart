@@ -1,7 +1,68 @@
 // redux/reducers.dart
+import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
+import 'package:resumo_dos_deuses_flutter/design/theme.dart'; // Importar seus temas
 
 import 'actions.dart';
+
+// Enum para identificar os temas
+enum AppThemeOption {
+  green, // Tema verde original
+  septimaDark,
+  septimaLight,
+}
+
+class ThemeState {
+  final AppThemeOption activeThemeOption; // Armazena a opção do tema
+  final ThemeData activeThemeData; // Armazena o ThemeData correspondente
+
+  ThemeState({
+    required this.activeThemeOption,
+    required this.activeThemeData,
+  });
+
+  factory ThemeState.initial() {
+    // Define o tema verde como padrão inicial
+    return ThemeState(
+      activeThemeOption: AppThemeOption.green,
+      activeThemeData: AppTheme.greenTheme,
+    );
+  }
+
+  ThemeState copyWith({
+    AppThemeOption? activeThemeOption,
+    ThemeData? activeThemeData,
+  }) {
+    return ThemeState(
+      activeThemeOption: activeThemeOption ?? this.activeThemeOption,
+      activeThemeData: activeThemeData ?? this.activeThemeData,
+    );
+  }
+}
+
+// Helper para obter ThemeData a partir da opção
+ThemeData _getThemeDataFromOption(AppThemeOption option) {
+  switch (option) {
+    case AppThemeOption.green:
+      return AppTheme.greenTheme;
+    case AppThemeOption.septimaDark:
+      return AppTheme.septimaDarkTheme;
+    case AppThemeOption.septimaLight:
+      return AppTheme.septimaLightTheme;
+    default:
+      return AppTheme.greenTheme; // Padrão
+  }
+}
+
+ThemeState themeReducer(ThemeState state, dynamic action) {
+  if (action is SetThemeAction) {
+    return state.copyWith(
+      activeThemeOption: action.themeOption,
+      activeThemeData: _getThemeDataFromOption(action.themeOption),
+    );
+  }
+  return state;
+}
 
 class BooksState {
   final Map<String, List<Map<String, String>>> booksByTag; // Livros por tag
