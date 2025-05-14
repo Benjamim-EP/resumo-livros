@@ -1,10 +1,14 @@
+// lib/pages/signup_page.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Importar Firestore
 import 'package:flutter_redux/flutter_redux.dart';
 import '../redux/store.dart';
 import '../redux/actions.dart';
 
 class SignUpEmailPage extends StatefulWidget {
+  const SignUpEmailPage({super.key}); // Adicionado super.key
+
   @override
   _SignUpEmailPageState createState() => _SignUpEmailPageState();
 }
@@ -28,34 +32,87 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
     try {
       final UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-              email: _emailController.text, password: _passwordController.text);
+              email: _emailController.text.trim(),
+              password: _passwordController.text);
 
       final User? user = userCredential.user;
       if (user != null) {
-        // Atualiza o nome do usuário
-        await user.updateDisplayName(_nameController.text);
+        await user.updateDisplayName(_nameController.text.trim());
 
-        // Recupera o Store do Redux
-        final store = StoreProvider.of<AppState>(context, listen: false);
+        // Salvar informações adicionais no Firestore
+        final userDocRef =
+            FirebaseFirestore.instance.collection('users').doc(user.uid);
+        Map<String, dynamic> newUserFirestoreData = {
+          'userId': user.uid,
+          'nome': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'photoURL': user.photoURL ?? '', // Pode ser null
+          'dataCadastro': FieldValue.serverTimestamp(),
+          'Dias': 0,
+          'Livros': 0,
+          'Tópicos': 0,
+          'firstLogin': true, // Novo usuário, então é o primeiro login
+          'selos': 10,
+          'descrição': "",
+          'Tribo': null,
+          'userFeatures': {},
+          'indicacoes': {},
+          'topicSaves': {},
+          'booksProgress': {},
+          'lastReadBookAbbrev': null,
+          'lastReadChapter': null,
+          'isPremium': {'status': 'inactive', 'expiration': null},
+          // NOVOS CAMPOS DE MOEDAS E ANÚNCIOS
+          'userCoins': 100,
+          'lastRewardedAdWatchTime': null,
+          'rewardedAdsWatchedToday': 0,
+          // NOVOS CAMPOS DE ASSINATURA
+          'stripeCustomerId': null,
+          'subscriptionStatus': 'inactive',
+          'subscriptionEndDate': null,
+          'stripeSubscriptionId': null,
+          'activePriceId': null,
+        };
+        await userDocRef.set(newUserFirestoreData);
+        print("Novo usuário (Email/Senha) criado no Firestore: ${user.uid}");
 
-        // Dispara a ação para atualizar o estado do usuário no Redux
-        store.dispatch(UserLoggedInAction(
+        final storeInstance =
+            StoreProvider.of<AppState>(context, listen: false);
+        storeInstance.dispatch(UserLoggedInAction(
           userId: user.uid,
           email: user.email!,
-          nome: _nameController.text,
+          nome: _nameController.text.trim(),
         ));
+        storeInstance
+            .dispatch(FirstLoginSuccessAction(true)); // É o primeiro login
+        // Carrega os detalhes recém-criados para o estado Redux
+        storeInstance.dispatch(UserDetailsLoadedAction(newUserFirestoreData));
 
-        // Redireciona para a página inicial
-        Navigator.pushReplacementNamed(context, '/home');
+        // Redireciona para a tela de formulário inicial
+        Navigator.pushReplacementNamed(context, '/finalForm');
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorMessage = e.message;
+        if (e.code == 'weak-password') {
+          _errorMessage = 'A senha fornecida é muito fraca.';
+        } else if (e.code == 'email-already-in-use') {
+          _errorMessage = 'Este email já está em uso por outra conta.';
+        } else if (e.code == 'invalid-email') {
+          _errorMessage = 'O email fornecido é inválido.';
+        } else {
+          _errorMessage = 'Erro ao criar conta: ${e.message}';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Ocorreu um erro inesperado: $e';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -81,7 +138,7 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                 ],
               ),
               child: Form(
-                key: _formKey, // Associando o formKey
+                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -108,8 +165,6 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                       ),
                     ),
                     const SizedBox(height: 60),
-
-                    // Campo Nome Completo
                     TextFormField(
                       controller: _nameController,
                       validator: (value) {
@@ -119,33 +174,23 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                         return null;
                       },
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(
-                          Icons.person,
-                          color: Colors.grey,
-                        ),
+                        prefixIcon:
+                            const Icon(Icons.person, color: Colors.grey),
                         labelText: 'Nome Completo',
-                        labelStyle: const TextStyle(
-                          color: Colors.grey,
-                        ),
+                        labelStyle: const TextStyle(color: Colors.grey),
                         filled: true,
                         fillColor: const Color(0xFFF2F2F2),
                         enabledBorder: UnderlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.grey,
-                          ),
+                          borderSide: const BorderSide(color: Colors.grey),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         focusedBorder: UnderlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
-                          ),
+                          borderSide: const BorderSide(color: Colors.blue),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Campo Email
                     TextFormField(
                       controller: _emailController,
                       validator: (value) {
@@ -158,33 +203,22 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                         return null;
                       },
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(
-                          Icons.email,
-                          color: Colors.grey,
-                        ),
+                        prefixIcon: const Icon(Icons.email, color: Colors.grey),
                         labelText: 'Email',
-                        labelStyle: const TextStyle(
-                          color: Colors.grey,
-                        ),
+                        labelStyle: const TextStyle(color: Colors.grey),
                         filled: true,
                         fillColor: const Color(0xFFF2F2F2),
                         enabledBorder: UnderlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.grey,
-                          ),
+                          borderSide: const BorderSide(color: Colors.grey),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         focusedBorder: UnderlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
-                          ),
+                          borderSide: const BorderSide(color: Colors.blue),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Campo Senha
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -197,33 +231,34 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                         return null;
                       },
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(
-                          Icons.lock,
-                          color: Colors.grey,
-                        ),
+                        prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                         labelText: 'Senha',
-                        labelStyle: const TextStyle(
-                          color: Colors.grey,
-                        ),
+                        labelStyle: const TextStyle(color: Colors.grey),
                         filled: true,
                         fillColor: const Color(0xFFF2F2F2),
                         enabledBorder: UnderlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.grey,
-                          ),
+                          borderSide: const BorderSide(color: Colors.grey),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         focusedBorder: UnderlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
-                          ),
+                          borderSide: const BorderSide(color: Colors.blue),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 60),
-
-                    // Botão Cadastrar
+                    const SizedBox(height: 24),
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10.0),
+                        child: Text(
+                          _errorMessage!,
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    const SizedBox(
+                        height: 36), // Ajustado para dar espaço ao erro
                     ElevatedButton(
                       onPressed: _isLoading ? null : () => _signUp(context),
                       style: ElevatedButton.styleFrom(
@@ -234,9 +269,13 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                         ),
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF181A1A),
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF181A1A)),
+                                strokeWidth: 2,
                               ),
                             )
                           : const Text(
@@ -248,11 +287,9 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                             ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Redirecionar para Login
                     GestureDetector(
                       onTap: () {
-                        Navigator.pop(context);
+                        Navigator.pop(context); // Volta para a tela de login
                       },
                       child: const Text(
                         'Já tem uma conta? Faça Login',
@@ -264,6 +301,7 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 30), // Espaço extra no final
                   ],
                 ),
               ),

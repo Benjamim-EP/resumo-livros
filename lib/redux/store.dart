@@ -12,6 +12,7 @@ import 'middleware/chat_middleware.dart';
 import 'middleware/recommendation_middleware.dart';
 import 'middleware/misc_middleware.dart';
 import 'middleware/theme_middleware.dart';
+import 'middleware/ad_middleware.dart'; // NOVO
 
 class AppState {
   final BooksState booksState;
@@ -84,5 +85,6 @@ final Store<AppState> store = Store<AppState>(
     ...createMiscMiddleware(),
     ...createPaymentMiddleware(),
     ...createThemeMiddleware(), // NOVO: Adicionando o middleware de tema
+    ...createAdMiddleware(), // NOVO: Adicionando o middleware de anúncios
   ],
 );

@@ -576,3 +576,23 @@ class SetThemeAction {
 
 // Ação para ser despachada na inicialização para carregar o tema salvo
 class LoadSavedThemeAction {}
+
+class RequestRewardedAdAction {}
+
+// Despachada pelo middleware após o usuário assistir ao anúncio com sucesso e a recompensa ser concedida
+class RewardedAdWatchedAction {
+  final int coinsAwarded; // Quantidade de moedas efetivamente adicionadas
+  final DateTime adWatchTime; // Momento em que o anúncio foi assistido
+
+  RewardedAdWatchedAction(this.coinsAwarded, this.adWatchTime);
+}
+
+class UpdateRewardedAdControlDataAction {
+  final DateTime lastAdWatchTime;
+  final int adsWatchedToday;
+
+  UpdateRewardedAdControlDataAction({
+    required this.lastAdWatchTime,
+    required this.adsWatchedToday,
+  });
+}

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
 import 'package:resumo_dos_deuses_flutter/design/theme.dart'; // Importar seus temas
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'actions.dart';
 
@@ -201,6 +202,11 @@ class UserState {
 
   final int? targetBottomNavIndex;
 
+  // CAMPOS NOVOS PARA MOEDAS E ANÚNCIOS
+  final int userCoins;
+  final DateTime? lastRewardedAdWatchTime;
+  final int rewardedAdsWatchedToday;
+
   UserState({
     this.userId,
     this.email,
@@ -232,6 +238,9 @@ class UserState {
     this.lastReadChapter,
     this.userCommentHighlights = const [],
     this.targetBottomNavIndex,
+    this.userCoins = 0, // Começa com 0, será carregado ou definido como 100
+    this.lastRewardedAdWatchTime,
+    this.rewardedAdsWatchedToday = 0,
   });
 
   UserState copyWith({
@@ -266,6 +275,10 @@ class UserState {
     List<Map<String, dynamic>>? userCommentHighlights, // NOVO
     int? targetBottomNavIndex, // NOVO
     bool clearTargetBottomNavIndex = false,
+    int? userCoins,
+    DateTime? lastRewardedAdWatchTime,
+    bool clearLastRewardedAdWatchTime = false,
+    int? rewardedAdsWatchedToday,
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -303,6 +316,12 @@ class UserState {
       targetBottomNavIndex: clearTargetBottomNavIndex
           ? null
           : (targetBottomNavIndex ?? this.targetBottomNavIndex),
+      userCoins: userCoins ?? this.userCoins,
+      lastRewardedAdWatchTime: clearLastRewardedAdWatchTime
+          ? null
+          : (lastRewardedAdWatchTime ?? this.lastRewardedAdWatchTime),
+      rewardedAdsWatchedToday:
+          rewardedAdsWatchedToday ?? this.rewardedAdsWatchedToday,
     );
   }
 }
@@ -318,6 +337,18 @@ UserState userReducer(UserState state, dynamic action) {
       email: action.email,
       nome: action.nome,
       isLoggedIn: true,
+      userCoins: state.userDetails?['userCoins'] as int? ??
+          100, // Define 100 como padrão
+    );
+  } else if (action is UserStatsLoadedAction) {
+    // Similar a UserDetailsLoadedAction, se 'stats' contiver os campos de moedas.
+    return state.copyWith(
+      userDetails: action.stats, // Assumindo que 'stats' é o novo 'userDetails'
+      userCoins: action.stats['userCoins'] as int? ?? state.userCoins,
+      lastRewardedAdWatchTime:
+          (action.stats['lastRewardedAdWatchTime'] as Timestamp?)?.toDate(),
+      rewardedAdsWatchedToday:
+          action.stats['rewardedAdsWatchedToday'] as int? ?? 0,
     );
   } else if (action is TagsLoadedAction) {
     print("Tags adicionadas ao estado do usuário: ${action.tags}"); // Debug
@@ -325,7 +356,19 @@ UserState userReducer(UserState state, dynamic action) {
   } else if (action is UserLoggedOutAction) {
     return UserState(); // Retorna o estado inicial, usuário deslogado
   } else if (action is UserDetailsLoadedAction) {
-    return state.copyWith(userDetails: action.userDetails);
+    return state.copyWith(
+      userDetails: action.userDetails,
+      lastReadBookAbbrev: action.userDetails['lastReadBookAbbrev'] as String?,
+      lastReadChapter: action.userDetails['lastReadChapter'] as int?,
+      // Carrega as moedas do Firestore, ou mantém o valor atual se não existir, ou 100 como fallback
+      userCoins: action.userDetails['userCoins'] as int? ?? state.userCoins,
+      // Carregar lastRewardedAdWatchTime e rewardedAdsWatchedToday do Firestore
+      lastRewardedAdWatchTime:
+          (action.userDetails['lastRewardedAdWatchTime'] as Timestamp?)
+              ?.toDate(),
+      rewardedAdsWatchedToday:
+          action.userDetails['rewardedAdsWatchedToday'] as int? ?? 0,
+    );
   } else if (action is UserLoggedInAction) {
     return state.copyWith(
       userId: action.userId,
@@ -513,6 +556,34 @@ UserState userReducer(UserState state, dynamic action) {
   } else if (action is ClearTargetBottomNavAction) {
     // NOVA AÇÃO
     return state.copyWith(clearTargetBottomNavIndex: true);
+  } // --- NOVA LÓGICA PARA REWARDED AD ---
+  else if (action is RewardedAdWatchedAction) {
+    int currentCoins = state.userCoins;
+    int coinsToAdd = action.coinsAwarded;
+    int newTotalCoins = currentCoins + coinsToAdd;
+
+    if (newTotalCoins > 100) {
+      newTotalCoins = 100; // Aplica o limite máximo
+    }
+
+    // Lógica para resetar rewardedAdsWatchedToday se for um novo dia
+    DateTime now = DateTime.now();
+    int updatedAdsWatchedToday = state.rewardedAdsWatchedToday + 1;
+
+    if (state.lastRewardedAdWatchTime != null) {
+      final lastWatchDate = state.lastRewardedAdWatchTime!;
+      if (now.year > lastWatchDate.year ||
+          now.month > lastWatchDate.month ||
+          now.day > lastWatchDate.day) {
+        updatedAdsWatchedToday = 1; // Primeiro anúncio de um novo dia
+      }
+    }
+
+    return state.copyWith(
+      userCoins: newTotalCoins,
+      lastRewardedAdWatchTime: action.adWatchTime,
+      rewardedAdsWatchedToday: updatedAdsWatchedToday,
+    );
   }
   return state;
 }

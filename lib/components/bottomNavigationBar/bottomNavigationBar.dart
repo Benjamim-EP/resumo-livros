@@ -1,37 +1,72 @@
-//lib/components/bottomNavigationBar/bottomNavigationBar.dart
+// lib/components/bottomNavigationBar/bottomNavigationBar.dart
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
-// import 'package:resumo_dos_deuses_flutter/pages/chat_page.dart'; // <<< MODIFICAÇÃO MVP: Não precisa importar se for substituído
-// import 'package:resumo_dos_deuses_flutter/pages/explore_page.dart'; // <<< MODIFICAÇÃO MVP: Não precisa importar se for substituído
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
-// import 'package:resumo_dos_deuses_flutter/pages/hymns_page.dart'; // <<< MODIFICAÇÃO MVP: Não precisa importar se for substituído
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:resumo_dos_deuses_flutter/redux/middleware/ad_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Importar FirebaseAuth
-import 'dart:async'; // Importar dart:async para StreamSubscription
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Importar a ação específica
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
+import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
 import 'package:redux/redux.dart';
 
-// <<< MODIFICAÇÃO MVP: Widget Placeholder >>>
+// ViewModel para o StoreConnector das moedas
+class _UserCoinsViewModel {
+  final int userCoins;
+  final bool isPremium; // Para decidir se mostra o botão de ganhar moedas
+
+  _UserCoinsViewModel({required this.userCoins, required this.isPremium});
+
+  static _UserCoinsViewModel fromStore(Store<AppState> store) {
+    bool premiumStatus = false;
+    final userDetails = store.state.userState.userDetails;
+    if (userDetails != null) {
+      final status = userDetails['subscriptionStatus'] as String?;
+      final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
+      if (status == 'active') {
+        if (endDateTimestamp != null) {
+          premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
+        } else {
+          premiumStatus =
+              true; // Assinatura ativa sem data de término (ex: vitalícia)
+        }
+      }
+    }
+    return _UserCoinsViewModel(
+      userCoins: store.state.userState.userCoins,
+      isPremium: premiumStatus,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _UserCoinsViewModel &&
+          runtimeType == other.runtimeType &&
+          userCoins == other.userCoins &&
+          isPremium == other.isPremium;
+
+  @override
+  int get hashCode => userCoins.hashCode ^ isPremium.hashCode;
+}
+
 class _UnderConstructionPlaceholder extends StatelessWidget {
   const _UnderConstructionPlaceholder({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Adicionado Scaffold para aparência consistente
       appBar: AppBar(
         title: const Text("Em Construção"),
-        backgroundColor: const Color(0xFF181A1A),
+        // backgroundColor já definido pelo tema
       ),
       body: const Center(
         child: Column(
@@ -41,13 +76,17 @@ class _UnderConstructionPlaceholder extends StatelessWidget {
             SizedBox(height: 20),
             Text(
               'Esta seção está em construção!',
-              style: TextStyle(fontSize: 20, color: Colors.white),
+              style: TextStyle(
+                fontSize: 20, /*color: Colors.white*/
+              ), // Cor do tema
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 10),
             Text(
               'Volte em breve para novidades.',
-              style: TextStyle(fontSize: 16, color: Colors.white70),
+              style: TextStyle(
+                fontSize: 16, /*color: Colors.white70*/
+              ), // Cor do tema
               textAlign: TextAlign.center,
             ),
           ],
@@ -56,21 +95,16 @@ class _UnderConstructionPlaceholder extends StatelessWidget {
     );
   }
 }
-// <<< FIM MODIFICAÇÃO MVP >>>
 
 class MainAppScreen extends StatefulWidget {
   const MainAppScreen({super.key});
-
   @override
   _MainAppScreenState createState() => _MainAppScreenState();
 }
 
 class _MainAppScreenState extends State<MainAppScreen> {
-  // <<< MODIFICAÇÃO MVP: Iniciar na User Page (índice 0) ou Bible (índice 2)
-  // Vamos manter User como inicial padrão (0)
-  int _selectedIndex = 0; // <<< MODIFICAÇÃO MVP: Iniciar na aba User
+  int _selectedIndex = 0;
 
-  // Chaves para cada Navigator
   final GlobalKey<NavigatorState> _userNavigatorKey =
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _exploreNavigatorKey =
@@ -78,46 +112,42 @@ class _MainAppScreenState extends State<MainAppScreen> {
   final GlobalKey<NavigatorState> _bibleNavigatorKey =
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _rotaNavigatorKey =
-      GlobalKey<NavigatorState>();
+      GlobalKey<NavigatorState>(); // Era cântico
   final GlobalKey<NavigatorState> _chatNavigatorKey =
       GlobalKey<NavigatorState>();
 
   late final List<Widget> _pages;
-
-  // Variáveis para verificar se o usuário é premium e para o anúncio
-  bool isPremium = false; // Começa como não premium até verificar
   ads.BannerAd? _bannerAd;
-  StreamSubscription?
-      _userDocSubscription; // Listener para o documento do usuário
+  StreamSubscription? _userDocSubscription;
+  bool _isPremiumFromState = false; // Estado local para controlar o banner
 
   @override
   void initState() {
     super.initState();
-
-    _setupUserListener(); // Configura o listener do Firestore
-
-    // <<< MODIFICAÇÃO MVP: Atualiza a lista _pages >>>
+    _setupUserListener();
     _pages = [
-      // Índice 0: User (Ativo)
-      _buildTabNavigator(_userNavigatorKey, UserPage()),
-      // Índice 1: Explore (Em Construção)
-      _buildTabNavigator(
-          _exploreNavigatorKey, const _UnderConstructionPlaceholder()),
-      // Índice 2: Bible (Ativo)
+      _buildTabNavigator(_userNavigatorKey, const UserPage()),
+      _buildTabNavigator(_exploreNavigatorKey,
+          const _UnderConstructionPlaceholder()), // Explore
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
-      // Índice 3: Cântico/Hymns (Em Construção)
+      _buildTabNavigator(_rotaNavigatorKey,
+          const _UnderConstructionPlaceholder()), // Cântico/Hymns
       _buildTabNavigator(
-          _rotaNavigatorKey, const _UnderConstructionPlaceholder()),
-      // Índice 4: Chat (Em Construção)
-      _buildTabNavigator(
-          _chatNavigatorKey, const _UnderConstructionPlaceholder()),
+          _chatNavigatorKey, const _UnderConstructionPlaceholder()), // Chat
     ];
-    // <<< FIM MODIFICAÇÃO MVP >>>
+    // Carrega o estado premium inicial do Redux
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final initialViewModel = _UserCoinsViewModel.fromStore(
+            StoreProvider.of<AppState>(context, listen: false));
+        _updatePremiumUI(initialViewModel.isPremium);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _userDocSubscription?.cancel(); // Cancela o listener ao sair
+    _userDocSubscription?.cancel();
     _bannerAd?.dispose();
     super.dispose();
   }
@@ -126,21 +156,15 @@ class _MainAppScreenState extends State<MainAppScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final userId = user.uid;
-      final storeInstance = store; // Usa o store global importado
-
-      print(">>> MainAppScreen: Configurando listener para usuário $userId");
-
+      final storeInstance = store;
       _userDocSubscription?.cancel();
-
       _userDocSubscription = FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .snapshots()
           .listen((DocumentSnapshot snapshot) {
-        if (snapshot.exists && snapshot.data() != null) {
+        if (snapshot.exists && snapshot.data() != null && mounted) {
           final userData = snapshot.data() as Map<String, dynamic>;
-          print(
-              ">>> MainAppScreen Listener: Dados do usuário atualizados no Firestore: Status='${userData['subscriptionStatus']}', EndDate='${(userData['subscriptionEndDate'] as Timestamp?)?.toDate()}'");
           final Timestamp? endDateTimestamp =
               userData['subscriptionEndDate'] as Timestamp?;
           final DateTime? endDateDateTime = endDateTimestamp?.toDate();
@@ -152,72 +176,42 @@ class _MainAppScreenState extends State<MainAppScreen> {
             customerId: userData['stripeCustomerId'] as String?,
             priceId: userData['activePriceId'] as String?,
           ));
-          // Atualiza userDetails geral também, para garantir consistência
-          storeInstance.dispatch(UserDetailsLoadedAction(userData));
-        } else {
-          print(
-              ">>> MainAppScreen Listener: Documento do usuário $userId não existe mais.");
+          storeInstance.dispatch(
+              UserDetailsLoadedAction(userData)); // Atualiza todos os detalhes
+
+          // Atualiza o estado de premium para a UI do banner
+          final currentViewModel = _UserCoinsViewModel.fromStore(storeInstance);
+          _updatePremiumUI(currentViewModel.isPremium);
         }
-      }, onError: (error) {
-        print(
-            ">>> MainAppScreen Listener: Erro ao ouvir documento do usuário: $error");
-      }, onDone: () {
-        print(">>> MainAppScreen Listener: Listener finalizado.");
       });
-    } else {
-      print(
-          ">>> MainAppScreen Listener: Usuário nulo, não é possível configurar listener.");
     }
   }
 
-  void _updatePremiumStatus(Map<String, dynamic>? userDetails) {
+  // Nova função para atualizar a UI do banner com base no estado premium
+  void _updatePremiumUI(bool isNowPremium) {
     if (!mounted) return;
-
-    bool shouldBePremium = false;
-    if (userDetails != null) {
-      final status = userDetails['subscriptionStatus'] as String?;
-      final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
-
-      if (status == 'active') {
-        if (endDateTimestamp != null) {
-          final expirationDate = endDateTimestamp.toDate();
-          final now = DateTime.now();
-          shouldBePremium = now.isBefore(expirationDate);
-        } else {
-          shouldBePremium = true;
-        }
-      }
-    }
-
-    if (shouldBePremium != isPremium) {
-      print(
-          ">>> MainAppScreen: Atualizando estado isPremium de $isPremium para $shouldBePremium");
+    if (isNowPremium != _isPremiumFromState) {
       setState(() {
-        isPremium = shouldBePremium;
-        if (!isPremium) {
+        _isPremiumFromState = isNowPremium;
+        if (!_isPremiumFromState) {
           _initBannerAd();
         } else {
           _disposeBannerAd();
         }
       });
-    } else {
-      print(
-          ">>> MainAppScreen: Status premium ($isPremium) não mudou. Nenhuma atualização de UI necessária.");
     }
   }
 
   void _disposeBannerAd() {
     if (_bannerAd != null) {
-      print(">>> MainAppScreen: Removendo banner Ad.");
       _bannerAd?.dispose();
       _bannerAd = null;
     }
   }
 
   void _initBannerAd() {
-    if (_bannerAd != null || !mounted) return;
-
-    print(">>> MainAppScreen: Inicializando banner Ad...");
+    if (_bannerAd != null || !mounted || _isPremiumFromState)
+      return; // Não carrega se for premium
     _bannerAd = ads.BannerAd(
       adUnitId: AdHelper.bannerAdUnitId,
       size: ads.AdSize.banner,
@@ -228,20 +222,16 @@ class _MainAppScreenState extends State<MainAppScreen> {
             ad.dispose();
             return;
           }
-          print(">>> MainAppScreen: Banner carregado com sucesso.");
           setState(() {
             _bannerAd = ad as ads.BannerAd;
           });
         },
         onAdFailedToLoad: (ad, err) {
-          print(
-              ">>> MainAppScreen: Falha ao carregar o banner: ${err.message}");
           ad.dispose();
-          if (mounted) {
+          if (mounted)
             setState(() {
               _bannerAd = null;
             });
-          }
         },
       ),
     )..load();
@@ -249,16 +239,13 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
   Widget _buildTabNavigator(
       GlobalKey<NavigatorState> navigatorKey, Widget child) {
+    // ... (como antes)
     return Navigator(
       key: navigatorKey,
       onGenerateRoute: (settings) {
-        // <<< MODIFICAÇÃO MVP: Simplificado - Se for placeholder, só mostra ele >>>
         if (child is _UnderConstructionPlaceholder) {
           return MaterialPageRoute(builder: (_) => child, settings: settings);
         }
-        // <<< FIM MODIFICAÇÃO MVP >>>
-
-        // Lógica de roteamento interno para cada aba ATIVA
         WidgetBuilder? builder;
         if (settings.name == '/bookDetails') {
           final bookId = settings.arguments as String?;
@@ -273,15 +260,14 @@ class _MainAppScreenState extends State<MainAppScreen> {
         } else if (settings.name == '/queryResults') {
           builder = (_) => const QueryResultsPage();
         }
-        // Rota padrão da aba
         builder ??= (_) => child;
-
         return MaterialPageRoute(builder: builder, settings: settings);
       },
     );
   }
 
   GlobalKey<NavigatorState> get _currentNavigatorKey {
+    // ... (como antes)
     switch (_selectedIndex) {
       case 0:
         return _userNavigatorKey;
@@ -294,19 +280,15 @@ class _MainAppScreenState extends State<MainAppScreen> {
       case 4:
         return _chatNavigatorKey;
       default:
-        // <<< MODIFICAÇÃO MVP: Retorna a chave da User Page como padrão seguro
         return _userNavigatorKey;
-      // <<< FIM MODIFICAÇÃO MVP >>>
     }
   }
 
   Future<bool> _onWillPop() async {
-    // <<< MODIFICAÇÃO MVP: Se a aba atual for uma desativada, permite sair direto >>>
+    // ... (como antes)
     if (_selectedIndex == 1 || _selectedIndex == 3 || _selectedIndex == 4) {
-      return true; // Permite fechar o app se estiver numa aba desativada
+      return true;
     }
-    // <<< FIM MODIFICAÇÃO MVP >>>
-
     final currentNavigator = _currentNavigatorKey.currentState;
     if (currentNavigator != null && currentNavigator.canPop()) {
       currentNavigator.pop();
@@ -315,42 +297,101 @@ class _MainAppScreenState extends State<MainAppScreen> {
     return true;
   }
 
+  // Função para obter o título da AppBar com base no índice selecionado
+  String _getAppBarTitle(int index) {
+    switch (index) {
+      case 0:
+        return "Meu Perfil";
+      case 1:
+        return "Explorar";
+      case 2:
+        return "Bíblia";
+      case 3:
+        return "Cânticos"; // Ou Rotas, se for o caso
+      case 4:
+        return "Chat IA";
+      default:
+        return "Septima";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    print(
-        ">>> MainAppScreen Build: Estado atual isPremium=$isPremium, bannerAd=${_bannerAd != null}, selectedIndex=$_selectedIndex");
-
     return StoreConnector<AppState, _MainAppScreenViewModel>(
       converter: (store) => _MainAppScreenViewModel.fromStore(store),
-      // Usaremos onDidChange para reagir à mudança do targetBottomNavIndex
       onDidChange: (previousViewModel, newViewModel) {
-        print(
-            ">>> MainAppScreen StoreConnector.onDidChange: Estado Redux mudou.");
-        if (previousViewModel?.userDetails != newViewModel.userDetails) {
-          _updatePremiumStatus(newViewModel.userDetails);
-        }
+        if (!mounted) return;
 
-        // Verifica se a aba alvo mudou e se é válida
+        _updatePremiumUI(
+            newViewModel.isPremium); // Atualiza o banner com base no ViewModel
+
         if (newViewModel.targetBottomNavIndex != null &&
             newViewModel.targetBottomNavIndex != _selectedIndex) {
-          print(
-              ">>> MainAppScreen: targetBottomNavIndex mudou para ${newViewModel.targetBottomNavIndex}. Atualizando _selectedIndex.");
           setState(() {
             _selectedIndex = newViewModel.targetBottomNavIndex!;
           });
-          // Limpa o targetBottomNavIndex para não ficar trocando de aba repetidamente
           StoreProvider.of<AppState>(context, listen: false)
               .dispatch(ClearTargetBottomNavAction());
         }
       },
-      // Não precisamos reconstruir o widget inteiro por causa do targetBottomNavIndex,
-      // pois o onDidChange já lida com a lógica. Mas manter true é seguro.
-      rebuildOnChange: true,
-      builder: (context, viewModel) {
-        // Renomeado para viewModel
+      builder: (context, mainScreenViewModel) {
         return WillPopScope(
           onWillPop: _onWillPop,
           child: Scaffold(
+            appBar: AppBar(
+              // AppBar adicionada aqui
+              title: Text(_getAppBarTitle(_selectedIndex)),
+              // Estilo do AppBar será herdado do tema
+              actions: [
+                // StoreConnector para exibir moedas e botão de ganhar
+                StoreConnector<AppState, _UserCoinsViewModel>(
+                  converter: (store) => _UserCoinsViewModel.fromStore(store),
+                  builder: (context, coinsViewModel) {
+                    // Só mostra o sistema de moedas se o usuário não for premium
+                    if (coinsViewModel.isPremium) {
+                      return const SizedBox
+                          .shrink(); // Não mostra nada para premium
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.monetization_on,
+                              color: Colors.amber, size: 22),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${coinsViewModel.userCoins}',
+                            style: const TextStyle(
+                                fontSize: 17, fontWeight: FontWeight.bold),
+                          ),
+                          if (coinsViewModel.userCoins < MAX_COINS_LIMIT)
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline,
+                                  color: Colors.greenAccent, size: 24),
+                              tooltip: 'Ganhar Moedas',
+                              onPressed: () {
+                                StoreProvider.of<AppState>(context,
+                                        listen: false)
+                                    .dispatch(RequestRewardedAdAction());
+                              },
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                                size: 22,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
             body: IndexedStack(
               index: _selectedIndex,
               children: _pages,
@@ -358,9 +399,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
             bottomNavigationBar: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (!isPremium && _bannerAd != null)
-                  Container(
-                    alignment: Alignment.center,
+                if (!_isPremiumFromState &&
+                    _bannerAd != null) // Usa _isPremiumFromState
+                  SizedBox(
+                    // Envolve com SizedBox para garantir que o banner tenha espaço
                     width: _bannerAd!.size.width.toDouble(),
                     height: _bannerAd!.size.height.toDouble(),
                     child: ads.AdWidget(ad: _bannerAd!),
@@ -369,16 +411,16 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   type: BottomNavigationBarType.fixed,
                   currentIndex: _selectedIndex,
                   onTap: (index) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                    // Se o usuário clicar numa aba, limpamos qualquer navegação programática pendente
-                    StoreProvider.of<AppState>(context, listen: false)
-                        .dispatch(ClearTargetBottomNavAction());
+                    if (mounted) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                      StoreProvider.of<AppState>(context, listen: false)
+                          .dispatch(ClearTargetBottomNavAction());
+                    }
                   },
-                  selectedItemColor: Colors.greenAccent,
-                  unselectedItemColor: Colors.white70,
-                  backgroundColor: Colors.black,
+                  // selectedItemColor e unselectedItemColor virão do tema
+                  // backgroundColor virá do tema
                   items: const [
                     BottomNavigationBarItem(
                         icon: Icon(Icons.account_circle), label: 'User'),
@@ -402,32 +444,49 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 }
 
+// ViewModel para o StoreConnector principal da MainAppScreen (para targetBottomNavIndex e premium status)
 class _MainAppScreenViewModel {
-  final Map<String, dynamic>? userDetails;
+  final Map<String, dynamic>? userDetails; // Para verificar o status premium
   final int? targetBottomNavIndex;
+  final bool isPremium;
 
   _MainAppScreenViewModel({
     this.userDetails,
     this.targetBottomNavIndex,
+    required this.isPremium,
   });
 
   static _MainAppScreenViewModel fromStore(Store<AppState> store) {
+    bool premiumStatus = false;
+    final userDetails = store.state.userState.userDetails;
+    if (userDetails != null) {
+      final status = userDetails['subscriptionStatus'] as String?;
+      final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
+      if (status == 'active') {
+        if (endDateTimestamp != null) {
+          premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
+        } else {
+          premiumStatus = true;
+        }
+      }
+    }
     return _MainAppScreenViewModel(
-      userDetails: store.state.userState.userDetails,
+      userDetails: userDetails,
       targetBottomNavIndex: store.state.userState.targetBottomNavIndex,
+      isPremium: premiumStatus,
     );
   }
 
-  // Adicionar operador == e hashCode para otimizar o StoreConnector
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is _MainAppScreenViewModel &&
           runtimeType == other.runtimeType &&
-          mapEquals(
-              userDetails, other.userDetails) && // Usar mapEquals para mapas
-          targetBottomNavIndex == other.targetBottomNavIndex;
+          mapEquals(userDetails, other.userDetails) &&
+          targetBottomNavIndex == other.targetBottomNavIndex &&
+          isPremium == other.isPremium;
 
   @override
-  int get hashCode => userDetails.hashCode ^ targetBottomNavIndex.hashCode;
+  int get hashCode =>
+      userDetails.hashCode ^ targetBottomNavIndex.hashCode ^ isPremium.hashCode;
 }

@@ -35,6 +35,26 @@ class FirestoreService {
     }
   }
 
+  Future<void> updateUserCoinsAndAdStats(
+    String userId,
+    int newCoinAmount,
+    DateTime lastAdWatchTime,
+    int adsWatchedToday,
+  ) async {
+    try {
+      await _db.collection('users').doc(userId).update({
+        'userCoins': newCoinAmount,
+        'lastRewardedAdWatchTime':
+            Timestamp.fromDate(lastAdWatchTime), // Salva como Timestamp
+        'rewardedAdsWatchedToday': adsWatchedToday,
+      });
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao atualizar moedas e estatísticas de anúncios: $e");
+      rethrow;
+    }
+  }
+
   /// Busca as estatísticas gerais do usuário (Tópicos, Livros, Dias).
   Future<Map<String, dynamic>?> getUserStats(String userId) async {
     try {
