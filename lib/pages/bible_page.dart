@@ -13,7 +13,7 @@ import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter/foundation.dart'; // for mapEquals
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart'; // Importar ações de busca
+import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
 
 // ViewModel para o StoreConnector da BiblePage
 class _BiblePageViewModel {
@@ -90,32 +90,104 @@ class _BiblePageState extends State<BiblePage> {
 
   String? _lastRecordedHistoryRef;
   String? _selectedBookSlug;
-  Map<String, String> _bookVariationsMap = {};
+  Map<String, String> _bookVariationsMap = {}; // Para o "Ir Para"
 
-  ValueKey _futureBuilderKey =
-      const ValueKey('initial_bible_key_state_v5'); // Atualizado
+  ValueKey _futureBuilderKey = const ValueKey(
+      'initial_bible_key_state_v6'); // Incrementar se a lógica do FutureBuilder mudar
   bool _hasProcessedInitialNavigation = false;
 
-  // --- NOVOS ESTADOS E CONTROLADORES PARA BUSCA SEMÂNTICA ---
   bool _isSemanticSearchActive = false;
   final TextEditingController _semanticQueryController =
       TextEditingController();
-  // --- FIM NOVOS ESTADOS ---
 
   @override
   void initState() {
     super.initState();
     print(">>> BiblePage initState: Iniciando...");
-    _loadInitialData();
+    _loadInitialData(); // booksMap e _bookVariationsMap (para "Ir Para")
   }
 
   @override
   void dispose() {
-    _semanticQueryController.dispose(); // Dispose do novo controller
-    // Nenhum outro controller específico desta página para dar dispose,
-    // _futureBuilderKey é um ValueKey, não um controller.
-    // Se houver outros controllers, como ScrollController, eles seriam dispostos aqui.
+    _semanticQueryController.dispose();
     super.dispose();
+  }
+
+  // Helper para normalizar texto (minúsculas e remover acentos)
+  String _normalizeSearchText(String text) {
+    String normalized = text.toLowerCase();
+    const Map<String, String> accentMap = {
+      'á': 'a',
+      'à': 'a',
+      'ã': 'a',
+      'â': 'a',
+      'ä': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ê': 'e',
+      'ë': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'î': 'i',
+      'ï': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'õ': 'o',
+      'ô': 'o',
+      'ö': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'û': 'u',
+      'ü': 'u',
+      'ç': 'c',
+    };
+    accentMap.forEach((key, value) {
+      normalized = normalized.replaceAll(key, value);
+    });
+    return normalized.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  Future<void> _loadInitialData() async {
+    // Carrega o mapa de livros para os dropdowns de navegação
+    final generalBooksMap = await BiblePageHelper.loadBooksMap();
+    if (mounted) {
+      setState(() {
+        booksMap = generalBooksMap;
+      });
+    }
+    // Carrega o mapa de variações para a funcionalidade "Ir Para"
+    await _loadBookVariationsMapForGoTo(); // Renomeado para clareza
+    // Pré-carrega o léxico (opcional, mas pode melhorar a performance se usado frequentemente)
+    await BiblePageHelper.getStrongsLexicon();
+  }
+
+  Future<void> _loadBookVariationsMapForGoTo() async {
+    // Renomeado para clareza
+    try {
+      // USA O NOVO ARQUIVO JSON PARA O "IR PARA"
+      final String jsonString = await rootBundle
+          .loadString('assets/Biblia/book_variations_map_search.json');
+      final Map<String, dynamic> decodedJson = json.decode(jsonString);
+
+      final Map<String, String> normalizedMap = {};
+      decodedJson.forEach((key, value) {
+        // Normaliza a CHAVE (variação digitada pelo usuário)
+        // O VALOR já é a abreviação canônica (ex: "gn", "job")
+        normalizedMap[_normalizeSearchText(key)] = value.toString();
+      });
+
+      if (mounted) {
+        setState(() {
+          _bookVariationsMap = normalizedMap;
+          print(
+              ">>> _bookVariationsMap (para Ir Para) carregado e normalizado: ${_bookVariationsMap.length} entradas.");
+        });
+      }
+    } catch (e) {
+      print(
+          "Erro ao carregar e normalizar book_variations_map_search.json: $e");
+      if (mounted) setState(() => _bookVariationsMap = {});
+    }
   }
 
   void _updateFutureBuilderKey() {
@@ -123,8 +195,6 @@ class _BiblePageState extends State<BiblePage> {
       setState(() {
         _futureBuilderKey = ValueKey(
             '$selectedBook-$selectedChapter-$selectedTranslation1-${_isCompareModeActive ? selectedTranslation2 : 'single'}-${_selectedBookSlug ?? 'no_slug'}-${DateTime.now().millisecondsSinceEpoch}');
-        print(
-            ">>> BiblePage: _futureBuilderKey ATUALIZADA para: $_futureBuilderKey");
       });
     }
   }
@@ -132,11 +202,7 @@ class _BiblePageState extends State<BiblePage> {
   void _applyNavigationState(String book, int chapter,
       {bool forceKeyUpdate = false}) {
     if (!mounted) return;
-    print(
-        ">>> BiblePage _applyNavigationState: Aplicando $book $chapter. Atual: $selectedBook $selectedChapter. Forçar Key: $forceKeyUpdate");
-
     bool changed = selectedBook != book || selectedChapter != chapter;
-
     if (changed) {
       setState(() {
         selectedBook = book;
@@ -148,69 +214,44 @@ class _BiblePageState extends State<BiblePage> {
       _updateFutureBuilderKey();
       _recordHistory(book, chapter);
     }
-    print(
-        ">>> BiblePage _applyNavigationState: Estado após setState: selectedBook: $selectedBook, selectedChapter: $selectedChapter, slug: $_selectedBookSlug");
   }
 
   void _processIntentOrInitialLoad(
       BuildContext context, _BiblePageViewModel vm) {
-    if (!mounted || booksMap == null) {
-      print(
-          ">>> BiblePage _processIntentOrInitialLoad: Abortado (não montado ou booksMap nulo). Montado: $mounted, BooksMap: ${booksMap != null}");
-      return;
-    }
-
+    if (!mounted || booksMap == null) return;
     final store = StoreProvider.of<AppState>(context, listen: false);
     String targetBook;
     int targetChapter;
     bool isFromIntent = false;
 
     if (vm.initialBook != null && vm.initialChapter != null) {
-      print(
-          ">>> BiblePage _processIntentOrInitialLoad: Usando intent do Redux: ${vm.initialBook} ${vm.initialChapter}");
       targetBook = vm.initialBook!;
       targetChapter = vm.initialChapter!;
       isFromIntent = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          store.dispatch(SetInitialBibleLocationAction(null, null));
-          print(
-              ">>> BiblePage _processIntentOrInitialLoad: Intent do Redux limpo (post-frame).");
-        }
+        if (mounted) store.dispatch(SetInitialBibleLocationAction(null, null));
       });
     } else {
       targetBook = vm.lastReadBookAbbrev ?? selectedBook ?? 'gn';
       targetChapter = vm.lastReadChapter ?? selectedChapter ?? 1;
-      print(
-          ">>> BiblePage _processIntentOrInitialLoad: Sem intent. Usando lastRead/selecionado/padrão: $targetBook $targetChapter");
     }
 
     if (booksMap!.containsKey(targetBook)) {
       final bookData = booksMap![targetBook];
       if (targetChapter < 1 || targetChapter > (bookData['capitulos'] as int)) {
-        print(
-            ">>> BiblePage _processIntentOrInitialLoad: Capítulo alvo ($targetChapter) inválido para $targetBook. Revertendo para $targetBook 1.");
         targetChapter = 1;
       }
     } else {
-      print(
-          ">>> BiblePage _processIntentOrInitialLoad: Livro alvo ($targetBook) inválido. Revertendo para gn 1.");
       targetBook = 'gn';
       targetChapter = 1;
     }
-
-    print(
-        ">>> BiblePage _processIntentOrInitialLoad: Navegando para $targetBook $targetChapter. Veio de intent: $isFromIntent");
     _applyNavigationState(targetBook, targetChapter,
         forceKeyUpdate: isFromIntent || selectedBook == null);
-
     if (!_hasProcessedInitialNavigation &&
         selectedBook != null &&
         selectedChapter != null) {
       _hasProcessedInitialNavigation = true;
       _loadUserDataIfNeeded(context);
-      print(
-          ">>> BiblePage _processIntentOrInitialLoad: _hasProcessedInitialNavigation definido como true.");
     }
   }
 
@@ -218,40 +259,10 @@ class _BiblePageState extends State<BiblePage> {
     if (!mounted) return;
     final store = StoreProvider.of<AppState>(context, listen: false);
     if (store.state.userState.userId != null) {
-      if (store.state.userState.userHighlights.isEmpty) {
+      if (store.state.userState.userHighlights.isEmpty)
         store.dispatch(LoadUserHighlightsAction());
-      }
-      if (store.state.userState.userNotes.isEmpty) {
+      if (store.state.userState.userNotes.isEmpty)
         store.dispatch(LoadUserNotesAction());
-      }
-    }
-  }
-
-  Future<void> _loadInitialData() async {
-    await _loadBookVariationsMap();
-    final map = await BiblePageHelper.loadBooksMap();
-    await BiblePageHelper.getStrongsLexicon();
-    if (mounted) {
-      setState(() {
-        booksMap = map;
-      });
-    }
-  }
-
-  Future<void> _loadBookVariationsMap() async {
-    try {
-      final String jsonString =
-          await rootBundle.loadString('assets/Biblia/book_variations_map.json');
-      final Map<String, dynamic> decodedJson = json.decode(jsonString);
-      if (mounted) {
-        setState(() {
-          _bookVariationsMap =
-              decodedJson.map((key, value) => MapEntry(key, value.toString()));
-        });
-      }
-    } catch (e) {
-      print("Erro ao carregar book_variations_map.json: $e");
-      if (mounted) setState(() => _bookVariationsMap = {});
     }
   }
 
@@ -268,16 +279,10 @@ class _BiblePageState extends State<BiblePage> {
   void _recordHistory(String bookAbbrev, int chapter) {
     final currentRef = "${bookAbbrev}_$chapter";
     if (_lastRecordedHistoryRef != currentRef) {
-      print(
-          ">>> BiblePage _recordHistory: Gravando histórico para $currentRef. Último gravado: $_lastRecordedHistoryRef");
-      if (context.mounted) {
+      if (mounted)
         StoreProvider.of<AppState>(context, listen: false)
             .dispatch(RecordReadingHistoryAction(bookAbbrev, chapter));
-      }
       _lastRecordedHistoryRef = currentRef;
-    } else {
-      print(
-          ">>> BiblePage _recordHistory: Histórico para $currentRef já é o último gravado. Não regravando.");
     }
   }
 
@@ -286,9 +291,8 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _previousChapter() {
-    if (selectedBook == null || selectedChapter == null || booksMap == null) {
+    if (selectedBook == null || selectedChapter == null || booksMap == null)
       return;
-    }
     String newBookAbbrev = selectedBook!;
     int newChapter = selectedChapter!;
     if (selectedChapter! > 1) {
@@ -307,14 +311,12 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _nextChapter() {
-    if (selectedBook == null || selectedChapter == null || booksMap == null) {
+    if (selectedBook == null || selectedChapter == null || booksMap == null)
       return;
-    }
     String newBookAbbrev = selectedBook!;
     int newChapter = selectedChapter!;
     int totalChaptersInCurrentBook =
         booksMap![selectedBook!]['capitulos'] as int;
-
     if (selectedChapter! < totalChaptersInCurrentBook) {
       newChapter = selectedChapter! + 1;
     } else {
@@ -336,39 +338,33 @@ class _BiblePageState extends State<BiblePage> {
     await showDialog(
         context: context,
         builder: (dialogContext) {
-          return StatefulBuilder(builder: (context, setDialogState) {
+          return StatefulBuilder(builder: (sfbContext, setDialogState) {
+            // Renomeado context para sfbContext
+            final theme =
+                Theme.of(sfbContext); // Usa o contexto do StatefulBuilder
             return AlertDialog(
-              backgroundColor: Theme.of(context).dialogBackgroundColor,
+              backgroundColor: theme.dialogBackgroundColor,
               title: Text("Ir para Referência",
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface)),
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
               content: Column(mainAxisSize: MainAxisSize.min, children: [
                 TextField(
                   controller: controller,
-                  style:
-                      TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(color: theme.colorScheme.onSurface),
                   decoration: InputDecoration(
                     hintText: "Ex: Gn 1 ou João 3:16",
-                    // hintStyle usa o padrão do tema
                     errorText: errorTextInDialog,
-                    // Outras decorações herdam do tema
                   ),
                   textInputAction: TextInputAction.search,
-                  onSubmitted: (value) =>
-                      _parseAndNavigate(value, dialogContext, (newError) {
-                    if (mounted) {
+                  onSubmitted: (value) => _parseAndNavigateForGoTo(
+                      value, dialogContext, (newError) {
+                    if (mounted)
                       setDialogState(() => errorTextInDialog = newError);
-                    }
                   }),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                    "Formatos aceitos:\n- Livro Capítulo (Ex: Gênesis 1, Jo 3)\n- Livro Capítulo:Versículo (Ex: Ex 20:3)",
+                Text("Formatos: Livro Cap ou Livro Cap:Ver",
                     style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontSize: 12)),
               ]),
               actions: [
@@ -376,66 +372,96 @@ class _BiblePageState extends State<BiblePage> {
                     onPressed: () => Navigator.of(dialogContext).pop(),
                     child: Text("Cancelar",
                         style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.7)))),
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.7)))),
                 TextButton(
-                    onPressed: () => _parseAndNavigate(
+                    onPressed: () => _parseAndNavigateForGoTo(
                             controller.text, dialogContext, (newError) {
-                          if (mounted) {
+                          if (mounted)
                             setDialogState(() => errorTextInDialog = newError);
-                          }
                         }),
                     child: Text("Ir",
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary))),
+                        style: TextStyle(color: theme.colorScheme.primary))),
               ],
             );
           });
         });
   }
 
-  void _parseAndNavigate(String input, BuildContext dialogContext,
+  void _parseAndNavigateForGoTo(String input, BuildContext dialogContext,
       Function(String?) updateErrorText) {
-    if (input.trim().isEmpty) {
+    // Renomeado para clareza, esta função usa _normalizeSearchText
+    String userInput = input.trim();
+    if (userInput.isEmpty) {
       updateErrorText("Digite uma referência.");
       return;
     }
-    String normalizedInput =
-        input.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    String normalizedUserInput = _normalizeSearchText(userInput);
     String? foundBookAbbrev;
-    String remainingInputForChapter = normalizedInput;
+    String remainingInputForChapterAndVerse = "";
+
     List<String> sortedVariationKeys = _bookVariationsMap.keys.toList()
       ..sort((a, b) => b.length.compareTo(a.length));
 
-    for (String variationKey in sortedVariationKeys) {
-      if (normalizedInput.startsWith(variationKey)) {
-        foundBookAbbrev = _bookVariationsMap[variationKey];
-        remainingInputForChapter =
-            normalizedInput.substring(variationKey.length).trim();
+    for (String normalizedVariationKeyInMap in sortedVariationKeys) {
+      // A chave do mapa já está normalizada pelo _loadBookVariationsMapForGoTo
+      if (normalizedUserInput.startsWith(normalizedVariationKeyInMap)) {
+        foundBookAbbrev = _bookVariationsMap[normalizedVariationKeyInMap];
+        remainingInputForChapterAndVerse = normalizedUserInput
+            .substring(normalizedVariationKeyInMap.length)
+            .trim();
+
+        // Lógica específica para Jó vs João (se "jo" normalizado for ambíguo)
+        // Este é um exemplo, você pode precisar refinar com base no seu `book_variations_map_search.json`
+        if (normalizedVariationKeyInMap == "jo") {
+          // Se a *variação normalizada* que deu match foi "jo"
+          if (userInput.toLowerCase().startsWith("jó") ||
+              userInput.toLowerCase().startsWith("job")) {
+            // Se o input original sugere Jó, e existe "job" como valor canônico no mapa de variações
+            if (_bookVariationsMap.containsValue("job")) {
+              // Tenta ver se alguma variação de Jó também deu match com "jo"
+              // Ou, mais simples: se o usuário digitou algo que começa com jó/job, e "jo" deu match,
+              // mas "job" também é um valor canônico, pode ser Jó.
+              // Esta lógica pode ser complexa. A melhor forma é garantir que
+              // "jó", "job" etc. no JSON mapeiem para "job" (a abreviação canônica).
+              // Se "jo" (de Jó) e "jo" (de João) ambos normalizam para "jo",
+              // a ordenação por tamanho de chave (se "joao" for mais longo que "jó") ajuda.
+              // Para este caso, vamos assumir que se o input original era "jó" ou "job", é Jó.
+              // AVISO: Esta é uma simplificação. O ideal é o `book_variations_map_search.json` ser muito claro.
+              bool isPotentiallyJob = _bookVariationsMap.entries.any((e) =>
+                  (e.key == "jó" ||
+                      e.key == "job" ||
+                      e.key == "jo com acento circunflexo" ||
+                      e.key == "jô") &&
+                  e.value == "job");
+              if (isPotentiallyJob && foundBookAbbrev == "jo") {
+                // Se "jo" (de João) foi pego, mas era Jó
+                foundBookAbbrev = "job"; // Corrige para Jó
+              }
+            }
+          }
+        }
         break;
       }
     }
+
     if (foundBookAbbrev == null) {
-      updateErrorText("Livro não reconhecido.");
+      updateErrorText(
+          "Livro não reconhecido. Verifique o nome e tente novamente.");
       return;
     }
-    final RegExp chapVerseRegex = RegExp(r'^(\d+)(?:\s*:\s*\d+.*)?$');
-    final Match? cvMatch = chapVerseRegex.firstMatch(remainingInputForChapter);
-    final int? chapter;
+
+    final RegExp chapVerseRegex =
+        RegExp(r"^\s*(\d+)\s*(?:[:\.]\s*(\d+)(?:\s*-\s*(\d+))?)?\s*$");
+    final Match? cvMatch =
+        chapVerseRegex.firstMatch(remainingInputForChapterAndVerse);
+
     if (cvMatch == null || cvMatch.group(1) == null) {
-      final RegExp chapOnlyRegex = RegExp(r'^(\d+)$');
-      final Match? chapOnlyMatch =
-          chapOnlyRegex.firstMatch(remainingInputForChapter);
-      if (chapOnlyMatch == null || chapOnlyMatch.group(1) == null) {
-        updateErrorText("Formato de capítulo inválido.");
-        return;
-      }
-      chapter = int.tryParse(chapOnlyMatch.group(1)!);
-    } else {
-      chapter = int.tryParse(cvMatch.group(1)!);
+      updateErrorText(
+          "Formato de capítulo/versículo inválido. Use 'Livro Cap' ou 'Livro Cap:Ver'.");
+      return;
     }
+    final int? chapter = int.tryParse(cvMatch.group(1)!);
     if (chapter == null) {
       updateErrorText("Número do capítulo inválido.");
       return;
@@ -444,27 +470,28 @@ class _BiblePageState extends State<BiblePage> {
         foundBookAbbrev, chapter, dialogContext, updateErrorText);
   }
 
+  // _finalizeNavigation não precisa de alterações, já usa a abreviação canônica
   void _finalizeNavigation(String bookAbbrev, int chapter,
       BuildContext dialogContext, Function(String?) updateErrorText) {
     if (booksMap != null && booksMap!.containsKey(bookAbbrev)) {
       final bookData = booksMap![bookAbbrev];
       if (chapter >= 1 && chapter <= (bookData['capitulos'] as int)) {
         _applyNavigationState(bookAbbrev, chapter, forceKeyUpdate: true);
-        if (Navigator.canPop(dialogContext)) {
-          Navigator.of(dialogContext).pop();
-        }
+        if (Navigator.canPop(dialogContext)) Navigator.of(dialogContext).pop();
         updateErrorText(null);
       } else {
-        updateErrorText('Capítulo $chapter inválido para ${bookData['nome']}.');
+        updateErrorText(
+            'Capítulo $chapter inválido para ${bookData['nome']}. (${bookData['capitulos']} caps).');
       }
     } else {
-      updateErrorText('Livro "$bookAbbrev" não encontrado.');
+      updateErrorText(
+          'Livro "$bookAbbrev" (abreviação) não encontrado no sistema.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context); // Para usar cores do tema
+    final theme = Theme.of(context);
 
     return StoreConnector<AppState, _BiblePageViewModel>(
       converter: (store) => _BiblePageViewModel.fromStore(store),
@@ -483,18 +510,16 @@ class _BiblePageState extends State<BiblePage> {
         if (mounted && booksMap != null) {
           if (!_hasProcessedInitialNavigation) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && !_hasProcessedInitialNavigation) {
+              if (mounted && !_hasProcessedInitialNavigation)
                 _processIntentOrInitialLoad(context, newViewModel);
-              }
             });
           } else if (newViewModel.initialBook !=
                   previousViewModel?.initialBook ||
               newViewModel.initialChapter !=
                   previousViewModel?.initialChapter) {
             if (newViewModel.initialBook != null &&
-                newViewModel.initialChapter != null) {
+                newViewModel.initialChapter != null)
               _processIntentOrInitialLoad(context, newViewModel);
-            }
           }
           if (previousViewModel != null &&
               (!mapEquals(previousViewModel.userHighlights,
@@ -506,25 +531,24 @@ class _BiblePageState extends State<BiblePage> {
         }
       },
       builder: (context, viewModel) {
-        if (booksMap == null) {
+        if (booksMap == null || _bookVariationsMap.isEmpty) {
+          // Adicionado _bookVariationsMap.isEmpty
           return Scaffold(
-            appBar: AppBar(title: const Text('Bíblia')), // Estilo do tema
+            appBar: AppBar(title: const Text('Bíblia')),
             body: Center(
                 child: CircularProgressIndicator(
                     color: theme.colorScheme.primary)),
           );
         }
-
         if (selectedBook == null || selectedChapter == null) {
           if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && !_hasProcessedInitialNavigation) {
+              if (mounted && !_hasProcessedInitialNavigation)
                 _processIntentOrInitialLoad(context, viewModel);
-              }
             });
           }
           return Scaffold(
-            appBar: AppBar(title: const Text('Bíblia')), // Estilo do tema
+            appBar: AppBar(title: const Text('Bíblia')),
             body: Center(
                 child: Text("Carregando Bíblia...",
                     style:
@@ -549,7 +573,6 @@ class _BiblePageState extends State<BiblePage> {
 
         return Scaffold(
           appBar: AppBar(
-            // title usa o appBarTitle definido acima
             title: _isSemanticSearchActive
                 ? TextField(
                     controller: _semanticQueryController,
@@ -567,42 +590,37 @@ class _BiblePageState extends State<BiblePage> {
                     ),
                     onSubmitted: (query) {
                       if (query.isNotEmpty && mounted) {
-                        // Adicionado mounted check
                         StoreProvider.of<AppState>(context, listen: false)
                             .dispatch(SearchBibleSemanticAction(query));
                         Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  BibleSearchResultsPage(initialQuery: query)),
-                        );
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => BibleSearchResultsPage(
+                                    initialQuery: query)));
                       }
                     },
                   )
                 : Text(appBarTitle),
             leading: _isFocusModeActive || _isSemanticSearchActive
                 ? const SizedBox.shrink()
-                : null, // Oculta back se em foco ou busca
+                : null,
             actions: _isSemanticSearchActive
                 ? [
-                    // Ações para quando a busca semântica está ativa
                     IconButton(
                       icon: Icon(Icons.search,
                           color: theme.appBarTheme.actionsIconTheme?.color),
                       onPressed: () {
                         if (_semanticQueryController.text.isNotEmpty &&
                             mounted) {
-                          // Adicionado mounted check
                           StoreProvider.of<AppState>(context, listen: false)
                               .dispatch(SearchBibleSemanticAction(
                                   _semanticQueryController.text));
                           Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => BibleSearchResultsPage(
-                                    initialQuery:
-                                        _semanticQueryController.text)),
-                          );
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => BibleSearchResultsPage(
+                                      initialQuery:
+                                          _semanticQueryController.text)));
                         }
                       },
                     ),
@@ -610,18 +628,15 @@ class _BiblePageState extends State<BiblePage> {
                       icon: Icon(Icons.close,
                           color: theme.appBarTheme.actionsIconTheme?.color),
                       onPressed: () {
-                        if (mounted) {
-                          // Adicionado mounted check
+                        if (mounted)
                           setState(() {
                             _isSemanticSearchActive = false;
                             _semanticQueryController.clear();
                           });
-                        }
                       },
                     )
                   ]
                 : [
-                    // Ações normais da AppBar
                     IconButton(
                       icon: Icon(
                           _isFocusModeActive
@@ -677,18 +692,12 @@ class _BiblePageState extends State<BiblePage> {
                           onPressed: _showGoToDialog,
                         ),
                         IconButton(
-                          // NOVO BOTÃO DE BUSCA SEMÂNTICA
                           icon: Icon(Icons.search_sharp,
-                              color: theme.appBarTheme.actionsIconTheme
-                                  ?.color), // Ícone diferente
+                              color: theme.appBarTheme.actionsIconTheme?.color),
                           tooltip: "Busca Semântica",
                           onPressed: () {
-                            if (mounted) {
-                              setState(() {
-                                _isSemanticSearchActive =
-                                    true; // Ativa o campo de busca
-                              });
-                            }
+                            if (mounted)
+                              setState(() => _isSemanticSearchActive = true);
                           },
                         ),
                       ]),
@@ -698,8 +707,7 @@ class _BiblePageState extends State<BiblePage> {
           body: Column(
             children: [
               Visibility(
-                visible: !_isFocusModeActive &&
-                    !_isSemanticSearchActive, // Oculta se busca semântica ativa
+                visible: !_isFocusModeActive && !_isSemanticSearchActive,
                 child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8.0, vertical: 12.0),
@@ -718,18 +726,16 @@ class _BiblePageState extends State<BiblePage> {
                                             selectedTranslation1,
                                         onTranslationSelected: (value) {
                                           if (mounted &&
-                                              value != selectedTranslation2) {
+                                              value != selectedTranslation2)
                                             setState(() {
                                               selectedTranslation1 = value;
                                               _updateFutureBuilderKey();
                                             });
-                                          }
                                         }),
                                 style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        theme.cardColor, // Usa cor do tema
-                                    foregroundColor: theme.textTheme.bodyLarge
-                                        ?.color, // Usa cor do tema
+                                    backgroundColor: theme.cardColor,
+                                    foregroundColor:
+                                        theme.textTheme.bodyLarge?.color,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 8),
                                     shape: RoundedRectangleBorder(
@@ -750,12 +756,11 @@ class _BiblePageState extends State<BiblePage> {
                                               selectedTranslation2 ?? 'aa',
                                           onTranslationSelected: (value) {
                                             if (mounted &&
-                                                value != selectedTranslation1) {
+                                                value != selectedTranslation1)
                                               setState(() {
                                                 selectedTranslation2 = value;
                                                 _updateFutureBuilderKey();
                                               });
-                                            }
                                           }),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: theme.cardColor,
@@ -773,13 +778,12 @@ class _BiblePageState extends State<BiblePage> {
                                 label: const Text("Estudos",
                                     style: TextStyle(fontSize: 12)),
                                 onPressed: () {
-                                  if (mounted) {
+                                  if (mounted)
                                     Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
                                                 const StudyHubPage()));
-                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: theme.cardColor,
@@ -806,9 +810,8 @@ class _BiblePageState extends State<BiblePage> {
                                 selectedBook: selectedBook,
                                 booksMap: booksMap,
                                 onChanged: (value) {
-                                  if (mounted && value != null) {
+                                  if (mounted && value != null)
                                     _navigateToChapter(value, 1);
-                                  }
                                 })),
                         const SizedBox(width: 8),
                         if (selectedBook != null)
@@ -821,9 +824,8 @@ class _BiblePageState extends State<BiblePage> {
                                   onChanged: (value) {
                                     if (mounted &&
                                         value != null &&
-                                        selectedBook != null) {
+                                        selectedBook != null)
                                       _navigateToChapter(selectedBook!, value);
-                                    }
                                   })),
                         IconButton(
                             icon: Icon(Icons.chevron_right,
@@ -834,9 +836,11 @@ class _BiblePageState extends State<BiblePage> {
                       ]),
                     ])),
               ),
+              // Conteúdo principal (versículos/seções)
               if (selectedBook != null &&
                   selectedChapter != null &&
-                  _selectedBookSlug != null)
+                  _selectedBookSlug != null &&
+                  !_isSemanticSearchActive) // Adicionado !_isSemanticSearchActive
                 Expanded(
                     child: FutureBuilder<Map<String, dynamic>>(
                   key: _futureBuilderKey,
@@ -846,23 +850,22 @@ class _BiblePageState extends State<BiblePage> {
                       selectedTranslation1,
                       _isCompareModeActive ? selectedTranslation2 : null),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                    if (snapshot.connectionState == ConnectionState.waiting)
                       return Center(
                           child: CircularProgressIndicator(
                               color: theme.colorScheme.primary));
-                    }
                     if (snapshot.hasError ||
                         !snapshot.hasData ||
-                        snapshot.data == null) {
+                        snapshot.data == null)
                       return Center(
                           child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                            'Erro: ${snapshot.error ?? 'Dados não encontrados'}',
-                            style: TextStyle(color: theme.colorScheme.error),
-                            textAlign: TextAlign.center),
-                      ));
-                    }
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                  'Erro: ${snapshot.error ?? 'Dados não encontrados'}',
+                                  style:
+                                      TextStyle(color: theme.colorScheme.error),
+                                  textAlign: TextAlign.center)));
+
                     final chapterData = snapshot.data!;
                     final List<Map<String, dynamic>> sections =
                         chapterData['sectionStructure'] ?? [];
@@ -894,9 +897,7 @@ class _BiblePageState extends State<BiblePage> {
                             left: 16.0,
                             right: 16.0,
                             bottom: 16.0,
-                            top: _isFocusModeActive || _isSemanticSearchActive
-                                ? 8.0
-                                : 0.0), // Ajuste se busca ativa
+                            top: _isFocusModeActive ? 8.0 : 0.0),
                         itemCount: sections.isNotEmpty
                             ? sections.length
                             : (verses1Data != null &&
@@ -959,19 +960,14 @@ class _BiblePageState extends State<BiblePage> {
                       // Modo Comparação
                       if (verses2Data == null ||
                           (verses2Data as List).isEmpty &&
-                              selectedTranslation2 != null) {
+                              selectedTranslation2 != null)
                         return Center(
                             child: Text(
                                 'Tradução "$selectedTranslation2" não encontrada.',
                                 style:
                                     TextStyle(color: theme.colorScheme.error)));
-                      }
                       final list1Data = verses1Data as List;
                       final list2Data = verses2Data as List?;
-                      final maxVerseCount =
-                          list1Data.length > (list2Data?.length ?? 0)
-                              ? list1Data.length
-                              : (list2Data?.length ?? 0);
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -980,7 +976,9 @@ class _BiblePageState extends State<BiblePage> {
                                   context,
                                   sections,
                                   list1Data,
-                                  maxVerseCount,
+                                  list1Data.length > (list2Data?.length ?? 0)
+                                      ? list1Data.length
+                                      : (list2Data?.length ?? 0),
                                   viewModel.userHighlights,
                                   viewModel.userNotes,
                                   selectedTranslation1,
@@ -994,7 +992,9 @@ class _BiblePageState extends State<BiblePage> {
                                   context,
                                   sections,
                                   list2Data ?? [],
-                                  maxVerseCount,
+                                  list1Data.length > (list2Data?.length ?? 0)
+                                      ? list1Data.length
+                                      : (list2Data?.length ?? 0),
                                   viewModel.userHighlights,
                                   viewModel.userNotes,
                                   selectedTranslation2!,
@@ -1004,6 +1004,19 @@ class _BiblePageState extends State<BiblePage> {
                     }
                   },
                 )),
+              // Adicionado um placeholder se a busca semântica estiver ativa e o conteúdo principal oculto
+              if (_isSemanticSearchActive)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      "Digite sua busca semântica na barra superior.",
+                      style: TextStyle(
+                          color: theme.textTheme.bodyMedium?.color,
+                          fontStyle: FontStyle.italic),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -1026,23 +1039,18 @@ class _BiblePageState extends State<BiblePage> {
         currentTranslation.isNotEmpty) {
       return Center(
           child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          "Tradução '$currentTranslation' indisponível.",
-          style:
-              TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 13),
-          textAlign: TextAlign.center,
-        ),
-      ));
+              padding: const EdgeInsets.all(8.0),
+              child: Text("Tradução '$currentTranslation' indisponível.",
+                  style: TextStyle(
+                      color: theme.textTheme.bodyMedium?.color, fontSize: 13),
+                  textAlign: TextAlign.center)));
     }
     return ListView.builder(
       padding: EdgeInsets.only(
           left: 12.0,
           right: 12.0,
           bottom: 16.0,
-          top: _isFocusModeActive || _isSemanticSearchActive
-              ? 8.0
-              : 0.0), // Ajuste se busca ativa
+          top: _isFocusModeActive ? 8.0 : 0.0),
       itemCount: sections.isNotEmpty
           ? sections.length
           : (verseColumnData.isNotEmpty ? 1 : 0),
@@ -1053,35 +1061,33 @@ class _BiblePageState extends State<BiblePage> {
           final List<int> verseNumbers =
               (section['verses'] as List?)?.cast<int>() ?? [];
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-                child: Text(sectionTitle,
-                    style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
-              ),
-              ...verseNumbers.map((verseNumber) {
-                final verseIndex = verseNumber - 1;
-                final dynamic verseDataItem =
-                    (verseIndex >= 0 && verseIndex < verseColumnData.length)
-                        ? verseColumnData[verseIndex]
-                        : (isHebrew ? [] : "[Texto Indisponível]");
-                return BiblePageWidgets.buildVerseItem(
-                  verseNumber: verseNumber,
-                  verseData: verseDataItem,
-                  selectedBook: selectedBook,
-                  selectedChapter: selectedChapter,
-                  context: context,
-                  userHighlights: userHighlights,
-                  userNotes: userNotes,
-                  isHebrew: isHebrew,
-                );
-              }),
-            ],
-          );
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                    padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                    child: Text(sectionTitle,
+                        style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold))),
+                ...verseNumbers.map((verseNumber) {
+                  final verseIndex = verseNumber - 1;
+                  final dynamic verseDataItem =
+                      (verseIndex >= 0 && verseIndex < verseColumnData.length)
+                          ? verseColumnData[verseIndex]
+                          : (isHebrew ? [] : "[Texto Indisponível]");
+                  return BiblePageWidgets.buildVerseItem(
+                    verseNumber: verseNumber,
+                    verseData: verseDataItem,
+                    selectedBook: selectedBook,
+                    selectedChapter: selectedChapter,
+                    context: context,
+                    userHighlights: userHighlights,
+                    userNotes: userNotes,
+                    isHebrew: isHebrew,
+                  );
+                }),
+              ]);
         } else if (verseColumnData.isNotEmpty) {
           return Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,7 +1,12 @@
 [
     {
-        "title": "Confiança em Deus.",
+        "title": "Um salmo de Davi para trazer à memória.",
         "verses": [
+            1,
+            2,
+            3,
+            4,
+            5,
             6,
             7,
             8,
@@ -11,13 +16,19 @@
         ]
     },
     {
-        "title": "Exortação para Louvar a Deus.",
+        "title": "Queixas Dolorosas.",
         "verses": [
-            5,
-            6,
-            7,
-            8,
-            9
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
         ]
     }
 ]

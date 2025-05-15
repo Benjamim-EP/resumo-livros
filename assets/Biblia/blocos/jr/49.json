@@ -1,25 +1,25 @@
 [
     {
-        "title": "O Juízo de Moabe. a.C. 605.",
+        "title": "O Julgamento dos Amonitas. a.C. 595.",
         "verses": [
             1,
             2,
             3,
             4,
             5,
-            6,
+            6
+        ]
+    },
+    {
+        "title": "O Julgamento de Edom. a.C. 595.",
+        "verses": [
             7,
             8,
             9,
             10,
             11,
             12,
-            13
-        ]
-    },
-    {
-        "title": "O Juízo de Moabe. a.C. 605.",
-        "verses": [
+            13,
             14,
             15,
             16,
@@ -28,32 +28,39 @@
             19,
             20,
             21,
-            22,
+            22
+        ]
+    },
+    {
+        "title": "O Julgamento de Damasco. a.C. 595.",
+        "verses": [
             23,
             24,
             25,
             26,
-            27,
+            27
+        ]
+    },
+    {
+        "title": "O Julgamento de Kedar. a.C. 595.",
+        "verses": [
             28,
             29,
             30,
             31,
             32,
-            33,
+            33
+        ]
+    },
+    {
+        "title": "O Juízo de Elão. a.C. 595.",
+        "verses": [
             34,
             35,
             36,
             37,
             38,
-            39,
-            40,
-            41,
-            42,
-            43,
-            44,
-            45,
-            46,
-            47
+            39
         ]
     }
 ]

@@ -1,15 +1,21 @@
 [
     {
-        "title": "Confiança na Bondade Divina.",
+        "title": "Ao mestre de canto. Um salmo de Davi.",
         "verses": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ]
+    },
+    {
+        "title": "A Oração do Súdito pelo Soberano.",
+        "verses": [
+            6,
             7,
             8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14
+            9
         ]
     }
 ]

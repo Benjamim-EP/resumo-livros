@@ -1,6 +1,6 @@
 [
     {
-        "title": "Bênção de Noé e Seus Filhos. a.C. 2348.",
+        "title": "A Bênção de Noé e Seus Filhos. a.C. 2348.",
         "verses": [
             1,
             2,
@@ -12,12 +12,17 @@
         ]
     },
     {
-        "title": "Aliança de Deus com Noé. a.C. 2347.",
+        "title": "A Aliança de Deus com Noé. a.C. 2347.",
         "verses": [
             8,
             9,
             10,
-            11,
+            11
+        ]
+    },
+    {
+        "title": "A Aliança de Deus com Noé. a.C. 2347.",
+        "verses": [
             12,
             13,
             14,
@@ -27,7 +32,7 @@
         ]
     },
     {
-        "title": "Pecado de Cam. a.C. 2347.",
+        "title": "O Pecado de Cam. a.C. 2347.",
         "verses": [
             18,
             19,
@@ -38,12 +43,19 @@
         ]
     },
     {
-        "title": "Profecia de Noé. a.C. 2347.",
+        "title": "A Profecia de Noé. a.C. 2347.",
         "verses": [
             24,
             25,
             26,
             27
+        ]
+    },
+    {
+        "title": "A Profecia de Noé. a.C. 2347.",
+        "verses": [
+            28,
+            29
         ]
     }
 ]

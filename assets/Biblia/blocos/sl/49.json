@@ -1,6 +1,16 @@
 [
     {
-        "title": "Regozijando-se na Esperança.",
+        "title": "Ao mestre de canto. Um salmo para os filhos de Corá.",
+        "verses": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ]
+    },
+    {
+        "title": "A Vaidade das Riquezas Mundanas; O Fim dos Ímpios.",
         "verses": [
             6,
             7,
@@ -8,7 +18,20 @@
             9,
             10,
             11,
-            12
+            12,
+            13,
+            14
+        ]
+    },
+    {
+        "title": "Privilégio dos Justos.",
+        "verses": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
         ]
     }
 ]

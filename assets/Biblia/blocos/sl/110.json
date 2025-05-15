@@ -1,43 +1,19 @@
 [
     {
-        "title": "Exortações à Ação de Graças.",
+        "title": "Um salmo de Davi.",
         "verses": [
             1,
             2,
             3,
-            4,
+            4
+        ]
+    },
+    {
+        "title": "O Domínio do Messias.",
+        "verses": [
             5,
             6,
-            7,
-            8,
-            9
-        ]
-    },
-    {
-        "title": "Misericórdia Divina Celebrada.",
-        "verses": [
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
-            21,
-            22
-        ]
-    },
-    {
-        "title": "Misericórdia Divina Celebrada.",
-        "verses": [
-            23,
-            24,
-            25,
-            26
+            7
         ]
     }
 ]

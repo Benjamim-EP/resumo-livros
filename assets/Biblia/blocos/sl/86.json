@@ -1,9 +1,19 @@
 [
     {
-        "title": "Bondade e Compaixão de Deus.",
+        "title": "Uma Oração de Davi.",
         "verses": [
+            1,
+            2,
+            3,
+            4,
+            5,
             6,
-            7,
+            7
+        ]
+    },
+    {
+        "title": "Súplicas e Louvores; Oração por Misericórdia e Graça.",
+        "verses": [
             8,
             9,
             10,
@@ -13,17 +23,7 @@
             14,
             15,
             16,
-            17,
-            18
-        ]
-    },
-    {
-        "title": "Louvor Alegre.",
-        "verses": [
-            19,
-            20,
-            21,
-            22
+            17
         ]
     }
 ]

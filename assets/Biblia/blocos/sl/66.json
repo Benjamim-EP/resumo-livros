@@ -1,19 +1,37 @@
 [
     {
-        "title": "A Videira Desolada.",
+        "title": "Ao mestre de canto. Cântico ou salmo.",
+        "verses": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+        ]
+    },
+    {
+        "title": "Os Santos Exortados a Louvar a Deus.",
         "verses": [
             8,
             9,
             10,
             11,
-            12,
+            12
+        ]
+    },
+    {
+        "title": "Davi Resolve Louvar a Deus; Davi Declarando o Que Deus Tem Feito por Sua Alma.",
+        "verses": [
             13,
             14,
             15,
             16,
             17,
             18,
-            19
+            19,
+            20
         ]
     }
 ]
