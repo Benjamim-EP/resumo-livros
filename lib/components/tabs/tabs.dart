@@ -1,35 +1,31 @@
-//components/tabs/tabs.dart
+// components/tabs/tabs.dart
 import 'package:flutter/material.dart';
 import 'tab_item.dart';
 
 class Tabs extends StatelessWidget {
-  final Function(String)
-      onTabSelected; // Callback para passar a aba selecionada.
-  final String selectedTab; // Aba atualmente selecionada.
+  final List<String> tabs; // NOVO: Recebe a lista de abas
+  final Function(String) onTabSelected;
+  final String selectedTab;
 
-  final List<String> _tabs = const [
-    'Lendo',
-    'Salvos',
-    'Histórico',
-    'Destaques',
-    'Notas',
-    'Diário'
-  ];
-  const Tabs(
-      {super.key, required this.onTabSelected, required this.selectedTab});
+  const Tabs({
+    super.key,
+    required this.tabs, // NOVO
+    required this.onTabSelected,
+    required this.selectedTab,
+  });
+
+  // REMOVIDO: final List<String> _tabs = const [ ... ];
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceAround, // Ou spaceEvenly, ou start
-        children: _tabs.map((label) {
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: tabs.map((label) {
+          // USA a lista `tabs` recebida
           return Padding(
-            // Adiciona um padding para espaçamento, especialmente útil com rolagem
-            padding: const EdgeInsets.symmetric(
-                horizontal: 10.0), // Ajuste o padding
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: TabItem(
               label: label,
               isSelected: selectedTab == label,
