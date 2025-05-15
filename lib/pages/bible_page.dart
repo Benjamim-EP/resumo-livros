@@ -79,8 +79,9 @@ class BiblePage extends StatefulWidget {
 }
 
 class _BiblePageState extends State<BiblePage> {
-  Map<String, dynamic>? booksMap;
-  String? selectedBook;
+  Map<String, dynamic>?
+      booksMap; // Contém metadados dos livros, incluindo 'testament'
+  String? selectedBook; // Abreviação do livro selecionado (ex: "gn")
   int? selectedChapter;
 
   String selectedTranslation1 = 'nvi';
@@ -90,10 +91,10 @@ class _BiblePageState extends State<BiblePage> {
 
   String? _lastRecordedHistoryRef;
   String? _selectedBookSlug;
-  Map<String, String> _bookVariationsMap = {}; // Para o "Ir Para"
+  Map<String, String> _bookVariationsMap = {};
 
-  ValueKey _futureBuilderKey = const ValueKey(
-      'initial_bible_key_state_v6'); // Incrementar se a lógica do FutureBuilder mudar
+  ValueKey _futureBuilderKey =
+      const ValueKey('initial_bible_key_state_v7'); // Nova chave
   bool _hasProcessedInitialNavigation = false;
 
   bool _isSemanticSearchActive = false;
@@ -103,8 +104,7 @@ class _BiblePageState extends State<BiblePage> {
   @override
   void initState() {
     super.initState();
-    print(">>> BiblePage initState: Iniciando...");
-    _loadInitialData(); // booksMap e _bookVariationsMap (para "Ir Para")
+    _loadInitialData();
   }
 
   @override
@@ -113,7 +113,6 @@ class _BiblePageState extends State<BiblePage> {
     super.dispose();
   }
 
-  // Helper para normalizar texto (minúsculas e remover acentos)
   String _normalizeSearchText(String text) {
     String normalized = text.toLowerCase();
     const Map<String, String> accentMap = {
@@ -148,44 +147,33 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Future<void> _loadInitialData() async {
-    // Carrega o mapa de livros para os dropdowns de navegação
-    final generalBooksMap = await BiblePageHelper.loadBooksMap();
+    final generalBooksMap =
+        await BiblePageHelper.loadBooksMap(); // Carrega abbrev_map.json
     if (mounted) {
       setState(() {
-        booksMap = generalBooksMap;
+        booksMap = generalBooksMap; // booksMap AGORA TEM A CHAVE 'testament'
       });
     }
-    // Carrega o mapa de variações para a funcionalidade "Ir Para"
-    await _loadBookVariationsMapForGoTo(); // Renomeado para clareza
-    // Pré-carrega o léxico (opcional, mas pode melhorar a performance se usado frequentemente)
+    await _loadBookVariationsMapForGoTo();
     await BiblePageHelper.getStrongsLexicon();
   }
 
   Future<void> _loadBookVariationsMapForGoTo() async {
-    // Renomeado para clareza
     try {
-      // USA O NOVO ARQUIVO JSON PARA O "IR PARA"
       final String jsonString = await rootBundle
           .loadString('assets/Biblia/book_variations_map_search.json');
       final Map<String, dynamic> decodedJson = json.decode(jsonString);
-
       final Map<String, String> normalizedMap = {};
       decodedJson.forEach((key, value) {
-        // Normaliza a CHAVE (variação digitada pelo usuário)
-        // O VALOR já é a abreviação canônica (ex: "gn", "job")
         normalizedMap[_normalizeSearchText(key)] = value.toString();
       });
-
       if (mounted) {
         setState(() {
           _bookVariationsMap = normalizedMap;
-          print(
-              ">>> _bookVariationsMap (para Ir Para) carregado e normalizado: ${_bookVariationsMap.length} entradas.");
         });
       }
     } catch (e) {
-      print(
-          "Erro ao carregar e normalizar book_variations_map_search.json: $e");
+      print("Erro ao carregar book_variations_map_search.json: $e");
       if (mounted) setState(() => _bookVariationsMap = {});
     }
   }
@@ -203,6 +191,22 @@ class _BiblePageState extends State<BiblePage> {
       {bool forceKeyUpdate = false}) {
     if (!mounted) return;
     bool changed = selectedBook != book || selectedChapter != chapter;
+
+    // Se o livro mudou, verifica se a tradução hebraica ainda é válida
+    if (selectedBook != book) {
+      // Se a tradução atual for hebraico e o novo livro não for do Antigo Testamento,
+      // reverte para uma tradução padrão (ex: nvi).
+      final newBookData = booksMap?[book] as Map<String, dynamic>?;
+      if (newBookData?['testament'] != 'Antigo') {
+        if (selectedTranslation1 == 'hebrew_original') {
+          selectedTranslation1 = 'nvi'; // Reverte para padrão
+        }
+        if (selectedTranslation2 == 'hebrew_original') {
+          selectedTranslation2 = 'acf'; // Reverte para padrão ou null
+        }
+      }
+    }
+
     if (changed) {
       setState(() {
         selectedBook = book;
@@ -339,9 +343,7 @@ class _BiblePageState extends State<BiblePage> {
         context: context,
         builder: (dialogContext) {
           return StatefulBuilder(builder: (sfbContext, setDialogState) {
-            // Renomeado context para sfbContext
-            final theme =
-                Theme.of(sfbContext); // Usa o contexto do StatefulBuilder
+            final theme = Theme.of(sfbContext);
             return AlertDialog(
               backgroundColor: theme.dialogBackgroundColor,
               title: Text("Ir para Referência",
@@ -351,9 +353,8 @@ class _BiblePageState extends State<BiblePage> {
                   controller: controller,
                   style: TextStyle(color: theme.colorScheme.onSurface),
                   decoration: InputDecoration(
-                    hintText: "Ex: Gn 1 ou João 3:16",
-                    errorText: errorTextInDialog,
-                  ),
+                      hintText: "Ex: Gn 1 ou João 3:16",
+                      errorText: errorTextInDialog),
                   textInputAction: TextInputAction.search,
                   onSubmitted: (value) => _parseAndNavigateForGoTo(
                       value, dialogContext, (newError) {
@@ -390,7 +391,6 @@ class _BiblePageState extends State<BiblePage> {
 
   void _parseAndNavigateForGoTo(String input, BuildContext dialogContext,
       Function(String?) updateErrorText) {
-    // Renomeado para clareza, esta função usa _normalizeSearchText
     String userInput = input.trim();
     if (userInput.isEmpty) {
       updateErrorText("Digite uma referência.");
@@ -404,40 +404,23 @@ class _BiblePageState extends State<BiblePage> {
       ..sort((a, b) => b.length.compareTo(a.length));
 
     for (String normalizedVariationKeyInMap in sortedVariationKeys) {
-      // A chave do mapa já está normalizada pelo _loadBookVariationsMapForGoTo
       if (normalizedUserInput.startsWith(normalizedVariationKeyInMap)) {
         foundBookAbbrev = _bookVariationsMap[normalizedVariationKeyInMap];
         remainingInputForChapterAndVerse = normalizedUserInput
             .substring(normalizedVariationKeyInMap.length)
             .trim();
-
-        // Lógica específica para Jó vs João (se "jo" normalizado for ambíguo)
-        // Este é um exemplo, você pode precisar refinar com base no seu `book_variations_map_search.json`
-        if (normalizedVariationKeyInMap == "jo") {
-          // Se a *variação normalizada* que deu match foi "jo"
-          if (userInput.toLowerCase().startsWith("jó") ||
-              userInput.toLowerCase().startsWith("job")) {
-            // Se o input original sugere Jó, e existe "job" como valor canônico no mapa de variações
-            if (_bookVariationsMap.containsValue("job")) {
-              // Tenta ver se alguma variação de Jó também deu match com "jo"
-              // Ou, mais simples: se o usuário digitou algo que começa com jó/job, e "jo" deu match,
-              // mas "job" também é um valor canônico, pode ser Jó.
-              // Esta lógica pode ser complexa. A melhor forma é garantir que
-              // "jó", "job" etc. no JSON mapeiem para "job" (a abreviação canônica).
-              // Se "jo" (de Jó) e "jo" (de João) ambos normalizam para "jo",
-              // a ordenação por tamanho de chave (se "joao" for mais longo que "jó") ajuda.
-              // Para este caso, vamos assumir que se o input original era "jó" ou "job", é Jó.
-              // AVISO: Esta é uma simplificação. O ideal é o `book_variations_map_search.json` ser muito claro.
-              bool isPotentiallyJob = _bookVariationsMap.entries.any((e) =>
-                  (e.key == "jó" ||
-                      e.key == "job" ||
-                      e.key == "jo com acento circunflexo" ||
-                      e.key == "jô") &&
-                  e.value == "job");
-              if (isPotentiallyJob && foundBookAbbrev == "jo") {
-                // Se "jo" (de João) foi pego, mas era Jó
-                foundBookAbbrev = "job"; // Corrige para Jó
-              }
+        if (normalizedVariationKeyInMap == "jo" &&
+            (userInput.toLowerCase().startsWith("jó") ||
+                userInput.toLowerCase().startsWith("job"))) {
+          if (_bookVariationsMap.containsValue("job")) {
+            bool isPotentiallyJob = _bookVariationsMap.entries.any((e) =>
+                (e.key == "jó" ||
+                    e.key == "job" ||
+                    e.key == "jo com acento circunflexo" ||
+                    e.key == "jô") &&
+                e.value == "job");
+            if (isPotentiallyJob && foundBookAbbrev == "jo") {
+              foundBookAbbrev = "job";
             }
           }
         }
@@ -470,7 +453,6 @@ class _BiblePageState extends State<BiblePage> {
         foundBookAbbrev, chapter, dialogContext, updateErrorText);
   }
 
-  // _finalizeNavigation não precisa de alterações, já usa a abreviação canônica
   void _finalizeNavigation(String bookAbbrev, int chapter,
       BuildContext dialogContext, Function(String?) updateErrorText) {
     if (booksMap != null && booksMap!.containsKey(bookAbbrev)) {
@@ -498,10 +480,9 @@ class _BiblePageState extends State<BiblePage> {
       onInit: (store) {
         if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_hasProcessedInitialNavigation) {
+            if (mounted && !_hasProcessedInitialNavigation)
               _processIntentOrInitialLoad(
                   context, _BiblePageViewModel.fromStore(store));
-            }
           });
         }
         _loadUserDataIfNeeded(context);
@@ -532,13 +513,11 @@ class _BiblePageState extends State<BiblePage> {
       },
       builder: (context, viewModel) {
         if (booksMap == null || _bookVariationsMap.isEmpty) {
-          // Adicionado _bookVariationsMap.isEmpty
           return Scaffold(
-            appBar: AppBar(title: const Text('Bíblia')),
-            body: Center(
-                child: CircularProgressIndicator(
-                    color: theme.colorScheme.primary)),
-          );
+              appBar: AppBar(title: const Text('Bíblia')),
+              body: Center(
+                  child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary)));
         }
         if (selectedBook == null || selectedChapter == null) {
           if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
@@ -548,21 +527,31 @@ class _BiblePageState extends State<BiblePage> {
             });
           }
           return Scaffold(
-            appBar: AppBar(title: const Text('Bíblia')),
-            body: Center(
-                child: Text("Carregando Bíblia...",
-                    style:
-                        TextStyle(color: theme.textTheme.bodyMedium?.color))),
-          );
+              appBar: AppBar(title: const Text('Bíblia')),
+              body: Center(
+                  child: Text("Carregando Bíblia...",
+                      style: TextStyle(
+                          color: theme.textTheme.bodyMedium?.color))));
         }
 
-        String appBarTitle = _isSemanticSearchActive ? '' : 'Bíblia';
+        String appBarTitle = _isSemanticSearchActive
+            ? ''
+            : (booksMap?[selectedBook]?['nome'] ?? 'Bíblia'); // Título padrão
         if (!_isSemanticSearchActive) {
-          if (_isFocusModeActive) {
-            appBarTitle = booksMap?[selectedBook]?['nome'] ?? 'Bíblia';
+          if (_isFocusModeActive &&
+              selectedBook != null &&
+              booksMap != null &&
+              booksMap!.containsKey(selectedBook)) {
+            appBarTitle = booksMap![selectedBook]!['nome'] ?? 'Bíblia';
             if (selectedChapter != null) appBarTitle += ' $selectedChapter';
           } else if (_isCompareModeActive) {
             appBarTitle = 'Comparar Traduções';
+          } else if (selectedBook != null &&
+              booksMap != null &&
+              booksMap!.containsKey(selectedBook)) {
+            // Para o modo normal, mostra Nome do Livro + Capítulo
+            appBarTitle = booksMap![selectedBook]!['nome'] ?? 'Bíblia';
+            if (selectedChapter != null) appBarTitle += ' $selectedChapter';
           }
         }
 
@@ -721,17 +710,21 @@ class _BiblePageState extends State<BiblePage> {
                                     style: const TextStyle(fontSize: 12)),
                                 onPressed: () =>
                                     BiblePageWidgets.showTranslationSelection(
-                                        context: context,
-                                        selectedTranslation:
-                                            selectedTranslation1,
-                                        onTranslationSelected: (value) {
-                                          if (mounted &&
-                                              value != selectedTranslation2)
-                                            setState(() {
-                                              selectedTranslation1 = value;
-                                              _updateFutureBuilderKey();
-                                            });
-                                        }),
+                                      context: context,
+                                      selectedTranslation: selectedTranslation1,
+                                      onTranslationSelected: (value) {
+                                        if (mounted &&
+                                            value != selectedTranslation2)
+                                          setState(() {
+                                            selectedTranslation1 = value;
+                                            _updateFutureBuilderKey();
+                                          });
+                                      },
+                                      currentSelectedBookAbbrev:
+                                          selectedBook, // Passa o livro atual
+                                      booksMap:
+                                          booksMap, // Passa o mapa de livros
+                                    ),
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: theme.cardColor,
                                     foregroundColor:
@@ -751,17 +744,22 @@ class _BiblePageState extends State<BiblePage> {
                                       style: const TextStyle(fontSize: 12)),
                                   onPressed: () =>
                                       BiblePageWidgets.showTranslationSelection(
-                                          context: context,
-                                          selectedTranslation:
-                                              selectedTranslation2 ?? 'aa',
-                                          onTranslationSelected: (value) {
-                                            if (mounted &&
-                                                value != selectedTranslation1)
-                                              setState(() {
-                                                selectedTranslation2 = value;
-                                                _updateFutureBuilderKey();
-                                              });
-                                          }),
+                                        context: context,
+                                        selectedTranslation:
+                                            selectedTranslation2 ?? 'aa',
+                                        onTranslationSelected: (value) {
+                                          if (mounted &&
+                                              value != selectedTranslation1)
+                                            setState(() {
+                                              selectedTranslation2 = value;
+                                              _updateFutureBuilderKey();
+                                            });
+                                        },
+                                        currentSelectedBookAbbrev:
+                                            selectedBook, // Passa o livro atual
+                                        booksMap:
+                                            booksMap, // Passa o mapa de livros
+                                      ),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: theme.cardColor,
                                       foregroundColor:
@@ -836,11 +834,10 @@ class _BiblePageState extends State<BiblePage> {
                       ]),
                     ])),
               ),
-              // Conteúdo principal (versículos/seções)
               if (selectedBook != null &&
                   selectedChapter != null &&
                   _selectedBookSlug != null &&
-                  !_isSemanticSearchActive) // Adicionado !_isSemanticSearchActive
+                  !_isSemanticSearchActive)
                 Expanded(
                     child: FutureBuilder<Map<String, dynamic>>(
                   key: _futureBuilderKey,
@@ -957,7 +954,6 @@ class _BiblePageState extends State<BiblePage> {
                         },
                       );
                     } else {
-                      // Modo Comparação
                       if (verses2Data == null ||
                           (verses2Data as List).isEmpty &&
                               selectedTranslation2 != null)
@@ -1004,7 +1000,6 @@ class _BiblePageState extends State<BiblePage> {
                     }
                   },
                 )),
-              // Adicionado um placeholder se a busca semântica estiver ativa e o conteúdo principal oculto
               if (_isSemanticSearchActive)
                 Expanded(
                   child: Center(
