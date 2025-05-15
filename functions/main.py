@@ -5,12 +5,24 @@ import stripe
 import firebase_admin
 import google.auth
 from firebase_admin import initialize_app, firestore, auth, credentials
-from firebase_functions import https_fn, options
+from firebase_functions import https_fn, options # options para configuração global
 from datetime import datetime, timedelta, timezone
 import asyncio
 import traceback
 
-import bible_search_service # Import relativo para o serviço de busca
+print(">>>> main.py (VERSÃO COMPLETA - TENTATIVA DE CORREÇÃO DE CHAVE) <<<<") # Nova lin
+try:
+    import bible_search_service
+    print("Módulo 'bible_search_service' importado com sucesso.")
+except ImportError as e_import:
+    print(f"ERRO CRÍTICO: Falha ao importar 'bible_search_service': {e_import}")
+    # Em um cenário real, você pode querer que o deploy falhe aqui se este módulo é essencial.
+    # No entanto, para depuração, podemos permitir que continue e as funções que dependem dele falharão.
+    bible_search_service = None # Define como None para verificações posteriores
+except Exception as e_generic_import:
+    print(f"ERRO CRÍTICO INESPERADO ao importar 'bible_search_service': {e_generic_import}")
+    bible_search_service = None
+
 
 # --- Inicialização Explícita do Firebase Admin ---
 if not firebase_admin._apps:
@@ -53,7 +65,7 @@ except Exception as e:
 options.set_global_options(region=options.SupportedRegion.SOUTHAMERICA_EAST1)
 print(f"Região global das Firebase Functions definida para: {options.SupportedRegion.SOUTHAMERICA_EAST1}")
 
-# --- Constantes de Preços (Exemplo - Ajuste com seus IDs reais de teste do Stripe) ---
+# --- Constantes de Preços (Ajuste com seus IDs reais de teste do Stripe) ---
 STRIPE_PRICE_ID_MONTHLY = "price_1QuborEKXwg5KYoEMaset6VY"
 STRIPE_PRICE_ID_RECURRING = "price_1QuboKEKXwg5KYoEtlbkQLR1"
 STRIPE_PRICE_ID_QUARTERLY = "price_1QubpLEKXwg5KYoE5Z2kR3sN"
@@ -65,11 +77,11 @@ async def find_user_id_by_stripe_customer_id(stripe_customer_id: str) -> str | N
         return None
     try:
         users_ref = db.collection('users')
-        query_snapshot = await asyncio.to_thread(
+        query_snapshot_list = await asyncio.to_thread(
             lambda: list(users_ref.where('stripeCustomerId', '==', stripe_customer_id).limit(1).stream())
         )
-        if query_snapshot:
-            doc = query_snapshot[0]
+        if query_snapshot_list:
+            doc = query_snapshot_list[0]
             print(f"Usuário encontrado no Firestore: {doc.id} para Customer {stripe_customer_id}")
             return doc.id
         print(f"AVISO Firestore: Usuário não encontrado para Stripe Customer {stripe_customer_id}")
@@ -103,7 +115,7 @@ async def update_user_subscription_status(
         for k, v in update_data.items():
             if v is not firestore.DELETE_FIELD:
                 final_update_payload[k] = v
-            elif k in fields_to_delete_explicitly: # Apenas adiciona DELETE_FIELD se for um dos campos que podem ser deletados
+            elif k in fields_to_delete_explicitly:
                 final_update_payload[k] = firestore.DELETE_FIELD
 
         if not final_update_payload:
@@ -121,8 +133,7 @@ async def get_or_create_stripe_customer(email: str, name: str | None, user_id: s
     if db is None:
         print("ERRO (get_or_create_stripe_customer): Cliente Firestore não inicializado.")
         return None
-    # Acessa a chave do Stripe da configuração do Firebase Functions (ex: stripe.secret)
-    stripe.api_key = os.environ.get("STRIPE_SECRET")
+    stripe.api_key = os.environ.get("STRIPE_SECRET") # Config: stripe.secret
     if not stripe.api_key:
         print("ERRO (get_or_create_stripe_customer): Chave Stripe (STRIPE_SECRET) não disponível no ambiente.")
         return None
@@ -150,8 +161,8 @@ async def get_or_create_stripe_customer(email: str, name: str | None, user_id: s
         await asyncio.to_thread(user_ref.set, {'stripeCustomerId': customer_id}, merge=True)
         print(f"Firestore: stripeCustomerId {customer_id} salvo/confirmado para usuário {user_id}")
         return customer_id
-    except stripe.error.StripeError as e:
-        print(f"ERRO Stripe (get_or_create_stripe_customer): {e}")
+    except stripe.error.StripeError as e_stripe:
+        print(f"ERRO Stripe (get_or_create_stripe_customer): {e_stripe}")
         return None
     except Exception as e:
         print(f"ERRO Geral (get_or_create_stripe_customer): {e}")
@@ -172,7 +183,7 @@ def _run_async_handler_wrapper(async_func):
         return None
 
 # --- Callable Function para Stripe Checkout ---
-@https_fn.on_call( # Removido o argumento 'secrets'
+@https_fn.on_call(
     memory=options.MemoryOption.MB_512,
     timeout_sec=60
 )
@@ -187,8 +198,7 @@ def create_stripe_checkout(request: https_fn.CallableRequest) -> dict:
 async def _create_stripe_checkout_async(data_request: https_fn.CallableRequest) -> dict:
     try:
         if db is None: raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message='Servidor não inicializado (Firestore).')
-        # Acessa a chave do Stripe da configuração do Firebase Functions (ex: stripe.secret)
-        stripe.api_key = os.environ.get("STRIPE_SECRET")
+        stripe.api_key = os.environ.get("STRIPE_SECRET") # Config: stripe.secret
         if not stripe.api_key: raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message='Chave Stripe (STRIPE_SECRET) não configurada no ambiente.')
         if not data_request.auth or not data_request.auth.uid: raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
 
@@ -235,7 +245,7 @@ async def _create_stripe_checkout_async(data_request: https_fn.CallableRequest) 
                     client_secret = subscription.latest_invoice.payment_intent.client_secret
                 else:
                     print(f"ERRO CRÍTICO: Assinatura {subscription.id} 'incomplete' mas sem client_secret direto.")
-                    if subscription.latest_invoice and isinstance(subscription.latest_invoice, str):
+                    if subscription.latest_invoice and isinstance(subscription.latest_invoice, str): # Se for apenas o ID da fatura
                         try:
                             invoice = await asyncio.to_thread(stripe.Invoice.retrieve, subscription.latest_invoice, expand=['payment_intent'])
                             if invoice.payment_intent and hasattr(invoice.payment_intent, 'client_secret') and invoice.payment_intent.client_secret:
@@ -251,7 +261,8 @@ async def _create_stripe_checkout_async(data_request: https_fn.CallableRequest) 
                 amount = price_object.unit_amount; currency = price_object.currency
                 if amount is None: raise ValueError(f"Preço {price_id} sem 'unit_amount'.")
             except stripe.error.StripeError as e_price: raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message=f'Detalhes do preço {price_id} inválidos.')
-            payment_intent = await asyncio.to_thread(stripe.PaymentIntent.create, amount=amount, currency=currency, customer=customer_id, payment_method_types=['card'], metadata={'priceId': price_id, 'userId': user_id})
+            payment_intent_params = {'amount':amount, 'currency':currency, 'customer':customer_id, 'payment_method_types':['card'], 'metadata': {'priceId': price_id, 'userId': user_id}}
+            payment_intent = await asyncio.to_thread(stripe.PaymentIntent.create, **payment_intent_params)
             response_data['clientSecret'] = payment_intent.client_secret
         print(f"Retornando dados para o cliente: {response_data}")
         return response_data
@@ -264,12 +275,11 @@ async def _create_stripe_checkout_async(data_request: https_fn.CallableRequest) 
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f'Erro interno inesperado: {str(e_general)}')
 
 # --- Webhook Handler do Stripe ---
-@https_fn.on_request() # Removido o argumento 'secrets'
+@https_fn.on_request() # Removido argumento 'secrets'
 def stripe_webhook_handler(req: https_fn.Request) -> https_fn.Response:
     if db is None: print("ERRO Webhook: Cliente Firestore não inicializado."); return https_fn.Response("Erro interno.", status=500)
-    # Acessa as chaves da configuração do Firebase Functions
-    stripe.api_key = os.environ.get("STRIPE_SECRET")
-    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+    stripe.api_key = os.environ.get("STRIPE_SECRET") # Config: stripe.secret
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET") # Config: stripe.webhook_secret
     if not stripe.api_key or not webhook_secret: print("ERRO Webhook: Configuração Stripe (STRIPE_SECRET ou STRIPE_WEBHOOK_SECRET) incompleta."); return https_fn.Response("Erro config.", status=500)
 
     signature = req.headers.get("stripe-signature"); payload_bytes = req.data
@@ -284,7 +294,9 @@ def stripe_webhook_handler(req: https_fn.Request) -> https_fn.Response:
     if customer_id_str: user_id = _run_async_handler_wrapper(find_user_id_by_stripe_customer_id(customer_id_str))
     else: print(f"Aviso Webhook: Evento {event.type} ({event_data.get('id')}) sem customerId.")
 
-    if not user_id and event.type not in ['checkout.session.completed']: print(f"AVISO Webhook: Usuário não encontrado para evento {event.type}. Ignorando."); return https_fn.Response(status=200, json_body={'user_not_found_or_not_needed': True})
+    if not user_id and event.type not in ['checkout.session.completed']:
+        print(f"AVISO Webhook: Usuário não encontrado para evento {event.type} (Customer: {customer_id_str}). Ignorando.");
+        return https_fn.Response(status=200, json_body={'status': 'user_not_found_or_not_needed_for_event_type'})
 
     try:
         if event.type == 'payment_intent.succeeded':
@@ -333,16 +345,23 @@ def stripe_webhook_handler(req: https_fn.Request) -> https_fn.Response:
         return https_fn.Response(status=200, json_body={'status': 'error_processing_event', 'event_type': event_type_str})
 
 # --- NOVA CLOUD FUNCTION PARA BUSCA SEMÂNTICA BÍBLICA ---
-@https_fn.on_call( # Removido o argumento 'secrets'
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"], # Nomes das secrets no Secret Manager
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
     timeout_sec=60
 )
 def semantic_bible_search(request: https_fn.CallableRequest) -> dict:
-    print("Handler síncrono semantic_bible_search chamado.")
+    print("Handler síncrono semantic_bible_search chamado (VERSÃO COMPLETA).")
     user_query = request.data.get("query")
     filters = request.data.get("filters")
-    top_k = request.data.get("topK", 10)
+    top_k = request.data.get("topK", 10) # Padrão para 10 se não fornecido
+
+    print(f"Query recebida: '{user_query}', Filtros: {filters}, TopK: {top_k}")
+
+    if bible_search_service is None:
+        print("ERRO FATAL: Módulo bible_search_service não foi importado corretamente.")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de busca indisponível).")
 
     if not user_query or not isinstance(user_query, str):
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'query' (string) é obrigatório.")
@@ -352,16 +371,18 @@ def semantic_bible_search(request: https_fn.CallableRequest) -> dict:
         print(f"AVISO: topK inválido ({top_k}), usando padrão 10."); top_k = 10
 
     try:
+        print("Tentando chamar bible_search_service.perform_semantic_search...")
         search_results = _run_async_handler_wrapper(
             bible_search_service.perform_semantic_search(user_query, filters, top_k)
         )
+        print(f"Retorno de perform_semantic_search: {type(search_results)}, {len(search_results) if isinstance(search_results, list) else 'N/A'} itens.")
         return {"results": search_results if isinstance(search_results, list) else []}
     except ValueError as ve:
-        print(f"Erro de valor na busca semântica: {ve}"); traceback.print_exc()
+        print(f"Erro de valor (ValueError) na busca semântica: {ve}"); traceback.print_exc()
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message=str(ve))
     except ConnectionError as ce:
-        print(f"Erro de conexão na busca semântica: {ce}"); traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAVAILABLE, message=f"Serviço externo indisponível: {ce}")
-    except Exception as e:
-        print(f"Erro inesperado em semantic_bible_search: {e}"); traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar a busca: {str(e)}")
+        print(f"Erro de conexão (ConnectionError) na busca semântica: {ce}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAVAILABLE, message=f"Serviço externo indisponível durante a busca: {ce}")
+    except Exception as e: # Captura outras exceções de perform_semantic_search ou _run_async_handler_wrapper
+        print(f"Erro inesperado em semantic_bible_search (main.py) ao chamar o serviço: {e}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar a busca semântica: {str(e)}")

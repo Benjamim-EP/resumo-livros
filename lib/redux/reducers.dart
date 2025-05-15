@@ -1,5 +1,6 @@
 // redux/reducers.dart
 import 'package:flutter/material.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
 import 'package:resumo_dos_deuses_flutter/design/theme.dart'; // Importar seus temas
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -714,6 +715,73 @@ ChatState chatReducer(ChatState state, dynamic action) {
     return state.copyWith(latestResponse: action.botResponse);
   } else if (action is SendMessageFailureAction) {
     return state.copyWith(latestResponse: "Erro: ${action.error}");
+  }
+  return state;
+}
+
+class BibleSearchState {
+  final bool isLoading;
+  final List<Map<String, dynamic>> results;
+  final String? error;
+  final Map<String, dynamic>
+      activeFilters; // e.g., {"livro_curto": "gn", "testamento": "Novo"}
+  final String
+      currentQuery; // Para manter a query atual, útil se filtros mudarem
+
+  BibleSearchState({
+    this.isLoading = false,
+    this.results = const [],
+    this.error,
+    this.activeFilters = const {},
+    this.currentQuery = "",
+  });
+
+  BibleSearchState copyWith({
+    bool? isLoading,
+    List<Map<String, dynamic>>? results,
+    String? error,
+    Map<String, dynamic>? activeFilters,
+    String? currentQuery,
+    bool clearError = false,
+    bool clearResults = false,
+  }) {
+    return BibleSearchState(
+      isLoading: isLoading ?? this.isLoading,
+      results: clearResults ? [] : results ?? this.results,
+      error: clearError ? null : error ?? this.error,
+      activeFilters: activeFilters ?? this.activeFilters,
+      currentQuery: currentQuery ?? this.currentQuery,
+    );
+  }
+}
+
+BibleSearchState bibleSearchReducer(BibleSearchState state, dynamic action) {
+  if (action is SearchBibleSemanticAction) {
+    return state.copyWith(
+      isLoading: true,
+      currentQuery: action.query,
+      clearError: true,
+      clearResults: true, // Limpa resultados antigos ao iniciar nova busca
+    );
+  }
+  if (action is SetBibleSearchFilterAction) {
+    final newFilters = Map<String, dynamic>.from(state.activeFilters);
+    if (action.filterValue == null ||
+        (action.filterValue is String && action.filterValue.isEmpty)) {
+      newFilters.remove(action.filterKey);
+    } else {
+      newFilters[action.filterKey] = action.filterValue;
+    }
+    return state.copyWith(activeFilters: newFilters);
+  }
+  if (action is ClearBibleSearchFiltersAction) {
+    return state.copyWith(activeFilters: {});
+  }
+  if (action is SearchBibleSemanticSuccessAction) {
+    return state.copyWith(isLoading: false, results: action.results);
+  }
+  if (action is SearchBibleSemanticFailureAction) {
+    return state.copyWith(isLoading: false, error: action.error);
   }
   return state;
 }
