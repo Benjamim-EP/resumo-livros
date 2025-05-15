@@ -1,5 +1,6 @@
 // lib/pages/bible_page.dart
 import 'dart:convert';
+import 'dart:async'; // Importar para Future.delayed
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
@@ -79,9 +80,8 @@ class BiblePage extends StatefulWidget {
 }
 
 class _BiblePageState extends State<BiblePage> {
-  Map<String, dynamic>?
-      booksMap; // Contém metadados dos livros, incluindo 'testament'
-  String? selectedBook; // Abreviação do livro selecionado (ex: "gn")
+  Map<String, dynamic>? booksMap;
+  String? selectedBook;
   int? selectedChapter;
 
   String selectedTranslation1 = 'nvi';
@@ -94,23 +94,69 @@ class _BiblePageState extends State<BiblePage> {
   Map<String, String> _bookVariationsMap = {};
 
   ValueKey _futureBuilderKey =
-      const ValueKey('initial_bible_key_state_v7'); // Nova chave
+      const ValueKey('initial_bible_key_state_v8'); // Nova chave
   bool _hasProcessedInitialNavigation = false;
 
   bool _isSemanticSearchActive = false;
   final TextEditingController _semanticQueryController =
       TextEditingController();
 
+  // ScrollControllers para o modo de comparação
+  final ScrollController _scrollController1 = ScrollController();
+  final ScrollController _scrollController2 = ScrollController();
+  bool _isSyncingScroll = false; // Flag para evitar loops de sincronização
+
   @override
   void initState() {
     super.initState();
     _loadInitialData();
+
+    // Adiciona listeners para sincronização de scroll
+    _scrollController1.addListener(_syncScrollFrom1To2);
+    _scrollController2.addListener(_syncScrollFrom2To1);
   }
 
   @override
   void dispose() {
     _semanticQueryController.dispose();
+    // Remove listeners e faz dispose dos ScrollControllers
+    _scrollController1.removeListener(_syncScrollFrom1To2);
+    _scrollController2.removeListener(_syncScrollFrom2To1);
+    _scrollController1.dispose();
+    _scrollController2.dispose();
     super.dispose();
+  }
+
+  // Funções de sincronização de scroll
+  void _syncScrollFrom1To2() {
+    if (_isSyncingScroll) return;
+    if (!_scrollController1.hasClients || !_scrollController2.hasClients)
+      return;
+    // if (_scrollController1.position.isScrollingNotifier.value) return; // Evita sync durante scroll manual ativo
+
+    _isSyncingScroll = true;
+    if (_scrollController2.offset != _scrollController1.offset) {
+      _scrollController2.jumpTo(_scrollController1.offset);
+    }
+    // Usar um microtask para resetar a flag após o frame atual
+    Future.microtask(() {
+      _isSyncingScroll = false;
+    });
+  }
+
+  void _syncScrollFrom2To1() {
+    if (_isSyncingScroll) return;
+    if (!_scrollController1.hasClients || !_scrollController2.hasClients)
+      return;
+    // if (_scrollController2.position.isScrollingNotifier.value) return;
+
+    _isSyncingScroll = true;
+    if (_scrollController1.offset != _scrollController2.offset) {
+      _scrollController1.jumpTo(_scrollController2.offset);
+    }
+    Future.microtask(() {
+      _isSyncingScroll = false;
+    });
   }
 
   String _normalizeSearchText(String text) {
@@ -147,11 +193,10 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Future<void> _loadInitialData() async {
-    final generalBooksMap =
-        await BiblePageHelper.loadBooksMap(); // Carrega abbrev_map.json
+    final generalBooksMap = await BiblePageHelper.loadBooksMap();
     if (mounted) {
       setState(() {
-        booksMap = generalBooksMap; // booksMap AGORA TEM A CHAVE 'testament'
+        booksMap = generalBooksMap;
       });
     }
     await _loadBookVariationsMapForGoTo();
@@ -192,27 +237,26 @@ class _BiblePageState extends State<BiblePage> {
     if (!mounted) return;
     bool changed = selectedBook != book || selectedChapter != chapter;
 
-    // Se o livro mudou, verifica se a tradução hebraica ainda é válida
     if (selectedBook != book) {
-      // Se a tradução atual for hebraico e o novo livro não for do Antigo Testamento,
-      // reverte para uma tradução padrão (ex: nvi).
       final newBookData = booksMap?[book] as Map<String, dynamic>?;
       if (newBookData?['testament'] != 'Antigo') {
         if (selectedTranslation1 == 'hebrew_original') {
-          selectedTranslation1 = 'nvi'; // Reverte para padrão
+          if (mounted) setState(() => selectedTranslation1 = 'nvi');
         }
         if (selectedTranslation2 == 'hebrew_original') {
-          selectedTranslation2 = 'acf'; // Reverte para padrão ou null
+          if (mounted) setState(() => selectedTranslation2 = 'acf');
         }
       }
     }
 
     if (changed) {
-      setState(() {
-        selectedBook = book;
-        selectedChapter = chapter;
-        _updateSelectedBookSlug();
-      });
+      if (mounted) {
+        setState(() {
+          selectedBook = book;
+          selectedChapter = chapter;
+          _updateSelectedBookSlug();
+        });
+      }
     }
     if (changed || forceKeyUpdate) {
       _updateFutureBuilderKey();
@@ -536,7 +580,7 @@ class _BiblePageState extends State<BiblePage> {
 
         String appBarTitle = _isSemanticSearchActive
             ? ''
-            : (booksMap?[selectedBook]?['nome'] ?? 'Bíblia'); // Título padrão
+            : (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
         if (!_isSemanticSearchActive) {
           if (_isFocusModeActive &&
               selectedBook != null &&
@@ -549,7 +593,6 @@ class _BiblePageState extends State<BiblePage> {
           } else if (selectedBook != null &&
               booksMap != null &&
               booksMap!.containsKey(selectedBook)) {
-            // Para o modo normal, mostra Nome do Livro + Capítulo
             appBarTitle = booksMap![selectedBook]!['nome'] ?? 'Bíblia';
             if (selectedChapter != null) appBarTitle += ' $selectedChapter';
           }
@@ -720,10 +763,8 @@ class _BiblePageState extends State<BiblePage> {
                                             _updateFutureBuilderKey();
                                           });
                                       },
-                                      currentSelectedBookAbbrev:
-                                          selectedBook, // Passa o livro atual
-                                      booksMap:
-                                          booksMap, // Passa o mapa de livros
+                                      currentSelectedBookAbbrev: selectedBook,
+                                      booksMap: booksMap,
                                     ),
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: theme.cardColor,
@@ -755,10 +796,8 @@ class _BiblePageState extends State<BiblePage> {
                                               _updateFutureBuilderKey();
                                             });
                                         },
-                                        currentSelectedBookAbbrev:
-                                            selectedBook, // Passa o livro atual
-                                        booksMap:
-                                            booksMap, // Passa o mapa de livros
+                                        currentSelectedBookAbbrev: selectedBook,
+                                        booksMap: booksMap,
                                       ),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: theme.cardColor,
@@ -972,13 +1011,12 @@ class _BiblePageState extends State<BiblePage> {
                                   context,
                                   sections,
                                   list1Data,
-                                  list1Data.length > (list2Data?.length ?? 0)
-                                      ? list1Data.length
-                                      : (list2Data?.length ?? 0),
+                                  _scrollController1,
                                   viewModel.userHighlights,
                                   viewModel.userNotes,
                                   selectedTranslation1,
-                                  isHebrew: isCurrentTranslation1Hebrew)),
+                                  isHebrew:
+                                      isCurrentTranslation1Hebrew)), // Passa controller
                           VerticalDivider(
                               width: 1,
                               color: theme.dividerColor.withOpacity(0.5),
@@ -988,13 +1026,12 @@ class _BiblePageState extends State<BiblePage> {
                                   context,
                                   sections,
                                   list2Data ?? [],
-                                  list1Data.length > (list2Data?.length ?? 0)
-                                      ? list1Data.length
-                                      : (list2Data?.length ?? 0),
+                                  _scrollController2,
                                   viewModel.userHighlights,
                                   viewModel.userNotes,
                                   selectedTranslation2!,
-                                  isHebrew: isCurrentTranslation2Hebrew)),
+                                  isHebrew:
+                                      isCurrentTranslation2Hebrew)), // Passa controller
                         ],
                       );
                     }
@@ -1023,7 +1060,7 @@ class _BiblePageState extends State<BiblePage> {
       BuildContext context,
       List<Map<String, dynamic>> sections,
       List verseColumnData,
-      int maxVerseCount,
+      ScrollController scrollController, // NOVO PARÂMETRO
       Map<String, String> userHighlights,
       Map<String, String> userNotes,
       String currentTranslation,
@@ -1041,6 +1078,7 @@ class _BiblePageState extends State<BiblePage> {
                   textAlign: TextAlign.center)));
     }
     return ListView.builder(
+      controller: scrollController, // USA O SCROLL CONTROLLER PASSADO
       padding: EdgeInsets.only(
           left: 12.0,
           right: 12.0,
