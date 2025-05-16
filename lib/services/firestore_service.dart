@@ -1,7 +1,8 @@
 // lib/services/firestore_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; // Para formatar datas
+import 'package:intl/intl.dart';
+import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para formatar datas
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -990,6 +991,113 @@ class FirestoreService {
       print(
           "FirestoreService: Erro ao atualizar status da assinatura no Firestore para $userId: $e");
       rethrow;
+    }
+  }
+
+  // --- Métodos para Progresso de Leitura Bíblica ---
+
+  Future<DocumentSnapshot?> getBibleBookProgress(
+      String userId, String bookAbbrev) async {
+    try {
+      final docRef = _db
+          .collection('users')
+          .doc(userId)
+          .collection('bibleProgress')
+          .doc(bookAbbrev);
+      return await docRef.get();
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao buscar progresso do livro $bookAbbrev para usuário $userId: $e");
+      return null;
+    }
+  }
+
+  Future<void> toggleBibleSectionReadStatus(
+    String userId,
+    String bookAbbrev,
+    String sectionId,
+    bool markAsRead,
+    int totalSectionsInBook, // Recebe o total de seções
+  ) async {
+    final docRef = _db
+        .collection('users')
+        .doc(userId)
+        .collection('bibleProgress')
+        .doc(bookAbbrev);
+
+    await _db.runTransaction((transaction) async {
+      DocumentSnapshot snapshot = await transaction.get(docRef);
+      Set<String> readSections;
+      int currentTotalSections = totalSectionsInBook; // Usa o valor passado
+      bool currentCompletedStatus = false;
+
+      if (!snapshot.exists) {
+        // Documento do livro não existe, criar com esta seção
+        readSections = markAsRead ? {sectionId} : {};
+        // Se o total de seções do livro não foi passado ou é 0,
+        // aqui seria um bom lugar para buscar/calcular e armazenar pela primeira vez.
+        // Por ora, usamos o que foi passado.
+        print(
+            "FirestoreService: Criando doc de progresso para $bookAbbrev. Total de seções: $currentTotalSections");
+      } else {
+        final data = snapshot.data() as Map<String, dynamic>;
+        readSections =
+            Set<String>.from(data['readSections'] as List<dynamic>? ?? []);
+        currentTotalSections = data['totalSectionsInBook'] as int? ??
+            currentTotalSections; // Prioriza valor do DB se existir
+        currentCompletedStatus = data['completed'] as bool? ?? false;
+
+        if (markAsRead) {
+          readSections.add(sectionId);
+        } else {
+          readSections.remove(sectionId);
+        }
+      }
+
+      bool newCompletedStatus = currentCompletedStatus;
+      if (currentTotalSections > 0) {
+        // Só calcula 'completed' se soubermos o total
+        newCompletedStatus = readSections.length >= currentTotalSections;
+      }
+
+      transaction.set(
+          docRef,
+          {
+            'readSections':
+                readSections.toList(), // Salva como List no Firestore
+            'totalSectionsInBook':
+                currentTotalSections, // Garante que está salvo
+            'completed': newCompletedStatus,
+            'lastReadTimestamp': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true)); // Merge é importante se o doc já existe
+    });
+  }
+
+  Future<Map<String, BibleBookProgressData>> getAllBibleProgress(
+      String userId) async {
+    Map<String, BibleBookProgressData> allProgress = {};
+    try {
+      QuerySnapshot snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('bibleProgress')
+          .get();
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        allProgress[doc.id] = BibleBookProgressData(
+          readSections:
+              Set<String>.from(data['readSections'] as List<dynamic>? ?? []),
+          totalSections: data['totalSectionsInBook'] as int? ?? 0,
+          completed: data['completed'] as bool? ?? false,
+          lastReadTimestamp: data['lastReadTimestamp'] as Timestamp?,
+        );
+      }
+      return allProgress;
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao buscar todo o progresso bíblico para usuário $userId: $e");
+      return {}; // Retorna mapa vazio em caso de erro
     }
   }
 

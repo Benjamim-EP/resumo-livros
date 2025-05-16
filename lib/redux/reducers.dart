@@ -1,5 +1,7 @@
 // redux/reducers.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
 import 'package:resumo_dos_deuses_flutter/design/theme.dart'; // Importar seus temas
@@ -208,6 +210,18 @@ class UserState {
   final DateTime? lastRewardedAdWatchTime;
   final int rewardedAdsWatchedToday;
 
+  // NOVOS CAMPOS PARA PROGRESSO DE LEITURA BÍBLICA
+  // Map<livroAbrev, Set<idDaSecaoLida>>
+  final Map<String, Set<String>> readSectionsByBook;
+  // Map<livroAbrev, totalDeSecoesNoLivro>
+  final Map<String, int> totalSectionsPerBook;
+  // Map<livroAbrev, boolean>
+  final Map<String, bool> bookCompletionStatus; // Opcional, pode ser derivado
+
+  // Para progresso geral (UserPage)
+  // Map<livroAbrev, ProgressoDetalhadoDoLivro>
+  final Map<String, BibleBookProgressData> allBooksProgress;
+
   UserState({
     this.userId,
     this.email,
@@ -242,6 +256,10 @@ class UserState {
     this.userCoins = 0, // Começa com 0, será carregado ou definido como 100
     this.lastRewardedAdWatchTime,
     this.rewardedAdsWatchedToday = 0,
+    this.readSectionsByBook = const {},
+    this.totalSectionsPerBook = const {},
+    this.bookCompletionStatus = const {},
+    this.allBooksProgress = const {},
   });
 
   UserState copyWith({
@@ -280,6 +298,10 @@ class UserState {
     DateTime? lastRewardedAdWatchTime,
     bool clearLastRewardedAdWatchTime = false,
     int? rewardedAdsWatchedToday,
+    Map<String, Set<String>>? readSectionsByBook,
+    Map<String, int>? totalSectionsPerBook,
+    Map<String, bool>? bookCompletionStatus,
+    Map<String, BibleBookProgressData>? allBooksProgress,
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -323,6 +345,10 @@ class UserState {
           : (lastRewardedAdWatchTime ?? this.lastRewardedAdWatchTime),
       rewardedAdsWatchedToday:
           rewardedAdsWatchedToday ?? this.rewardedAdsWatchedToday,
+      readSectionsByBook: readSectionsByBook ?? this.readSectionsByBook,
+      totalSectionsPerBook: totalSectionsPerBook ?? this.totalSectionsPerBook,
+      bookCompletionStatus: bookCompletionStatus ?? this.bookCompletionStatus,
+      allBooksProgress: allBooksProgress ?? this.allBooksProgress,
     );
   }
 }
@@ -585,6 +611,68 @@ UserState userReducer(UserState state, dynamic action) {
       lastRewardedAdWatchTime: action.adWatchTime,
       rewardedAdsWatchedToday: updatedAdsWatchedToday,
     );
+  } else if (action is BibleBookProgressLoadedAction) {
+    final newReadSectionsByBook =
+        Map<String, Set<String>>.from(state.readSectionsByBook);
+    newReadSectionsByBook[action.bookAbbrev] = action.readSections;
+
+    final newTotalSectionsPerBook =
+        Map<String, int>.from(state.totalSectionsPerBook);
+    newTotalSectionsPerBook[action.bookAbbrev] = action.totalSectionsInBook;
+
+    final newBookCompletionStatus =
+        Map<String, bool>.from(state.bookCompletionStatus);
+    newBookCompletionStatus[action.bookAbbrev] = action.isCompleted;
+
+    // Atualiza também o allBooksProgress se este livro específico foi carregado
+    final newAllBooksProgress =
+        Map<String, BibleBookProgressData>.from(state.allBooksProgress);
+    newAllBooksProgress[action.bookAbbrev] = BibleBookProgressData(
+      readSections: action.readSections,
+      totalSections: action.totalSectionsInBook,
+      completed: action.isCompleted,
+      lastReadTimestamp: action.lastReadTimestamp,
+    );
+
+    return state.copyWith(
+      readSectionsByBook: newReadSectionsByBook,
+      totalSectionsPerBook: newTotalSectionsPerBook,
+      bookCompletionStatus: newBookCompletionStatus,
+      allBooksProgress:
+          newAllBooksProgress, // Atualiza o progresso geral também
+    );
+  }
+  // A ação ToggleSectionReadStatusAction é principalmente tratada pelo middleware.
+  // O middleware, após atualizar o Firestore, pode despachar BibleBookProgressLoadedAction
+  // para atualizar o estado, ou você pode ter uma atualização otimista aqui.
+  // Para manter simples, vamos deixar o middleware recarregar via BibleBookProgressLoadedAction.
+
+  if (action is AllBibleProgressLoadedAction) {
+    // Preenche os mapas individuais a partir do mapa consolidado
+    final newReadSectionsByBook = <String, Set<String>>{};
+    final newTotalSectionsPerBook = <String, int>{};
+    final newBookCompletionStatus = <String, bool>{};
+
+    action.progressData.forEach((bookAbbrev, data) {
+      newReadSectionsByBook[bookAbbrev] = data.readSections;
+      newTotalSectionsPerBook[bookAbbrev] = data.totalSections;
+      newBookCompletionStatus[bookAbbrev] = data.completed;
+    });
+
+    return state.copyWith(
+      allBooksProgress: action.progressData,
+      readSectionsByBook: newReadSectionsByBook, // Preenche para acesso rápido
+      totalSectionsPerBook:
+          newTotalSectionsPerBook, // Preenche para acesso rápido
+      bookCompletionStatus:
+          newBookCompletionStatus, // Preenche para acesso rápido
+    );
+  }
+
+  if (action is BibleProgressFailureAction) {
+    // Você pode querer armazenar o erro em algum lugar no estado se precisar mostrá-lo na UI
+    print("BibleProgressFailureAction: ${action.error}");
+    return state; // Ou state.copyWith(bibleProgressError: action.error)
   }
   return state;
 }
@@ -784,4 +872,38 @@ BibleSearchState bibleSearchReducer(BibleSearchState state, dynamic action) {
     return state.copyWith(isLoading: false, error: action.error);
   }
   return state;
+}
+
+// Classe auxiliar para AllBibleProgressLoadedAction
+class BibleBookProgressData {
+  final Set<String> readSections;
+  final int totalSections;
+  final bool completed;
+  final Timestamp? lastReadTimestamp; // Opcional, mas útil
+
+  BibleBookProgressData({
+    required this.readSections,
+    required this.totalSections,
+    this.completed = false,
+    this.lastReadTimestamp,
+  });
+
+  // Necessário para comparação no StoreConnector se você usar distinct: true
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BibleBookProgressData &&
+          runtimeType == other.runtimeType &&
+          setEquals(readSections,
+              other.readSections) && // Use setEquals para comparar Sets
+          totalSections == other.totalSections &&
+          completed == other.completed &&
+          lastReadTimestamp == other.lastReadTimestamp;
+
+  @override
+  int get hashCode =>
+      readSections.hashCode ^
+      totalSections.hashCode ^
+      completed.hashCode ^
+      lastReadTimestamp.hashCode;
 }

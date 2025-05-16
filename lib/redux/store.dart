@@ -1,5 +1,6 @@
 // redux/store.dart
 import 'package:redux/redux.dart';
+import 'package:resumo_dos_deuses_flutter/redux/middleware/bible_progress_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/payment_middleware.dart';
 import 'reducers.dart'; // Seu arquivo de reducers principal
 
@@ -100,5 +101,6 @@ final Store<AppState> store = Store<AppState>(
     ...createThemeMiddleware(),
     ...createAdMiddleware(),
     ...createBibleSearchMiddleware(), // NOVO: Middleware para busca semântica bíblica
+    ...createBibleProgressMiddleware(),
   ],
 );
