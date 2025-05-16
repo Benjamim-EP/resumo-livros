@@ -47,6 +47,7 @@ dependencies:
   flutter_tts: ^4.2.2
   youtube_player_flutter: ^9.1.1
   cloud_functions: ^5.5.0
+  percent_indicator: ^4.2.5
 
 dev_dependencies:
   flutter_test:
@@ -80,6 +81,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/metadata/bible_sections_count.json 
     - assets/Biblia/rotas_biblia/profeciasdesuavinda.json
     - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json

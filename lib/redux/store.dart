@@ -1,7 +1,9 @@
 // redux/store.dart
 import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/bible_progress_middleware.dart';
+import 'package:resumo_dos_deuses_flutter/redux/middleware/metadata_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/payment_middleware.dart';
+import 'package:resumo_dos_deuses_flutter/redux/reducers/metadata_reducer.dart';
 import 'reducers.dart'; // Seu arquivo de reducers principal
 
 import 'middleware/book_middleware.dart';
@@ -26,6 +28,8 @@ class AppState {
   final BibleSearchState
       bibleSearchState; // NOVO: Estado para a busca semântica bíblica
 
+  final MetadataState metadataState;
+
   AppState({
     required this.booksState,
     required this.userState,
@@ -34,6 +38,7 @@ class AppState {
     required this.chatState,
     required this.themeState,
     required this.bibleSearchState, // NOVO
+    required this.metadataState,
   });
 
   // O método copyWith é útil para testes ou cenários de atualização mais complexos,
@@ -55,6 +60,8 @@ class AppState {
       chatState: chatState ?? this.chatState,
       themeState: themeState ?? this.themeState,
       bibleSearchState: bibleSearchState ?? this.bibleSearchState, // NOVO
+      metadataState: metadataState ??
+          this.metadataState, // Mantém o estado de metadados atual
     );
   }
 }
@@ -70,6 +77,7 @@ AppState appReducer(AppState state, dynamic action) {
     themeState: themeReducer(state.themeState, action),
     bibleSearchState:
         bibleSearchReducer(state.bibleSearchState, action), // NOVO
+    metadataState: metadataReducer(state.metadataState, action),
   );
 }
 
@@ -86,6 +94,7 @@ final Store<AppState> store = Store<AppState>(
     themeState: ThemeState.initial(), // Usa o factory do ThemeState
     bibleSearchState:
         BibleSearchState(), // NOVO: Estado inicial para busca bíblica
+    metadataState: MetadataState(),
   ),
   middleware: [
     // Combina todos os middlewares dos arquivos separados
@@ -102,5 +111,33 @@ final Store<AppState> store = Store<AppState>(
     ...createAdMiddleware(),
     ...createBibleSearchMiddleware(), // NOVO: Middleware para busca semântica bíblica
     ...createBibleProgressMiddleware(),
+    ...createMetadataMiddleware()
   ],
 );
+
+class MetadataState {
+  final Map<String, dynamic> bibleSectionCounts;
+  final bool isLoadingSectionCounts;
+  final String? sectionCountsError;
+
+  MetadataState({
+    this.bibleSectionCounts = const {},
+    this.isLoadingSectionCounts = false,
+    this.sectionCountsError,
+  });
+
+  MetadataState copyWith({
+    Map<String, dynamic>? bibleSectionCounts,
+    bool? isLoadingSectionCounts,
+    String? sectionCountsError,
+    bool clearError = false,
+  }) {
+    return MetadataState(
+      bibleSectionCounts: bibleSectionCounts ?? this.bibleSectionCounts,
+      isLoadingSectionCounts:
+          isLoadingSectionCounts ?? this.isLoadingSectionCounts,
+      sectionCountsError:
+          clearError ? null : sectionCountsError ?? this.sectionCountsError,
+    );
+  }
+}
