@@ -1,0 +1,100 @@
+[
+  {
+    "bookAbbrev": "1jo",
+    "achievementId": "1jo_caminhante_na_luz_eterna",
+    "title": "Caminhante na Luz Eterna",
+    "description": "Você compreendeu o testemunho apostólico sobre Cristo, a importância da comunhão com Deus na luz e o poder da confissão para o perdão.",
+    "iconUrl": "assets/emblems/caminhante_na_luz_eterna.png",
+    "requiredSectionIds": [
+      "1jo_c1_v1-4",
+      "1jo_c1_v5-7",
+      "1jo_c1_v8-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Caminhante na Luz Eterna' por explorar a comunhão com Deus e o testemunho da luz em 1 João 1!",
+    "points": 70,
+    "unlocksStudyId": "1jo_estudo_comunhao_luz_verdade"
+  },
+  {
+    "bookAbbrev": "1jo",
+    "achievementId": "1jo_praticante_do_amor_verdadeiro",
+    "title": "Praticante do Amor Verdadeiro",
+    "description": "Você aprendeu sobre Cristo como propiciação, o dever de obedecer aos mandamentos e a centralidade do amor, rejeitando o amor ao mundo.",
+    "iconUrl": "assets/emblems/praticante_do_amor_verdadeiro.png",
+    "requiredSectionIds": [
+      "1jo_c2_v1-2",
+      "1jo_c2_v3-6",
+      "1jo_c2_v7-11",
+      "1jo_c2_v12-17"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Praticante do Amor Verdadeiro' ao aprofundar-se na obediência e no mandamento do amor em 1 João 2!",
+    "points": 90,
+    "unlocksStudyId": "1jo_estudo_obediencia_amor_mundo"
+  },
+  {
+    "bookAbbrev": "1jo",
+    "achievementId": "1jo_discernidor_dos_espiritos",
+    "title": "Discernidor dos Espíritos",
+    "description": "Você foi alertado sobre o espírito do anticristo, a importância de permanecer em Cristo e a esperança na Sua vinda.",
+    "iconUrl": "assets/emblems/discernidor_dos_espiritos.png",
+    "requiredSectionIds": [
+      "1jo_c2_v18-19",
+      "1jo_c2_v20-27",
+      "1jo_c2_v28-29",
+      "1jo_c4_v1-3",
+      "1jo_c4_v4-6"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Discernidor dos Espíritos' ao aprender a identificar o engano e a permanecer na verdade em 1 João!",
+    "points": 100,
+    "unlocksStudyId": "1jo_estudo_anticristo_perseveranca_esperanca"
+  },
+  {
+    "bookAbbrev": "1jo",
+    "achievementId": "1jo_selo_da_filiacao_divina",
+    "title": "Selo da Filiação Divina",
+    "description": "Você explorou o privilégio da adoção divina, as marcas dos filhos de Deus em justiça e amor fraternal, e a confiança que brota da obediência.",
+    "iconUrl": "assets/emblems/selo_da_filiacao_divina.png",
+    "requiredSectionIds": [
+      "1jo_c3_v1-3",
+      "1jo_c3_v4-10",
+      "1jo_c3_v11-13",
+      "1jo_c3_v14-19",
+      "1jo_c3_v20-22",
+      "1jo_c3_v23-24"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Selo da Filiação Divina' ao descobrir as marcas de ser um filho de Deus em 1 João 3!",
+    "points": 120,
+    "unlocksStudyId": "1jo_estudo_filhos_deus_justica_amor"
+  },
+  {
+    "bookAbbrev": "1jo",
+    "achievementId": "1jo_embaixador_do_amor_de_deus",
+    "title": "Embaixador do Amor de Deus",
+    "description": "Você mergulhou na profundidade do amor de Deus, que é a fonte e o modelo para o amor entre os irmãos.",
+    "iconUrl": "assets/emblems/embaixador_do_amor_de_deus.png",
+    "requiredSectionIds": [
+      "1jo_c4_v7-13",
+      "1jo_c4_v14-16",
+      "1jo_c4_v17-21"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Embaixador do Amor de Deus' ao contemplar a essência do amor divino em 1 João 4!",
+    "points": 80,
+    "unlocksStudyId": "1jo_estudo_essencia_amor_divino"
+  },
+  {
+    "bookAbbrev": "1jo",
+    "achievementId": "1jo_vencedor_pela_fe",
+    "title": "Vencedor pela Fé",
+    "description": "Você compreendeu o poder da fé que vence o mundo, o testemunho da vida eterna em Cristo e os privilégios dos que creem.",
+    "iconUrl": "assets/emblems/vencedor_pela_fe.png",
+    "requiredSectionIds": [
+      "1jo_c5_v1-5",
+      "1jo_c5_v6-9",
+      "1jo_c5_v10-13",
+      "1jo_c5_v14-17",
+      "1jo_c5_v18-21"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Vencedor pela Fé' ao explorar a fé vitoriosa e a certeza da vida eterna em 1 João 5!",
+    "points": 110,
+    "unlocksStudyId": "1jo_estudo_fe_vitoriosa_vida_eterna"
+  }
+]

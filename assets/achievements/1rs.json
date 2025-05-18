@@ -1,0 +1,172 @@
+[
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_transicao_real_de_davi_a_salomao",
+    "title": "Transição Real: De Davi a Salomão",
+    "description": "Você testemunhou os últimos dias de Davi, a ascensão de Salomão ao trono e a consolidação de seu reino através de atos de justiça.",
+    "iconUrl": "assets/emblems/transicao_real_de_davi_a_salomao.png",
+    "requiredSectionIds": [
+      "1rs_c1_v1-4",
+      "1rs_c1_v5-10",
+      "1rs_c1_v11-31",
+      "1rs_c1_v32-40",
+      "1rs_c1_v41-53",
+      "1rs_c2_v1-11",
+      "1rs_c2_v12-25",
+      "1rs_c2_v26-34",
+      "1rs_c2_v35-46"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Transição Real' ao acompanhar a sucessão do trono de Davi para Salomão em 1 Reis 1-2!",
+    "points": 150,
+    "unlocksStudyId": "1rs_estudo_sucessao_salomao_consolidacao_reino"
+  },
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_arquiteto_da_sabedoria_divina",
+    "title": "Arquiteto da Sabedoria Divina",
+    "description": "Você contemplou Salomão buscando e recebendo sabedoria de Deus, evidenciada em seu justo julgamento e na organização próspera de seu reino.",
+    "iconUrl": "assets/emblems/arquiteto_da_sabedoria_divina.png",
+    "requiredSectionIds": [
+      "1rs_c3_v1-4",
+      "1rs_c3_v5-15",
+      "1rs_c3_v16-28",
+      "1rs_c4_v1-19",
+      "1rs_c4_v20-28",
+      "1rs_c4_v29-34"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Arquiteto da Sabedoria Divina' ao testemunhar a sabedoria concedida a Salomão em 1 Reis 3-4!",
+    "points": 120,
+    "unlocksStudyId": "1rs_estudo_sabedoria_salomao_organizacao_reino"
+  },
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_construtor_do_santuario_sagrado",
+    "title": "Construtor do Santuário Sagrado",
+    "description": "Você acompanhou os preparativos e a grandiosa construção do Templo de Jerusalém, uma morada para a glória de Deus, e sua solene dedicação.",
+    "iconUrl": "assets/emblems/construtor_do_santuario_sagrado.png",
+    "requiredSectionIds": [
+      "1rs_c5_v1-9",
+      "1rs_c5_v10-18",
+      "1rs_c6_v1-10",
+      "1rs_c6_v11-14",
+      "1rs_c6_v15-38",
+      "1rs_c7_v1-12",
+      "1rs_c7_v13-47",
+      "1rs_c7_v48-51",
+      "1rs_c8_v1-11",
+      "1rs_c8_v12-21",
+      "1rs_c8_v22-53",
+      "1rs_c8_v54-61",
+      "1rs_c8_v62-66"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Construtor do Santuário Sagrado' ao presenciar a edificação e dedicação do Templo em 1 Reis 5-8!",
+    "points": 250,
+    "unlocksStudyId": "1rs_estudo_construcao_dedicacao_templo_salomao"
+  },
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_apogeu_e_advertencia_do_reinado",
+    "title": "Apogeu e Advertência do Reinado",
+    "description": "Você viu o auge da glória e riqueza de Salomão, a visita da Rainha de Sabá, mas também as advertências divinas sobre a obediência.",
+    "iconUrl": "assets/emblems/apogeu_e_advertencia_do_reinado.png",
+    "requiredSectionIds": [
+      "1rs_c9_v1-9",
+      "1rs_c9_v10-14",
+      "1rs_c9_v15-28",
+      "1rs_c10_v1-13",
+      "1rs_c10_v14-29"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Apogeu e Advertência do Reinado' ao contemplar a glória de Salomão e os avisos de Deus em 1 Reis 9-10!",
+    "points": 130,
+    "unlocksStudyId": "1rs_estudo_gloria_salomao_rainha_saba"
+  },
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_o_declino_e_a_divisao_do_reino",
+    "title": "O Declínio e a Divisão do Reino",
+    "description": "Você testemunhou a trágica defecção de Salomão, as consequências divinas, e a insensatez de Roboão que levou à divisão do reino de Israel.",
+    "iconUrl": "assets/emblems/o_declino_e_a_divisao_do_reino.png",
+    "requiredSectionIds": [
+      "1rs_c11_v1-8",
+      "1rs_c11_v9-13",
+      "1rs_c11_v14-25",
+      "1rs_c11_v26-40",
+      "1rs_c11_v41-43",
+      "1rs_c12_v1-15",
+      "1rs_c12_v16-24",
+      "1rs_c12_v25-33"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Declínio e a Divisão do Reino' ao presenciar a queda de Salomão e a cisão de Israel em 1 Reis 11-12!",
+    "points": 180,
+    "unlocksStudyId": "1rs_estudo_declinio_salomao_divisao_reino"
+  },
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_profetas_reis_e_consequencias",
+    "title": "Profetas, Reis e Consequências",
+    "description": "Você acompanhou os reinados em Israel e Judá, as intervenções proféticas, a idolatria e as consequências da desobediência.",
+    "iconUrl": "assets/emblems/profetas_reis_e_consequencias.png",
+    "requiredSectionIds": [
+      "1rs_c13_v1-10",
+      "1rs_c13_v11-22",
+      "1rs_c13_v23-34",
+      "1rs_c14_v1-6",
+      "1rs_c14_v7-20",
+      "1rs_c14_v21-31",
+      "1rs_c15_v1-8",
+      "1rs_c15_v9-24",
+      "1rs_c15_v25-34",
+      "1rs_c16_v1-14",
+      "1rs_c16_v15-28",
+      "1rs_c16_v29-34"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Profetas, Reis e Consequências' ao seguir os relatos dos reinados e profecias em 1 Reis 13-16!",
+    "points": 200,
+    "unlocksStudyId": "1rs_estudo_reis_divididos_profecias_idolatria"
+  },
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_a_voz_solitaria_de_elias_no_deserto_espiritual",
+    "title": "A Voz Solitária de Elias no Deserto Espiritual",
+    "description": "Você testemunhou o poderoso ministério de Elias, desde a seca predita, o sustento miraculoso, até o confronto no Carmelo e sua fuga.",
+    "iconUrl": "assets/emblems/a_voz_solitaria_de_elias_no_deserto_espiritual.png",
+    "requiredSectionIds": [
+      "1rs_c17_v1-7",
+      "1rs_c17_v8-16",
+      "1rs_c17_v17-24",
+      "1rs_c18_v1-16",
+      "1rs_c18_v17-20",
+      "1rs_c18_v21-40",
+      "1rs_c18_v41-46",
+      "1rs_c19_v1-8",
+      "1rs_c19_v9-18",
+      "1rs_c19_v19-21"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Voz Solitária de Elias' ao acompanhar o ministério profético de Elias em 1 Reis 17-19!",
+    "points": 220,
+    "unlocksStudyId": "1rs_estudo_ministerio_elias_confronto_carmelo"
+  },
+  {
+    "bookAbbrev": "1rs",
+    "achievementId": "1rs_batalhas_aliancas_e_a_justica_divina",
+    "title": "Batalhas, Alianças e a Justiça Divina",
+    "description": "Você viu as guerras de Acabe, suas alianças imprudentes, a cobiça pela vinha de Nabote e as severas profecias e julgamentos divinos.",
+    "iconUrl": "assets/emblems/batalhas_aliancas_e_a_justica_divina.png",
+    "requiredSectionIds": [
+      "1rs_c20_v1-11",
+      "1rs_c20_v12-21",
+      "1rs_c20_v22-30",
+      "1rs_c20_v31-43",
+      "1rs_c21_v1-4",
+      "1rs_c21_v5-16",
+      "1rs_c21_v17-29",
+      "1rs_c22_v1-14",
+      "1rs_c22_v15-28",
+      "1rs_c22_v29-40",
+      "1rs_c22_v41-53"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Batalhas, Alianças e a Justiça Divina' ao testemunhar os conflitos e o juízo sobre Acabe em 1 Reis 20-22!",
+    "points": 190,
+    "unlocksStudyId": "1rs_estudo_reinado_acabe_justica_nabote"
+  }
+]

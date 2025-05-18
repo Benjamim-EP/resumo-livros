@@ -1,0 +1,1890 @@
+[
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_caminho_dos_justos_e_o_conselho_dos_impios",
+    "title": "O Caminho dos Justos e o Conselho dos Ímpios",
+    "description": "Você meditou sobre a bem-aventurança do homem que se deleita na lei do Senhor e o destino contrastante dos ímpios.",
+    "iconUrl": "assets/emblems/o_caminho_dos_justos_e_o_conselho_dos_impios.png",
+    "requiredSectionIds": [
+      "sl_c1_v1-3",
+      "sl_c1_v4-6"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Caminho dos Justos' ao refletir sobre as fundações da vida piedosa no Salmo 1!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo1_justica_meditacao_lei"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_reinado_do_messias_e_a_submissao_dos_reis",
+    "title": "O Reinado do Messias e a Submissão dos Reis",
+    "description": "Você contemplou a soberania do Ungido de Deus sobre as nações e o chamado à sabedoria e submissão dos governantes da terra.",
+    "iconUrl": "assets/emblems/o_reinado_do_messias_e_a_submissao_dos_reis.png",
+    "requiredSectionIds": [
+      "sl_c2_v1-6",
+      "sl_c2_v7-9",
+      "sl_c2_v10-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Reinado do Messias' ao explorar a proclamação da soberania de Cristo no Salmo 2!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo2_messias_soberania_nacoes"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_confianca_em_deus_em_meio_a_adversidade",
+    "title": "Confiança em Deus em Meio à Adversidade",
+    "description": "Você acompanhou Davi em sua angústia e refúgio em Deus, encontrando segurança e salvação mesmo cercado por inimigos.",
+    "iconUrl": "assets/emblems/confianca_em_deus_em_meio_a_adversidade.png",
+    "requiredSectionIds": [
+      "sl_c3_v1-3",
+      "sl_c3_v4-8",
+      "sl_c4_v1-5",
+      "sl_c4_v6-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Confiança em Deus em Meio à Adversidade' ao encontrar paz e segurança no Senhor através dos Salmos 3 e 4!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmos_confianca_tribulacao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_matutina_e_o_deleite_na_casa_do_senhor",
+    "title": "Oração Matutina e o Deleite na Casa do Senhor",
+    "description": "Você buscou a face de Deus pela manhã, clamando por justiça contra os ímpios e encontrando alegria na adoração pública.",
+    "iconUrl": "assets/emblems/oracao_matutina_e_o_deleite_na_casa_do_senhor.png",
+    "requiredSectionIds": [
+      "sl_c5_v1-6",
+      "sl_c5_v7-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração Matutina' ao buscar a direção de Deus e se alegrar em Sua presença no Salmo 5!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo5_oracao_justica_adoracao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_suplica_por_misericordia_em_tempo_de_angustia",
+    "title": "Súplica por Misericórdia em Tempo de Angústia",
+    "description": "Você acompanhou o salmista em seu lamento e clamor por misericórdia, encontrando confiança na resposta de Deus.",
+    "iconUrl": "assets/emblems/suplica_por_misericordia_em_tempo_de_angustia.png",
+    "requiredSectionIds": [
+      "sl_c6_v1-7",
+      "sl_c6_v8-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Súplica por Misericórdia' ao expressar sua dependência de Deus no Salmo 6!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo6_lamento_misericordia"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_justo_juiz_e_o_refugio_contra_a_calunia",
+    "title": "O Justo Juiz e o Refúgio Contra a Calúnia",
+    "description": "Você buscou refúgio em Deus contra falsas acusações, confiando na Sua justiça para julgar os perseguidores.",
+    "iconUrl": "assets/emblems/o_justo_juiz_e_o_refugio_contra_a_calunia.png",
+    "requiredSectionIds": [
+      "sl_c7_v1-9",
+      "sl_c7_v10-17"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Justo Juiz' ao confiar na justiça de Deus contra a calúnia no Salmo 7!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo7_justica_divina_calunia"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_majestade_de_deus_e_a_dignidade_do_homem",
+    "title": "A Majestade de Deus e a Dignidade do Homem",
+    "description": "Você contemplou a glória de Deus manifesta na criação e a honra concedida ao ser humano, coroado para dominar sobre as obras divinas.",
+    "iconUrl": "assets/emblems/a_majestade_de_deus_e_a_dignidade_do_homem.png",
+    "requiredSectionIds": [
+      "sl_c8_v1-2",
+      "sl_c8_v3-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Majestade de Deus e a Dignidade do Homem' ao maravilhar-se com a criação e o homem no Salmo 8!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo8_gloria_deus_criacao_homem"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvor_pela_justica_divina_e_clamor_contra_a_opressao",
+    "title": "Louvor pela Justiça Divina e Clamor Contra a Opressão",
+    "description": "Você celebrou os justos juízos de Deus, buscou refúgio Nele e clamou contra a arrogância e opressão dos ímpios.",
+    "iconUrl": "assets/emblems/louvor_pela_justica_divina_e_clamor_contra_a_opressao.png",
+    "requiredSectionIds": [
+      "sl_c9_v1-10",
+      "sl_c9_v11-20",
+      "sl_c10_v1-11",
+      "sl_c10_v12-18"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvor pela Justiça Divina' ao exaltar a Deus e clamar por justiça nos Salmos 9 e 10!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmos9_10_justica_deus_opressao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_refugio_no_senhor_e_a_firmeza_do_justo",
+    "title": "Refúgio no Senhor e a Firmeza do Justo",
+    "description": "Você declarou sua confiança em Deus como refúgio seguro, mesmo quando os fundamentos são abalados, e viu a promessa de proteção para os puros de coração.",
+    "iconUrl": "assets/emblems/refugio_no_senhor_e_a_firmeza_do_justo.png",
+    "requiredSectionIds": [
+      "sl_c11_v1-3",
+      "sl_c11_v4-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Refúgio no Senhor' ao afirmar sua fé na proteção divina no Salmo 11!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo11_confianca_protecao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_clamor_pela_verdade_em_um_mundo_de_falsidade",
+    "title": "Clamor pela Verdade em um Mundo de Falsidade",
+    "description": "Você lamentou a escassez de fidelidade e a prevalência da mentira, mas encontrou esperança nas puras palavras do Senhor.",
+    "iconUrl": "assets/emblems/clamor_pela_verdade_em_um_mundo_de_falsidade.png",
+    "requiredSectionIds": [
+      "sl_c12_v1-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Clamor pela Verdade' ao buscar a pureza da Palavra de Deus no Salmo 12!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo12_verdade_palavra_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_da_angustia_a_esperanca_a_jornada_da_alma_aflita",
+    "title": "Da Angústia à Esperança: A Jornada da Alma Aflita",
+    "description": "Você acompanhou o salmista em sua profunda angústia e questionamento, culminando na confiança e alegria na salvação do Senhor.",
+    "iconUrl": "assets/emblems/da_angustia_a_esperanca_a_jornada_da_alma_aflita.png",
+    "requiredSectionIds": [
+      "sl_c13_v1-6"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Da Angústia à Esperança' ao encontrar consolo e alegria na salvação de Deus no Salmo 13!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo13_lamento_esperanca_salvacao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_insensatez_do_ateu_e_a_esperanca_de_restauracao",
+    "title": "A Insensatez do Ateu e a Esperança de Restauração",
+    "description": "Você refletiu sobre a corrupção generalizada e a negação de Deus pelo insensato, e a esperança pela restauração de Sião.",
+    "iconUrl": "assets/emblems/a_insensatez_do_ateu_e_a_esperanca_de_restauracao.png",
+    "requiredSectionIds": [
+      "sl_c14_v1-3",
+      "sl_c14_v4-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Insensatez do Ateu' ao contrastar a negação de Deus com a esperança de Israel no Salmo 14!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo14_insensatez_corrupcao_restauracao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_cidadao_dos_ceus_carater_do_habitante_de_siao",
+    "title": "O Cidadão dos Céus: Caráter do Habitante de Sião",
+    "description": "Você descobriu as qualidades daqueles que podem habitar no tabernáculo de Deus: integridade, justiça e verdade.",
+    "iconUrl": "assets/emblems/o_cidadao_dos_ceus_carater_do_habitante_de_siao.png",
+    "requiredSectionIds": [
+      "sl_c15_v1-5"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Cidadão dos Céus' ao aprender sobre o caráter necessário para habitar com Deus no Salmo 15!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo15_integridade_justica_verdade"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_heranca_preciosa_e_a_profecia_da_ressurreicao",
+    "title": "A Herança Preciosa e a Profecia da Ressurreição",
+    "description": "Você se refugiou em Deus, reconhecendo-O como sua porção e herança, e contemplou a profecia da ressurreição e da plenitude de alegria na Sua presença.",
+    "iconUrl": "assets/emblems/a_heranca_preciosa_e_a_profecia_da_ressurreicao.png",
+    "requiredSectionIds": [
+      "sl_c16_v1-7",
+      "sl_c16_v8-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Herança Preciosa' ao encontrar sua alegria em Deus e meditar na esperança da ressurreição no Salmo 16!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo16_confianca_heranca_ressurreicao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_pleito_do_inocente_e_protecao_contra_inimigos",
+    "title": "Pleito do Inocente e Proteção Contra Inimigos",
+    "description": "Você ouviu a oração de Davi por justiça e proteção divina contra seus inimigos cruéis, confiando na fidelidade de Deus.",
+    "iconUrl": "assets/emblems/pleito_do_inocente_e_protecao_contra_inimigos.png",
+    "requiredSectionIds": [
+      "sl_c17_v1-7",
+      "sl_c17_v8-15"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Pleito do Inocente' ao clamar por justiça e proteção no Salmo 17!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo17_oracao_justica_protecao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_canto_do_livramento_poder_e_fidelidade_de_deus",
+    "title": "O Canto do Livramento: Poder e Fidelidade de Deus",
+    "description": "Você celebrou com Davi o poderoso livramento de Deus de todos os seus inimigos, reconhecendo Sua força, justiça e bondade.",
+    "iconUrl": "assets/emblems/o_canto_do_livramento_poder_e_fidelidade_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c18_v1-19",
+      "sl_c18_v20-28",
+      "sl_c18_v29-50"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Canto do Livramento' ao exaltar o poder salvador de Deus no Salmo 18!",
+    "points": 100,
+    "unlocksStudyId": "sl_estudo_salmo18_livramento_poder_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_gloria_na_criacao_e_a_perfeicao_na_lei",
+    "title": "A Glória na Criação e a Perfeição na Lei",
+    "description": "Você contemplou a revelação de Deus através da natureza e a perfeição de Sua lei, que restaura a alma e concede sabedoria.",
+    "iconUrl": "assets/emblems/a_gloria_na_criacao_e_a_perfeicao_na_lei.png",
+    "requiredSectionIds": [
+      "sl_c19_v1-6",
+      "sl_c19_v7-14"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Glória na Criação e a Perfeição na Lei' ao reconhecer a revelação de Deus na natureza e em Sua Palavra no Salmo 19!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo19_revelacao_natural_especial"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_pelo_rei_e_confianca_na_vitoria",
+    "title": "Oração pelo Rei e Confiança na Vitória",
+    "description": "Você se uniu em oração pelo sucesso do rei, confiando no nome do Senhor para a vitória, e não em carros ou cavalos.",
+    "iconUrl": "assets/emblems/oracao_pelo_rei_e_confianca_na_vitoria.png",
+    "requiredSectionIds": [
+      "sl_c20_v1-5",
+      "sl_c20_v6-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração pelo Rei' ao interceder e confiar na vitória do Senhor no Salmo 20!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo20_intercessao_confianca_vitoria"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_acoes_de_gracas_pelas_bencaos_reais",
+    "title": "Ações de Graças pelas Bênçãos Reais",
+    "description": "Você celebrou as bênçãos concedidas por Deus ao rei, Sua força, salvação e a esperança na Sua fidelidade.",
+    "iconUrl": "assets/emblems/acoes_de_gracas_pelas_bencaos_reais.png",
+    "requiredSectionIds": [
+      "sl_c21_v1-6",
+      "sl_c21_v7-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Ações de Graças pelas Bênçãos Reais' ao louvar a Deus pelas vitórias do Seu ungido no Salmo 21!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo21_gratidao_bencaos_rei"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_sofrimento_e_o_triunfo_do_messias",
+    "title": "O Sofrimento e o Triunfo do Messias",
+    "description": "Você contemplou a profunda angústia e os sofrimentos do Messias na cruz, seguidos por Seu triunfo e a proclamação de Seu reino a todas as nações.",
+    "iconUrl": "assets/emblems/o_sofrimento_e_o_triunfo_do_messias.png",
+    "requiredSectionIds": [
+      "sl_c22_v1-10",
+      "sl_c22_v11-21",
+      "sl_c22_v22-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Sofrimento e o Triunfo do Messias' ao meditar na paixão e exaltação de Cristo no Salmo 22!",
+    "points": 90,
+    "unlocksStudyId": "sl_estudo_salmo22_paixao_cristo_reino_messianico"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_senhor_e_meu_pastor_nada_me_faltara",
+    "title": "O Senhor é Meu Pastor, Nada me Faltará",
+    "description": "Você encontrou descanso e provisão no cuidado amoroso do Senhor, o Bom Pastor, que guia, protege e restaura a alma.",
+    "iconUrl": "assets/emblems/o_senhor_e_meu_pastor_nada_me_faltara.png",
+    "requiredSectionIds": [
+      "sl_c23_v1-6"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Senhor é Meu Pastor' ao experimentar o cuidado e a provisão divina no Salmo 23!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo23_bom_pastor_cuidado_divino"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_rei_da_gloria_e_a_santidade_de_seu_povo",
+    "title": "O Rei da Glória e a Santidade de Seu Povo",
+    "description": "Você reconheceu a soberania de Deus sobre toda a terra e o caráter daqueles que podem se aproximar do Rei da Glória: mãos limpas e coração puro.",
+    "iconUrl": "assets/emblems/o_rei_da_gloria_e_a_santidade_de_seu_povo.png",
+    "requiredSectionIds": [
+      "sl_c24_v1-2",
+      "sl_c24_v3-6",
+      "sl_c24_v7-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Rei da Glória' ao contemplar a majestade de Deus e o chamado à santidade no Salmo 24!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo24_soberania_deus_santidade"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_guia_me_senhor_oracao_por_direcao_e_perdao",
+    "title": "Guia-me, Senhor: Oração por Direção e Perdão",
+    "description": "Você elevou sua alma a Deus, buscando Sua orientação, perdão e livramento, confiando em Sua bondade e misericórdia.",
+    "iconUrl": "assets/emblems/guia_me_senhor_oracao_por_direcao_e_perdao.png",
+    "requiredSectionIds": [
+      "sl_c25_v1-7",
+      "sl_c25_v8-14",
+      "sl_c25_v15-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Guia-me, Senhor' ao buscar a direção e o perdão de Deus no Salmo 25!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo25_direcao_perdao_misericordia"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_integridade_e_deleite_na_presenca_de_deus",
+    "title": "Integridade e Deleite na Presença de Deus",
+    "description": "Você declarou sua integridade diante de Deus e seu amor pela Sua casa, buscando viver em retidão e louvor.",
+    "iconUrl": "assets/emblems/integridade_e_deleite_na_presenca_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c26_v1-5",
+      "sl_c26_v6-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Integridade e Deleite na Presença de Deus' ao afirmar seu compromisso com a retidão no Salmo 26!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo26_integridade_amor_casa_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_senhor_e_minha_luz_e_minha_salvacao",
+    "title": "O Senhor é Minha Luz e Minha Salvação",
+    "description": "Você encontrou coragem e confiança em Deus como sua luz, salvação e fortaleza, buscando Sua face e esperando em Sua bondade.",
+    "iconUrl": "assets/emblems/o_senhor_e_minha_luz_e_minha_salvacao.png",
+    "requiredSectionIds": [
+      "sl_c27_v1-6",
+      "sl_c27_v7-14"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Senhor é Minha Luz' ao declarar sua confiança inabalável em Deus no Salmo 27!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo27_confianca_luz_salvacao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_clamor_ao_rochedo_e_louvor_pelo_socorro",
+    "title": "Clamor ao Rochedo e Louvor pelo Socorro",
+    "description": "Você clamou a Deus, sua Rocha, em tempos de angústia, e O louvou por ser sua força, escudo e pastor.",
+    "iconUrl": "assets/emblems/clamor_ao_rochedo_e_louvor_pelo_socorro.png",
+    "requiredSectionIds": [
+      "sl_c28_v1-5",
+      "sl_c28_v6-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Clamor ao Rochedo' ao buscar e encontrar socorro em Deus no Salmo 28!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo28_oracao_forca_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_voz_poderosa_do_senhor_sobre_as_aguas",
+    "title": "A Voz Poderosa do Senhor Sobre as Águas",
+    "description": "Você tributou glória a Deus, reconhecendo o poder e a majestade de Sua voz que ecoa sobre a criação.",
+    "iconUrl": "assets/emblems/a_voz_poderosa_do_senhor_sobre_as_aguas.png",
+    "requiredSectionIds": [
+      "sl_c29_v1-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Voz Poderosa do Senhor' ao contemplar a majestade divina no Salmo 29!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo29_gloria_poder_voz_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_do_lamento_a_danca_gratidao_pela_restauracao",
+    "title": "Do Lamento à Dança: Gratidão pela Restauração",
+    "description": "Você celebrou a transformação do pranto em alegria, agradecendo a Deus por Sua cura e livramento da morte.",
+    "iconUrl": "assets/emblems/do_lamento_a_danca_gratidao_pela_restauracao.png",
+    "requiredSectionIds": [
+      "sl_c30_v1-5",
+      "sl_c30_v6-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Do Lamento à Dança' ao experimentar a alegria da restauração divina no Salmo 30!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo30_gratidao_restauracao_alegria"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_refugio_seguro_em_tempos_de_angustia_e_traicao",
+    "title": "Refúgio Seguro em Tempos de Angústia e Traição",
+    "description": "Você entregou seu espírito nas mãos de Deus, buscando refúgio contra inimigos e falsidades, e louvando Sua maravilhosa bondade.",
+    "iconUrl": "assets/emblems/refugio_seguro_em_tempos_de_angustia_e_traicao.png",
+    "requiredSectionIds": [
+      "sl_c31_v1-8",
+      "sl_c31_v9-18",
+      "sl_c31_v19-24"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Refúgio Seguro' ao confiar na proteção e bondade de Deus no Salmo 31!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo31_confianca_livramento_bondade_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_bem_aventuranca_do_perdao_e_a_sabedoria_da_confissao",
+    "title": "A Bem-Aventurança do Perdão e a Sabedoria da Confissão",
+    "description": "Você experimentou a alegria do perdão através da confissão sincera, aprendendo a confiar na instrução e proteção de Deus.",
+    "iconUrl": "assets/emblems/a_bem_aventuranca_do_perdao_e_a_sabedoria_da_confissao.png",
+    "requiredSectionIds": [
+      "sl_c32_v1-6",
+      "sl_c32_v7-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Bem-Aventurança do Perdão' ao descobrir a liberdade na confissão e no perdão de Deus no Salmo 32!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo32_perdao_confissao_instrucao_divina"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvor_ao_criador_e_governante_soberano",
+    "title": "Louvor ao Criador e Governante Soberano",
+    "description": "Você exaltou a Deus por Sua palavra criadora, Seu conselho eterno e Seu cuidado providencial sobre aqueles que O temem.",
+    "iconUrl": "assets/emblems/louvor_ao_criador_e_governante_soberano.png",
+    "requiredSectionIds": [
+      "sl_c33_v1-11",
+      "sl_c33_v12-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvor ao Criador e Governante Soberano' ao celebrar a majestade e providência de Deus no Salmo 33!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo33_criacao_soberania_providencia_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_provai_e_vedes_a_bondade_do_senhor_e_o_caminho_dos_justos",
+    "title": "Provai e Vedes: A Bondade do Senhor e o Caminho dos Justos",
+    "description": "Você celebrou a bondade de Deus, Seu livramento e o cuidado especial para com os justos, aprendendo o caminho do temor do Senhor.",
+    "iconUrl": "assets/emblems/provai_e_vedes_a_bondade_do_senhor_e_o_caminho_dos_justos.png",
+    "requiredSectionIds": [
+      "sl_c34_v1-10",
+      "sl_c34_v11-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Provai e Vedes' ao experimentar e proclamar a bondade do Senhor no Salmo 34!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo34_bondade_deus_temor_senhor_justos"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_pleito_divino_contra_inimigos_injustos",
+    "title": "Pleito Divino Contra Inimigos Injustos",
+    "description": "Você buscou a intervenção de Deus contra perseguidores e falsos acusadores, confiando em Sua justiça e esperando por livramento e vindicação.",
+    "iconUrl": "assets/emblems/pleito_divino_contra_inimigos_injustos.png",
+    "requiredSectionIds": [
+      "sl_c35_v1-10",
+      "sl_c35_v11-16",
+      "sl_c35_v17-28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Pleito Divino' ao clamar pela justiça de Deus contra a opressão no Salmo 35!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo35_justica_divina_perseguicao_livramento"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_malicia_do_impio_e_a_benignidade_inesgotavel_de_deus",
+    "title": "A Malícia do Ímpio e a Benignidade Inesgotável de Deus",
+    "description": "Você contrastou a transgressão do ímpio com a vasta misericórdia e fidelidade de Deus, a fonte da vida e da luz.",
+    "iconUrl": "assets/emblems/a_malicia_do_impio_e_a_benignidade_inesgotavel_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c36_v1-4",
+      "sl_c36_v5-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Benignidade Inesgotável de Deus' ao meditar na Sua misericórdia e justiça no Salmo 36!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo36_malicia_impio_misericordia_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_descansa_no_senhor_a_prosperidade_do_justo_e_o_fim_do_impio",
+    "title": "Descansa no Senhor: A Prosperidade do Justo e o Fim do Ímpio",
+    "description": "Você aprendeu a não se indignar com os malfeitores, mas a confiar no Senhor, deleitar-se Nele e esperar pacientemente, pois os justos herdarão a terra.",
+    "iconUrl": "assets/emblems/descansa_no_senhor_a_prosperidade_do_justo_e_o_fim_do_impio.png",
+    "requiredSectionIds": [
+      "sl_c37_v1-6",
+      "sl_c37_v7-20",
+      "sl_c37_v21-33",
+      "sl_c37_v34-40"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Descansa no Senhor' ao aprender a confiar na providência e justiça de Deus no Salmo 37!",
+    "points": 100,
+    "unlocksStudyId": "sl_estudo_salmo37_confianca_paciencia_justica_divina"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_lamento_penitencial_em_meio_a_aflicao_e_abandono",
+    "title": "Lamento Penitencial em Meio à Aflição e Abandono",
+    "description": "Você acompanhou o salmista em sua profunda dor física e emocional, seu sentimento de abandono e sua súplica por socorro divino.",
+    "iconUrl": "assets/emblems/lamento_penitencial_em_meio_a_aflicao_e_abandono.png",
+    "requiredSectionIds": [
+      "sl_c38_v1-11",
+      "sl_c38_v12-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Lamento Penitencial' ao expressar sua dor e buscar a Deus em meio à aflição no Salmo 38!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo38_lamento_arrependimento_aflicao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_brevidade_da_vida_e_a_esperanca_em_deus",
+    "title": "A Brevidade da Vida e a Esperança em Deus",
+    "description": "Você refletiu sobre a transitoriedade da vida humana e a vaidade das preocupações terrenas, depositando sua esperança unicamente no Senhor.",
+    "iconUrl": "assets/emblems/a_brevidade_da_vida_e_a_esperanca_em_deus.png",
+    "requiredSectionIds": [
+      "sl_c39_v1-6",
+      "sl_c39_v7-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Brevidade da Vida' ao meditar na fragilidade humana e encontrar esperança em Deus no Salmo 39!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo39_brevidade_vida_esperanca_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_testemunho_do_livramento_e_o_sacrificio_de_obediencia",
+    "title": "Testemunho do Livramento e o Sacrifício de Obediência",
+    "description": "Você celebrou o livramento paciente de Deus, proclamou Sua fidelidade e compreendeu que o verdadeiro sacrifício é um coração obediente.",
+    "iconUrl": "assets/emblems/testemunho_do_livramento_e_o_sacrificio_de_obediencia.png",
+    "requiredSectionIds": [
+      "sl_c40_v1-5",
+      "sl_c40_v6-10",
+      "sl_c40_v11-17"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Testemunho do Livramento' ao louvar a Deus por Sua salvação e se dedicar à obediência no Salmo 40!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo40_livramento_obediencia_sacrificio"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_bem_aventuranca_do_compassivo_e_a_traicao_do_amigo",
+    "title": "A Bem-Aventurança do Compassivo e a Traição do Amigo",
+    "description": "Você aprendeu sobre a bênção daqueles que cuidam dos pobres e a dor da traição, buscando o consolo e a restauração de Deus.",
+    "iconUrl": "assets/emblems/a_bem_aventuranca_do_compassivo_e_a_traicao_do_amigo.png",
+    "requiredSectionIds": [
+      "sl_c41_v1-4",
+      "sl_c41_v5-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Bem-Aventurança do Compassivo' ao refletir sobre a compaixão e a fidelidade de Deus no Salmo 41!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo41_compaixao_traicao_consolo_divino"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_alma_sedenta_por_deus_em_meio_ao_desterro",
+    "title": "A Alma Sedenta por Deus em Meio ao Desterro",
+    "description": "Você sentiu a profunda saudade da presença de Deus e a esperança de novamente louvá-Lo, mesmo em meio à tristeza e ao abatimento.",
+    "iconUrl": "assets/emblems/a_alma_sedenta_por_deus_em_meio_ao_desterro.png",
+    "requiredSectionIds": [
+      "sl_c42_v1-5",
+      "sl_c42_v6-11",
+      "sl_c43_v1-5" 
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Alma Sedenta por Deus' ao expressar seu anseio pela presença divina nos Salmos 42 e 43!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmos42_43_sede_deus_esperanca_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_lembranca_dos_feitos_divinos_e_clamor_em_tempo_de_calamidade",
+    "title": "Lembrança dos Feitos Divinos e Clamor em Tempo de Calamidade",
+    "description": "Você recordou as maravilhas de Deus no passado e clamou por Sua intervenção em um presente de aflição e aparente abandono.",
+    "iconUrl": "assets/emblems/lembranca_dos_feitos_divinos_e_clamor_em_tempo_de_calamidade.png",
+    "requiredSectionIds": [
+      "sl_c44_v1-8",
+      "sl_c44_v9-16",
+      "sl_c44_v17-26"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Lembrança dos Feitos Divinos' ao buscar a Deus com base em Sua fidelidade passada no Salmo 44!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo44_memoria_divina_clamor_aflicao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_cantico_nupcial_do_rei_messianico_e_sua_noiva",
+    "title": "O Cântico Nupcial do Rei Messiânico e Sua Noiva",
+    "description": "Você celebrou a majestade, a justiça e a glória do Rei Messias e a beleza e honra de Sua noiva, a Igreja.",
+    "iconUrl": "assets/emblems/o_cantico_nupcial_do_rei_messianico_e_sua_noiva.png",
+    "requiredSectionIds": [
+      "sl_c45_v1-5",
+      "sl_c45_v6-9",
+      "sl_c45_v10-17"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Cântico Nupcial do Rei' ao contemplar a união de Cristo e a Igreja no Salmo 45!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo45_rei_messias_igreja_noiva"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_deus_e_nosso_refugio_e_fortaleza_socorro_presente",
+    "title": "Deus é Nosso Refúgio e Fortaleza, Socorro Presente",
+    "description": "Você encontrou segurança e paz inabaláveis em Deus, mesmo em meio a cataclismos e guerras, pois Ele é o Senhor dos Exércitos.",
+    "iconUrl": "assets/emblems/deus_e_nosso_refugio_e_fortaleza_socorro_presente.png",
+    "requiredSectionIds": [
+      "sl_c46_v1-5",
+      "sl_c46_v6-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Deus é Nosso Refúgio e Fortaleza' ao encontrar segurança no Senhor no Salmo 46!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo46_refugio_seguranca_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_senhor_reina_sobre_todas_as_nacoes",
+    "title": "O Senhor Reina Sobre Todas as Nações",
+    "description": "Você se uniu ao chamado universal para aclamar a Deus com júbilo, pois Ele é o grande Rei sobre toda a terra.",
+    "iconUrl": "assets/emblems/o_senhor_reina_sobre_todas_as_nacoes.png",
+    "requiredSectionIds": [
+      "sl_c47_v1-4",
+      "sl_c47_v5-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Senhor Reina' ao celebrar a soberania universal de Deus no Salmo 47!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo47_reinado_universal_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_gloria_e_a_seguranca_de_siao_a_cidade_de_deus",
+    "title": "A Glória e a Segurança de Sião, a Cidade de Deus",
+    "description": "Você contemplou a beleza, a força e a proteção divina sobre Jerusalém, a cidade do grande Rei, motivo de alegria e confiança para Seu povo.",
+    "iconUrl": "assets/emblems/a_gloria_e_a_seguranca_de_siao_a_cidade_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c48_v1-7",
+      "sl_c48_v8-14"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Glória de Sião' ao meditar na beleza e segurança da cidade de Deus no Salmo 48!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo48_siao_cidade_deus_protecao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_vaidade_das_riquezas_terrenas_e_a_sabedoria_da_vida_eterna",
+    "title": "A Vaidade das Riquezas Terrenas e a Sabedoria da Vida Eterna",
+    "description": "Você refletiu sobre a transitoriedade das riquezas e da vida humana, e a esperança da redenção e do livramento da morte para os justos.",
+    "iconUrl": "assets/emblems/a_vaidade_das_riquezas_terrenas_e_a_sabedoria_da_vida_eterna.png",
+    "requiredSectionIds": [
+      "sl_c49_v1-5",
+      "sl_c49_v6-14",
+      "sl_c49_v15-20"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Vaidade das Riquezas' ao ponderar sobre o verdadeiro valor da vida no Salmo 49!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo49_riquezas_morte_redencao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_verdadeiro_sacrificio_justica_louvor_e_obediencia",
+    "title": "O Verdadeiro Sacrifício: Justiça, Louvor e Obediência",
+    "description": "Você compreendeu que Deus não se deleita em sacrifícios cerimoniais, mas em um coração grato, uma vida justa e obediência à Sua aliança.",
+    "iconUrl": "assets/emblems/o_verdadeiro_sacrificio_justica_louvor_e_obediencia.png",
+    "requiredSectionIds": [
+      "sl_c50_v1-6",
+      "sl_c50_v7-15",
+      "sl_c50_v16-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Verdadeiro Sacrifício' ao aprender o que realmente agrada a Deus no Salmo 50!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo50_sacrificio_verdadeiro_justica_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_coracao_contrito_e_arrependido_o_clamor_por_purificacao",
+    "title": "Coração Contrito e Arrependido: O Clamor por Purificação",
+    "description": "Você acompanhou o profundo arrependimento de Davi, seu clamor por perdão, purificação e a restauração da alegria da salvação.",
+    "iconUrl": "assets/emblems/coracao_contrito_e_arrependido_o_clamor_por_purificacao.png",
+    "requiredSectionIds": [
+      "sl_c51_v1-6",
+      "sl_c51_v7-13",
+      "sl_c51_v14-19"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Coração Contrito e Arrependido' ao meditar na profundidade do arrependimento e do perdão no Salmo 51!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo51_arrependimento_perdao_purificacao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_ruina_do_enganador_e_a_confianca_do_justo",
+    "title": "A Ruína do Enganador e a Confiança do Justo",
+    "description": "Você viu a condenação da maldade e da língua enganosa de Doegue, e a confiança do justo na misericórdia perene de Deus.",
+    "iconUrl": "assets/emblems/a_ruina_do_enganador_e_a_confianca_do_justo.png",
+    "requiredSectionIds": [
+      "sl_c52_v1-5",
+      "sl_c52_v6-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Ruína do Enganador' ao contrastar a maldade com a confiança em Deus no Salmo 52!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo52_maldade_doegue_confianca_justo"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_corrupcao_universal_e_o_anelo_pela_salvacao_de_israel",
+    "title": "A Corrupção Universal e o Anelo pela Salvação de Israel",
+    "description": "Você refletiu sobre a loucura e a corrupção daqueles que negam a Deus, e o desejo ardente pela vinda da salvação de Sião.",
+    "iconUrl": "assets/emblems/a_corrupcao_universal_e_o_anelo_pela_salvacao_de_israel.png",
+    "requiredSectionIds": [
+      "sl_c53_v1-6"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Corrupção Universal' ao ponderar sobre a condição humana e a esperança na salvação no Salmo 53!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo53_corrupcao_humana_esperanca_salvacao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_por_livramento_em_face_da_traicao",
+    "title": "Oração por Livramento em Face da Traição",
+    "description": "Você se uniu à oração de Davi por salvação e vindicação quando traído pelos zifeus, encontrando consolo na ajuda e sustento de Deus.",
+    "iconUrl": "assets/emblems/oracao_por_livramento_em_face_da_traicao.png",
+    "requiredSectionIds": [
+      "sl_c54_v1-3",
+      "sl_c54_v4-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração por Livramento' ao buscar a Deus em meio à traição no Salmo 54!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo54_traicao_livramento_confianca_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_angustia_da_traicao_e_o_refugio_em_deus",
+    "title": "A Angústia da Traição e o Refúgio em Deus",
+    "description": "Você sentiu a dor da traição de um amigo íntimo e a opressão dos inimigos, mas lançou seu fardo sobre o Senhor, que sustenta o justo.",
+    "iconUrl": "assets/emblems/a_angustia_da_traicao_e_o_refugio_em_deus.png",
+    "requiredSectionIds": [
+      "sl_c55_v1-8",
+      "sl_c55_v9-15",
+      "sl_c55_v16-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Angústia da Traição' ao encontrar refúgio em Deus durante a perseguição no Salmo 55!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo55_traicao_amigo_confianca_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_confianca_em_deus_em_meio_ao_medo_e_a_opressao",
+    "title": "Confiança em Deus em Meio ao Medo e à Opressão",
+    "description": "Você aprendeu a confiar na palavra de Deus e a não temer o que o homem possa fazer, mesmo quando cercado por inimigos e calúnias.",
+    "iconUrl": "assets/emblems/confianca_em_deus_em_meio_ao_medo_e_a_opressao.png",
+    "requiredSectionIds": [
+      "sl_c56_v1-7",
+      "sl_c56_v8-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Confiança em Deus em Meio ao Medo' ao depositar sua fé no Senhor durante a perseguição no Salmo 56!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo56_confianca_palavra_deus_medo_homem"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_refugio_sob_as_asas_do_altissimo_e_louvor_universal",
+    "title": "Refúgio Sob as Asas do Altíssimo e Louvor Universal",
+    "description": "Você buscou refúgio na misericórdia de Deus em tempos de perigo, e seu coração se firmou para louvar Sua fidelidade entre as nações.",
+    "iconUrl": "assets/emblems/refugio_sob_as_asas_do_altissimo_e_louvor_universal.png",
+    "requiredSectionIds": [
+      "sl_c57_v1-6",
+      "sl_c57_v7-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Refúgio Sob as Asas do Altíssimo' ao encontrar abrigo e motivo de louvor em Deus no Salmo 57!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo57_refugio_misericordia_louvor_nacoes"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_justica_corrompida_e_o_juizo_divino_sobre_os_impios",
+    "title": "A Justiça Corrompida e o Juízo Divino Sobre os Ímpios",
+    "description": "Você denunciou a perversidade dos juízes injustos e clamou pelo juízo de Deus sobre aqueles que praticam a iniquidade.",
+    "iconUrl": "assets/emblems/a_justica_corrompida_e_o_juizo_divino_sobre_os_impios.png",
+    "requiredSectionIds": [
+      "sl_c58_v1-5",
+      "sl_c58_v6-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Justiça Corrompida' ao clamar pelo juízo divino sobre a iniquidade no Salmo 58!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo58_injustica_juizo_divino"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_livramento_dos_inimigos_e_louvor_ao_deus_da_misericordia",
+    "title": "Livramento dos Inimigos e Louvor ao Deus da Misericórdia",
+    "description": "Você orou por livramento dos inimigos sanguinários e astutos, confiando no poder e na misericórdia de Deus para ser seu alto refúgio.",
+    "iconUrl": "assets/emblems/livramento_dos_inimigos_e_louvor_ao_deus_da_misericordia.png",
+    "requiredSectionIds": [
+      "sl_c59_v1-7",
+      "sl_c59_v8-17"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Livramento dos Inimigos' ao buscar a proteção de Deus e louvá-Lo por Sua misericórdia no Salmo 59!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo59_livramento_inimigos_misericordia_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_lamento_pela_derrota_e_esperanca_na_restauracao_divina",
+    "title": "Lamento pela Derrota e Esperança na Restauração Divina",
+    "description": "Você expressou a dor da nação diante da rejeição e derrota, mas se apegou à esperança de que Deus daria vitória sobre os adversários.",
+    "iconUrl": "assets/emblems/lamento_pela_derrota_e_esperanca_na_restauracao_divina.png",
+    "requiredSectionIds": [
+      "sl_c60_v1-5",
+      "sl_c60_v6-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Lamento pela Derrota' ao encontrar esperança na restauração de Deus em tempos difíceis no Salmo 60!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo60_derrota_nacional_esperanca_vitoria"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_clamor_do_exilado_e_confianca_na_rocha_eterna",
+    "title": "Clamor do Exilado e Confiança na Rocha Eterna",
+    "description": "Você clamou a Deus desde os confins da terra, buscando refúgio Nele como uma rocha mais alta, e relembrou Suas misericórdias passadas.",
+    "iconUrl": "assets/emblems/clamor_do_exilado_e_confianca_na_rocha_eterna.png",
+    "requiredSectionIds": [
+      "sl_c61_v1-4",
+      "sl_c61_v5-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Clamor do Exilado' ao encontrar segurança na Rocha Eterna no Salmo 61!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo61_refugio_rocha_deus_misericordia"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_alma_que_espera_silenciosamente_em_deus",
+    "title": "A Alma que Espera Silenciosamente em Deus",
+    "description": "Você aprendeu a esperar somente em Deus para salvação e refúgio, exortando o povo a confiar Nele em todo tempo, pois o poder e a misericórdia pertencem a Ele.",
+    "iconUrl": "assets/emblems/a_alma_que_espera_silenciosamente_em_deus.png",
+    "requiredSectionIds": [
+      "sl_c62_v1-7",
+      "sl_c62_v8-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Alma que Espera Silenciosamente' ao aprender a confiar plenamente em Deus no Salmo 62!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo62_espera_confianca_poder_misericordia_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_sede_de_deus_no_deserto_e_louvor_jubiloso",
+    "title": "Sede de Deus no Deserto e Louvor Jubiloso",
+    "description": "Você expressou um anseio profundo por Deus, como terra seca anseia por água, e encontrou satisfação em louvá-Lo e meditar em Sua proteção.",
+    "iconUrl": "assets/emblems/sede_de_deus_no_deserto_e_louvor_jubiloso.png",
+    "requiredSectionIds": [
+      "sl_c63_v1-2",
+      "sl_c63_v3-6",
+      "sl_c63_v7-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Sede de Deus no Deserto' ao buscar intensamente a presença do Senhor no Salmo 63!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo63_anseio_deus_louvor_protecao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_contra_conspiradores_e_o_triunfo_da_justica",
+    "title": "Oração Contra Conspiradores e o Triunfo da Justiça",
+    "description": "Você buscou a proteção de Deus contra os planos secretos e as palavras cortantes dos inimigos, confiando que Ele os julgará e os justos se alegrarão.",
+    "iconUrl": "assets/emblems/oracao_contra_conspiradores_e_o_triunfo_da_justica.png",
+    "requiredSectionIds": [
+      "sl_c64_v1-6",
+      "sl_c64_v7-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração Contra Conspiradores' ao confiar na justiça divina contra a maldade no Salmo 64!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo64_protecao_inimigos_justica_divina"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvor_pela_abundancia_da_criacao_e_bondade_de_deus",
+    "title": "Louvor pela Abundância da Criação e Bondade de Deus",
+    "description": "Você celebrou a Deus por perdoar iniquidades, por Seu poder na criação e pela provisão abundante que Ele derrama sobre a terra.",
+    "iconUrl": "assets/emblems/louvor_pela_abundancia_da_criacao_e_bondade_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c65_v1-5",
+      "sl_c65_v6-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvor pela Abundância da Criação' ao exaltar a Deus por Suas obras e provisão no Salmo 65!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo65_louvor_criacao_perdao_providencia"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_convite_universal_ao_louvor_pelas_obras_maravilhosas_de_deus",
+    "title": "Convite Universal ao Louvor pelas Obras Maravilhosas de Deus",
+    "description": "Você se uniu ao chamado para que toda a terra louve a Deus por Suas obras temíveis, Seu livramento e Sua fidelidade provada através do fogo.",
+    "iconUrl": "assets/emblems/convite_universal_ao_louvor_pelas_obras_maravilhosas_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c66_v1-7",
+      "sl_c66_v8-12",
+      "sl_c66_v13-20"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Convite Universal ao Louvor' ao celebrar as grandes obras de Deus no Salmo 66!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo66_louvor_universal_obras_deus_fidelidade"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_que_os_povos_te_louvem_o_deus_a_bencao_para_as_nacoes",
+    "title": "Que os Povos Te Louvem, ó Deus: A Bênção para as Nações",
+    "description": "Você orou para que a bênção de Deus sobre Seu povo resultasse no conhecimento de Seus caminhos e salvação entre todas as nações.",
+    "iconUrl": "assets/emblems/que_os_povos_te_louvem_o_deus_a_bencao_para_as_nacoes.png",
+    "requiredSectionIds": [
+      "sl_c67_v1-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Que os Povos Te Louvem' ao interceder pela manifestação da glória de Deus entre as nações no Salmo 67!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo67_bencao_missoes_louvor_nacoes"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_deus_triunfante_da_jornada_do_exodo_a_ascensao",
+    "title": "O Deus Triunfante: Da Jornada do Êxodo à Ascensão",
+    "description": "Você celebrou a marcha triunfal de Deus com Seu povo, Seu cuidado providencial, Sua vitória sobre inimigos e Sua ascensão gloriosa, derramando dons sobre os homens.",
+    "iconUrl": "assets/emblems/o_deus_triunfante_da_jornada_do_exodo_a_ascensao.png",
+    "requiredSectionIds": [
+      "sl_c68_v1-6",
+      "sl_c68_v7-14",
+      "sl_c68_v15-21",
+      "sl_c68_v22-31",
+      "sl_c68_v32-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Deus Triunfante' ao reviver a jornada vitoriosa de Deus com Seu povo no Salmo 68!",
+    "points": 100,
+    "unlocksStudyId": "sl_estudo_salmo68_deus_guerreiro_ascensao_dons"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_clamor_nas_profundezas_do_sofrimento_messianico",
+    "title": "Clamor nas Profundezas do Sofrimento Messiânico",
+    "description": "Você mergulhou no sofrimento intenso e injusto do Messias, Sua angústia, rejeição e sede, culminando em Seu zelo pela casa de Deus e Seu louvor final.",
+    "iconUrl": "assets/emblems/clamor_nas_profundezas_do_sofrimento_messianico.png",
+    "requiredSectionIds": [
+      "sl_c69_v1-12",
+      "sl_c69_v13-21",
+      "sl_c69_v22-29",
+      "sl_c69_v30-36"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Clamor nas Profundezas' ao contemplar o sofrimento vicário de Cristo no Salmo 69!",
+    "points": 90,
+    "unlocksStudyId": "sl_estudo_salmo69_sofrimento_messias_zelo_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_apressa_te_em_socorrer_me_oracao_urgente_por_ajuda",
+    "title": "Apressa-Te em Socorrer-me: Oração Urgente por Ajuda",
+    "description": "Você se uniu ao clamor urgente por livramento divino e pela confusão dos inimigos, enquanto os que buscam a Deus se regozijam Nele.",
+    "iconUrl": "assets/emblems/apressa_te_em_socorrer_me_oracao_urgente_por_ajuda.png",
+    "requiredSectionIds": [
+      "sl_c70_v1-5"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Apressa-Te em Socorrer-me' ao buscar o auxílio urgente de Deus no Salmo 70!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo70_oracao_urgente_livramento"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_refugio_na_velhice_louvor_pela_fidelidade_constante_de_deus",
+    "title": "Refúgio na Velhice: Louvor pela Fidelidade Constante de Deus",
+    "description": "Você encontrou em Deus um refúgio desde a juventude até a velhice, proclamando Suas maravilhas e confiando em Seu poder para restaurar e exaltar.",
+    "iconUrl": "assets/emblems/refugio_na_velhice_louvor_pela_fidelidade_constante_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c71_v1-13",
+      "sl_c71_v14-24"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Refúgio na Velhice' ao celebrar a fidelidade de Deus ao longo de toda a vida no Salmo 71!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo71_fidelidade_deus_velhice_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_reinado_justo_e_prospero_do_rei_messianico",
+    "title": "O Reinado Justo e Próspero do Rei Messiânico",
+    "description": "Você contemplou as características do reinado do Messias: justiça, paz, prosperidade, domínio universal e compaixão pelos necessitados.",
+    "iconUrl": "assets/emblems/o_reinado_justo_e_prospero_do_rei_messianico.png",
+    "requiredSectionIds": [
+      "sl_c72_v1",
+      "sl_c72_v2-17",
+      "sl_c72_v18-20"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Reinado Justo e Próspero' ao vislumbrar o governo do Messias no Salmo 72!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo72_reino_messianico_justica_paz"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_enigma_da_prosperidade_dos_impios_e_a_perspectiva_eterna",
+    "title": "O Enigma da Prosperidade dos Ímpios e a Perspectiva Eterna",
+    "description": "Você lutou com o aparente sucesso dos ímpios, mas encontrou clareza no santuário de Deus, compreendendo seu destino final e a preciosidade da comunhão com Deus.",
+    "iconUrl": "assets/emblems/o_enigma_da_prosperidade_dos_impios_e_a_perspectiva_eterna.png",
+    "requiredSectionIds": [
+      "sl_c73_v1-14",
+      "sl_c73_v15-20",
+      "sl_c73_v21-28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Enigma da Prosperidade dos Ímpios' ao encontrar a perspectiva de Deus no Salmo 73!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo73_prosperidade_impios_comunhao_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_lamento_pela_desolacao_do_santuario_e_apelo_a_memoria_de_deus",
+    "title": "Lamento pela Desolação do Santuário e Apelo à Memória de Deus",
+    "description": "Você compartilhou a dor pela destruição do lugar santo e a aparente ausência de Deus, apelando à Sua aliança e poder redentor.",
+    "iconUrl": "assets/emblems/lamento_pela_desolacao_do_santuario_e_apelo_a_memoria_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c74_v1-11",
+      "sl_c74_v12-17",
+      "sl_c74_v18-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Lamento pela Desolação do Santuário' ao clamar pela intervenção de Deus em tempos de crise no Salmo 74!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo74_lamento_santuario_alianca_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_deus_o_juiz_soberano_que_exalta_e_abate",
+    "title": "Deus, o Juiz Soberano que Exalta e Abate",
+    "description": "Você reconheceu que a promoção não vem do homem, mas de Deus, que julga com retidão, humilhando os soberbos e exaltando os justos.",
+    "iconUrl": "assets/emblems/deus_o_juiz_soberano_que_exalta_e_abate.png",
+    "requiredSectionIds": [
+      "sl_c75_v1-5",
+      "sl_c75_v6-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Deus, o Juiz Soberano' ao afirmar a soberania de Deus no julgamento no Salmo 75!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo75_deus_juiz_soberania_justica"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_temivel_majestade_de_deus_em_siao",
+    "title": "A Temível Majestade de Deus em Sião",
+    "description": "Você celebrou o Deus temível que habita em Sião, que quebra as armas dos inimigos e cujo juízo faz a terra temer e sossegar.",
+    "iconUrl": "assets/emblems/a_temivel_majestade_de_deus_em_siao.png",
+    "requiredSectionIds": [
+      "sl_c76_v1-6",
+      "sl_c76_v7-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Temível Majestade de Deus' ao contemplar o poder divino revelado em Sião no Salmo 76!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo76_majestade_deus_siao_juizo"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_consolo_na_angustia_ao_recordar_as_maravilhas_de_deus",
+    "title": "Consolo na Angústia ao Recordar as Maravilhas de Deus",
+    "description": "Você encontrou conforto em meio à angústia ao meditar nas obras passadas de Deus, Seu poder redentor e Seu caminho misterioso.",
+    "iconUrl": "assets/emblems/consolo_na_angustia_ao_recordar_as_maravilhas_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c77_v1-10",
+      "sl_c77_v11-20"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Consolo na Angústia' ao encontrar esperança na lembrança das obras de Deus no Salmo 77!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo77_angustia_memoria_obras_deus_consolo"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_historia_da_fidelidade_de_deus_e_a_infidelidade_de_israel",
+    "title": "A História da Fidelidade de Deus e a Infidelidade de Israel",
+    "description": "Você percorreu a história de Israel, desde o Êxodo até Davi, contrastando a paciência e o poder de Deus com a rebeldia e incredulidade de Seu povo.",
+    "iconUrl": "assets/emblems/a_historia_da_fidelidade_de_deus_e_a_infidelidade_de_israel.png",
+    "requiredSectionIds": [
+      "sl_c78_v1-8",
+      "sl_c78_v9-39",
+      "sl_c78_v40-72"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A História da Fidelidade de Deus' ao aprender com os erros e acertos do povo de Israel no Salmo 78!",
+    "points": 120,
+    "unlocksStudyId": "sl_estudo_salmo78_historia_israel_fidelidade_deus_rebeldia"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_lamento_pela_destruicao_de_jerusalem_e_apelo_por_vinganca",
+    "title": "Lamento pela Destruição de Jerusalém e Apelo por Vingança",
+    "description": "Você compartilhou a dor pela profanação do templo e a matança do povo de Deus, clamando por vingança e restauração.",
+    "iconUrl": "assets/emblems/lamento_pela_destruicao_de_jerusalem_e_apelo_por_vinganca.png",
+    "requiredSectionIds": [
+      "sl_c79_v1-5",
+      "sl_c79_v6-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Lamento pela Destruição de Jerusalém' ao interceder pela restauração do povo de Deus no Salmo 79!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo79_lamento_destruicao_jerusalem_vinganca_restauracao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_pela_restauracao_da_vinha_de_israel",
+    "title": "Oração pela Restauração da Vinha de Israel",
+    "description": "Você clamou ao Pastor de Israel para que restaurasse Sua vinha desolada, fazendo resplandecer Seu rosto para a salvação.",
+    "iconUrl": "assets/emblems/oracao_pela_restauracao_da_vinha_de_israel.png",
+    "requiredSectionIds": [
+      "sl_c80_v1-7",
+      "sl_c80_v8-19"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração pela Restauração da Vinha' ao interceder pela nação de Israel no Salmo 80!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo80_pastor_israel_vinha_restauracao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_convite_a_adoracao_festiva_e_exortacao_a_obediencia",
+    "title": "Convite à Adoração Festiva e Exortação à Obediência",
+    "description": "Você foi convidado a cantar alegremente a Deus, lembrando Suas obras, e exortado a ouvir Sua voz e andar em Seus caminhos.",
+    "iconUrl": "assets/emblems/convite_a_adoracao_festiva_e_exortacao_a_obediencia.png",
+    "requiredSectionIds": [
+      "sl_c81_v1-7",
+      "sl_c81_v8-16"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Convite à Adoração Festiva' ao celebrar e se submeter a Deus no Salmo 81!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo81_adoracao_obediencia_caminhos_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_deus_julga_os_juizes_da_terra",
+    "title": "Deus Julga os Juízes da Terra",
+    "description": "Você testemunhou Deus repreendendo os juízes injustos e os exortando a defender os fracos e necessitados, lembrando-os de seu dever e destino.",
+    "iconUrl": "assets/emblems/deus_julga_os_juizes_da_terra.png",
+    "requiredSectionIds": [
+      "sl_c82_v1-5",
+      "sl_c82_v6-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Deus Julga os Juízes' ao refletir sobre a justiça divina e a responsabilidade dos líderes no Salmo 82!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo82_justica_divina_juizes_injustos"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_contra_a_confederacao_de_inimigos",
+    "title": "Oração Contra a Confederação de Inimigos",
+    "description": "Você clamou a Deus para que confundisse e destruísse a aliança de nações inimigas que conspiravam contra Seu povo.",
+    "iconUrl": "assets/emblems/oracao_contra_a_confederacao_de_inimigos.png",
+    "requiredSectionIds": [
+      "sl_c83_v1-8",
+      "sl_c83_v9-18"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração Contra a Confederação de Inimigos' ao buscar a intervenção de Deus contra os adversários no Salmo 83!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo83_oracao_inimigos_confianca_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_alma_que_anela_pelos_atrios_do_senhor",
+    "title": "A Alma que Anela pelos Átrios do Senhor",
+    "description": "Você expressou o profundo desejo pela presença de Deus em Seu santuário, encontrando força e bem-aventurança na comunhão com Ele.",
+    "iconUrl": "assets/emblems/a_alma_que_anela_pelos_atrios_do_senhor.png",
+    "requiredSectionIds": [
+      "sl_c84_v1-7",
+      "sl_c84_v8-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Alma que Anela pelos Átrios do Senhor' ao valorizar a presença e comunhão com Deus no Salmo 84!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo84_amor_santuario_presenca_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_por_avivamento_e_a_promessa_de_paz_e_justica",
+    "title": "Oração por Avivamento e a Promessa de Paz e Justiça",
+    "description": "Você suplicou pela restauração do favor de Deus e ouviu Sua promessa de paz para Seu povo, onde a misericórdia e a verdade se encontram.",
+    "iconUrl": "assets/emblems/oracao_por_avivamento_e_a_promessa_de_paz_e_justica.png",
+    "requiredSectionIds": [
+      "sl_c85_v1-7",
+      "sl_c85_v8-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração por Avivamento' ao buscar a restauração de Deus e confiar em Suas promessas no Salmo 85!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo85_avivamento_misericordia_paz_justica"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_suplica_humilde_de_um_coracao_aflito_e_devoto",
+    "title": "Súplica Humilde de um Coração Aflito e Devoto",
+    "description": "Você se humilhou diante de Deus em oração, buscando Sua misericórdia, ensino e força, e louvando Sua grandeza e bondade.",
+    "iconUrl": "assets/emblems/suplica_humilde_de_um_coracao_aflito_e_devoto.png",
+    "requiredSectionIds": [
+      "sl_c86_v1-7",
+      "sl_c86_v8-17"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Súplica Humilde' ao derramar seu coração em oração e louvor no Salmo 86!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo86_oracao_humildade_misericordia_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_siao_a_cidade_amada_fundamento_e_gloria_das_nacoes",
+    "title": "Sião, a Cidade Amada: Fundamento e Glória das Nações",
+    "description": "Você celebrou Sião como a cidade fundada e amada por Deus, o lugar de nascimento espiritual para muitos povos.",
+    "iconUrl": "assets/emblems/siao_a_cidade_amada_fundamento_e_gloria_das_nacoes.png",
+    "requiredSectionIds": [
+      "sl_c87_v1-3",
+      "sl_c87_v4-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Sião, a Cidade Amada' ao contemplar a glória e o propósito de Sião no Salmo 87!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo87_siao_cidade_deus_nacoes"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_lamento_profundo_nas_trevas_da_aflicao_e_solidao",
+    "title": "Lamento Profundo nas Trevas da Aflição e Solidão",
+    "description": "Você acompanhou Hemã em seu sofrimento extremo, sua sensação de abandono por Deus e amigos, e seu clamor persistente por socorro.",
+    "iconUrl": "assets/emblems/lamento_profundo_nas_trevas_da_aflicao_e_solidao.png",
+    "requiredSectionIds": [
+      "sl_c88_v1-9",
+      "sl_c88_v10-18"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Lamento Profundo nas Trevas' ao expressar a dor da alma e buscar a Deus no Salmo 88!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo88_lamento_sofrimento_solidao_clamor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_fidelidade_eterna_de_deus_e_a_alianca_davidica_em_crise",
+    "title": "A Fidelidade Eterna de Deus e a Aliança Davídica em Crise",
+    "description": "Você celebrou a misericórdia e fidelidade de Deus, Sua aliança com Davi, mas também lamentou a aparente quebra dessa aliança e clamou por restauração.",
+    "iconUrl": "assets/emblems/a_fidelidade_eterna_de_deus_e_a_alianca_davidica_em_crise.png",
+    "requiredSectionIds": [
+      "sl_c89_v1-4",
+      "sl_c89_v5-14",
+      "sl_c89_v15-18",
+      "sl_c89_v19-37",
+      "sl_c89_v38-52"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Fidelidade Eterna de Deus' ao meditar na aliança divina e clamar por sua manifestação no Salmo 89!",
+    "points": 100,
+    "unlocksStudyId": "sl_estudo_salmo89_fidelidade_deus_alianca_davidica_restauracao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_deus_eterno_e_a_fragilidade_humana_oracao_de_moises",
+    "title": "O Deus Eterno e a Fragilidade Humana: Oração de Moisés",
+    "description": "Você contemplou a eternidade de Deus em contraste com a brevidade e transitoriedade da vida humana, suplicando por sabedoria e o favor divino.",
+    "iconUrl": "assets/emblems/o_deus_eterno_e_a_fragilidade_humana_oracao_de_moises.png",
+    "requiredSectionIds": [
+      "sl_c90_v1-6",
+      "sl_c90_v7-11",
+      "sl_c90_v12-17"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Deus Eterno e a Fragilidade Humana' ao refletir sobre a vida e buscar a sabedoria de Deus no Salmo 90!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo90_eternidade_deus_brevidade_vida_sabedoria"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_sob_as_asas_do_altissimo_seguranca_e_protecao_divina",
+    "title": "Sob as Asas do Altíssimo: Segurança e Proteção Divina",
+    "description": "Você encontrou refúgio e segurança na proteção de Deus contra perigos visíveis e invisíveis, confiando em Suas promessas de livramento e honra.",
+    "iconUrl": "assets/emblems/sob_as_asas_do_altissimo_seguranca_e_protecao_divina.png",
+    "requiredSectionIds": [
+      "sl_c91_v1-8",
+      "sl_c91_v9-16"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Sob as Asas do Altíssimo' ao experimentar a segurança da proteção divina no Salmo 91!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo91_protecao_divina_seguranca_confianca"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvor_pelas_obras_de_deus_e_o_florescimento_do_justo",
+    "title": "Louvor pelas Obras de Deus e o Florescimento do Justo",
+    "description": "Você celebrou a bondade de louvar a Deus por Suas grandes obras e Sua fidelidade, e viu como os justos florescem como palmeiras na casa do Senhor.",
+    "iconUrl": "assets/emblems/louvor_pelas_obras_de_deus_e_o_florescimento_do_justo.png",
+    "requiredSectionIds": [
+      "sl_c92_v1-6",
+      "sl_c92_v7-15"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvor pelas Obras de Deus' ao exaltar a grandeza divina e a bênção dos justos no Salmo 92!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo92_louvor_obras_deus_florescimento_justo"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_senhor_reina_majestade_e_firmeza_do_trono_eterno",
+    "title": "O Senhor Reina: Majestade e Firmeza do Trono Eterno",
+    "description": "Você proclamou a majestade e o poder do reinado eterno de Deus, cujo trono é firme e cujos testemunhos são fiéis.",
+    "iconUrl": "assets/emblems/o_senhor_reina_majestade_e_firmeza_do_trono_eterno.png",
+    "requiredSectionIds": [
+      "sl_c93_v1-5"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Senhor Reina' ao celebrar a soberania e majestade de Deus no Salmo 93!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo93_reinado_deus_majestade_firmeza"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_deus_da_vinganca_e_o_consolo_dos_aflitos",
+    "title": "O Deus da Vingança e o Consolo dos Aflitos",
+    "description": "Você apelou ao Deus da vingança contra a opressão dos ímpios, encontrando consolo na disciplina do Senhor e em Sua fidelidade para com Seu povo.",
+    "iconUrl": "assets/emblems/o_deus_da_vinganca_e_o_consolo_dos_aflitos.png",
+    "requiredSectionIds": [
+      "sl_c94_v1-11",
+      "sl_c94_v12-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Deus da Vingança' ao buscar a justiça divina e encontrar consolo em Deus no Salmo 94!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo94_vinganca_divina_consolo_justica"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_convite_a_adoracao_e_advertencia_contra_a_dureza_de_coracao",
+    "title": "Convite à Adoração e Advertência Contra a Dureza de Coração",
+    "description": "Você se uniu ao convite para adorar e se prostrar diante do Senhor, nosso Criador, sendo advertido a não endurecer o coração como em Meribá.",
+    "iconUrl": "assets/emblems/convite_a_adoracao_e_advertencia_contra_a_dureza_de_coracao.png",
+    "requiredSectionIds": [
+      "sl_c95_v1-7",
+      "sl_c95_v7-11" 
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Convite à Adoração' ao responder ao chamado para louvar a Deus e ouvir Sua voz no Salmo 95!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo95_adoracao_obediencia_dureza_coracao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_cantai_ao_senhor_um_cantico_novo_seu_reino_e_justica",
+    "title": "Cantai ao Senhor um Cântico Novo: Seu Reino e Justiça",
+    "description": "Você proclamou a salvação de Deus entre as nações, Sua glória e majestade, e a vinda de Seu reino para julgar o mundo com justiça.",
+    "iconUrl": "assets/emblems/cantai_ao_senhor_um_cantico_novo_seu_reino_e_justica.png",
+    "requiredSectionIds": [
+      "sl_c96_v1-9",
+      "sl_c96_v10-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Cantai ao Senhor um Cântico Novo' ao celebrar o reino e a justiça de Deus no Salmo 96!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo96_novo_cantico_reino_deus_justica"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_senhor_reina_alegria_para_siao_e_luz_para_os_justos",
+    "title": "O Senhor Reina: Alegria para Sião e Luz para os Justos",
+    "description": "Você celebrou o reinado de Deus, a confusão dos idólatras, a alegria de Sião e a luz que resplandece para os retos de coração.",
+    "iconUrl": "assets/emblems/o_senhor_reina_alegria_para_siao_e_luz_para_os_justos.png",
+    "requiredSectionIds": [
+      "sl_c97_v1-7",
+      "sl_c97_v8-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Senhor Reina: Alegria para Sião' ao exaltar o governo divino e a bênção dos justos no Salmo 97!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo97_reinado_deus_alegria_siao_luz_justos"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_cantai_um_novo_cantico_pela_vitoria_e_salvacao_do_senhor",
+    "title": "Cantai um Novo Cântico pela Vitória e Salvação do Senhor",
+    "description": "Você entoou um novo cântico ao Senhor por Suas maravilhas, Sua vitória e a revelação de Sua justiça e salvação a todas as nações.",
+    "iconUrl": "assets/emblems/cantai_um_novo_cantico_pela_vitoria_e_salvacao_do_senhor.png",
+    "requiredSectionIds": [
+      "sl_c98_v1-3",
+      "sl_c98_v4-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Cantai um Novo Cântico pela Vitória' ao celebrar as obras salvadoras de Deus no Salmo 98!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo98_vitoria_salvacao_deus_louvor_universal"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_senhor_e_santo_exaltai_o_rei_que_ama_a_justica",
+    "title": "O Senhor é Santo: Exaltai o Rei que Ama a Justiça",
+    "description": "Você proclamou a santidade do Senhor, que reina em Sião, e lembrou a fidelidade de Deus a Moisés, Arão e Samuel, que O invocaram.",
+    "iconUrl": "assets/emblems/o_senhor_e_santo_exaltai_o_rei_que_ama_a_justica.png",
+    "requiredSectionIds": [
+      "sl_c99_v1-5",
+      "sl_c99_v6-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Senhor é Santo' ao exaltar a santidade e a justiça de Deus no Salmo 99!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo99_santidade_deus_justica_fidelidade"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_celebrai_com_jubilo_ao_senhor_todas_as_terras",
+    "title": "Celebrai com Júbilo ao Senhor, Todas as Terras",
+    "description": "Você se uniu ao convite universal para servir ao Senhor com alegria, reconhecendo Sua soberania, bondade e fidelidade eternas.",
+    "iconUrl": "assets/emblems/celebrai_com_jubilo_ao_senhor_todas_as_terras.png",
+    "requiredSectionIds": [
+      "sl_c100_v1-5"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Celebrai com Júbilo' ao responder ao chamado universal para louvar a Deus no Salmo 100!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo100_louvor_universal_alegria_servico"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_proposito_de_um_coracao_integro_diante_de_deus",
+    "title": "O Propósito de um Coração Íntegro Diante de Deus",
+    "description": "Você meditou na resolução de Davi de andar com integridade, praticar a justiça e afastar de si a maldade, buscando a comunhão com os fiéis.",
+    "iconUrl": "assets/emblems/o_proposito_de_um_coracao_integro_diante_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c101_v1-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Propósito de um Coração Íntegro' ao se comprometer com a retidão inspirada pelo Salmo 101!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo101_integridade_justica_vida_piedosa"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_lamento_do_aflito_e_a_esperanca_na_eternidade_de_deus",
+    "title": "O Lamento do Aflito e a Esperança na Eternidade de Deus",
+    "description": "Você acompanhou a queixa do aflito em sua angústia e fraqueza, mas encontrou esperança na eternidade de Deus e em Seu cuidado pela Sua Sião.",
+    "iconUrl": "assets/emblems/o_lamento_do_aflito_e_a_esperanca_na_eternidade_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c102_v1-11",
+      "sl_c102_v12-22",
+      "sl_c102_v23-28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Lamento do Aflito' ao encontrar esperança na eternidade de Deus em meio à aflição no Salmo 102!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo102_lamento_aflicao_eternidade_deus_esperanca"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_bendize_o_minha_alma_ao_senhor_por_seus_inumeros_beneficios",
+    "title": "Bendize, ó Minha Alma, ao Senhor por Seus Inúmeros Benefícios",
+    "description": "Você exaltou ao Senhor por Seu perdão, cura, redenção, Sua compaixão paternal e Sua soberania sobre toda a criação.",
+    "iconUrl": "assets/emblems/bendize_o_minha_alma_ao_senhor_por_seus_inumeros_beneficios.png",
+    "requiredSectionIds": [
+      "sl_c103_v1-5",
+      "sl_c103_v6-18",
+      "sl_c103_v19-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Bendize, ó Minha Alma, ao Senhor' ao celebrar as misericórdias e a soberania de Deus no Salmo 103!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo103_louvor_beneficios_deus_misericordia"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_majestade_de_deus_na_criacao_e_sua_providencia_sustentadora",
+    "title": "A Majestade de Deus na Criação e Sua Providência Sustentadora",
+    "description": "Você contemplou a grandeza de Deus manifesta na vastidão e complexidade da criação, e Sua providência que sustenta todas as criaturas.",
+    "iconUrl": "assets/emblems/a_majestade_de_deus_na_criacao_e_sua_providencia_sustentadora.png",
+    "requiredSectionIds": [
+      "sl_c104_v1-9",
+      "sl_c104_v10-18",
+      "sl_c104_v19-30",
+      "sl_c104_v31-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Majestade de Deus na Criação' ao maravilhar-se com as obras do Criador no Salmo 104!",
+    "points": 90,
+    "unlocksStudyId": "sl_estudo_salmo104_deus_criador_providencia_natureza"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_celebrai_as_maravilhas_de_deus_na_historia_de_israel",
+    "title": "Celebrai as Maravilhas de Deus na História de Israel",
+    "description": "Você relembrou a aliança de Deus com os patriarcas e Suas obras poderosas ao livrar Israel do Egito e conduzi-lo à terra prometida.",
+    "iconUrl": "assets/emblems/celebrai_as_maravilhas_de_deus_na_historia_de_israel.png",
+    "requiredSectionIds": [
+      "sl_c105_v1-7",
+      "sl_c105_v8-24",
+      "sl_c105_v25-45"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Celebrai as Maravilhas de Deus' ao recordar a fidelidade divina na história de Israel no Salmo 105!",
+    "points": 90,
+    "unlocksStudyId": "sl_estudo_salmo105_alianca_deus_historia_israel_livramento"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_confissao_dos_pecados_de_israel_e_a_misericordia_constante_de_deus",
+    "title": "Confissão dos Pecados de Israel e a Misericórdia Constante de Deus",
+    "description": "Você confessou os pecados de Israel ao longo de sua história, desde o Egito até Canaã, reconhecendo a longanimidade e a misericórdia redentora de Deus.",
+    "iconUrl": "assets/emblems/confissao_dos_pecados_de_israel_e_a_misericordia_constante_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c106_v1-5",
+      "sl_c106_v6-12",
+      "sl_c106_v13-33",
+      "sl_c106_v34-48"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Confissão dos Pecados de Israel' ao refletir sobre a rebelião humana e a graça divina no Salmo 106!",
+    "points": 100,
+    "unlocksStudyId": "sl_estudo_salmo106_pecados_israel_misericordia_deus_confissao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_rendei_gracas_ao_senhor_por_seu_livramento_em_toda_circunstancia",
+    "title": "Rendei Graças ao Senhor por Seu Livramento em Toda Circunstância",
+    "description": "Você celebrou a bondade de Deus ao livrar os errantes, os prisioneiros, os enfermos e os marinheiros em perigo, transformando maldição em bênção.",
+    "iconUrl": "assets/emblems/rendei_gracas_ao_senhor_por_seu_livramento_em_toda_circunstancia.png",
+    "requiredSectionIds": [
+      "sl_c107_v1-9",
+      "sl_c107_v10-16",
+      "sl_c107_v17-22",
+      "sl_c107_v23-32",
+      "sl_c107_v33-43"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Rendei Graças ao Senhor' ao reconhecer o livramento de Deus em diversas situações no Salmo 107!",
+    "points": 110,
+    "unlocksStudyId": "sl_estudo_salmo107_gratidao_livramento_deus_bondade"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_coracao_firme_para_louvar_e_confiar_na_vitoria_de_deus",
+    "title": "Coração Firme para Louvar e Confiar na Vitória de Deus",
+    "description": "Você preparou seu coração para louvar a Deus entre os povos e buscou Sua ajuda para alcançar vitória sobre os adversários.",
+    "iconUrl": "assets/emblems/coracao_firme_para_louvar_e_confiar_na_vitoria_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c108_v1-5",
+      "sl_c108_v6-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Coração Firme para Louvar' ao expressar sua confiança e adoração a Deus no Salmo 108!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo108_louvor_confianca_vitoria_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_clamor_do_perseguido_e_a_imprecacao_contra_o_acusador",
+    "title": "O Clamor do Perseguido e a Imprecação Contra o Acusador",
+    "description": "Você acompanhou a súplica de Davi contra seus inimigos implacáveis e as terríveis consequências preditas para aqueles que amaldiçoam e perseguem o justo.",
+    "iconUrl": "assets/emblems/o_clamor_do_perseguido_e_a_imprecacao_contra_o_acusador.png",
+    "requiredSectionIds": [
+      "sl_c109_v1-5",
+      "sl_c109_v6-20",
+      "sl_c109_v21-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Clamor do Perseguido' ao refletir sobre a justiça divina e o sofrimento do justo no Salmo 109!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo109_perseguicao_imprecacao_justica_divina"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_senhor_messias_rei_e_sacerdote_eterno",
+    "title": "O Senhor Messias: Rei e Sacerdote Eterno",
+    "description": "Você contemplou a exaltação do Messias à destra de Deus, Seu sacerdócio eterno segundo a ordem de Melquisedeque e Seu domínio sobre as nações.",
+    "iconUrl": "assets/emblems/o_senhor_messias_rei_e_sacerdote_eterno.png",
+    "requiredSectionIds": [
+      "sl_c110_v1-4",
+      "sl_c110_v5-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Senhor Messias: Rei e Sacerdote' ao meditar na exaltação de Cristo no Salmo 110!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo110_messias_rei_sacerdote_melquisedeque"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvor_pelas_grandes_obras_e_a_sabedoria_do_temor_a_deus",
+    "title": "Louvor pelas Grandes Obras e a Sabedoria do Temor a Deus",
+    "description": "Você exaltou as obras maravilhosas, justas e fiéis de Deus, reconhecendo que o temor do Senhor é o princípio da sabedoria.",
+    "iconUrl": "assets/emblems/louvor_pelas_grandes_obras_e_a_sabedoria_do_temor_a_deus.png",
+    "requiredSectionIds": [
+      "sl_c111_v1-5",
+      "sl_c111_v6-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvor pelas Grandes Obras' ao celebrar as maravilhas de Deus e o valor do Seu temor no Salmo 111!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo111_obras_deus_temor_senhor_sabedoria"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_a_bem_aventuranca_e_a_honra_do_homem_justo_e_temente_a_deus",
+    "title": "A Bem-Aventurança e a Honra do Homem Justo e Temente a Deus",
+    "description": "Você aprendeu sobre a felicidade e a estabilidade daquele que teme ao Senhor e se deleita em Seus mandamentos, cuja justiça permanece para sempre.",
+    "iconUrl": "assets/emblems/a_bem_aventuranca_e_a_honra_do_homem_justo_e_temente_a_deus.png",
+    "requiredSectionIds": [
+      "sl_c112_v1-5",
+      "sl_c112_v6-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Bem-Aventurança do Homem Justo' ao refletir sobre as bênçãos da piedade no Salmo 112!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo112_homem_justo_temor_deus_bem_aventuranca"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvai_ao_senhor_desde_o_nascer_ao_por_do_sol_sua_grandeza_e_condescendencia",
+    "title": "Louvai ao Senhor, Desde o Nascer ao Pôr do Sol: Sua Grandeza e Condescendência",
+    "description": "Você se uniu ao chamado universal para louvar o nome do Senhor, que é exaltado sobre todas as nações, mas se inclina para ver os humildes.",
+    "iconUrl": "assets/emblems/louvai_ao_senhor_desde_o_nascer_ao_por_do_sol_sua_grandeza_e_condescendencia.png",
+    "requiredSectionIds": [
+      "sl_c113_v1-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvai ao Senhor, Desde o Nascer ao Pôr do Sol' ao celebrar a grandeza e a humildade de Deus no Salmo 113!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo113_louvor_universal_grandeza_condescendencia_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_quando_israel_saiu_do_egito_a_natureza_testemunha_o_poder_de_deus",
+    "title": "Quando Israel Saiu do Egito: A Natureza Testemunha o Poder de Deus",
+    "description": "Você contemplou a natureza estremecendo diante da presença do Deus de Jacó, que transformou rocha em fontes de água durante o Êxodo.",
+    "iconUrl": "assets/emblems/quando_israel_saiu_do_egito_a_natureza_testemunha_o_poder_de_deus.png",
+    "requiredSectionIds": [
+      "sl_c114_v1-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Quando Israel Saiu do Egito' ao maravilhar-se com o poder de Deus sobre a criação no Salmo 114!",
+    "points": 40,
+    "unlocksStudyId": "sl_estudo_salmo114_exodo_poder_deus_natureza"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_nao_a_nos_senhor_mas_ao_teu_nome_da_gloria_confianca_versus_idolatria",
+    "title": "Não a Nós, Senhor, mas ao Teu Nome Dá Glória: Confiança Versus Idolatria",
+    "description": "Você contrastou a vaidade dos ídolos com a soberania e a misericórdia do Deus vivo, exortando Israel a confiar Nele.",
+    "iconUrl": "assets/emblems/nao_a_nos_senhor_mas_ao_teu_nome_da_gloria_confianca_versus_idolatria.png",
+    "requiredSectionIds": [
+      "sl_c115_v1-8",
+      "sl_c115_v9-18"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Não a Nós, Senhor' ao escolher confiar no Deus verdadeiro em vez de ídolos no Salmo 115!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo115_gloria_deus_idolatria_confianca"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_amo_o_senhor_porque_ele_ouviu_a_minha_voz_gratidao_e_votos",
+    "title": "Amo o Senhor, Porque Ele Ouviu a Minha Voz: Gratidão e Votos",
+    "description": "Você expressou profundo amor e gratidão a Deus por Seu livramento da morte, comprometendo-se a cumprir seus votos e oferecer sacrifícios de louvor.",
+    "iconUrl": "assets/emblems/amo_o_senhor_porque_ele_ouviu_a_minha_voz_gratidao_e_votos.png",
+    "requiredSectionIds": [
+      "sl_c116_v1-9",
+      "sl_c116_v10-19"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Amo o Senhor, Porque Ele Ouviu' ao celebrar o livramento e a fidelidade de Deus no Salmo 116!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo116_gratidao_livramento_votos_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvai_ao_senhor_todas_as_nacoes_um_chamado_universal",
+    "title": "Louvai ao Senhor, Todas as Nações: Um Chamado Universal",
+    "description": "Você se uniu ao breve, mas poderoso, chamado para que todas as nações e povos louvem ao Senhor por Sua misericórdia e verdade.",
+    "iconUrl": "assets/emblems/louvai_ao_senhor_todas_as_nacoes_um_chamado_universal.png",
+    "requiredSectionIds": [
+      "sl_c117_v1-2"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvai ao Senhor, Todas as Nações' ao participar do chamado universal à adoração no Salmo 117!",
+    "points": 30,
+    "unlocksStudyId": "sl_estudo_salmo117_louvor_universal_misericordia_verdade"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_rendei_gracas_ao_senhor_porque_ele_e_bom_a_pedra_rejeitada_e_o_triunfo",
+    "title": "Rendei Graças ao Senhor, Porque Ele é Bom: A Pedra Rejeitada e o Triunfo",
+    "description": "Você celebrou a bondade e a misericórdia eterna de Deus, Sua ajuda em tempos de angústia, e o triunfo da Pedra que os construtores rejeitaram, que se tornou a principal.",
+    "iconUrl": "assets/emblems/rendei_gracas_ao_senhor_porque_ele_e_bom_a_pedra_rejeitada_e_o_triunfo.png",
+    "requiredSectionIds": [
+      "sl_c118_v1-18",
+      "sl_c118_v19-29"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Rendei Graças ao Senhor' ao celebrar Sua bondade e o triunfo messiânico no Salmo 118!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo118_bondade_deus_pedra_angular_messias"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_deleite_e_a_excelencia_da_lei_do_senhor_a_a_t",
+    "title": "O Deleite e a Excelência da Lei do Senhor (Álefe a Tau)",
+    "description": "Você percorreu o mais longo salmo, meditando em cada seção sobre o amor, a beleza, a sabedoria e a orientação encontradas na Palavra de Deus.",
+    "iconUrl": "assets/emblems/o_deleite_e_a_excelencia_da_lei_do_senhor_a_a_t.png",
+    "requiredSectionIds": [
+      "sl_c119_v1-8",   "sl_c119_v9-16",  "sl_c119_v17-24", "sl_c119_v25-32",
+      "sl_c119_v33-40", "sl_c119_v41-48", "sl_c119_v49-56", "sl_c119_v57-64",
+      "sl_c119_v65-72", "sl_c119_v73-80", "sl_c119_v81-88", "sl_c119_v89-96",
+      "sl_c119_v97-104","sl_c119_v105-112","sl_c119_v113-120","sl_c119_v121-128",
+      "sl_c119_v129-136","sl_c119_v137-144","sl_c119_v145-152","sl_c119_v153-160",
+      "sl_c119_v161-168","sl_c119_v169-176"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Deleite na Lei do Senhor' ao completar a profunda meditação sobre a Palavra de Deus no Salmo 119!",
+    "points": 300,
+    "unlocksStudyId": "sl_estudo_salmo119_amor_palavra_deus_meditacao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_canticos_de_peregrinacao_fe_e_esperanca_na_jornada",
+    "title": "Cânticos de Peregrinação: Fé e Esperança na Jornada",
+    "description": "Você acompanhou os peregrinos em seus cânticos de ascensão, expressando confiança na proteção divina, alegria pela casa do Senhor, súplica por misericórdia e esperança na redenção.",
+    "iconUrl": "assets/emblems/canticos_de_peregrinacao_fe_e_esperanca_na_jornada.png",
+    "requiredSectionIds": [
+      "sl_c120_v1-4", "sl_c120_v5-7", "sl_c121_v1-8", "sl_c122_v1-5", "sl_c122_v6-9",
+      "sl_c123_v1-4", "sl_c124_v1-5", "sl_c124_v6-8", "sl_c125_v1-3", "sl_c125_v4-5",
+      "sl_c126_v1-3", "sl_c126_v4-6", "sl_c127_v1-5", "sl_c128_v1-6", "sl_c129_v1-4",
+      "sl_c129_v5-8", "sl_c130_v1-4", "sl_c130_v5-8", "sl_c131_v1-3", "sl_c132_v1-10",
+      "sl_c132_v11-18", "sl_c133_v1-3", "sl_c134_v1-3"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Cânticos de Peregrinação' ao trilhar a jornada de fé e esperança expressa nos Salmos de Romagem!",
+    "points": 200,
+    "unlocksStudyId": "sl_estudo_canticos_romagem_fe_esperanca_jornada"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_aleluia_louvor_ao_senhor_por_sua_grandeza_e_misericordia_eterna",
+    "title": "Aleluia! Louvor ao Senhor por Sua Grandeza e Misericórdia Eterna",
+    "description": "Você se uniu ao coro de louvor que exalta a majestade, bondade e misericórdia infindável de Deus, desde a criação até a redenção de Seu povo.",
+    "iconUrl": "assets/emblems/aleluia_louvor_ao_senhor_por_sua_grandeza_e_misericordia_eterna.png",
+    "requiredSectionIds": [
+      "sl_c135_v1-4", "sl_c135_v5-14", "sl_c135_v15-21",
+      "sl_c136_v1-9", "sl_c136_v10-22", "sl_c136_v23-26"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Aleluia! Louvor ao Senhor' ao celebrar a grandeza e a misericórdia de Deus nos Salmos 135 e 136!",
+    "points": 90,
+    "unlocksStudyId": "sl_estudo_salmos135_136_grandeza_deus_misericordia_eterna"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_junto_aos_rios_da_babilonia_saudade_e_zelo_por_siao",
+    "title": "Junto aos Rios da Babilônia: Saudade e Zelo por Sião",
+    "description": "Você sentiu a dor do exílio e a saudade de Sião, e o zelo ardente pela cidade santa, mesmo em terra estrangeira.",
+    "iconUrl": "assets/emblems/junto_aos_rios_da_babilonia_saudade_e_zelo_por_siao.png",
+    "requiredSectionIds": [
+      "sl_c137_v1-6",
+      "sl_c137_v7-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Junto aos Rios da Babilônia' ao meditar na dor do exílio e no amor por Sião no Salmo 137!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo137_exilio_babilonia_saudade_siao"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvor_pela_fidelidade_de_deus_e_seu_cuidado_pelos_humildes",
+    "title": "Louvor pela Fidelidade de Deus e Seu Cuidado pelos Humildes",
+    "description": "Você exaltou a Deus por Sua benignidade e verdade, e por Seu cuidado especial para com os humildes, mesmo sendo Ele exaltado.",
+    "iconUrl": "assets/emblems/louvor_pela_fidelidade_de_deus_e_seu_cuidado_pelos_humildes.png",
+    "requiredSectionIds": [
+      "sl_c138_v1-5",
+      "sl_c138_v6-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvor pela Fidelidade de Deus' ao celebrar Seu cuidado e verdade no Salmo 138!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo138_fidelidade_deus_cuidado_humildes"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_sonda_me_o_deus_a_onisciencia_e_onipresenca_divinas",
+    "title": "Sonda-me, ó Deus: A Onisciência e Onipresença Divinas",
+    "description": "Você meditou na maravilha da onisciência e onipresença de Deus, que nos forma e conhece profundamente, e desejou ser guiado no caminho eterno.",
+    "iconUrl": "assets/emblems/sonda_me_o_deus_a_onisciencia_e_onipresenca_divinas.png",
+    "requiredSectionIds": [
+      "sl_c139_v1-6",
+      "sl_c139_v7-16",
+      "sl_c139_v17-24"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Sonda-me, ó Deus' ao contemplar a profundidade do conhecimento de Deus no Salmo 139!",
+    "points": 80,
+    "unlocksStudyId": "sl_estudo_salmo139_onisciencia_onipresenca_deus_caminho_eterno"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_livra_me_dos_homens_maus_confianca_na_justica_divina",
+    "title": "Livra-me dos Homens Maus: Confiança na Justiça Divina",
+    "description": "Você clamou por livramento da violência e da maldade dos homens, confiando que Deus defenderá a causa dos aflitos e fará justiça.",
+    "iconUrl": "assets/emblems/livra_me_dos_homens_maus_confianca_na_justica_divina.png",
+    "requiredSectionIds": [
+      "sl_c140_v1-7",
+      "sl_c140_v8-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Livra-me dos Homens Maus' ao buscar a proteção e a justiça de Deus no Salmo 140!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo140_livramento_maldade_justica_divina"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_oracao_vespertina_por_pureza_e_protecao",
+    "title": "Oração Vespertina por Pureza e Proteção",
+    "description": "Você elevou sua oração como incenso, pedindo a Deus para guardar sua boca e coração, e buscando refúgio Nele contra as armadilhas dos ímpios.",
+    "iconUrl": "assets/emblems/oracao_vespertina_por_pureza_e_protecao.png",
+    "requiredSectionIds": [
+      "sl_c141_v1-4",
+      "sl_c141_v5-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Oração Vespertina por Pureza' ao buscar a santificação e proteção divina no Salmo 141!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo141_oracao_pureza_protecao_refugio"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_refugio_na_caverna_ninguem_se_importa_com_minha_alma_senao_tu",
+    "title": "Refúgio na Caverna: Ninguém se Importa com Minha Alma, Senão Tu",
+    "description": "Você derramou sua queixa diante de Deus em tempos de solidão e perseguição, reconhecendo-O como seu único refúgio e porção.",
+    "iconUrl": "assets/emblems/refugio_na_caverna_ninguem_se_importa_com_minha_alma_senao_tu.png",
+    "requiredSectionIds": [
+      "sl_c142_v1-3",
+      "sl_c142_v4-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Refúgio na Caverna' ao encontrar em Deus seu amparo em meio à solidão no Salmo 142!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo142_solidao_perseguicao_deus_refugio"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_suplica_por_misericordia_e_guia_em_terra_plana",
+    "title": "Súplica por Misericórdia e Guia em Terra Plana",
+    "description": "Você buscou a misericórdia de Deus em meio à angústia, pedindo para ser ensinado a fazer Sua vontade e ser guiado por Seu bom Espírito.",
+    "iconUrl": "assets/emblems/suplica_por_misericordia_e_guia_em_terra_plana.png",
+    "requiredSectionIds": [
+      "sl_c143_v1-6",
+      "sl_c143_v7-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Súplica por Misericórdia e Guia' ao buscar a direção e a graça de Deus no Salmo 143!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo143_misericordia_guia_divina_vontade_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvor_a_rocha_e_libertador_oracao_pela_prosperidade_nacional",
+    "title": "Louvor à Rocha e Libertador: Oração pela Prosperidade Nacional",
+    "description": "Você bendisse ao Senhor, sua rocha e guerreiro, e orou pela felicidade e prosperidade do povo, cujas bênçãos vêm de Deus.",
+    "iconUrl": "assets/emblems/louvor_a_rocha_e_libertador_oracao_pela_prosperidade_nacional.png",
+    "requiredSectionIds": [
+      "sl_c144_v1-8",
+      "sl_c144_v9-15"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvor à Rocha e Libertador' ao exaltar a Deus e interceder pela nação no Salmo 144!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo144_deus_rocha_libertador_prosperidade_nacional"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_exaltarei_a_ti_o_meu_deus_e_rei_o_grande_hino_de_louvor_de_davi",
+    "title": "Exaltarei a Ti, ó Meu Deus e Rei: O Grande Hino de Louvor de Davi",
+    "description": "Você se uniu a Davi em um cântico de exaltação à grandeza, bondade, misericórdia e domínio eterno de Deus sobre todas as Suas obras.",
+    "iconUrl": "assets/emblems/exaltarei_a_ti_o_meu_deus_e_rei_o_grande_hino_de_louvor_de_davi.png",
+    "requiredSectionIds": [
+      "sl_c145_v1-9",
+      "sl_c145_v10-21"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Exaltarei a Ti, ó Meu Deus e Rei' ao participar do sublime louvor a Deus no Salmo 145!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo145_grande_hino_louvor_davi_atributos_deus"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_nao_confieis_em_principes_mas_no_deus_de_jaco",
+    "title": "Não Confieis em Príncipes, mas no Deus de Jacó",
+    "description": "Você aprendeu a não depositar confiança em homens mortais, mas no Senhor, o Criador fiel que faz justiça e reina para sempre.",
+    "iconUrl": "assets/emblems/nao_confieis_em_principes_mas_no_deus_de_jaco.png",
+    "requiredSectionIds": [
+      "sl_c146_v1-4",
+      "sl_c146_v5-10"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Não Confieis em Príncipes' ao firmar sua confiança no Deus eterno no Salmo 146!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo146_confianca_deus_vs_homem_soberania_divina"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_louvai_ao_senhor_que_edifica_jerusalem_e_sara_os_quebrantados",
+    "title": "Louvai ao Senhor que Edifica Jerusalém e Sara os Quebrantados",
+    "description": "Você louvou a Deus por Sua sabedoria na criação, Seu cuidado pelos humildes e oprimidos, e Sua bênção especial sobre Jerusalém.",
+    "iconUrl": "assets/emblems/louvai_ao_senhor_que_edifica_jerusalem_e_sara_os_quebrantados.png",
+    "requiredSectionIds": [
+      "sl_c147_v1-11",
+      "sl_c147_v12-20"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Louvai ao Senhor que Edifica Jerusalém' ao celebrar o poder e a ternura de Deus no Salmo 147!",
+    "points": 70,
+    "unlocksStudyId": "sl_estudo_salmo147_deus_construtor_restaurador_sabedoria"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_toda_a_criacao_louva_ao_senhor_dos_ceus_e_da_terra",
+    "title": "Toda a Criação Louva ao Senhor: Dos Céus e da Terra",
+    "description": "Você se juntou a toda a criação, desde os anjos e astros celestes até os elementos da natureza e todos os seres vivos, em um hino universal de louvor ao Criador.",
+    "iconUrl": "assets/emblems/toda_a_criacao_louva_ao_senhor_dos_ceus_e_da_terra.png",
+    "requiredSectionIds": [
+      "sl_c148_v1-6",
+      "sl_c148_v7-14"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Toda a Criação Louva ao Senhor' ao participar do grande coro de adoração no Salmo 148!",
+    "points": 60,
+    "unlocksStudyId": "sl_estudo_salmo148_louvor_cosmico_criador"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_o_novo_cantico_dos_santos_louvor_e_a_espada_de_dois_gumes",
+    "title": "O Novo Cântico dos Santos: Louvor e a Espada de Dois Gumes",
+    "description": "Você entoou um novo cântico de louvor a Deus pelo Seu favor para com Seu povo, que se alegra em seu Rei e exerce o juízo divino.",
+    "iconUrl": "assets/emblems/o_novo_cantico_dos_santos_louvor_e_a_espada_de_dois_gumes.png",
+    "requiredSectionIds": [
+      "sl_c149_v1-5",
+      "sl_c149_v6-9"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Novo Cântico dos Santos' ao celebrar a vitória e o louvor do povo de Deus no Salmo 149!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo149_novo_cantico_santos_juizo_louvor"
+  },
+  {
+    "bookAbbrev": "sl",
+    "achievementId": "sl_aleluia_final_louvai_a_deus_em_seu_santuario_e_por_suas_proezas",
+    "title": "Aleluia Final: Louvai a Deus em Seu Santuário e por Suas Proezas",
+    "description": "Você concluiu o Saltério com um vibrante e universal chamado para que tudo o que tem fôlego louve ao Senhor com todos os instrumentos e em todo lugar.",
+    "iconUrl": "assets/emblems/aleluia_final_louvai_a_deus_em_seu_santuario_e_por_suas_proezas.png",
+    "requiredSectionIds": [
+      "sl_c150_v1-6"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Aleluia Final' ao se unir à grande doxologia de louvor que encerra os Salmos no Salmo 150!",
+    "points": 50,
+    "unlocksStudyId": "sl_estudo_salmo150_grande_doxologia_louvor_universal_final"
+  }
+]

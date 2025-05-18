@@ -1,0 +1,164 @@
+[
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_guardiao_das_geracoes",
+    "title": "Guardião das Gerações",
+    "description": "Você desvendou as linhagens sagradas de Israel, desde Adão até as tribos estabelecidas, revelando as raízes do povo escolhido e a fidelidade de Deus através dos tempos.",
+    "iconUrl": "assets/emblems/guardiao_das_geracoes.png",
+    "requiredSectionIds": [
+      "1cr_c1_v1-27",
+      "1cr_c1_v28-54",
+      "1cr_c2_v1-17",
+      "1cr_c2_v18-55",
+      "1cr_c3_v1-9",
+      "1cr_c3_v10-24",
+      "1cr_c4_v1-10",
+      "1cr_c4_v11-23",
+      "1cr_c4_v24-43",
+      "1cr_c5_v1-17",
+      "1cr_c5_v18-26",
+      "1cr_c6_v1-30",
+      "1cr_c6_v31-53",
+      "1cr_c6_v54-81",
+      "1cr_c7_v1-19",
+      "1cr_c7_v20-40",
+      "1cr_c8_v1-32",
+      "1cr_c8_v33-40",
+      "1cr_c9_v1-13",
+      "1cr_c9_v14-34",
+      "1cr_c9_v35-44"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'Guardião das Gerações' por explorar as genealogias e a história inicial de Israel em 1 Crônicas!",
+    "points": 150,
+    "unlocksStudyId": "1cr_estudo_genealogias_israel"
+  },
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_crepusculo_e_aurora_reinos",
+    "title": "Crepúsculo de um Reinado, Aurora de Outro",
+    "description": "Você testemunhou o fim trágico do reinado de Saul, um lembrete solene da soberania divina e da transição para uma nova liderança.",
+    "iconUrl": "assets/emblems/crepusculo_e_aurora_reinos.png",
+    "requiredSectionIds": [
+      "1cr_c10_v1-7",
+      "1cr_c10_v8-14"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'Crepúsculo de um Reinado, Aurora de Outro' ao ler sobre a queda de Saul em 1 Crônicas!",
+    "points": 50,
+    "unlocksStudyId": "1cr_estudo_transicao_reinos_israel"
+  },
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_forjadores_reino_davi",
+    "title": "Forjadores do Reino de Davi",
+    "description": "Você acompanhou a ascensão de Davi ao trono de Israel e conheceu a bravura e lealdade dos seus valentes guerreiros, pilares do novo reino.",
+    "iconUrl": "assets/emblems/forjadores_reino_davi.png",
+    "requiredSectionIds": [
+      "1cr_c11_v1-9",
+      "1cr_c11_v10-47",
+      "1cr_c12_v1-22",
+      "1cr_c12_v23-40"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'Forjadores do Reino de Davi' ao conhecer os valentes que estabeleceram o reinado de Davi em 1 Crônicas!",
+    "points": 100,
+    "unlocksStudyId": "1cr_estudo_valentes_davi"
+  },
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_arca_em_siao",
+    "title": "A Arca em Sião: Coração da Adoração Davídica",
+    "description": "Você participou da jornada solene e jubilosa de trazer a Arca da Aliança para Jerusalém, restaurando a presença de Deus e a adoração vibrante no centro de Israel.",
+    "iconUrl": "assets/emblems/arca_em_siao.png",
+    "requiredSectionIds": [
+      "1cr_c13_v1-8",
+      "1cr_c13_v9-14",
+      "1cr_c14_v1-7",
+      "1cr_c14_v8-17",
+      "1cr_c15_v1-24",
+      "1cr_c15_v25-29",
+      "1cr_c16_v1-6",
+      "1cr_c16_v7-36",
+      "1cr_c16_v37-43"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'A Arca em Sião' ao acompanhar a jornada da Arca para Jerusalém em 1 Crônicas!",
+    "points": 120,
+    "unlocksStudyId": "1cr_estudo_arca_da_alianca_davi"
+  },
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_selo_promessa_eterna_davi",
+    "title": "Selo da Promessa Eterna: A Aliança com Davi",
+    "description": "Você ouviu a promessa inabalável de Deus a Davi, estabelecendo uma dinastia e um reino que apontam para o Messias e a esperança vindoura.",
+    "iconUrl": "assets/emblems/selo_promessa_eterna_davi.png",
+    "requiredSectionIds": [
+      "1cr_c17_v1-15",
+      "1cr_c17_v16-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'Selo da Promessa Eterna' ao aprender sobre a aliança davídica em 1 Crônicas!",
+    "points": 70,
+    "unlocksStudyId": "1cr_estudo_alianca_davidica"
+  },
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_conquistador_coroado_davi",
+    "title": "Conquistador Coroado: As Batalhas e Triunfos de Davi",
+    "description": "Você marchou ao lado de Davi em suas campanhas vitoriosas, testemunhando a expansão do reino, a derrota de inimigos e a subjugação de gigantes sob a mão poderosa de Deus.",
+    "iconUrl": "assets/emblems/conquistador_coroado_davi.png",
+    "requiredSectionIds": [
+      "1cr_c18_v1-8",
+      "1cr_c18_v9-17",
+      "1cr_c19_v1-5",
+      "1cr_c19_v6-19",
+      "1cr_c20_v1-3",
+      "1cr_c20_v4-8"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'Conquistador Coroado' ao seguir as vitórias militares de Davi em 1 Crônicas!",
+    "points": 100,
+    "unlocksStudyId": "1cr_estudo_vitorias_davi"
+  },
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_altar_expiacao_eira_ornan",
+    "title": "Altar da Expiação: Do Censo à Pedra Fundamental",
+    "description": "Você presenciou o erro e o arrependimento de Davi no censo, e a escolha divina da eira de Ornã, o local sagrado para o futuro Templo, um marco da misericórdia de Deus.",
+    "iconUrl": "assets/emblems/altar_expiacao_eira_ornan.png",
+    "requiredSectionIds": [
+      "1cr_c21_v1-6",
+      "1cr_c21_v7-17",
+      "1cr_c21_v18-30"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'Altar da Expiação' ao compreender o significado do censo de Davi e a eira de Ornã em 1 Crônicas!",
+    "points": 80,
+    "unlocksStudyId": "1cr_estudo_censo_davi_templo"
+  },
+  {
+    "bookAbbrev": "1cr",
+    "achievementId": "1cr_legado_rei_sabio_templo_salomao",
+    "title": "Legado do Rei Sábio: Davi Prepara o Templo e o Trono para Salomão",
+    "description": "Você contribuiu com Davi nos preparativos meticulosos para a Casa de Deus, organizando recursos e ofícios, e testemunhou a transição inspiradora do reino para Salomão.",
+    "iconUrl": "assets/emblems/legado_rei_sabio_templo_salomao.png",
+    "requiredSectionIds": [
+      "1cr_c22_v1-5",
+      "1cr_c22_v6-16",
+      "1cr_c22_v17-19",
+      "1cr_c23_v1-23",
+      "1cr_c23_v24-32",
+      "1cr_c24_v1-19",
+      "1cr_c24_v20-31",
+      "1cr_c25_v1-7",
+      "1cr_c25_v8-31",
+      "1cr_c26_v1-19",
+      "1cr_c26_v20-28",
+      "1cr_c26_v29-32",
+      "1cr_c27_v1-15",
+      "1cr_c27_v16-34",
+      "1cr_c28_v1-10",
+      "1cr_c28_v11-21",
+      "1cr_c29_v1-9",
+      "1cr_c29_v10-22",
+      "1cr_c29_v23-30"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou a conquista 'Legado do Rei Sábio' ao ver Davi preparar tudo para o reinado de Salomão e a construção do Templo em 1 Crônicas!",
+    "points": 200,
+    "unlocksStudyId": "1cr_estudo_preparativos_templo_salomao"
+  }
+]

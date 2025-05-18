@@ -1,0 +1,189 @@
+[
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_voz_da_unidade_em_cristo",
+    "title": "Voz da Unidade em Cristo",
+    "description": "Explore a exortação de Paulo à unidade em Cristo e a centralidade da cruz frente às divisões em Corinto.",
+    "iconUrl": "assets/emblems/voz_da_unidade_em_cristo.png",
+    "requiredSectionIds": [
+      "1co_c1_v1-9",
+      "1co_c1_v10-13",
+      "1co_c1_v14-16",
+      "1co_c1_v17-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Voz da Unidade em Cristo' ao meditar sobre a união e a mensagem da cruz em 1 Coríntios 1!",
+    "points": 80,
+    "unlocksStudyId": "1co_estudo_unidade_e_cruz"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_edificador_sobre_o_fundamento",
+    "title": "Edificador sobre o Fundamento",
+    "description": "Compreenda a sabedoria divina, o ministério apostólico e o verdadeiro fundamento da Igreja.",
+    "iconUrl": "assets/emblems/edificador_sobre_o_fundamento.png",
+    "requiredSectionIds": [
+      "1co_c2_v1-5",
+      "1co_c2_v6-16",
+      "1co_c3_v1-4",
+      "1co_c3_v5-10",
+      "1co_c3_v11-15",
+      "1co_c3_v16-17",
+      "1co_c3_v18-20",
+      "1co_c3_v21-23",
+      "1co_c4_v1-6",
+      "1co_c4_v7-13",
+      "1co_c4_v14-16",
+      "1co_c4_v17-21"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Edificador sobre o Fundamento' ao aprofundar-se no ministério e na sabedoria de Deus em 1 Coríntios 2-4!",
+    "points": 150,
+    "unlocksStudyId": "1co_estudo_fundamento_ministerio_apostolico"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_guardiao_da_santidade_comunitaria",
+    "title": "Guardião da Santidade Comunitária",
+    "description": "Analise a importância da pureza moral, disciplina eclesiástica e resolução de conflitos na comunidade da fé.",
+    "iconUrl": "assets/emblems/guardiao_da_santidade_comunitaria.png",
+    "requiredSectionIds": [
+      "1co_c5_v1-6",
+      "1co_c5_v7-8",
+      "1co_c5_v9-13",
+      "1co_c6_v1-8",
+      "1co_c6_v9-11",
+      "1co_c6_v12-20"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Guardião da Santidade Comunitária' ao refletir sobre a pureza e disciplina na igreja em 1 Coríntios 5-6!",
+    "points": 120,
+    "unlocksStudyId": "1co_estudo_santidade_disciplina_igreja"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_conselheiro_das_veredas_da_vida",
+    "title": "Conselheiro das Veredas da Vida",
+    "description": "Reflita sobre os ensinamentos apostólicos acerca do casamento, solteirice e contentamento em cada estado de vida.",
+    "iconUrl": "assets/emblems/conselheiro_das_veredas_da_vida.png",
+    "requiredSectionIds": [
+      "1co_c7_v1-9",
+      "1co_c7_v10-16",
+      "1co_c7_v17-24",
+      "1co_c7_v25-35",
+      "1co_c7_v36-38",
+      "1co_c7_v39-40"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Conselheiro das Veredas da Vida' ao explorar os conselhos sobre casamento e contentamento em 1 Coríntios 7!",
+    "points": 100,
+    "unlocksStudyId": "1co_estudo_casamento_solteirice_contentamento"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_navegador_da_liberdade_em_amor",
+    "title": "Navegador da Liberdade em Amor",
+    "description": "Descubra o equilíbrio entre liberdade cristã e responsabilidade, evitando a idolatria e o tropeço aos irmãos.",
+    "iconUrl": "assets/emblems/navegador_da_liberdade_em_amor.png",
+    "requiredSectionIds": [
+      "1co_c8_v1-3",
+      "1co_c8_v4-6",
+      "1co_c8_v7-13",
+      "1co_c10_v1-5",
+      "1co_c10_v6-14",
+      "1co_c10_v15-22",
+      "1co_c10_v23-33"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Navegador da Liberdade em Amor' ao aprender sobre liberdade e responsabilidade cristã em 1 Coríntios 8 e 10!",
+    "points": 130,
+    "unlocksStudyId": "1co_estudo_liberdade_crista_idolatria"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_atleta_do_evangelho",
+    "title": "Atleta do Evangelho",
+    "description": "Inspire-se no exemplo de Paulo, que abriu mão de direitos por amor ao evangelho para ganhar almas para Cristo.",
+    "iconUrl": "assets/emblems/atleta_do_evangelho.png",
+    "requiredSectionIds": [
+      "1co_c9_v1-2",
+      "1co_c9_v3-14",
+      "1co_c9_v15-18",
+      "1co_c9_v19-23",
+      "1co_c9_v24-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Atleta do Evangelho' ao seguir o exemplo de dedicação de Paulo em 1 Coríntios 9!",
+    "points": 90,
+    "unlocksStudyId": "1co_estudo_devocao_ministerial_paulo"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_zelador_da_adoracao_sagrada",
+    "title": "Zelador da Adoração Sagrada",
+    "description": "Aprenda sobre as diretrizes para a conduta no culto, incluindo a Ceia do Senhor, com decência e ordem.",
+    "iconUrl": "assets/emblems/zelador_da_adoracao_sagrada.png",
+    "requiredSectionIds": [
+      "1co_c11_v1-16",
+      "1co_c11_v17-22",
+      "1co_c11_v23-34"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Zelador da Adoração Sagrada' ao estudar sobre a ordem no culto e a Ceia do Senhor em 1 Coríntios 11!",
+    "points": 70,
+    "unlocksStudyId": "1co_estudo_ordem_culto_ceia_senhor"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_sinfonia_do_espirito_em_amor",
+    "title": "Sinfonia do Espírito em Amor",
+    "description": "Explore a diversidade dos dons espirituais, a unidade do Corpo e a supremacia do amor como o caminho excelente.",
+    "iconUrl": "assets/emblems/sinfonia_do_espirito_em_amor.png",
+    "requiredSectionIds": [
+      "1co_c12_v1-11",
+      "1co_c12_v12-26",
+      "1co_c12_v27-31",
+      "1co_c13_v1-3",
+      "1co_c13_v4-7",
+      "1co_c13_v8-13",
+      "1co_c14_v1-5",
+      "1co_c14_v6-14",
+      "1co_c14_v15-20",
+      "1co_c14_v21-25",
+      "1co_c14_v26-33",
+      "1co_c14_v34-35",
+      "1co_c14_v36-40"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Sinfonia do Espírito em Amor' ao mergulhar nos dons espirituais e na excelência do amor em 1 Coríntios 12-14!",
+    "points": 200,
+    "unlocksStudyId": "1co_estudo_dons_espirituais_amor_supremo"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_arauto_da_esperanca_imortal",
+    "title": "Arauto da Esperança Imortal",
+    "description": "Contemple a doutrina da ressurreição de Cristo e sua implicação para a fé e esperança dos crentes.",
+    "iconUrl": "assets/emblems/arauto_da_esperanca_imortal.png",
+    "requiredSectionIds": [
+      "1co_c15_v1-11",
+      "1co_c15_v12-19",
+      "1co_c15_v20-34",
+      "1co_c15_v35-50",
+      "1co_c15_v51-57",
+      "1co_c15_v58"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Arauto da Esperança Imortal' ao fortalecer sua fé na ressurreição em 1 Coríntios 15!",
+    "points": 180,
+    "unlocksStudyId": "1co_estudo_ressurreicao_esperanca_crista"
+  },
+  {
+    "bookAbbrev": "1co",
+    "achievementId": "1co_embaixador_da_graca_conclusiva",
+    "title": "Embaixador da Graça Conclusiva",
+    "description": "Acolha as instruções finais do apóstolo, o chamado à generosidade e as saudações fraternas.",
+    "iconUrl": "assets/emblems/embaixador_da_graca_conclusiva.png",
+    "requiredSectionIds": [
+      "1co_c16_v1-4",
+      "1co_c16_v5-9",
+      "1co_c16_v10-12",
+      "1co_c16_v13-18",
+      "1co_c16_v19-24"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Embaixador da Graça Conclusiva' ao receber as instruções finais e saudações de 1 Coríntios 16!",
+    "points": 70,
+    "unlocksStudyId": "1co_estudo_instrucoes_finais_generosidade"
+  }
+]

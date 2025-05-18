@@ -1,0 +1,84 @@
+[
+  {
+    "bookAbbrev": "1pe",
+    "achievementId": "1pe_herdeiro_da_esperanca_viva",
+    "title": "Herdeiro da Esperança Viva",
+    "description": "Você explorou os privilégios da salvação, a esperança viva em Cristo, a santidade e o valor da redenção pela Palavra de Deus.",
+    "iconUrl": "assets/emblems/herdeiro_da_esperanca_viva.png",
+    "requiredSectionIds": [
+      "1pe_c1_v1-2",
+      "1pe_c1_v3-5",
+      "1pe_c1_v6-9",
+      "1pe_c1_v10-12",
+      "1pe_c1_v13-23",
+      "1pe_c1_v24-25"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Herdeiro da Esperança Viva' ao mergulhar nas verdades fundamentais da salvação em 1 Pedro 1!",
+    "points": 100,
+    "unlocksStudyId": "1pe_estudo_esperanca_santidade_redencao"
+  },
+  {
+    "bookAbbrev": "1pe",
+    "achievementId": "1pe_edificado_sobre_a_rocha_eterna",
+    "title": "Edificado sobre a Rocha Eterna",
+    "description": "Você aprendeu sobre o crescimento espiritual, Cristo como a Pedra Viva, a identidade do povo de Deus e a importância da submissão e do exemplo de Cristo no sofrimento.",
+    "iconUrl": "assets/emblems/edificado_sobre_a_rocha_eterna.png",
+    "requiredSectionIds": [
+      "1pe_c2_v1-3",
+      "1pe_c2_v4-12",
+      "1pe_c2_v13-25"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Edificado sobre a Rocha Eterna' ao compreender seu lugar em Cristo e o chamado à santidade em 1 Pedro 2!",
+    "points": 90,
+    "unlocksStudyId": "1pe_estudo_identidade_crista_exemplo_sofrimento"
+  },
+  {
+    "bookAbbrev": "1pe",
+    "achievementId": "1pe_testemunho_de_retidao_e_amor",
+    "title": "Testemunho de Retidão e Amor",
+    "description": "Você refletiu sobre os deveres nos relacionamentos, a unidade, o amor ao próximo, a manutenção de uma boa consciência e o significado do batismo à luz dos sofrimentos de Cristo.",
+    "iconUrl": "assets/emblems/testemunho_de_retidao_e_amor.png",
+    "requiredSectionIds": [
+      "1pe_c3_v1-7",
+      "1pe_c3_v8-15",
+      "1pe_c3_v16-17",
+      "1pe_c3_v18-20",
+      "1pe_c3_v21-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Testemunho de Retidão e Amor' ao aprender sobre viver de forma justa e amorosa em 1 Pedro 3!",
+    "points": 110,
+    "unlocksStudyId": "1pe_estudo_relacionamentos_consciencia_batismo"
+  },
+  {
+    "bookAbbrev": "1pe",
+    "achievementId": "1pe_forjado_no_fogo_da_provacao",
+    "title": "Forjado no Fogo da Provação",
+    "description": "Você compreendeu a importância de mortificar o pecado, viver para Deus, usar os dons espirituais com sobriedade e perseverar com alegria nas provações por causa de Cristo.",
+    "iconUrl": "assets/emblems/forjado_no_fogo_da_provacao.png",
+    "requiredSectionIds": [
+      "1pe_c4_v1-3",
+      "1pe_c4_v4-6",
+      "1pe_c4_v7-11",
+      "1pe_c4_v12-19"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Forjado no Fogo da Provação' ao entender como enfrentar o sofrimento e viver para Deus em 1 Pedro 4!",
+    "points": 90,
+    "unlocksStudyId": "1pe_estudo_sofrimento_cristao_dons_espirituais"
+  },
+  {
+    "bookAbbrev": "1pe",
+    "achievementId": "1pe_pastor_da_fe_perseverante",
+    "title": "Pastor da Fé Perseverante",
+    "description": "Você recebeu conselhos para a liderança, a importância da humildade, da vigilância contra o adversário e a confiança na graça sustentadora de Deus.",
+    "iconUrl": "assets/emblems/pastor_da_fe_perseverante.png",
+    "requiredSectionIds": [
+      "1pe_c5_v1-4",
+      "1pe_c5_v5-7",
+      "1pe_c5_v8-9",
+      "1pe_c5_v10-14"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Pastor da Fé Perseverante' ao absorver os conselhos finais sobre liderança, humildade e vigilância em 1 Pedro 5!",
+    "points": 80,
+    "unlocksStudyId": "1pe_estudo_lideranca_humildade_graca_final"
+  }
+]

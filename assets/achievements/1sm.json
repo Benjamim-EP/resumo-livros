@@ -1,0 +1,333 @@
+[
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_o_nascimento_consagrado_de_samuel",
+    "title": "O Nascimento Consagrado de Samuel",
+    "description": "Você testemunhou a fé e a súplica de Ana, o nascimento milagroso de Samuel e sua dedicação ao serviço do Senhor desde a infância.",
+    "iconUrl": "assets/emblems/o_nascimento_consagrado_de_samuel.png",
+    "requiredSectionIds": [
+      "1sm_c1_v1-8",
+      "1sm_c1_v9-18",
+      "1sm_c1_v19-28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Nascimento Consagrado de Samuel' ao acompanhar a história do nascimento e dedicação de Samuel em 1 Samuel 1!",
+    "points": 70,
+    "unlocksStudyId": "1sm_estudo_ana_nascimento_samuel"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_o_chamado_profetico_em_tempos_sombrios",
+    "title": "O Chamado Profético em Tempos Sombrios",
+    "description": "Você ouviu o cântico de gratidão de Ana, viu a corrupção dos filhos de Eli e o chamado divino a Samuel para ser profeta em Israel.",
+    "iconUrl": "assets/emblems/o_chamado_profetico_em_tempos_sombrios.png",
+    "requiredSectionIds": [
+      "1sm_c2_v1-10",
+      "1sm_c2_v11-26",
+      "1sm_c2_v27-36",
+      "1sm_c3_v1-10",
+      "1sm_c3_v11-18",
+      "1sm_c3_v19-21"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Chamado Profético em Tempos Sombrios' ao testemunhar o início do ministério de Samuel em 1 Samuel 2-3!",
+    "points": 100,
+    "unlocksStudyId": "1sm_estudo_chamado_samuel_corrupcao_eli"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_a_arca_perdida_e_a_gloria_ausente",
+    "title": "A Arca Perdida e a Glória Ausente",
+    "description": "Você presenciou a derrota de Israel, a captura da Arca da Aliança pelos filisteus e as trágicas mortes na casa de Eli, marcando um período de desolação.",
+    "iconUrl": "assets/emblems/a_arca_perdida_e_a_gloria_ausente.png",
+    "requiredSectionIds": [
+      "1sm_c4_v1-9",
+      "1sm_c4_v10-11",
+      "1sm_c4_v12-18",
+      "1sm_c4_v19-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Arca Perdida e a Glória Ausente' ao vivenciar a crise da perda da Arca em 1 Samuel 4!",
+    "points": 80,
+    "unlocksStudyId": "1sm_estudo_captura_arca_morte_eli"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_o_poder_da_arca_e_o_retorno_a_israel",
+    "title": "O Poder da Arca e o Retorno a Israel",
+    "description": "Você viu o poder da Arca de Deus entre os filisteus, causando pragas e a queda de Dagon, culminando em seu retorno temeroso a Israel.",
+    "iconUrl": "assets/emblems/o_poder_da_arca_e_o_retorno_a_israel.png",
+    "requiredSectionIds": [
+      "1sm_c5_v1-5",
+      "1sm_c5_v6-12",
+      "1sm_c6_v1-9",
+      "1sm_c6_v10-18",
+      "1sm_c6_v19-21",
+      "1sm_c7_v1-2"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Poder da Arca e o Retorno a Israel' ao testemunhar o impacto da Arca entre os filisteus e seu retorno em 1 Samuel 5-7!",
+    "points": 110,
+    "unlocksStudyId": "1sm_estudo_arca_entre_filisteus_retorno"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_clamor_por_um_rei_e_a_vitoria_em_eben_ezer",
+    "title": "Clamor por um Rei e a Vitória em Eben-Ezer",
+    "description": "Você acompanhou o arrependimento de Israel, a intercessão de Samuel, a vitória sobre os filisteus em Eben-Ezer e o controverso desejo do povo por um rei.",
+    "iconUrl": "assets/emblems/clamor_por_um_rei_e_a_vitoria_em_eben_ezer.png",
+    "requiredSectionIds": [
+      "1sm_c7_v3-6",
+      "1sm_c7_v7-12",
+      "1sm_c7_v13-17",
+      "1sm_c8_v1-3",
+      "1sm_c8_v4-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Clamor por um Rei e a Vitória em Eben-Ezer' ao ver a liderança de Samuel e o pedido por um rei em 1 Samuel 7-8!",
+    "points": 100,
+    "unlocksStudyId": "1sm_estudo_vitoria_ebenezer_pedido_rei"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_a_escolha_e_uncao_do_primeiro_rei",
+    "title": "A Escolha e Unção do Primeiro Rei",
+    "description": "Você testemunhou a providencial busca de Saul, seu encontro com Samuel, a unção secreta e sua revelação pública como o primeiro rei de Israel.",
+    "iconUrl": "assets/emblems/a_escolha_e_uncao_do_primeiro_rei.png",
+    "requiredSectionIds": [
+      "1sm_c9_v1-2",
+      "1sm_c9_v3-10",
+      "1sm_c9_v11-17",
+      "1sm_c9_v18-27",
+      "1sm_c10_v1-8",
+      "1sm_c10_v9-16",
+      "1sm_c10_v17-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Escolha e Unção do Primeiro Rei' ao acompanhar a ascensão de Saul ao trono em 1 Samuel 9-10!",
+    "points": 130,
+    "unlocksStudyId": "1sm_estudo_escolha_uncao_saul"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_o_reinado_confirmado_e_o_discurso_de_despedida",
+    "title": "O Reinado Confirmado e o Discurso de Despedida",
+    "description": "Você viu Saul confirmar seu reinado com uma vitória decisiva e ouviu o solene discurso de Samuel, conclamando Israel à fidelidade a Deus.",
+    "iconUrl": "assets/emblems/o_reinado_confirmado_e_o_discurso_de_despedida.png",
+    "requiredSectionIds": [
+      "1sm_c11_v1-4",
+      "1sm_c11_v5-11",
+      "1sm_c11_v12-15",
+      "1sm_c12_v1-5",
+      "1sm_c12_v6-15",
+      "1sm_c12_v16-25"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Reinado Confirmado e o Discurso de Despedida' ao testemunhar a consolidação do reinado de Saul e as palavras de Samuel em 1 Samuel 11-12!",
+    "points": 100,
+    "unlocksStudyId": "1sm_estudo_vitoria_saul_discurso_samuel"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_a_desobediencia_e_a_bravura_em_meio_a_crise",
+    "title": "A Desobediência e a Bravura em Meio à Crise",
+    "description": "Você presenciou a desobediência de Saul e sua rejeição, contrastando com a fé e bravura de Jônatas contra os filisteus, mesmo em tempos de fraqueza para Israel.",
+    "iconUrl": "assets/emblems/a_desobediencia_e_a_bravura_em_meio_a_crise.png",
+    "requiredSectionIds": [
+      "1sm_c13_v1-7",
+      "1sm_c13_v8-14",
+      "1sm_c13_v15-23",
+      "1sm_c14_v1-15",
+      "1sm_c14_v16-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Desobediência e a Bravura em Meio à Crise' ao ver os erros de Saul e a coragem de Jônatas em 1 Samuel 13-14!",
+    "points": 120,
+    "unlocksStudyId": "1sm_estudo_desobediencia_saul_fe_jonatas"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_juramentos_precipitados_e_consequencias_fatais",
+    "title": "Juramentos Precipitados e Consequências Fatais",
+    "description": "Você acompanhou o juramento impensado de Saul, o perigo enfrentado por Jônatas, e a rejeição final de Saul por poupar os amalequitas.",
+    "iconUrl": "assets/emblems/juramentos_precipitados_e_consequencias_fatais.png",
+    "requiredSectionIds": [
+      "1sm_c14_v24-35",
+      "1sm_c14_v36-46",
+      "1sm_c14_v47-52",
+      "1sm_c15_v1-9",
+      "1sm_c15_v10-23",
+      "1sm_c15_v24-31",
+      "1sm_c15_v32-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Juramentos Precipitados e Consequências Fatais' ao analisar os erros de Saul e a justiça divina em 1 Samuel 14-15!",
+    "points": 130,
+    "unlocksStudyId": "1sm_estudo_rejeicao_saul_amalequitas"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_o_pastor_escolhido_e_o_rei_atormentado",
+    "title": "O Pastor Escolhido e o Rei Atormentado",
+    "description": "Você testemunhou a unção de Davi como futuro rei e sua entrada no serviço de Saul, que já era afligido por um espírito mau.",
+    "iconUrl": "assets/emblems/o_pastor_escolhido_e_o_rei_atormentado.png",
+    "requiredSectionIds": [
+      "1sm_c16_v1-5",
+      "1sm_c16_v6-13",
+      "1sm_c16_v14-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Pastor Escolhido e o Rei Atormentado' ao ver a unção de Davi e sua chegada à corte de Saul em 1 Samuel 16!",
+    "points": 80,
+    "unlocksStudyId": "1sm_estudo_uncao_davi_saul_espirito_mau"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_fe_contra_o_gigante_a_vitoria_de_davi",
+    "title": "Fé Contra o Gigante: A Vitória de Davi",
+    "description": "Você presenciou o desafio audacioso de Golias, a fé inabalável de Davi e sua vitória milagrosa que trouxe livramento a Israel.",
+    "iconUrl": "assets/emblems/fe_contra_o_gigante_a_vitoria_de_davi.png",
+    "requiredSectionIds": [
+      "1sm_c17_v1-11",
+      "1sm_c17_v12-30",
+      "1sm_c17_v31-39",
+      "1sm_c17_v40-47",
+      "1sm_c17_v48-58"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Fé Contra o Gigante' ao testemunhar a coragem e a vitória de Davi sobre Golias em 1 Samuel 17!",
+    "points": 100,
+    "unlocksStudyId": "1sm_estudo_davi_golias_fe_vitoria"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_amizade_leal_e_inveja_mortal",
+    "title": "Amizade Leal e Inveja Mortal",
+    "description": "Você viu a profunda amizade entre Davi e Jônatas florescer, enquanto a inveja e o ciúme de Saul cresciam perigosamente contra Davi.",
+    "iconUrl": "assets/emblems/amizade_leal_e_inveja_mortal.png",
+    "requiredSectionIds": [
+      "1sm_c18_v1-5",
+      "1sm_c18_v6-11",
+      "1sm_c18_v12-30",
+      "1sm_c19_v1-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Amizade Leal e Inveja Mortal' ao explorar a relação de Davi, Jônatas e Saul em 1 Samuel 18-19!",
+    "points": 90,
+    "unlocksStudyId": "1sm_estudo_davi_jonatas_inveja_saul"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_fugitivo_pela_graca_a_perseguicao_de_davi",
+    "title": "Fugitivo pela Graça: A Perseguição de Davi",
+    "description": "Você acompanhou as arriscadas fugas de Davi da ira de Saul, protegido pela lealdade de Jônatas e pela providência divina, mesmo em meio a profecias e perigos.",
+    "iconUrl": "assets/emblems/fugitivo_pela_graca_a_perseguicao_de_davi.png",
+    "requiredSectionIds": [
+      "1sm_c19_v8-10",
+      "1sm_c19_v11-17",
+      "1sm_c19_v18-24",
+      "1sm_c20_v1-8",
+      "1sm_c20_v9-23",
+      "1sm_c20_v24-34",
+      "1sm_c20_v35-42"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Fugitivo pela Graça' ao seguir Davi em sua fuga da perseguição de Saul em 1 Samuel 19-20!",
+    "points": 140,
+    "unlocksStudyId": "1sm_estudo_fuga_davi_lealdade_jonatas"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_refugio_no_deserto_a_vida_de_davi_como_proscrito",
+    "title": "Refúgio no Deserto: A Vida de Davi como Proscrito",
+    "description": "Você viu Davi buscando refúgio, obtendo ajuda em Nobe, e a trágica destruição dos sacerdotes por Saul, enquanto Davi liderava um bando de homens em Adulão.",
+    "iconUrl": "assets/emblems/refugio_no_deserto_a_vida_de_davi_como_proscrito.png",
+    "requiredSectionIds": [
+      "1sm_c21_v1-9",
+      "1sm_c21_v10-15",
+      "1sm_c22_v1-5",
+      "1sm_c22_v6-19",
+      "1sm_c22_v20-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Refúgio no Deserto' ao acompanhar as dificuldades de Davi como fugitivo em 1 Samuel 21-22!",
+    "points": 110,
+    "unlocksStudyId": "1sm_estudo_davi_nobe_adulao_massacre_sacerdotes"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_preservado_na_perseguicao_a_fidelidade_de_davi",
+    "title": "Preservado na Perseguição: A Fidelidade de Davi",
+    "description": "Você testemunhou Davi livrando Queila, escapando por pouco de Saul no deserto de Zife, e sua nobre atitude ao poupar a vida de Saul em duas ocasiões.",
+    "iconUrl": "assets/emblems/preservado_na_perseguicao_a_fidelidade_de_davi.png",
+    "requiredSectionIds": [
+      "1sm_c23_v1-6",
+      "1sm_c23_v7-13",
+      "1sm_c23_v14-18",
+      "1sm_c23_v19-29",
+      "1sm_c24_v1-8",
+      "1sm_c24_v9-15",
+      "1sm_c24_v16-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Preservado na Perseguição' ao ver a integridade de Davi ao poupar Saul em 1 Samuel 23-24!",
+    "points": 130,
+    "unlocksStudyId": "1sm_estudo_davi_poupa_saul_fidelidade"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_sabedoria_e_aliancas_em_tempos_de_crise",
+    "title": "Sabedoria e Alianças em Tempos de Crise",
+    "description": "Você acompanhou a morte de Samuel, a insensatez de Nabal, a sabedoria de Abigail que evitou um derramamento de sangue, e o casamento de Davi com ela.",
+    "iconUrl": "assets/emblems/sabedoria_e_aliancas_em_tempos_de_crise.png",
+    "requiredSectionIds": [
+      "1sm_c25_v1",
+      "1sm_c25_v2-11",
+      "1sm_c25_v12-17",
+      "1sm_c25_v18-31",
+      "1sm_c25_v32-35",
+      "1sm_c25_v36-44"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Sabedoria e Alianças em Tempos de Crise' ao aprender com a história de Davi, Nabal e Abigail em 1 Samuel 25!",
+    "points": 100,
+    "unlocksStudyId": "1sm_estudo_davi_nabal_abigail_sabedoria"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_entre_inimigos_a_sobrevivencia_de_davi",
+    "title": "Entre Inimigos: A Sobrevivência de Davi",
+    "description": "Você viu Davi poupar Saul novamente, buscar refúgio entre os filisteus em Gate, e suas incursões estratégicas enquanto vivia em Ziclague.",
+    "iconUrl": "assets/emblems/entre_inimigos_a_sobrevivencia_de_davi.png",
+    "requiredSectionIds": [
+      "1sm_c26_v1-5",
+      "1sm_c26_v6-12",
+      "1sm_c26_v13-20",
+      "1sm_c26_v21-25",
+      "1sm_c27_v1-7",
+      "1sm_c27_v8-12"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Entre Inimigos' ao seguir as estratégias de Davi para sobreviver entre os filisteus em 1 Samuel 26-27!",
+    "points": 110,
+    "unlocksStudyId": "1sm_estudo_davi_entre_filisteus_ziclague"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_o_desespero_de_saul_e_a_sombra_da_derrota",
+    "title": "O Desespero de Saul e a Sombra da Derrota",
+    "description": "Você testemunhou o desespero de Saul ao consultar a necromante de En-Dor, a predição de sua morte, e a difícil posição de Davi entre os filisteus.",
+    "iconUrl": "assets/emblems/o_desespero_de_saul_e_a_sombra_da_derrota.png",
+    "requiredSectionIds": [
+      "1sm_c28_v1-6",
+      "1sm_c28_v7-14",
+      "1sm_c28_v15-19",
+      "1sm_c28_v20-25",
+      "1sm_c29_v1-5",
+      "1sm_c29_v6-11"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Desespero de Saul' ao ver a queda espiritual de Saul e a situação de Davi em 1 Samuel 28-29!",
+    "points": 100,
+    "unlocksStudyId": "1sm_estudo_saul_necromante_endor_davi"
+  },
+  {
+    "bookAbbrev": "1sm",
+    "achievementId": "1sm_a_vinganca_justa_e_o_fim_tragico",
+    "title": "A Vingança Justa e o Fim Trágico",
+    "description": "Você viu Davi vingar a destruição de Ziclague, dividindo os despojos com justiça, e o trágico desfecho da batalha de Gilboa com a morte de Saul e seus filhos.",
+    "iconUrl": "assets/emblems/a_vinganca_justa_e_o_fim_tragico.png",
+    "requiredSectionIds": [
+      "1sm_c30_v1-6",
+      "1sm_c30_v7-20",
+      "1sm_c30_v21-31",
+      "1sm_c31_v1-7",
+      "1sm_c31_v8-13"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Vingança Justa e o Fim Trágico' ao acompanhar a retribuição de Davi e a morte de Saul em 1 Samuel 30-31!",
+    "points": 90,
+    "unlocksStudyId": "1sm_estudo_ziclague_morte_saul_gilboa"
+  }
+]

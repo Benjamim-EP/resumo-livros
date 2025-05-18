@@ -1,0 +1,466 @@
+[
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_fundamentos_da_sabedoria_divina",
+    "title": "Fundamentos da Sabedoria Divina",
+    "description": "Você explorou o propósito dos provérbios, o temor do Senhor como princípio da sabedoria, as admoestações parentais e o convite da própria Sabedoria.",
+    "iconUrl": "assets/emblems/fundamentos_da_sabedoria_divina.png",
+    "requiredSectionIds": [
+      "pv_c1_v1-6",
+      "pv_c1_v7-9",
+      "pv_c1_v10-19",
+      "pv_c1_v20-33"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Fundamentos da Sabedoria Divina' ao iniciar sua jornada pelos princípios de Provérbios 1!",
+    "points": 80,
+    "unlocksStudyId": "pv_estudo_introducao_sabedoria_temor_senhor"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_os_tesouros_e_beneficios_da_sabedoria",
+    "title": "Os Tesouros e Benefícios da Sabedoria",
+    "description": "Você compreendeu os valiosos benefícios de buscar e encontrar a sabedoria, que protege do mal e conduz à retidão e à vida.",
+    "iconUrl": "assets/emblems/os_tesouros_e_beneficios_da_sabedoria.png",
+    "requiredSectionIds": [
+      "pv_c2_v1-9",
+      "pv_c2_v10-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Os Tesouros e Benefícios da Sabedoria' ao descobrir as ricas recompensas da sabedoria em Provérbios 2!",
+    "points": 70,
+    "unlocksStudyId": "pv_estudo_beneficios_protecao_sabedoria"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_caminhando_em_retidao_e_confianca",
+    "title": "Caminhando em Retidão e Confiança",
+    "description": "Você aprendeu sobre a importância da comunhão com Deus, da consagração, da justiça, da bondade e da felicidade encontrada na sabedoria.",
+    "iconUrl": "assets/emblems/caminhando_em_retidao_e_confianca.png",
+    "requiredSectionIds": [
+      "pv_c3_v1-6",
+      "pv_c3_v7-12",
+      "pv_c3_v13-20",
+      "pv_c3_v21-26",
+      "pv_c3_v27-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Caminhando em Retidão e Confiança' ao meditar sobre as virtudes e bênçãos de Provérbios 3!",
+    "points": 100,
+    "unlocksStudyId": "pv_estudo_confianca_deus_excelencia_sabedoria"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_guardando_o_coracao_no_caminho_da_vida",
+    "title": "Guardando o Coração no Caminho da Vida",
+    "description": "Você recebeu instruções valiosas sobre ouvir os pais, evitar más companhias e guardar o coração, fonte de toda a vida.",
+    "iconUrl": "assets/emblems/guardando_o_coracao_no_caminho_da_vida.png",
+    "requiredSectionIds": [
+      "pv_c4_v1-13",
+      "pv_c4_v14-19",
+      "pv_c4_v20-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Guardando o Coração no Caminho da Vida' ao aprender a importância da instrução e da pureza em Provérbios 4!",
+    "points": 80,
+    "unlocksStudyId": "pv_estudo_instrucao_parental_pureza_coracao"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_a_pureza_nos_relacionamentos",
+    "title": "A Pureza nos Relacionamentos",
+    "description": "Você foi advertido contra a sensualidade e a infidelidade, e exortado à fidelidade e ao deleite no casamento.",
+    "iconUrl": "assets/emblems/a_pureza_nos_relacionamentos.png",
+    "requiredSectionIds": [
+      "pv_c5_v1-14",
+      "pv_c5_v15-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Pureza nos Relacionamentos' ao refletir sobre a santidade e a fidelidade conjugal em Provérbios 5!",
+    "points": 60,
+    "unlocksStudyId": "pv_estudo_fidelidade_conjugal_perigos_sensualidade"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_evitando_as_armadilhas_da_vida",
+    "title": "Evitando as Armadilhas da Vida",
+    "description": "Você aprendeu sobre os perigos da fiança, da preguiça, das coisas que Deus abomina e as consequências da impureza.",
+    "iconUrl": "assets/emblems/evitando_as_armadilhas_da_vida.png",
+    "requiredSectionIds": [
+      "pv_c6_v1-5",
+      "pv_c6_v6-11",
+      "pv_c6_v12-19",
+      "pv_c6_v20-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Evitando as Armadilhas da Vida' ao discernir os perigos descritos em Provérbios 6!",
+    "points": 90,
+    "unlocksStudyId": "pv_estudo_preguica_abominacoes_impureza"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_o_preco_da_insensatez_e_a_sedução",
+    "title": "O Preço da Insensatez e a Sedução",
+    "description": "Você viu a importância de guardar a Palavra de Deus e foi alertado sobre a sedução da mulher adúltera e o caminho da perdição do jovem insensato.",
+    "iconUrl": "assets/emblems/o_preco_da_insensatez_e_a_seducao.png",
+    "requiredSectionIds": [
+      "pv_c7_v1-5",
+      "pv_c7_v6-23",
+      "pv_c7_v24-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Preço da Insensatez e a Sedução' ao aprender sobre os perigos da tentação em Provérbios 7!",
+    "points": 70,
+    "unlocksStudyId": "pv_estudo_sedução_consequencias_insensatez"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_a_voz_suprema_da_sabedoria_eterna",
+    "title": "A Voz Suprema da Sabedoria Eterna",
+    "description": "Você ouviu o convite sublime da Sabedoria, suas vantagens incomparáveis e sua natureza eterna e divina, presente desde a criação.",
+    "iconUrl": "assets/emblems/a_voz_suprema_da_sabedoria_eterna.png",
+    "requiredSectionIds": [
+      "pv_c8_v1-11",
+      "pv_c8_v12-21",
+      "pv_c8_v22-31",
+      "pv_c8_v32-36"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Voz Suprema da Sabedoria Eterna' ao contemplar a majestade da Sabedoria em Provérbios 8!",
+    "points": 100,
+    "unlocksStudyId": "pv_estudo_sabedoria_divina_criacao"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_o_banquete_da_sabedoria_e_o_engano_da_loucura",
+    "title": "O Banquete da Sabedoria e o Engano da Loucura",
+    "description": "Você foi convidado para o banquete da Sabedoria e alertado sobre o convite enganoso da Loucura, escolhendo o caminho da vida.",
+    "iconUrl": "assets/emblems/o_banquete_da_sabedoria_e_o_engano_da_loucura.png",
+    "requiredSectionIds": [
+      "pv_c9_v1-12",
+      "pv_c9_v13-18"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Banquete da Sabedoria e o Engano da Loucura' ao discernir entre os dois convites em Provérbios 9!",
+    "points": 60,
+    "unlocksStudyId": "pv_estudo_convite_sabedoria_vs_loucura"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_perolas_de_sabedoria_para_o_dia_a_dia_i",
+    "title": "Pérolas de Sabedoria para o Dia a Dia I",
+    "description": "Você coletou ditos significativos sobre justiça, trabalho, o uso da língua e as vantagens de ser justo.",
+    "iconUrl": "assets/emblems/perolas_de_sabedoria_para_o_dia_a_dia_i.png",
+    "requiredSectionIds": [
+      "pv_c10_v1", "pv_c10_v2-3", "pv_c10_v4", "pv_c10_v5", "pv_c10_v6", "pv_c10_v7",
+      "pv_c10_v8", "pv_c10_v9", "pv_c10_v10", "pv_c10_v11", "pv_c10_v12", "pv_c10_v13",
+      "pv_c10_v14", "pv_c10_v15", "pv_c10_v16", "pv_c10_v17", "pv_c10_v18", "pv_c10_v19",
+      "pv_c10_v20-21", "pv_c10_v22", "pv_c10_v23", "pv_c10_v24-25", "pv_c10_v26",
+      "pv_c10_v27-28", "pv_c10_v29-30", "pv_c10_v31-32",
+      "pv_c11_v1", "pv_c11_v2", "pv_c11_v3", "pv_c11_v4", "pv_c11_v5-6", "pv_c11_v7", "pv_c11_v8",
+      "pv_c11_v9", "pv_c11_v10-11", "pv_c11_v12-13", "pv_c11_v14", "pv_c11_v15", "pv_c11_v16",
+      "pv_c11_v17", "pv_c11_v18", "pv_c11_v19", "pv_c11_v20", "pv_c11_v21", "pv_c11_v22",
+      "pv_c11_v23", "pv_c11_v24", "pv_c11_v25", "pv_c11_v26", "pv_c11_v27", "pv_c11_v28",
+      "pv_c11_v29", "pv_c11_v30"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Pérolas de Sabedoria para o Dia a Dia I' ao absorver os ensinamentos de Provérbios 10-11!",
+    "points": 200,
+    "unlocksStudyId": "pv_estudo_maximas_vida_justa_proverbios_10_11"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_perolas_de_sabedoria_para_o_dia_a_dia_ii",
+    "title": "Pérolas de Sabedoria para o Dia a Dia II",
+    "description": "Você continuou a coletar máximas sobre as vantagens dos justos, a verdade, a falsidade e a felicidade exclusiva dos que seguem a sabedoria.",
+    "iconUrl": "assets/emblems/perolas_de_sabedoria_para_o_dia_a_dia_ii.png",
+    "requiredSectionIds": [
+      "pv_c12_v1", "pv_c12_v2", "pv_c12_v3", "pv_c12_v4", "pv_c12_v5", "pv_c12_v6", "pv_c12_v7",
+      "pv_c12_v8", "pv_c12_v9", "pv_c12_v10", "pv_c12_v11", "pv_c12_v12", "pv_c12_v13",
+      "pv_c12_v14", "pv_c12_v15", "pv_c12_v16", "pv_c12_v17", "pv_c12_v18", "pv_c12_v19",
+      "pv_c12_v20", "pv_c12_v21", "pv_c12_v22", "pv_c12_v23", "pv_c12_v24", "pv_c12_v25",
+      "pv_c12_v26", "pv_c12_v27", "pv_c12_v28",
+      "pv_c13_v1", "pv_c13_v2", "pv_c13_v3", "pv_c13_v4", "pv_c13_v5", "pv_c13_v6", "pv_c13_v7",
+      "pv_c13_v8", "pv_c13_v9", "pv_c13_v10", "pv_c13_v11", "pv_c13_v12", "pv_c13_v13",
+      "pv_c13_v14", "pv_c13_v15", "pv_c13_v16", "pv_c13_v17", "pv_c13_v18", "pv_c13_v19",
+      "pv_c13_v20", "pv_c13_v21", "pv_c13_v22", "pv_c13_v23", "pv_c13_v24", "pv_c13_v25"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Pérolas de Sabedoria para o Dia a Dia II' ao aprofundar-se nos provérbios de Provérbios 12-13!",
+    "points": 200,
+    "unlocksStudyId": "pv_estudo_maximas_vida_justa_proverbios_12_13"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_perolas_de_sabedoria_para_o_dia_a_dia_iii",
+    "title": "Pérolas de Sabedoria para o Dia a Dia III",
+    "description": "Você prosseguiu sua jornada pela sabedoria, contrastando-a com a loucura, e refletindo sobre as condutas do justo e do ímpio.",
+    "iconUrl": "assets/emblems/perolas_de_sabedoria_para_o_dia_a_dia_iii.png",
+    "requiredSectionIds": [
+      "pv_c14_v1", "pv_c14_v2", "pv_c14_v3", "pv_c14_v4", "pv_c14_v5", "pv_c14_v6", "pv_c14_v7",
+      "pv_c14_v8", "pv_c14_v9", "pv_c14_v10", "pv_c14_v11", "pv_c14_v12", "pv_c14_v13",
+      "pv_c14_v14", "pv_c14_v15", "pv_c14_v16", "pv_c14_v17", "pv_c14_v18", "pv_c14_v19",
+      "pv_c14_v20", "pv_c14_v21", "pv_c14_v22", "pv_c14_v23", "pv_c14_v24", "pv_c14_v25",
+      "pv_c14_v26-27", "pv_c14_v28", "pv_c14_v29", "pv_c14_v30", "pv_c14_v31", "pv_c14_v32",
+      "pv_c14_v33", "pv_c14_v34", "pv_c14_v35",
+      "pv_c15_v1", "pv_c15_v2", "pv_c15_v3", "pv_c15_v4", "pv_c15_v5", "pv_c15_v6", "pv_c15_v7",
+      "pv_c15_v8", "pv_c15_v9", "pv_c15_v10", "pv_c15_v11", "pv_c15_v12", "pv_c15_v13",
+      "pv_c15_v14", "pv_c15_v15", "pv_c15_v16-17", "pv_c15_v18", "pv_c15_v19", "pv_c15_v20",
+      "pv_c15_v21", "pv_c15_v22", "pv_c15_v23", "pv_c15_v24", "pv_c15_v25", "pv_c15_v26",
+      "pv_c15_v27", "pv_c15_v28", "pv_c15_v29", "pv_c15_v30", "pv_c15_v31", "pv_c15_v32", "pv_c15_v33"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Pérolas de Sabedoria para o Dia a Dia III' ao continuar sua imersão nos ensinamentos de Provérbios 14-15!",
+    "points": 220,
+    "unlocksStudyId": "pv_estudo_sabedoria_loucura_justo_impio_proverbios_14_15"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_a_soberania_divina_e_os_caminhos_do_homem",
+    "title": "A Soberania Divina e os Caminhos do Homem",
+    "description": "Você meditou sobre a soberania da providência divina em todos os aspectos da vida, os deveres dos reis, o contraste entre orgulho e humildade, e os benefícios da sabedoria.",
+    "iconUrl": "assets/emblems/a_soberania_divina_e_os_caminhos_do_homem.png",
+    "requiredSectionIds": [
+      "pv_c16_v1", "pv_c16_v2", "pv_c16_v3", "pv_c16_v4", "pv_c16_v5", "pv_c16_v6", "pv_c16_v7",
+      "pv_c16_v8", "pv_c16_v9", "pv_c16_v10", "pv_c16_v11", "pv_c16_v12", "pv_c16_v13",
+      "pv_c16_v14-15", "pv_c16_v16", "pv_c16_v17", "pv_c16_v18", "pv_c16_v19", "pv_c16_v20",
+      "pv_c16_v21", "pv_c16_v22", "pv_c16_v23", "pv_c16_v24", "pv_c16_v25", "pv_c16_v26",
+      "pv_c16_v27-28", "pv_c16_v29-30", "pv_c16_v31", "pv_c16_v32", "pv_c16_v33"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Soberania Divina e os Caminhos do Homem' ao refletir sobre a providência de Deus em Provérbios 16!",
+    "points": 150,
+    "unlocksStudyId": "pv_estudo_providencia_divina_sabedoria_humildade"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_verdades_essenciais_para_uma_vida_plena",
+    "title": "Verdades Essenciais para uma Vida Plena",
+    "description": "Você contemplou verdades sobre falsidade, opressão, amizade verdadeira, loucura e a importância de governar a língua.",
+    "iconUrl": "assets/emblems/verdades_essenciais_para_uma_vida_plena.png",
+    "requiredSectionIds": [
+      "pv_c17_v1", "pv_c17_v2", "pv_c17_v3", "pv_c17_v4", "pv_c17_v5", "pv_c17_v6", "pv_c17_v7",
+      "pv_c17_v8", "pv_c17_v9", "pv_c17_v10", "pv_c17_v11", "pv_c17_v12", "pv_c17_v13",
+      "pv_c17_v14", "pv_c17_v15", "pv_c17_v16", "pv_c17_v17", "pv_c17_v18", "pv_c17_v19",
+      "pv_c17_v20", "pv_c17_v21", "pv_c17_v22", "pv_c17_v23", "pv_c17_v24", "pv_c17_v25",
+      "pv_c17_v26", "pv_c17_v27-28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Verdades Essenciais para uma Vida Plena' ao meditar sobre as máximas de Provérbios 17!",
+    "points": 120,
+    "unlocksStudyId": "pv_estudo_amizade_falsidade_controle_lingua"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_a_forca_da_palavra_e_a_seguranca_em_deus",
+    "title": "A Força da Palavra e a Segurança em Deus",
+    "description": "Você aprendeu sobre o poder das palavras, a diferença entre sabedoria e loucura, a segurança encontrada no nome do Senhor e a importância de um bom cônjuge.",
+    "iconUrl": "assets/emblems/a_forca_da_palavra_e_a_seguranca_em_deus.png",
+    "requiredSectionIds": [
+      "pv_c18_v1", "pv_c18_v2", "pv_c18_v3", "pv_c18_v4", "pv_c18_v5", "pv_c18_v6-7", "pv_c18_v8",
+      "pv_c18_v9", "pv_c18_v10", "pv_c18_v11", "pv_c18_v12", "pv_c18_v13", "pv_c18_v14",
+      "pv_c18_v15", "pv_c18_v16", "pv_c18_v17", "pv_c18_v18", "pv_c18_v19", "pv_c18_v20",
+      "pv_c18_v21", "pv_c18_v22", "pv_c18_v23", "pv_c18_v24"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Força da Palavra e a Segurança em Deus' ao explorar as máximas de Provérbios 18!",
+    "points": 110,
+    "unlocksStudyId": "pv_estudo_poder_palavras_seguranca_deus"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_navegando_pelas_complexidades_da_vida",
+    "title": "Navegando pelas Complexidades da Vida",
+    "description": "Você refletiu sobre as desvantagens da pobreza, as queixas domésticas, a importância da circunspeção, da caridade e de ouvir conselhos.",
+    "iconUrl": "assets/emblems/navegando_pelas_complexidades_da_vida.png",
+    "requiredSectionIds": [
+      "pv_c19_v1", "pv_c19_v2", "pv_c19_v3", "pv_c19_v4", "pv_c19_v5", "pv_c19_v6-7", "pv_c19_v8",
+      "pv_c19_v9", "pv_c19_v10", "pv_c19_v11", "pv_c19_v12", "pv_c19_v13", "pv_c19_v14",
+      "pv_c19_v15", "pv_c19_v16", "pv_c19_v17", "pv_c19_v18", "pv_c19_v19", "pv_c19_v20",
+      "pv_c19_v21", "pv_c19_v22", "pv_c19_v23", "pv_c19_v24", "pv_c19_v25", "pv_c19_v26",
+      "pv_c19_v27", "pv_c19_v28", "pv_c19_v29"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Navegando pelas Complexidades da Vida' ao ponderar sobre os desafios e virtudes em Provérbios 19!",
+    "points": 140,
+    "unlocksStudyId": "pv_estudo_pobreza_familia_caridade_conselhos"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_maximas_para_uma_vida_sabia_e_justa_i",
+    "title": "Máximas para uma Vida Sábia e Justa I",
+    "description": "Você coletou diversas máximas sobre intemperança, diligência, honestidade, o temor do Senhor e a soberania de Deus.",
+    "iconUrl": "assets/emblems/maximas_para_uma_vida_sabia_e_justa_i.png",
+    "requiredSectionIds": [
+      "pv_c20_v1", "pv_c20_v2", "pv_c20_v3", "pv_c20_v4", "pv_c20_v5", "pv_c20_v6", "pv_c20_v7",
+      "pv_c20_v8", "pv_c20_v9", "pv_c20_v10", "pv_c20_v11", "pv_c20_v12", "pv_c20_v13",
+      "pv_c20_v14", "pv_c20_v15", "pv_c20_v16", "pv_c20_v17", "pv_c20_v18", "pv_c20_v19",
+      "pv_c20_v20", "pv_c20_v21", "pv_c20_v22", "pv_c20_v23", "pv_c20_v24", "pv_c20_v25",
+      "pv_c20_v26", "pv_c20_v27", "pv_c20_v28", "pv_c20_v29", "pv_c20_v30"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Máximas para uma Vida Sábia e Justa I' ao explorar a sabedoria prática de Provérbios 20!",
+    "points": 150,
+    "unlocksStudyId": "pv_estudo_diligencia_honestidade_soberania_deus_proverbios_20"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_maximas_para_uma_vida_sabia_e_justa_ii",
+    "title": "Máximas para uma Vida Sábia e Justa II",
+    "description": "Você continuou sua coleção de máximas sobre justiça, prudência, a inutilidade da riqueza mal adquirida e a importância de um coração puro.",
+    "iconUrl": "assets/emblems/maximas_para_uma_vida_sabia_e_justa_ii.png",
+    "requiredSectionIds": [
+      "pv_c21_v1", "pv_c21_v2", "pv_c21_v3", "pv_c21_v4", "pv_c21_v5", "pv_c21_v6", "pv_c21_v7",
+      "pv_c21_v8", "pv_c21_v9", "pv_c21_v10", "pv_c21_v11", "pv_c21_v12", "pv_c21_v13",
+      "pv_c21_v14", "pv_c21_v15", "pv_c21_v16", "pv_c21_v17", "pv_c21_v18", "pv_c21_v19",
+      "pv_c21_v20", "pv_c21_v21", "pv_c21_v22", "pv_c21_v23", "pv_c21_v24", "pv_c21_v25-26",
+      "pv_c21_v27", "pv_c21_v28", "pv_c21_v29", "pv_c21_v30-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Máximas para uma Vida Sábia e Justa II' ao aprofundar-se nos conselhos práticos de Provérbios 21!",
+    "points": 150,
+    "unlocksStudyId": "pv_estudo_justica_prudencia_riqueza_coracao_puro_proverbios_21"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_o_valor_do_bom_nome_e_da_instrucao",
+    "title": "O Valor do Bom Nome e da Instrução",
+    "description": "Você aprendeu sobre a preciosidade de um bom nome, a importância de instruir a criança, e foi advertido contra a opressão e a fiança imprudente.",
+    "iconUrl": "assets/emblems/o_valor_do_bom_nome_e_da_instrucao.png",
+    "requiredSectionIds": [
+      "pv_c22_v1", "pv_c22_v2", "pv_c22_v3", "pv_c22_v4", "pv_c22_v5", "pv_c22_v6", "pv_c22_v7",
+      "pv_c22_v8", "pv_c22_v9", "pv_c22_v10", "pv_c22_v11", "pv_c22_v12", "pv_c22_v13",
+      "pv_c22_v14", "pv_c22_v15", "pv_c22_v16", "pv_c22_v17-21", "pv_c22_v22-23",
+      "pv_c22_v24-25", "pv_c22_v26-27", "pv_c22_v28", "pv_c22_v29"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Valor do Bom Nome e da Instrução' ao refletir sobre a reputação e a educação em Provérbios 22!",
+    "points": 130,
+    "unlocksStudyId": "pv_estudo_bom_nome_instrucao_crianca_prudencia"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_precaucoes_para_uma_vida_prudente",
+    "title": "Precauções para uma Vida Prudente",
+    "description": "Você foi aconselhado sobre como se portar diante de poderosos, advertido contra a avareza, a glutonaria, a bebedice e a importância de valorizar os pais.",
+    "iconUrl": "assets/emblems/precaucoes_para_uma_vida_prudente.png",
+    "requiredSectionIds": [
+      "pv_c23_v1-3", "pv_c23_v4-5", "pv_c23_v6-8", "pv_c23_v9", "pv_c23_v10-11", "pv_c23_v12-16",
+      "pv_c23_v17-18", "pv_c23_v19-28", "pv_c23_v29-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Precauções para uma Vida Prudente' ao aprender sobre temperança e respeito em Provérbios 23!",
+    "points": 120,
+    "unlocksStudyId": "pv_estudo_avareza_intemperanca_honra_pais"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_sabedoria_na_adversidade_e_justica_no_governo",
+    "title": "Sabedoria na Adversidade e Justiça no Governo",
+    "description": "Você aprendeu sobre a excelência da sabedoria, como lidar com os maliciosos, a importância de não se alegrar com a queda do inimigo e conselhos para magistrados.",
+    "iconUrl": "assets/emblems/sabedoria_na_adversidade_e_justica_no_governo.png",
+    "requiredSectionIds": [
+      "pv_c24_v1-2", "pv_c24_v3-6", "pv_c24_v7-9", "pv_c24_v10", "pv_c24_v11-12", "pv_c24_v13-14",
+      "pv_c24_v15-16", "pv_c24_v17-18", "pv_c24_v19-20", "pv_c24_v21-22", "pv_c24_v23-26",
+      "pv_c24_v27", "pv_c24_v28-29", "pv_c24_v30-34"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Sabedoria na Adversidade e Justiça no Governo' ao refletir sobre a conduta sábia e justa em Provérbios 24!",
+    "points": 130,
+    "unlocksStudyId": "pv_estudo_sabedoria_adversidade_justica_governo"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_comparacoes_sabias_e_conselhos_reais_i",
+    "title": "Comparações Sábias e Conselhos Reais I",
+    "description": "Você explorou provérbios coletados pelos homens de Ezequias, com ênfase em máximas prudenciais, símiles instrutivos e o perdão aos inimigos.",
+    "iconUrl": "assets/emblems/comparacoes_sabias_e_conselhos_reais_i.png",
+    "requiredSectionIds": [
+      "pv_c25_v1", "pv_c25_v2-3", "pv_c25_v4-5", "pv_c25_v6-7", "pv_c25_v8-10", "pv_c25_v11-12",
+      "pv_c25_v13", "pv_c25_v14", "pv_c25_v15", "pv_c25_v16", "pv_c25_v17", "pv_c25_v18",
+      "pv_c25_v19", "pv_c25_v20", "pv_c25_v21-22", "pv_c25_v23", "pv_c25_v24", "pv_c25_v25",
+      "pv_c25_v26", "pv_c25_v27", "pv_c25_v28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Comparações Sábias e Conselhos Reais I' ao mergulhar na sabedoria coletada de Provérbios 25!",
+    "points": 140,
+    "unlocksStudyId": "pv_estudo_proverbios_ezequias_prudencia_perdao_proverbios_25"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_comparacoes_sabias_e_conselhos_reais_ii",
+    "title": "Comparações Sábias e Conselhos Reais II",
+    "description": "Você aprendeu sobre o tratamento adequado aos tolos, a desgraça da preguiça e os perigos do ódio, da discórdia e da língua mentirosa.",
+    "iconUrl": "assets/emblems/comparacoes_sabias_e_conselhos_reais_ii.png",
+    "requiredSectionIds": [
+      "pv_c26_v1", "pv_c26_v2", "pv_c26_v3", "pv_c26_v4-5", "pv_c26_v6-9", "pv_c26_v10",
+      "pv_c26_v11", "pv_c26_v12", "pv_c26_v13", "pv_c26_v14", "pv_c26_v15", "pv_c26_v16",
+      "pv_c26_v17", "pv_c26_v18-19", "pv_c26_v20-22", "pv_c26_v23", "pv_c26_v24-26",
+      "pv_c26_v27", "pv_c26_v28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Comparações Sábias e Conselhos Reais II' ao refletir sobre a conduta com os tolos e os perigos da discórdia em Provérbios 26!",
+    "points": 150,
+    "unlocksStudyId": "pv_estudo_tolos_preguica_discordia_proverbios_26"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_maximas_sobre_a_vida_e_relacionamentos",
+    "title": "Máximas sobre a Vida e Relacionamentos",
+    "description": "Você coletou diversas máximas sobre a autoexaltação, a ira, a inveja, a verdadeira amizade, a prudência e a diligência.",
+    "iconUrl": "assets/emblems/maximas_sobre_a_vida_e_relacionamentos.png",
+    "requiredSectionIds": [
+      "pv_c27_v1", "pv_c27_v2", "pv_c27_v3-4", "pv_c27_v5-6", "pv_c27_v7", "pv_c27_v8",
+      "pv_c27_v9-10", "pv_c27_v11", "pv_c27_v12", "pv_c27_v13", "pv_c27_v14", "pv_c27_v15-16",
+      "pv_c27_v17", "pv_c27_v18", "pv_c27_v19", "pv_c27_v20", "pv_c27_v21", "pv_c27_v22",
+      "pv_c27_v23-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Máximas sobre a Vida e Relacionamentos' ao explorar os conselhos práticos de Provérbios 27!",
+    "points": 130,
+    "unlocksStudyId": "pv_estudo_amizade_prudencia_diligencia_proverbios_27"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_maximas_sobre_justica_e_integridade",
+    "title": "Máximas sobre Justiça e Integridade",
+    "description": "Você meditou sobre diversas máximas que contrastam o justo e o ímpio, a importância da lei, da honestidade e da confissão dos pecados.",
+    "iconUrl": "assets/emblems/maximas_sobre_justica_e_integridade.png",
+    "requiredSectionIds": [
+      "pv_c28_v1", "pv_c28_v2", "pv_c28_v3", "pv_c28_v4", "pv_c28_v5", "pv_c28_v6", "pv_c28_v7",
+      "pv_c28_v8", "pv_c28_v9", "pv_c28_v10", "pv_c28_v11", "pv_c28_v12", "pv_c28_v13",
+      "pv_c28_v14", "pv_c28_v15", "pv_c28_v16", "pv_c28_v17", "pv_c28_v18", "pv_c28_v19",
+      "pv_c28_v20", "pv_c28_v21", "pv_c28_v22", "pv_c28_v23", "pv_c28_v24", "pv_c28_v25",
+      "pv_c28_v26", "pv_c28_v27", "pv_c28_v28"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Máximas sobre Justiça e Integridade' ao ponderar sobre os caminhos do justo e do ímpio em Provérbios 28!",
+    "points": 140,
+    "unlocksStudyId": "pv_estudo_justica_integridade_confissao_proverbios_28"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_maximas_sobre_governo_e_disciplina",
+    "title": "Máximas sobre Governo e Disciplina",
+    "description": "Você refletiu sobre máximas relacionadas ao bom governo, à disciplina parental, e aos perigos da ira, do orgulho e do temor do homem.",
+    "iconUrl": "assets/emblems/maximas_sobre_governo_e_disciplina.png",
+    "requiredSectionIds": [
+      "pv_c29_v1", "pv_c29_v2", "pv_c29_v3", "pv_c29_v4", "pv_c29_v5", "pv_c29_v6", "pv_c29_v7",
+      "pv_c29_v8", "pv_c29_v9", "pv_c29_v10", "pv_c29_v11", "pv_c29_v12", "pv_c29_v13",
+      "pv_c29_v14", "pv_c29_v15", "pv_c29_v16", "pv_c29_v17", "pv_c29_v18", "pv_c29_v19",
+      "pv_c29_v20", "pv_c29_v21", "pv_c29_v22", "pv_c29_v23", "pv_c29_v24", "pv_c29_v25",
+      "pv_c29_v26", "pv_c29_v27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Máximas sobre Governo e Disciplina' ao aprender sobre liderança e correção em Provérbios 29!",
+    "points": 140,
+    "unlocksStudyId": "pv_estudo_governo_disciplina_orgulho_proverbios_29"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_as_palavras_de_agur_e_a_observacao_da_natureza",
+    "title": "As Palavras de Agur e a Observação da Natureza",
+    "description": "Você meditou sobre as palavras de Agur, sua oração por moderação, e as lições de sabedoria tiradas da observação de quatro gerações perversas, coisas insondáveis, pequenas e sábias, e majestosas na natureza.",
+    "iconUrl": "assets/emblems/as_palavras_de_agur_e_a_observacao_da_natureza.png",
+    "requiredSectionIds": [
+      "pv_c30_v1-6",
+      "pv_c30_v7-9",
+      "pv_c30_v10-14",
+      "pv_c30_v15-17",
+      "pv_c30_v18-23",
+      "pv_c30_v24-28",
+      "pv_c30_v29-33"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'As Palavras de Agur e a Observação da Natureza' ao refletir sobre a humildade e a sabedoria da criação em Provérbios 30!",
+    "points": 110,
+    "unlocksStudyId": "pv_estudo_palavras_agur_sabedoria_natureza"
+  },
+  {
+    "bookAbbrev": "pv",
+    "achievementId": "pv_conselhos_reais_e_o_elogio_da_mulher_virtuosa",
+    "title": "Conselhos Reais e o Elogio da Mulher Virtuosa",
+    "description": "Você recebeu os conselhos da mãe do rei Lemuel sobre justiça e compaixão, e contemplou o retrato inspirador da mulher virtuosa, um modelo de força, sabedoria e diligência.",
+    "iconUrl": "assets/emblems/conselhos_reais_e_o_elogio_da_mulher_virtuosa.png",
+    "requiredSectionIds": [
+      "pv_c31_v1-9",
+      "pv_c31_v10-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Conselhos Reais e o Elogio da Mulher Virtuosa' ao concluir Provérbios com sabedoria para líderes e o ideal da virtude feminina!",
+    "points": 90,
+    "unlocksStudyId": "pv_estudo_conselhos_lemuel_mulher_virtuosa"
+  }
+]

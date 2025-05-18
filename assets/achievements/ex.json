@@ -1,0 +1,534 @@
+[
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_do_cativeiro_ao_clamor_o_inicio_da_libertacao",
+    "title": "Do Cativeiro ao Clamor: O Início da Libertação",
+    "description": "Você testemunhou a opressão dos israelitas no Egito, o nascimento e livramento de Moisés, e o clamor do povo que chegou aos ouvidos de Deus.",
+    "iconUrl": "assets/emblems/do_cativeiro_ao_clamor_o_inicio_da_libertacao.png",
+    "requiredSectionIds": [
+      "ex_c1_v1-7",
+      "ex_c1_v8-14",
+      "ex_c1_v15-22",
+      "ex_c2_v1-4",
+      "ex_c2_v5-10",
+      "ex_c2_v11-15",
+      "ex_c2_v16-22",
+      "ex_c2_v23-25"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Do Cativeiro ao Clamor' ao acompanhar os primórdios da história da libertação em Êxodo 1-2!",
+    "points": 120,
+    "unlocksStudyId": "ex_estudo_opressao_egito_nascimento_moises"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_chamado_na_sarca_ardente_e_a_missao_divina",
+    "title": "O Chamado na Sarça Ardente e a Missão Divina",
+    "description": "Você presenciou o encontro de Moisés com Deus na sarça ardente, recebeu as instruções divinas para libertar Israel e viu as objeções de Moisés serem superadas pelo poder de Deus.",
+    "iconUrl": "assets/emblems/o_chamado_na_sarca_ardente_e_a_missao_divina.png",
+    "requiredSectionIds": [
+      "ex_c3_v1-6",
+      "ex_c3_v7-10",
+      "ex_c3_v11-15",
+      "ex_c3_v16-22",
+      "ex_c4_v1-9",
+      "ex_c4_v10-17",
+      "ex_c4_v18-23",
+      "ex_c4_v24-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Chamado na Sarça Ardente' ao testemunhar a comissão divina de Moisés em Êxodo 3-4!",
+    "points": 130,
+    "unlocksStudyId": "ex_estudo_sarca_ardente_chamado_moises_sinais"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_obstinacao_de_farao_e_a_promessa_reafirmada",
+    "title": "A Obstinação de Faraó e a Promessa Reafirmada",
+    "description": "Você viu a dureza do coração de Faraó aumentar o sofrimento de Israel, mas também a reafirmação da promessa de libertação por Deus e a genealogia dos libertadores.",
+    "iconUrl": "assets/emblems/a_obstinacao_de_farao_e_a_promessa_reafirmada.png",
+    "requiredSectionIds": [
+      "ex_c5_v1-2",
+      "ex_c5_v3-9",
+      "ex_c5_v10-14",
+      "ex_c5_v15-23",
+      "ex_c6_v1-9",
+      "ex_c6_v10-13",
+      "ex_c6_v14-30"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Obstinação de Faraó' ao ver a resistência do Egito e a fidelidade de Deus em Êxodo 5-6!",
+    "points": 110,
+    "unlocksStudyId": "ex_estudo_coracao_farao_promessa_libertacao_genealogia"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_poder_de_deus_as_pragas_desafiam_o_egito_i",
+    "title": "O Poder de Deus: As Pragas Desafiam o Egito (Parte I)",
+    "description": "Você testemunhou as primeiras pragas enviadas por Deus sobre o Egito – águas em sangue, rãs, piolhos e moscas – demonstrando Seu poder sobre os deuses egípcios.",
+    "iconUrl": "assets/emblems/o_poder_de_deus_as_pragas_desafiam_o_egito_i.png",
+    "requiredSectionIds": [
+      "ex_c7_v1-7",
+      "ex_c7_v8-13",
+      "ex_c7_v14-25",
+      "ex_c8_v1-15",
+      "ex_c8_v16-19",
+      "ex_c8_v20-32"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'As Pragas Desafiam o Egito (Parte I)' ao presenciar os primeiros atos poderosos de Deus em Êxodo 7-8!",
+    "points": 140,
+    "unlocksStudyId": "ex_estudo_primeiras_pragas_egito_poder_deus"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_poder_de_deus_as_pragas_desafiam_o_egito_ii",
+    "title": "O Poder de Deus: As Pragas Desafiam o Egito (Parte II)",
+    "description": "Você continuou a testemunhar o juízo de Deus sobre o Egito através das pragas da peste nos animais, úlceras, saraiva, gafanhotos e trevas.",
+    "iconUrl": "assets/emblems/o_poder_de_deus_as_pragas_desafiam_o_egito_ii.png",
+    "requiredSectionIds": [
+      "ex_c9_v1-7",
+      "ex_c9_v8-12",
+      "ex_c9_v13-21",
+      "ex_c9_v22-35",
+      "ex_c10_v1-11",
+      "ex_c10_v12-20",
+      "ex_c10_v21-29"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'As Pragas Desafiam o Egito (Parte II)' ao ver a continuação dos juízos divinos em Êxodo 9-10!",
+    "points": 150,
+    "unlocksStudyId": "ex_estudo_ultimas_pragas_egito_juizo_divino"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_pascoa_e_o_exodo_o_sangue_do_cordeiro_e_a_liberdade",
+    "title": "A Páscoa e o Êxodo: O Sangue do Cordeiro e a Liberdade",
+    "description": "Você aprendeu sobre a instituição da Páscoa, a morte dos primogênitos egípcios e a partida triunfal dos israelitas do Egito.",
+    "iconUrl": "assets/emblems/a_pascoa_e_o_exodo_o_sangue_do_cordeiro_e_a_liberdade.png",
+    "requiredSectionIds": [
+      "ex_c11_v1-3",
+      "ex_c11_v4-10",
+      "ex_c12_v1-20",
+      "ex_c12_v21-28",
+      "ex_c12_v29-36",
+      "ex_c12_v37-42",
+      "ex_c12_v43-51"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Páscoa e o Êxodo' ao testemunhar o evento central da libertação de Israel em Êxodo 11-12!",
+    "points": 180,
+    "unlocksStudyId": "ex_estudo_pascoa_morte_primogenitos_partida_egito"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_consagracao_e_guia_divina_no_caminho_do_deserto",
+    "title": "Consagração e Guia Divina no Caminho do Deserto",
+    "description": "Você aprendeu sobre a santificação dos primogênitos e a forma milagrosa como Deus guiou Seu povo pelo deserto com uma coluna de nuvem e de fogo.",
+    "iconUrl": "assets/emblems/consagracao_e_guia_divina_no_caminho_do_deserto.png",
+    "requiredSectionIds": [
+      "ex_c13_v1-10",
+      "ex_c13_v11-16",
+      "ex_c13_v17-22"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Consagração e Guia Divina' ao ver o cuidado de Deus na jornada inicial de Israel em Êxodo 13!",
+    "points": 70,
+    "unlocksStudyId": "ex_estudo_primogenitos_coluna_nuvem_fogo"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_travessia_do_mar_vermelho_salvacao_e_juizo",
+    "title": "A Travessia do Mar Vermelho: Salvação e Juízo",
+    "description": "Você testemunhou o milagre da divisão do Mar Vermelho, o livramento de Israel e a destruição do exército de Faraó, um ato poderoso de salvação e juízo.",
+    "iconUrl": "assets/emblems/a_travessia_do_mar_vermelho_salvacao_e_juizo.png",
+    "requiredSectionIds": [
+      "ex_c14_v1-9",
+      "ex_c14_v10-14",
+      "ex_c14_v15-20",
+      "ex_c14_v21-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Travessia do Mar Vermelho' ao presenciar um dos maiores milagres da história de Israel em Êxodo 14!",
+    "points": 100,
+    "unlocksStudyId": "ex_estudo_mar_vermelho_livramento_israel_destruicao_egipcios"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_cantico_de_moises_e_as_aguas_amargas_de_mara",
+    "title": "O Cântico de Moisés e as Águas Amargas de Mara",
+    "description": "Você se uniu ao cântico triunfal de Moisés e Israel pela vitória no Mar Vermelho e viu a provisão de Deus ao transformar as águas amargas de Mara.",
+    "iconUrl": "assets/emblems/o_cantico_de_moises_e_as_aguas_amargas_de_mara.png",
+    "requiredSectionIds": [
+      "ex_c15_v1-21",
+      "ex_c15_v22-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Cântico de Moisés' ao celebrar a vitória de Deus e Sua provisão em Êxodo 15!",
+    "points": 80,
+    "unlocksStudyId": "ex_estudo_cantico_moises_aguas_mara_provisao"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_mana_do_ceu_e_a_prova_da_obediencia",
+    "title": "O Maná do Céu e a Prova da Obediência",
+    "description": "Você testemunhou a provisão miraculosa do maná e das codornizes no deserto, e a instituição do sábado como um sinal da aliança e um teste de obediência.",
+    "iconUrl": "assets/emblems/o_mana_do_ceu_e_a_prova_da_obediencia.png",
+    "requiredSectionIds": [
+      "ex_c16_v1-12",
+      "ex_c16_v13-21",
+      "ex_c16_v22-31",
+      "ex_c16_v32-36"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Maná do Céu' ao aprender sobre a provisão divina e a importância da obediência em Êxodo 16!",
+    "points": 90,
+    "unlocksStudyId": "ex_estudo_mana_codornizes_sabado_obediencia"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_agua_da_rocha_e_a_vitoria_sobre_amaleque",
+    "title": "Água da Rocha e a Vitória sobre Amaleque",
+    "description": "Você viu Deus prover água da rocha em Massá e Meribá, e conceder vitória a Israel sobre os amalequitas enquanto as mãos de Moisés eram sustentadas.",
+    "iconUrl": "assets/emblems/agua_da_rocha_e_a_vitoria_sobre_amaleque.png",
+    "requiredSectionIds": [
+      "ex_c17_v1-7",
+      "ex_c17_v8-16"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Água da Rocha e a Vitória sobre Amaleque' ao testemunhar o poder e a ajuda de Deus em Êxodo 17!",
+    "points": 70,
+    "unlocksStudyId": "ex_estudo_agua_rocha_vitoria_amaleque_oracao"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_conselho_de_jetro_organizando_a_justica",
+    "title": "O Conselho de Jetro: Organizando a Justiça",
+    "description": "Você aprendeu com o sábio conselho de Jetro a Moisés sobre a delegação de autoridade para julgar o povo, estabelecendo uma estrutura de liderança.",
+    "iconUrl": "assets/emblems/o_conselho_de_jetro_organizando_a_justica.png",
+    "requiredSectionIds": [
+      "ex_c18_v1-6",
+      "ex_c18_v7-12",
+      "ex_c18_v13-27"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Conselho de Jetro' ao ver a importância da organização e delegação na liderança em Êxodo 18!",
+    "points": 60,
+    "unlocksStudyId": "ex_estudo_conselho_jetro_lideranca_organizacao"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_teofania_no_sinai_a_preparacao_para_a_lei",
+    "title": "A Teofania no Sinai: A Preparação para a Lei",
+    "description": "Você testemunhou a chegada de Israel ao Monte Sinai, a preparação do povo para encontrar a Deus e a manifestação temível da Sua glória.",
+    "iconUrl": "assets/emblems/a_teofania_no_sinai_a_preparacao_para_a_lei.png",
+    "requiredSectionIds": [
+      "ex_c19_v1-8",
+      "ex_c19_v9-15",
+      "ex_c19_v16-25"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Teofania no Sinai' ao presenciar a majestosa manifestação de Deus antes da entrega da Lei em Êxodo 19!",
+    "points": 80,
+    "unlocksStudyId": "ex_estudo_monte_sinai_manifestacao_deus_preparacao"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_os_dez_mandamentos_o_fundamento_da_alianca",
+    "title": "Os Dez Mandamentos: O Fundamento da Aliança",
+    "description": "Você recebeu os Dez Mandamentos diretamente de Deus, a base da Sua aliança com Israel, revelando Seu caráter e Sua vontade para o povo.",
+    "iconUrl": "assets/emblems/os_dez_mandamentos_o_fundamento_da_alianca.png",
+    "requiredSectionIds": [
+      "ex_c20_v1-11",
+      "ex_c20_v12-17",
+      "ex_c20_v18-21",
+      "ex_c20_v22-26"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Os Dez Mandamentos' ao aprender os preceitos fundamentais da aliança de Deus em Êxodo 20!",
+    "points": 100,
+    "unlocksStudyId": "ex_estudo_dez_mandamentos_alianca_sinai"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_leis_de_justica_e_misericordia_para_o_povo_i",
+    "title": "Leis de Justiça e Misericórdia para o Povo (Parte I)",
+    "description": "Você explorou as leis civis e sociais dadas a Israel, cobrindo servos, violência, responsabilidade e restituição.",
+    "iconUrl": "assets/emblems/leis_de_justica_e_misericordia_para_o_povo_i.png",
+    "requiredSectionIds": [
+      "ex_c21_v1-11",
+      "ex_c21_v12-21",
+      "ex_c21_v22-36"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Leis de Justiça e Misericórdia (Parte I)' ao estudar as ordenanças para a vida comunitária em Êxodo 21!",
+    "points": 90,
+    "unlocksStudyId": "ex_estudo_leis_civis_sociais_exodo_21"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_leis_de_justica_e_misericordia_para_o_povo_ii",
+    "title": "Leis de Justiça e Misericórdia para o Povo (Parte II)",
+    "description": "Você continuou a explorar as leis sobre propriedade, responsabilidade social, tratamento de estrangeiros, órfãos, viúvas e a santidade do nome de Deus.",
+    "iconUrl": "assets/emblems/leis_de_justica_e_misericordia_para_o_povo_ii.png",
+    "requiredSectionIds": [
+      "ex_c22_v1-6",
+      "ex_c22_v7-15",
+      "ex_c22_v16-24",
+      "ex_c22_v25-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Leis de Justiça e Misericórdia (Parte II)' ao aprofundar-se nas ordenanças para uma sociedade justa em Êxodo 22!",
+    "points": 90,
+    "unlocksStudyId": "ex_estudo_leis_civis_sociais_exodo_22"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_leis_sobre_justica_festas_e_conquista_da_terra",
+    "title": "Leis sobre Justiça, Festas e Conquista da Terra",
+    "description": "Você aprendeu sobre imparcialidade na justiça, as festas anuais sagradas e as promessas e preceitos de Deus para a conquista de Canaã.",
+    "iconUrl": "assets/emblems/leis_sobre_justica_festas_e_conquista_da_terra.png",
+    "requiredSectionIds": [
+      "ex_c23_v1-9",
+      "ex_c23_v10-19",
+      "ex_c23_v20-33"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Leis sobre Justiça, Festas e Conquista' ao compreender mais da vontade de Deus para Israel em Êxodo 23!",
+    "points": 90,
+    "unlocksStudyId": "ex_estudo_justica_festas_conquista_canaa"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_ratificacao_da_alianca_e_a_gloria_no_monte",
+    "title": "A Ratificação da Aliança e a Glória no Monte",
+    "description": "Você testemunhou a aceitação das leis por Israel, a aspersão do sangue da aliança e a manifestação da glória de Deus a Moisés e aos anciãos no monte.",
+    "iconUrl": "assets/emblems/a_ratificacao_da_alianca_e_a_gloria_no_monte.png",
+    "requiredSectionIds": [
+      "ex_c24_v1-8",
+      "ex_c24_v9-11",
+      "ex_c24_v12-18"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Ratificação da Aliança' ao ver o compromisso de Israel e a glória de Deus em Êxodo 24!",
+    "points": 80,
+    "unlocksStudyId": "ex_estudo_alianca_sinai_sangue_gloria_deus"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_instrucoes_para_o_tabernaculo_ofertas_e_utensilios_sagrados_i",
+    "title": "Instruções para o Tabernáculo: Ofertas e Utensílios Sagrados (Parte I)",
+    "description": "Você recebeu as primeiras instruções divinas para a construção do Tabernáculo, incluindo as ofertas voluntárias, a Arca da Aliança, a Mesa dos Pães da Proposição e o Candelabro.",
+    "iconUrl": "assets/emblems/instrucoes_para_o_tabernaculo_ofertas_e_utensilios_sagrados_i.png",
+    "requiredSectionIds": [
+      "ex_c25_v1-9",
+      "ex_c25_v10-22",
+      "ex_c25_v23-30",
+      "ex_c25_v31-40"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Instruções para o Tabernáculo (Parte I)' ao aprender sobre os elementos sagrados da morada de Deus em Êxodo 25!",
+    "points": 100,
+    "unlocksStudyId": "ex_estudo_tabernaculo_arca_mesa_candelabro"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_instrucoes_para_o_tabernaculo_cortinas_coberturas_e_estrutura_ii",
+    "title": "Instruções para o Tabernáculo: Cortinas, Coberturas e Estrutura (Parte II)",
+    "description": "Você continuou a aprender sobre a construção do Tabernáculo, detalhando as cortinas, as coberturas de peles, as tábuas da estrutura e o véu sagrado.",
+    "iconUrl": "assets/emblems/instrucoes_para_o_tabernaculo_cortinas_coberturas_e_estrutura_ii.png",
+    "requiredSectionIds": [
+      "ex_c26_v1-6",
+      "ex_c26_v7-14",
+      "ex_c26_v15-30",
+      "ex_c26_v31-37"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Instruções para o Tabernáculo (Parte II)' ao visualizar a estrutura da morada de Deus em Êxodo 26!",
+    "points": 100,
+    "unlocksStudyId": "ex_estudo_tabernaculo_cortinas_estrutura_veu"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_instrucoes_para_o_tabernaculo_o_altar_o_patio_e_o_azeite_iii",
+    "title": "Instruções para o Tabernáculo: O Altar, o Pátio e o Azeite (Parte III)",
+    "description": "Você completou as instruções para o Tabernáculo, aprendendo sobre o altar do holocausto, o pátio externo e a provisão contínua de azeite para as lâmpadas.",
+    "iconUrl": "assets/emblems/instrucoes_para_o_tabernaculo_o_altar_o_patio_e_o_azeite_iii.png",
+    "requiredSectionIds": [
+      "ex_c27_v1-8",
+      "ex_c27_v9-19",
+      "ex_c27_v20-21"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Instruções para o Tabernáculo (Parte III)' ao conhecer os detalhes do altar e do pátio em Êxodo 27!",
+    "points": 80,
+    "unlocksStudyId": "ex_estudo_tabernaculo_altar_patio_azeite_luz"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_as_vestes_sacerdotais_paramentos_de_gloria_e_formosura",
+    "title": "As Vestes Sacerdotais: Paramentos de Glória e Formosura",
+    "description": "Você contemplou as ricas e simbólicas vestes dos sacerdotes, incluindo o éfode, o peitoral com as pedras memoriais, o manto e a lâmina sagrada.",
+    "iconUrl": "assets/emblems/as_vestes_sacerdotais_paramentos_de_gloria_e_formosura.png",
+    "requiredSectionIds": [
+      "ex_c28_v1-5",
+      "ex_c28_v6-14",
+      "ex_c28_v15-30",
+      "ex_c28_v31-39",
+      "ex_c28_v40-43"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'As Vestes Sacerdotais' ao aprender sobre os paramentos sagrados dos ministros de Deus em Êxodo 28!",
+    "points": 110,
+    "unlocksStudyId": "ex_estudo_vestes_sacerdotais_simbolismo"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_consagracao_dos_sacerdotes_e_o_sacrificio_continuo",
+    "title": "A Consagração dos Sacerdotes e o Sacrifício Contínuo",
+    "description": "Você testemunhou o ritual detalhado para a consagração de Arão e seus filhos ao sacerdócio e a instituição do sacrifício diário, garantindo a presença de Deus.",
+    "iconUrl": "assets/emblems/a_consagracao_dos_sacerdotes_e_o_sacrificio_continuo.png",
+    "requiredSectionIds": [
+      "ex_c29_v1-37",
+      "ex_c29_v38-46"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Consagração dos Sacerdotes' ao compreender o processo de santificação para o serviço divino em Êxodo 29!",
+    "points": 100,
+    "unlocksStudyId": "ex_estudo_consagracao_sacerdotes_sacrificio_diario"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_altar_de_incenso_o_resgate_e_os_oleos_sagrados",
+    "title": "O Altar de Incenso, o Resgate e os Óleos Sagrados",
+    "description": "Você aprendeu sobre o altar de incenso, o dinheiro do resgate para expiação, a bacia de bronze para purificação e a composição do azeite da unção e do incenso sagrado.",
+    "iconUrl": "assets/emblems/o_altar_de_incenso_o_resgate_e_os_oleos_sagrados.png",
+    "requiredSectionIds": [
+      "ex_c30_v1-10",
+      "ex_c30_v11-16",
+      "ex_c30_v17-21",
+      "ex_c30_v22-38"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Altar de Incenso e os Óleos Sagrados' ao conhecer mais elementos do culto no Tabernáculo em Êxodo 30!",
+    "points": 90,
+    "unlocksStudyId": "ex_estudo_altar_incenso_resgate_oleos_santos"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_artifices_escolhidos_e_a_santidade_do_sabado",
+    "title": "Artífices Escolhidos e a Santidade do Sábado",
+    "description": "Você conheceu Bezalel e Aoliabe, capacitados por Deus para construir o Tabernáculo, e relembrou a importância da observância do sábado como sinal da aliança.",
+    "iconUrl": "assets/emblems/artifices_escolhidos_e_a_santidade_do_sabado.png",
+    "requiredSectionIds": [
+      "ex_c31_v1-11",
+      "ex_c31_v12-18"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'Artífices Escolhidos e a Santidade do Sábado' ao ver a capacitação divina e o mandamento do repouso em Êxodo 31!",
+    "points": 60,
+    "unlocksStudyId": "ex_estudo_bezalel_aoliabe_santidade_sabado"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_bezerro_de_ouro_idolatria_ira_e_intercessao",
+    "title": "O Bezerro de Ouro: Idolatria, Ira e Intercessão",
+    "description": "Você testemunhou a trágica queda de Israel na idolatria com o bezerro de ouro, a ira de Deus, a intercessão apaixonada de Moisés e as consequências do pecado.",
+    "iconUrl": "assets/emblems/o_bezerro_de_ouro_idolatria_ira_e_intercessao.png",
+    "requiredSectionIds": [
+      "ex_c32_v1-6",
+      "ex_c32_v7-14",
+      "ex_c32_v15-20",
+      "ex_c32_v21-29",
+      "ex_c32_v30-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Bezerro de Ouro' ao aprender sobre a gravidade da idolatria e o poder da intercessão em Êxodo 32!",
+    "points": 110,
+    "unlocksStudyId": "ex_estudo_bezerro_ouro_idolatria_intercessao_moises"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_presenca_removida_e_o_desejo_pela_gloria_de_deus",
+    "title": "A Presença Removida e o Desejo pela Glória de Deus",
+    "description": "Você viu o pesar de Israel pela ausência da presença direta de Deus, a comunhão especial de Moisés na tenda da congregação e seu ousado pedido para ver a glória divina.",
+    "iconUrl": "assets/emblems/a_presenca_removida_e_o_desejo_pela_gloria_de_deus.png",
+    "requiredSectionIds": [
+      "ex_c33_v1-6",
+      "ex_c33_v7-11",
+      "ex_c33_v12-23"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Desejo pela Glória de Deus' ao testemunhar a busca de Moisés pela presença divina em Êxodo 33!",
+    "points": 80,
+    "unlocksStudyId": "ex_estudo_presenca_deus_tenda_congregacao_gloria_divina"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_renovacao_da_alianca_e_o_rosto_resplandecente",
+    "title": "A Renovação da Aliança e o Rosto Resplandecente",
+    "description": "Você presenciou a proclamação do nome do Senhor, a renovação das tábuas da Lei, as advertências contra a idolatria, as festas e o rosto de Moisés resplandecendo com a glória divina.",
+    "iconUrl": "assets/emblems/a_renovacao_da_alianca_e_o_rosto_resplandecente.png",
+    "requiredSectionIds": [
+      "ex_c34_v1-4",
+      "ex_c34_v5-9",
+      "ex_c34_v10-17",
+      "ex_c34_v18-27",
+      "ex_c34_v28-35"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Renovação da Aliança' ao ver a restauração da comunhão e a glória refletida em Moisés em Êxodo 34!",
+    "points": 100,
+    "unlocksStudyId": "ex_estudo_renovacao_alianca_gloria_moises_festas"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_generosidade_do_povo_na_construcao_do_tabernaculo",
+    "title": "A Generosidade do Povo na Construção do Tabernáculo",
+    "description": "Você viu a resposta generosa do povo de Israel ao chamado para ofertar materiais e habilidades para a construção do Tabernáculo, sob a liderança de Bezalel e Aoliabe.",
+    "iconUrl": "assets/emblems/a_generosidade_do_povo_na_construcao_do_tabernaculo.png",
+    "requiredSectionIds": [
+      "ex_c35_v1-19",
+      "ex_c35_v20-29",
+      "ex_c35_v30-35",
+      "ex_c36_v1-7"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Generosidade do Povo' ao testemunhar a prontidão de Israel em contribuir para a obra de Deus em Êxodo 35-36!",
+    "points": 90,
+    "unlocksStudyId": "ex_estudo_ofertas_tabernaculo_generosidade_artifices"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_execucao_fiel_dos_planos_divinos_para_o_tabernaculo_i",
+    "title": "A Execução Fiel dos Planos Divinos para o Tabernáculo (Parte I)",
+    "description": "Você acompanhou a construção das cortinas, coberturas, estrutura do Tabernáculo, a Arca, a Mesa e o Candelabro, tudo conforme o modelo mostrado por Deus.",
+    "iconUrl": "assets/emblems/a_execucao_fiel_dos_planos_divinos_para_o_tabernaculo_i.png",
+    "requiredSectionIds": [
+      "ex_c36_v8-13",
+      "ex_c36_v14-34",
+      "ex_c36_v35-38",
+      "ex_c37_v1-9",
+      "ex_c37_v10-24"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Execução Fiel dos Planos (Parte I)' ao ver a construção dos elementos internos do Tabernáculo em Êxodo 36-37!",
+    "points": 120,
+    "unlocksStudyId": "ex_estudo_construcao_tabernaculo_utensilios_internos"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_a_execucao_fiel_dos_planos_divinos_para_o_tabernaculo_ii",
+    "title": "A Execução Fiel dos Planos Divinos para o Tabernáculo (Parte II)",
+    "description": "Você viu a construção do altar de incenso, do altar do holocausto, da bacia de bronze e do pátio, completando os elementos externos e a contabilidade dos materiais.",
+    "iconUrl": "assets/emblems/a_execucao_fiel_dos_planos_divinos_para_o_tabernaculo_ii.png",
+    "requiredSectionIds": [
+      "ex_c37_v25-29",
+      "ex_c38_v1-8",
+      "ex_c38_v9-20",
+      "ex_c38_v21-31"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'A Execução Fiel dos Planos (Parte II)' ao acompanhar a finalização dos elementos externos do Tabernáculo em Êxodo 37-38!",
+    "points": 110,
+    "unlocksStudyId": "ex_estudo_construcao_tabernaculo_utensilios_externos_materiais"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_as_vestes_sagradas_confeccionadas_e_o_tabernaculo_aprovado",
+    "title": "As Vestes Sagradas Confeccionadas e o Tabernáculo Aprovado",
+    "description": "Você observou a confecção das vestes sacerdotais conforme as instruções divinas e a inspeção e aprovação de toda a obra do Tabernáculo por Moisés.",
+    "iconUrl": "assets/emblems/as_vestes_sagradas_confeccionadas_e_o_tabernaculo_aprovado.png",
+    "requiredSectionIds": [
+      "ex_c39_v1-31",
+      "ex_c39_v32-43"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'As Vestes Sagradas Confeccionadas' ao ver a conclusão e aprovação da obra do Tabernáculo em Êxodo 39!",
+    "points": 90,
+    "unlocksStudyId": "ex_estudo_confeccao_vestes_sacerdotais_aprovacao_tabernaculo"
+  },
+  {
+    "bookAbbrev": "ex",
+    "achievementId": "ex_o_tabernaculo_erguido_e_a_gloria_do_senhor_o_enche",
+    "title": "O Tabernáculo Erguido e a Glória do Senhor o Enche",
+    "description": "Você testemunhou a montagem final do Tabernáculo e de todos os seus utensílios, culminando com a nuvem da glória do Senhor enchendo Sua morada.",
+    "iconUrl": "assets/emblems/o_tabernaculo_erguido_e_a_gloria_do_senhor_o_enche.png",
+    "requiredSectionIds": [
+      "ex_c40_v1-15",
+      "ex_c40_v16-33",
+      "ex_c40_v34-38"
+    ],
+    "unlockMessage": "Parabéns! Você desbloqueou 'O Tabernáculo Erguido e a Glória do Senhor' ao presenciar a habitação de Deus entre Seu povo em Êxodo 40!",
+    "points": 100,
+    "unlocksStudyId": "ex_estudo_montagem_tabernaculo_gloria_shekinah"
+  }
+]
