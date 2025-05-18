@@ -63,3 +63,45 @@ class BibleProgressFailureAction {
   final String error;
   BibleProgressFailureAction(this.error);
 }
+
+// Ação para atualização otimista da UI
+class OptimisticToggleSectionReadStatusAction {
+  final String bookAbbrev;
+  final String sectionId;
+  final bool markAsRead;
+  OptimisticToggleSectionReadStatusAction(
+      {required this.bookAbbrev,
+      required this.sectionId,
+      required this.markAsRead});
+}
+
+// Ação genérica para enfileirar escritas no Firestore
+class EnqueueFirestoreWriteAction {
+  final Map<String, dynamic>
+      operation; // Ex: {'type': 'markSectionRead', 'payload': {...}}
+  EnqueueFirestoreWriteAction(this.operation);
+}
+
+// Ação para iniciar o processamento da fila
+class ProcessPendingFirestoreWritesAction {}
+
+// Ação para indicar que uma escrita específica foi bem-sucedida
+class FirestoreWriteSuccessfulAction {
+  final String operationId; // Um ID único para a operação na fila
+  FirestoreWriteSuccessfulAction(this.operationId);
+}
+
+// Ação para indicar que uma escrita específica falhou
+class FirestoreWriteFailedAction {
+  final String operationId;
+  final Map<String, dynamic> originalOperation;
+  final String error;
+  FirestoreWriteFailedAction(
+      this.operationId, this.originalOperation, this.error);
+}
+
+// Ação para limpar operações processadas da fila (pode ser combinada com SuccessfulAction)
+// class ClearProcessedPendingOperationsAction {
+//   final List<String> processedOperationIds;
+//   ClearProcessedPendingOperationsAction(this.processedOperationIds);
+// }

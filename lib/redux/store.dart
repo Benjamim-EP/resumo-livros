@@ -1,6 +1,7 @@
 // redux/store.dart
 import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/bible_progress_middleware.dart';
+import 'package:resumo_dos_deuses_flutter/redux/middleware/firestore_sync_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/metadata_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/payment_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/reducers/metadata_reducer.dart';
@@ -87,7 +88,7 @@ final Store<AppState> store = Store<AppState>(
   initialState: AppState(
     // Inicializa cada parte do estado com seu estado inicial padrão
     booksState: BooksState(), // Assumindo construtor padrão em BooksState
-    userState: UserState(), // Assumindo construtor padrão em UserState
+    //userState: UserState(), // Assumindo construtor padrão em UserState
     authorState: AuthorState(), // Assumindo construtor padrão em AuthorState
     topicState: TopicState(), // Assumindo construtor padrão em TopicState
     chatState: ChatState(), // Assumindo construtor padrão em ChatState
@@ -95,6 +96,7 @@ final Store<AppState> store = Store<AppState>(
     bibleSearchState:
         BibleSearchState(), // NOVO: Estado inicial para busca bíblica
     metadataState: MetadataState(),
+    userState: UserState(pendingFirestoreWrites: []),
   ),
   middleware: [
     // Combina todos os middlewares dos arquivos separados
@@ -111,7 +113,8 @@ final Store<AppState> store = Store<AppState>(
     ...createAdMiddleware(),
     ...createBibleSearchMiddleware(), // NOVO: Middleware para busca semântica bíblica
     ...createBibleProgressMiddleware(),
-    ...createMetadataMiddleware()
+    ...createMetadataMiddleware(),
+    ...createFirestoreSyncMiddleware(), // NOVO
   ],
 );
 

@@ -3,17 +3,21 @@ import 'package:redux/redux.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart'; // Seu serviço Firestore
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para BibleBookProgressData
+import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
 import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para BibleBookProgressData
 
 List<Middleware<AppState>> createBibleProgressMiddleware() {
   final firestoreService = FirestoreService();
 
   // Handler para LoadBibleBookProgressAction
+  // Esta função carrega o progresso de um livro específico do Firestore
+  // e atualiza o estado Redux. É chamado, por exemplo, quando a BiblePage é aberta
+  // para um livro específico, ou após uma sincronização de escrita bem-sucedida.
   void _handleLoadBibleBookProgress(Store<AppState> store,
       LoadBibleBookProgressAction action, NextDispatcher next) async {
-    next(action);
+    next(action); // Passa a ação para o próximo middleware ou reducer.
+    // O reducer para esta ação NÃO deve fazer chamadas de API.
+
     final userId = store.state.userState.userId;
     if (userId == null) {
       store.dispatch(BibleProgressFailureAction(
@@ -22,14 +26,14 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
     }
 
     try {
-      print(
-          "BibleProgressMiddleware: Carregando progresso para o livro ${action.bookAbbrev}");
+      // print("BibleProgressMiddleware: Carregando progresso do Firestore para o livro ${action.bookAbbrev}");
       DocumentSnapshot? progressDoc = await firestoreService
           .getBibleBookProgress(userId, action.bookAbbrev);
 
       Set<String> readSections = {};
-      int totalSectionsInBook =
-          action.knownTotalSections ?? 0; // Usa o conhecido, ou 0 como fallback
+      // Usa o total de seções conhecido se passado, senão tenta pegar do Firestore, ou fallback para 0.
+      // O FirestoreService.toggleBibleSectionReadStatus tentará buscar o total de seções dos metadados se não existir no doc de progresso.
+      int totalSectionsInBook = action.knownTotalSections ?? 0;
       bool isCompleted = false;
       Timestamp? lastReadTimestamp;
 
@@ -37,106 +41,87 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
         final data = progressDoc.data() as Map<String, dynamic>;
         readSections =
             Set<String>.from(data['readSections'] as List<dynamic>? ?? []);
-        totalSectionsInBook = data['totalSectionsInBook'] as int? ??
-            totalSectionsInBook; // Prioriza Firestore se existir
+        // Prioriza o total de seções do Firestore se ele existir e for maior que 0,
+        // caso contrário, mantém o valor passado ou o fallback.
+        int totalFromFirestore = data['totalSectionsInBook'] as int? ?? 0;
+        if (totalFromFirestore > 0) {
+          totalSectionsInBook = totalFromFirestore;
+        }
         isCompleted = data['completed'] as bool? ?? false;
         lastReadTimestamp = data['lastReadTimestamp'] as Timestamp?;
-        print(
-            "BibleProgressMiddleware: Progresso encontrado para ${action.bookAbbrev}: ${readSections.length}/$totalSectionsInBook seções lidas.");
+        // print("BibleProgressMiddleware: Progresso encontrado para ${action.bookAbbrev}: ${readSections.length}/$totalSectionsInBook seções lidas.");
       } else {
-        print(
-            "BibleProgressMiddleware: Nenhum progresso encontrado para ${action.bookAbbrev}, pode ser a primeira vez.");
-        // Se knownTotalSections não foi passado e não há doc, tentamos buscar/calcular.
-        // Esta lógica de obter totalSectionsInBook pode ser complexa aqui.
-        // O ideal é que `totalSectionsInBook` seja definido no Firestore quando o livro é acessado
-        // ou que `action.knownTotalSections` seja sempre fornecido pela UI se possível.
+        // print("BibleProgressMiddleware: Nenhum progresso no Firestore para ${action.bookAbbrev}. Pode ser a primeira vez ou precisa carregar metadados.");
+        // Se não há documento de progresso e knownTotalSections não foi passado,
+        // `totalSectionsInBook` permanecerá o que foi passado (provavelmente 0 ou null).
+        // A lógica no FirestoreService tentará obter o total de seções dos metadados gerais da Bíblia.
         if (totalSectionsInBook == 0) {
-          // Placeholder: idealmente, buscar de 'books/{abbrev}/metadata' ou similar
-          // ou calcular a partir da estrutura de blocos se a UI puder fornecer.
-          // Esta é uma simplificação.
-          print(
-              "AVISO: totalSectionsInBook não conhecido para ${action.bookAbbrev}. Progresso percentual pode ser impreciso.");
+          // print("AVISO (LoadBibleBookProgress): totalSectionsInBook não conhecido para ${action.bookAbbrev}. O cálculo de 'completed' pode ser impreciso até a primeira sincronização.");
         }
       }
 
       store.dispatch(BibleBookProgressLoadedAction(
         bookAbbrev: action.bookAbbrev,
         readSections: readSections,
-        totalSectionsInBook: totalSectionsInBook,
+        totalSectionsInBook:
+            totalSectionsInBook, // Passa o total de seções determinado
         isCompleted: isCompleted,
         lastReadTimestamp: lastReadTimestamp,
       ));
     } catch (e) {
-      print("Erro em _handleLoadBibleBookProgress: $e");
+      print(
+          "Erro em _handleLoadBibleBookProgress para ${action.bookAbbrev}: $e");
       store.dispatch(BibleProgressFailureAction(
           "Erro ao carregar progresso do livro ${action.bookAbbrev}: $e"));
     }
   }
 
   // Handler para ToggleSectionReadStatusAction
+  // Esta é a ação que a UI despacha quando o usuário clica no botão "marcar como lido".
   void _handleToggleSectionReadStatus(Store<AppState> store,
       ToggleSectionReadStatusAction action, NextDispatcher next) async {
-    next(
-        action); // Ação pode ser processada no reducer para UI otimista (não implementado assim aqui)
-    final userId = store.state.userState.userId;
-    if (userId == null) {
-      store.dispatch(BibleProgressFailureAction(
-          "Usuário não autenticado para atualizar progresso da seção."));
-      return;
-    }
+    // 1. Passa a ação original. Isso permite que outros middlewares ou loggers a vejam,
+    // mas o reducer principal para ToggleSectionReadStatusAction NÃO deve mais existir
+    // ou não deve modificar o estado de `readSectionsByBook` diretamente.
+    // A atualização otimista é feita pela OptimisticToggleSectionReadStatusAction.
+    next(action);
 
-    try {
-      print(
-          "BibleProgressMiddleware: Atualizando status da seção ${action.sectionId} para ${action.markAsRead ? 'LIDA' : 'NÃO LIDA'} no livro ${action.bookAbbrev}");
+    // 2. Despacha a ação otimista para atualizar a UI imediatamente
+    // O reducer para OptimisticToggleSectionReadStatusAction fará a mudança no `readSectionsByBook` do UserState.
+    store.dispatch(OptimisticToggleSectionReadStatusAction(
+      bookAbbrev: action.bookAbbrev,
+      sectionId: action.sectionId,
+      markAsRead: action.markAsRead,
+    ));
+    // print("BibleProgressMiddleware: Despachou OptimisticToggle para ${action.sectionId}, markAsRead: ${action.markAsRead}");
 
-      // Precisamos do total de seções no livro para determinar se ele foi completado.
-      // Tenta pegar do estado, se não, precisaria buscar ou ser passado.
-      int totalSectionsInBook =
-          store.state.userState.totalSectionsPerBook[action.bookAbbrev] ?? 0;
-
-      // Se totalSectionsInBook ainda é 0, tenta buscar do Firestore (se o documento de progresso já existe)
-      // ou de uma fonte de metadados do livro. Esta parte pode precisar de mais lógica.
-      if (totalSectionsInBook == 0) {
-        DocumentSnapshot? progressDoc = await firestoreService
-            .getBibleBookProgress(userId, action.bookAbbrev);
-        if (progressDoc != null && progressDoc.exists) {
-          totalSectionsInBook = (progressDoc.data()
-                  as Map<String, dynamic>)['totalSectionsInBook'] as int? ??
-              0;
-        }
-        // Se ainda for 0, é um problema de dados - o progresso percentual pode não ser calculável corretamente.
-        if (totalSectionsInBook == 0) {
-          print(
-              "AVISO: totalSectionsInBook é 0 para ${action.bookAbbrev} ao tentar marcar seção. O status 'completed' pode não ser atualizado corretamente.");
-          // Você pode querer buscar o total de seções de uma coleção 'books_metadata' ou similar aqui.
-          // Por simplicidade, vamos prosseguir, mas o cálculo de 'completed' pode falhar.
-        }
+    // 3. Enfileira a operação de escrita no Firestore
+    // Cria um ID único para esta operação específica para que possa ser rastreada e removida da fila.
+    final operationId =
+        '${action.bookAbbrev}_${action.sectionId}_${DateTime.now().millisecondsSinceEpoch}_${action.markAsRead.toString()}';
+    final operation = {
+      'id': operationId,
+      'type':
+          'toggleSectionReadStatus', // Tipo da operação para o firestore_sync_middleware
+      'payload': {
+        'bookAbbrev': action.bookAbbrev,
+        'sectionId': action.sectionId,
+        'markAsRead': action.markAsRead,
+        // Não precisamos passar totalSectionsInBook aqui, o firestore_sync_middleware pegará do estado Redux
       }
+    };
+    store.dispatch(EnqueueFirestoreWriteAction(operation));
+    // print("BibleProgressMiddleware: Enfileirou operação de escrita para ${action.sectionId}. ID da op: $operationId");
 
-      await firestoreService.toggleBibleSectionReadStatus(
-        userId,
-        action.bookAbbrev,
-        action.sectionId,
-        action.markAsRead,
-        totalSectionsInBook, // Passa o total para o serviço do Firestore
-      );
-      print(
-          "BibleProgressMiddleware: Status da seção atualizado no Firestore.");
-
-      // Após atualizar no Firestore, recarrega o progresso do livro para ter os dados mais recentes
-      store.dispatch(LoadBibleBookProgressAction(action.bookAbbrev,
-          knownTotalSections:
-              totalSectionsInBook > 0 ? totalSectionsInBook : null));
-      // Opcionalmente, se essa ação também afeta estatísticas globais do usuário (como total de seções lidas na Bíblia)
-      // store.dispatch(LoadUserStatsAction()); // Se você tiver um contador geral de seções lidas.
-    } catch (e) {
-      print("Erro em _handleToggleSectionReadStatus: $e");
-      store.dispatch(BibleProgressFailureAction(
-          "Erro ao atualizar status da seção ${action.sectionId}: $e"));
-    }
+    // 4. Opcional: Disparar ProcessPendingFirestoreWritesAction imediatamente para teste.
+    // Em produção, isso seria acionado por outros gatilhos (sair da tela, etc.).
+    // Para testes, pode ser útil:
+    // store.dispatch(ProcessPendingFirestoreWritesAction());
   }
 
   // Handler para LoadAllBibleProgressAction
+  // Carrega o progresso de TODOS os livros do usuário.
+  // Usado geralmente na inicialização do app ou na UserPage.
   void _handleLoadAllBibleProgress(Store<AppState> store,
       LoadAllBibleProgressAction action, NextDispatcher next) async {
     next(action);
@@ -147,13 +132,11 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
       return;
     }
     try {
-      print(
-          "BibleProgressMiddleware: Carregando todo o progresso bíblico do usuário.");
+      // print("BibleProgressMiddleware: Carregando todo o progresso bíblico do usuário do Firestore.");
       final allProgressData =
           await firestoreService.getAllBibleProgress(userId);
       store.dispatch(AllBibleProgressLoadedAction(allProgressData));
-      print(
-          "BibleProgressMiddleware: Progresso de todos os livros carregado: ${allProgressData.length} livros com progresso.");
+      // print("BibleProgressMiddleware: Progresso de todos os livros carregado: ${allProgressData.length} livros com progresso.");
     } catch (e) {
       print("Erro em _handleLoadAllBibleProgress: $e");
       store.dispatch(BibleProgressFailureAction(

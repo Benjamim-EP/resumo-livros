@@ -6,7 +6,7 @@ import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/highlight_color_picker_modal.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/note_editor_modal.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para getStrongsLexicon
 
 class BiblePageWidgets {
   static Widget buildTranslationButton({
@@ -33,7 +33,7 @@ class BiblePageWidgets {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          minimumSize: const Size(80, 40), // Ajuste conforme necessário
+          minimumSize: const Size(80, 40),
         ),
         child: Text(
           translationLabel,
@@ -45,13 +45,12 @@ class BiblePageWidgets {
     );
   }
 
-  // MODIFICAÇÃO AQUI: Adicionar os parâmetros que faltavam
   static void showTranslationSelection({
     required BuildContext context,
     required String selectedTranslation,
     required Function(String) onTranslationSelected,
-    required String? currentSelectedBookAbbrev, // PARÂMETRO ADICIONADO
-    required Map<String, dynamic>? booksMap, // PARÂMETRO ADICIONADO
+    required String? currentSelectedBookAbbrev,
+    required Map<String, dynamic>? booksMap,
   }) {
     final theme = Theme.of(context);
     bool showHebrewOption = false;
@@ -61,7 +60,6 @@ class BiblePageWidgets {
         booksMap.containsKey(currentSelectedBookAbbrev)) {
       final bookData =
           booksMap[currentSelectedBookAbbrev] as Map<String, dynamic>?;
-      // Certifique-se que seu abbrev_map.json tem a chave 'testament'
       if (bookData != null && bookData['testament'] == 'Antigo') {
         showHebrewOption = true;
       }
@@ -184,6 +182,7 @@ class BiblePageWidgets {
   }
 
   static Widget buildVerseItem({
+    required ValueKey<String> key, // Parâmetro adicionado
     required int verseNumber,
     required dynamic verseData,
     required String? selectedBook,
@@ -242,6 +241,7 @@ class BiblePageWidgets {
     }
 
     return GestureDetector(
+      key: key, // Usa a chave passada
       onLongPress: () {
         _showVerseOptionsModal(
           context,
@@ -406,7 +406,6 @@ class BiblePageWidgets {
                     store.dispatch(DeleteNoteAction(verseId));
                     Navigator.pop(modalContext);
                     if (context.mounted) {
-                      // Adicionado context.mounted
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                             content: Text('Nota removida.'),
@@ -425,7 +424,6 @@ class BiblePageWidgets {
                   showDialog(
                     context: context,
                     builder: (dContext) => SaveVerseDialog(
-                      // dContext é o BuildContext do showDialog
                       bookAbbrev: bookAbbrev,
                       chapter: chapter,
                       verseNumber: verseNum,

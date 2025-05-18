@@ -222,6 +222,9 @@ class UserState {
   // Map<livroAbrev, ProgressoDetalhadoDoLivro>
   final Map<String, BibleBookProgressData> allBooksProgress;
 
+  final List<Map<String, dynamic>>
+      pendingFirestoreWrites; // NOVO CAMPO PARA A FILA
+
   UserState({
     this.userId,
     this.email,
@@ -260,6 +263,7 @@ class UserState {
     this.totalSectionsPerBook = const {},
     this.bookCompletionStatus = const {},
     this.allBooksProgress = const {},
+    this.pendingFirestoreWrites = const [], // NOVO: Inicializa a fila
   });
 
   UserState copyWith({
@@ -302,6 +306,7 @@ class UserState {
     Map<String, int>? totalSectionsPerBook,
     Map<String, bool>? bookCompletionStatus,
     Map<String, BibleBookProgressData>? allBooksProgress,
+    List<Map<String, dynamic>>? pendingFirestoreWrites, // NOVO
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -349,6 +354,8 @@ class UserState {
       totalSectionsPerBook: totalSectionsPerBook ?? this.totalSectionsPerBook,
       bookCompletionStatus: bookCompletionStatus ?? this.bookCompletionStatus,
       allBooksProgress: allBooksProgress ?? this.allBooksProgress,
+      pendingFirestoreWrites:
+          pendingFirestoreWrites ?? this.pendingFirestoreWrites,
     );
   }
 }
@@ -647,7 +654,7 @@ UserState userReducer(UserState state, dynamic action) {
   // para atualizar o estado, ou você pode ter uma atualização otimista aqui.
   // Para manter simples, vamos deixar o middleware recarregar via BibleBookProgressLoadedAction.
 
-  if (action is AllBibleProgressLoadedAction) {
+  else if (action is AllBibleProgressLoadedAction) {
     // Preenche os mapas individuais a partir do mapa consolidado
     final newReadSectionsByBook = <String, Set<String>>{};
     final newTotalSectionsPerBook = <String, int>{};
@@ -667,13 +674,121 @@ UserState userReducer(UserState state, dynamic action) {
       bookCompletionStatus:
           newBookCompletionStatus, // Preenche para acesso rápido
     );
-  }
-
-  if (action is BibleProgressFailureAction) {
+  } else if (action is BibleProgressFailureAction) {
     // Você pode querer armazenar o erro em algum lugar no estado se precisar mostrá-lo na UI
     print("BibleProgressFailureAction: ${action.error}");
     return state; // Ou state.copyWith(bibleProgressError: action.error)
+  } else if (action is OptimisticToggleSectionReadStatusAction) {
+    final newReadSectionsByBook =
+        Map<String, Set<String>>.from(state.readSectionsByBook);
+    final sectionsForBook =
+        Set<String>.from(newReadSectionsByBook[action.bookAbbrev] ?? {});
+
+    if (action.markAsRead) {
+      sectionsForBook.add(action.sectionId);
+    } else {
+      sectionsForBook.remove(action.sectionId);
+    }
+    newReadSectionsByBook[action.bookAbbrev] = sectionsForBook;
+    // print("Reducer (Optimistic): readSectionsByBook atualizado para ${action.bookAbbrev}: $sectionsForBook");
+    return state.copyWith(readSectionsByBook: newReadSectionsByBook);
   }
+
+  if (action is EnqueueFirestoreWriteAction) {
+    final newPendingWrites =
+        List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
+    // Adiciona um ID único à operação para rastreamento, se não existir
+    final operationWithId = Map<String, dynamic>.from(action.operation);
+    if (operationWithId['id'] == null) {
+      operationWithId['id'] = DateTime.now().millisecondsSinceEpoch.toString() +
+          '_' +
+          (newPendingWrites.length).toString();
+    }
+    newPendingWrites.add(operationWithId);
+    // print("Reducer: Operação enfileirada: ${operationWithId['id']}");
+    return state.copyWith(pendingFirestoreWrites: newPendingWrites);
+  }
+
+  if (action is FirestoreWriteSuccessfulAction) {
+    final newPendingWrites =
+        List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
+    newPendingWrites.removeWhere((op) => op['id'] == action.operationId);
+    // print("Reducer: Operação ${action.operationId} removida da fila (sucesso).");
+    return state.copyWith(pendingFirestoreWrites: newPendingWrites);
+  }
+
+  if (action is FirestoreWriteFailedAction) {
+    // Aqui você pode decidir o que fazer.
+    // Opção 1: Manter na fila e adicionar uma contagem de retentativas ou marcar como falha.
+    // Opção 2: Remover da fila e talvez despachar uma ação para reverter a UI (mais complexo).
+    // Por simplicidade, vamos apenas logar e remover por enquanto.
+    final newPendingWrites =
+        List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
+    newPendingWrites.removeWhere((op) => op['id'] == action.operationId);
+    print(
+        "Reducer: Operação ${action.operationId} removida da fila (FALHA): ${action.error}");
+    // TODO: Considerar uma estratégia de retentativa ou notificação ao usuário.
+    return state.copyWith(pendingFirestoreWrites: newPendingWrites);
+  }
+
+  // A ação original ToggleSectionReadStatusAction agora não modifica diretamente o estado aqui.
+  // Ela será capturada pelo middleware que então despachará Optimistic... e Enqueue...
+  // Se você quiser que o reducer original também trate ToggleSectionReadStatusAction para
+  // iniciar o processo, você pode fazer isso, mas o middleware é um lugar comum para orquestrar.
+  // Por ora, vamos assumir que o middleware de bible_progress lida com a ToggleSectionReadStatusAction
+  // e despacha as ações Optimistic e Enqueue.
+
+  // O BibleBookProgressLoadedAction e AllBibleProgressLoadedAction continuam como antes,
+  // eles são o resultado do carregamento do Firestore, não da atualização otimista.
+  if (action is BibleBookProgressLoadedAction) {
+    final newReadSectionsByBook =
+        Map<String, Set<String>>.from(state.readSectionsByBook);
+    newReadSectionsByBook[action.bookAbbrev] = action.readSections;
+
+    final newTotalSectionsPerBook =
+        Map<String, int>.from(state.totalSectionsPerBook);
+    newTotalSectionsPerBook[action.bookAbbrev] = action.totalSectionsInBook;
+
+    final newBookCompletionStatus =
+        Map<String, bool>.from(state.bookCompletionStatus);
+    newBookCompletionStatus[action.bookAbbrev] = action.isCompleted;
+
+    final newAllBooksProgress =
+        Map<String, BibleBookProgressData>.from(state.allBooksProgress);
+    newAllBooksProgress[action.bookAbbrev] = BibleBookProgressData(
+      readSections: action.readSections,
+      totalSections: action.totalSectionsInBook,
+      completed: action.isCompleted,
+      lastReadTimestamp: action.lastReadTimestamp,
+    );
+
+    return state.copyWith(
+      readSectionsByBook: newReadSectionsByBook,
+      totalSectionsPerBook: newTotalSectionsPerBook,
+      bookCompletionStatus: newBookCompletionStatus,
+      allBooksProgress: newAllBooksProgress,
+    );
+  }
+
+  if (action is AllBibleProgressLoadedAction) {
+    final newReadSectionsByBook = <String, Set<String>>{};
+    final newTotalSectionsPerBook = <String, int>{};
+    final newBookCompletionStatus = <String, bool>{};
+
+    action.progressData.forEach((bookAbbrev, data) {
+      newReadSectionsByBook[bookAbbrev] = data.readSections;
+      newTotalSectionsPerBook[bookAbbrev] = data.totalSections;
+      newBookCompletionStatus[bookAbbrev] = data.completed;
+    });
+
+    return state.copyWith(
+      allBooksProgress: action.progressData,
+      readSectionsByBook: newReadSectionsByBook,
+      totalSectionsPerBook: newTotalSectionsPerBook,
+      bookCompletionStatus: newBookCompletionStatus,
+    );
+  }
+
   return state;
 }
 
