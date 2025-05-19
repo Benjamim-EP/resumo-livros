@@ -209,14 +209,20 @@ class _UserPageState extends State<UserPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"$selectedSnippet"',
+              '"$selectedSnippet"', // Aspas para indicar que é uma citação
               style: TextStyle(
-                color: theme.colorScheme.secondary,
+                // color: Colors.amber[700], // Uma cor âmbar para destaque
+                backgroundColor: Colors.amber
+                    .withOpacity(0.3), // Ou um fundo destacado sutil
+                color: theme.brightness == Brightness.dark
+                    ? Colors.amber[300]
+                    : Colors.amber[800], // Ajusta cor do texto para contraste
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight
+                    .bold, // Pode manter ou remover o negrito se preferir
                 fontStyle: FontStyle.italic,
               ),
-              maxLines: 3,
+              maxLines: 3, // Ajuste conforme necessário
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
@@ -253,6 +259,7 @@ class _UserPageState extends State<UserPage> {
                     tooltip: "Remover Marcação do Comentário",
                     onPressed: () {
                       if (context.mounted) {
+                        // Use context.mounted se estiver em um método de um State
                         StoreProvider.of<AppState>(context, listen: false)
                             .dispatch(
                                 RemoveCommentHighlightAction(highlightId));
@@ -296,7 +303,9 @@ class _UserPageState extends State<UserPage> {
           converter: (store) => _UserProgressViewModel.fromStore(store),
           onInit: (store) {
             if (store.state.userState.allBooksProgress.isEmpty &&
-                store.state.userState.userId != null) {
+                store.state.userState.userId != null &&
+                !store.state.metadataState
+                    .isLoadingSectionCounts /* Evita disparar se já estiver carregando */) {
               store.dispatch(LoadAllBibleProgressAction());
             }
             if (store.state.metadataState.bibleSectionCounts.isEmpty &&
