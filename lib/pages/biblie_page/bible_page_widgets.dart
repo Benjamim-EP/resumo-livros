@@ -273,8 +273,8 @@ class BiblePageWidgets {
       mainTranslationWidget = Wrap(
         alignment: WrapAlignment.end,
         textDirection: TextDirection.rtl,
-        runSpacing: 4.0, // Espaçamento vertical entre as linhas do Wrap
-        spacing: 4.0, // Espaçamento horizontal entre as palavras no Wrap
+        runSpacing: 4.0,
+        spacing: 4.0,
         children: hebrewWordWidgets,
       );
     } else if (verseData is String) {
@@ -534,7 +534,7 @@ class BiblePageWidgets {
       final hebrewText = wordsToShow.first['text'] ?? '';
       modalTitle = "Léxico para: $hebrewText ($bookAbbrev $chapter:$verseNum)";
     } else {
-      modalTitle = "Léxico para: $bookAbbrev $chapter:$verseNum (Completo)";
+      modalTitle = "Léxico para: $bookAbbrev $chapter:$verseNum (Visão Geral)";
     }
 
     showModalBottomSheet(
@@ -547,7 +547,7 @@ class BiblePageWidgets {
         return DraggableScrollableSheet(
             initialChildSize: 0.7,
             minChildSize: 0.4,
-            maxChildSize: 0.9,
+            maxChildSize: 0.95,
             expand: false,
             builder: (_, scrollController) {
               return Container(
@@ -578,6 +578,7 @@ class BiblePageWidgets {
                             color: theme.colorScheme.onSurface,
                             fontSize: 18,
                             fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                     Divider(color: theme.dividerColor, height: 1),
@@ -599,6 +600,36 @@ class BiblePageWidgets {
                               .replaceAll(RegExp(r'^[Hc]/'), '');
                           final lexiconEntry =
                               lexicon?[strongNumber] as Map<String, dynamic>?;
+
+                          Widget buildNotesSection(
+                              String title, List<dynamic>? notesList) {
+                            if (notesList == null || notesList.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                Text(title,
+                                    style: TextStyle(
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.85),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                ...notesList
+                                    .cast<String>()
+                                    .map((note) => Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 8.0, top: 2.0),
+                                          child: Text("• $note",
+                                              style: TextStyle(
+                                                  color: theme.textTheme
+                                                      .bodyMedium?.color,
+                                                  fontSize: 13)),
+                                        )),
+                              ],
+                            );
+                          }
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,6 +672,23 @@ class BiblePageWidgets {
                                                       .bodyMedium?.color,
                                                   fontSize: 13)),
                                         )),
+                                if (lexiconEntry['notes_pt'] != null &&
+                                    lexiconEntry['notes_pt'] is Map) ...[
+                                  buildNotesSection(
+                                      "Exegese:",
+                                      (lexiconEntry['notes_pt']['exegesis_pt']
+                                          as List<dynamic>?)),
+                                  buildNotesSection(
+                                      "Explicação:",
+                                      (lexiconEntry['notes_pt']
+                                              ['explanation_pt']
+                                          as List<dynamic>?)),
+                                  buildNotesSection(
+                                      "Sugestões de Tradução:",
+                                      (lexiconEntry['notes_pt']
+                                              ['translation_pt']
+                                          as List<dynamic>?)),
+                                ]
                               ] else if (strongNumber.isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text("Strong: $strongNumberWithPrefix",
