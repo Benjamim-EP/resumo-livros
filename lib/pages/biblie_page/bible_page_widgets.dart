@@ -1,4 +1,5 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
@@ -6,7 +7,7 @@ import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/highlight_color_picker_modal.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/note_editor_modal.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para getStrongsLexicon
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 
 class BiblePageWidgets {
   static Widget buildTranslationButton({
@@ -181,8 +182,62 @@ class BiblePageWidgets {
     return spans;
   }
 
+  static Widget _buildHebrewInterlinearWord(
+    BuildContext context,
+    Map<String, String> wordData,
+    String? selectedBook,
+    int? selectedChapter,
+    int verseNumber,
+    Map<String, dynamic>? lexicon,
+  ) {
+    final theme = Theme.of(context);
+    final hebrewText = wordData['text'] ?? '';
+    final strongNumberWithPrefix = wordData['strong'] ?? '';
+    final String strongNumber =
+        strongNumberWithPrefix.replaceAll(RegExp(r'^[Hc]/'), '');
+    String transliteration = "---";
+
+    if (strongNumber.isNotEmpty && lexicon != null) {
+      final lexiconEntry = lexicon[strongNumber] as Map<String, dynamic>?;
+      transliteration = lexiconEntry?['transliteration'] ?? transliteration;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (strongNumber.isNotEmpty) {
+          _showVerseLexiconModal(context, selectedBook!, selectedChapter!,
+              verseNumber, [wordData], lexicon);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 1.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              hebrewText,
+              style: TextStyle(
+                fontSize: 20,
+                color: theme.textTheme.bodyLarge?.color,
+                fontFamily: 'NotoSansHebrew',
+              ),
+            ),
+            Text(
+              transliteration,
+              style: TextStyle(
+                fontSize: 10,
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Widget buildVerseItem({
-    required ValueKey<String> key, // Parâmetro adicionado
+    required ValueKey<String> key,
     required int verseNumber,
     required dynamic verseData,
     required String? selectedBook,
@@ -191,6 +246,8 @@ class BiblePageWidgets {
     required Map<String, String> userHighlights,
     required Map<String, String> userNotes,
     bool isHebrew = false,
+    bool showHebrewInterlinear = false,
+    List<Map<String, String>>? hebrewVerseData,
   }) {
     final theme = Theme.of(context);
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
@@ -201,47 +258,64 @@ class BiblePageWidgets {
             .withOpacity(0.30)
         : Colors.transparent;
 
-    Widget verseContentWidget;
-    String verseTextForModal = "";
-    List<Map<String, String>> hebrewWordsDataForLexicon = [];
+    Widget mainTranslationWidget;
+    String verseTextForModalDialog = "";
 
     if (isHebrew && verseData is List<Map<String, String>>) {
-      hebrewWordsDataForLexicon = verseData;
-      List<TextSpan> hebrewSpans = [];
+      List<Widget> hebrewWordWidgets = [];
+      final lexicon = BiblePageHelper.cachedStrongsLexicon;
       for (var wordData in verseData) {
-        final text = wordData['text'] ?? '';
-        final cleanText = text.replaceAll(RegExp(r'[/\\]'), '');
-        verseTextForModal += "$cleanText ";
-        hebrewSpans.add(
-          TextSpan(
-            text: '$text ',
-            style: TextStyle(
-              fontSize: 20,
-              color: theme.textTheme.bodyLarge?.color,
-              fontFamily: 'NotoSansHebrew',
-            ),
-          ),
-        );
+        verseTextForModalDialog += "${wordData['text'] ?? ''} ";
+        hebrewWordWidgets.add(_buildHebrewInterlinearWord(context, wordData,
+            selectedBook, selectedChapter, verseNumber, lexicon));
       }
-      verseContentWidget = RichText(
-        text: TextSpan(children: hebrewSpans),
+      mainTranslationWidget = Wrap(
+        alignment: WrapAlignment.end,
         textDirection: TextDirection.rtl,
+        children: hebrewWordWidgets,
       );
     } else if (verseData is String) {
-      verseTextForModal = verseData;
-      verseContentWidget = RichText(
+      verseTextForModalDialog = verseData;
+      mainTranslationWidget = RichText(
         text: TextSpan(
           children: _formatRegularVerseText(verseData, theme),
         ),
       );
     } else {
-      verseTextForModal = "[Formato de verso inválido]";
-      verseContentWidget = Text(verseTextForModal,
+      verseTextForModalDialog = "[Formato de verso principal inválido]";
+      mainTranslationWidget = Text(verseTextForModalDialog,
           style: TextStyle(color: theme.colorScheme.error));
     }
 
+    Widget? hebrewInterlinearWidget;
+    if (showHebrewInterlinear &&
+        hebrewVerseData != null &&
+        hebrewVerseData.isNotEmpty) {
+      List<Widget> interlinearHebrewWords = [];
+      final lexicon = BiblePageHelper.cachedStrongsLexicon;
+      for (var wordData in hebrewVerseData) {
+        interlinearHebrewWords.add(_buildHebrewInterlinearWord(context,
+            wordData, selectedBook, selectedChapter, verseNumber, lexicon));
+      }
+
+      hebrewInterlinearWidget = Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
+            Wrap(
+              alignment: WrapAlignment.end,
+              textDirection: TextDirection.rtl,
+              children: interlinearHebrewWords,
+            ),
+          ],
+        ),
+      );
+    }
+
     return GestureDetector(
-      key: key, // Usa a chave passada
+      key: key,
       onLongPress: () {
         _showVerseOptionsModal(
           context,
@@ -251,7 +325,7 @@ class BiblePageWidgets {
           selectedBook!,
           selectedChapter!,
           verseNumber,
-          verseTextForModal.trim(),
+          verseTextForModalDialog.trim(),
         );
       },
       child: Container(
@@ -261,37 +335,31 @@ class BiblePageWidgets {
           color: backgroundColor,
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '$verseNumber ',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: theme.textTheme.bodySmall?.color,
-                  fontWeight: FontWeight.bold),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$verseNumber ',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: theme.textTheme.bodySmall?.color,
+                      fontWeight: FontWeight.bold),
+                ),
+                Expanded(child: mainTranslationWidget),
+                if (hasNote && !isHebrew && !showHebrewInterlinear)
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(left: 5.0, right: 2.0, top: 2.0),
+                    child: Icon(Icons.note_alt_rounded,
+                        color: theme.colorScheme.secondary.withOpacity(0.7),
+                        size: 16),
+                  ),
+              ],
             ),
-            Expanded(child: verseContentWidget),
-            if (hasNote)
-              Padding(
-                padding: const EdgeInsets.only(left: 5.0, right: 2.0, top: 2.0),
-                child: Icon(Icons.note_alt_rounded,
-                    color: theme.colorScheme.secondary.withOpacity(0.7),
-                    size: 16),
-              ),
-            if (isHebrew && hebrewWordsDataForLexicon.isNotEmpty)
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                iconSize: 20,
-                icon: Icon(Icons.translate_outlined,
-                    color: theme.colorScheme.tertiary),
-                tooltip: "Léxico do Versículo",
-                onPressed: () {
-                  _showVerseLexiconModal(context, selectedBook!,
-                      selectedChapter!, verseNumber, hebrewWordsDataForLexicon);
-                },
-              ),
+            if (hebrewInterlinearWidget != null) hebrewInterlinearWidget,
           ],
         ),
       ),
@@ -444,16 +512,25 @@ class BiblePageWidgets {
     String bookAbbrev,
     int chapter,
     int verseNum,
-    List<Map<String, String>> hebrewWords,
-  ) async {
+    List<Map<String, String>> wordsToShow,
+    Map<String, dynamic>? lexicon,
+  ) {
     final theme = Theme.of(context);
-    final lexicon = await BiblePageHelper.getStrongsLexicon();
+
     if (lexicon == null && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Léxico de Strong não carregado.")));
+          const SnackBar(content: Text("Léxico de Strong não disponível.")));
       return;
     }
     if (!context.mounted) return;
+
+    String modalTitle;
+    if (wordsToShow.length == 1) {
+      final hebrewText = wordsToShow.first['text'] ?? '';
+      modalTitle = "Léxico para: $hebrewText ($bookAbbrev $chapter:$verseNum)";
+    } else {
+      modalTitle = "Léxico para: $bookAbbrev $chapter:$verseNum (Completo)";
+    }
 
     showModalBottomSheet(
       context: context,
@@ -491,7 +568,7 @@ class BiblePageWidgets {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16.0, vertical: 8.0),
                       child: Text(
-                        "Léxico para: $bookAbbrev $chapter:$verseNum",
+                        modalTitle,
                         style: TextStyle(
                             color: theme.colorScheme.onSurface,
                             fontSize: 18,
@@ -502,13 +579,13 @@ class BiblePageWidgets {
                     Expanded(
                       child: ListView.separated(
                         controller: scrollController,
-                        itemCount: hebrewWords.length,
+                        itemCount: wordsToShow.length,
                         padding: const EdgeInsets.all(16.0),
                         separatorBuilder: (context, index) => Divider(
                             color: theme.dividerColor.withOpacity(0.3),
                             height: 20),
                         itemBuilder: (context, index) {
-                          final wordData = hebrewWords[index];
+                          final wordData = wordsToShow[index];
                           final hebrewText = wordData['text'] ?? '';
                           final strongNumberWithPrefix =
                               wordData['strong'] ?? '';

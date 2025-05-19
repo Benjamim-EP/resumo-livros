@@ -1,6 +1,6 @@
 // lib/pages/biblie_page/section_item_widget.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_redux/flutter_redux.dart'; // Ainda necessário para despachar ação
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
@@ -10,19 +10,29 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.da
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;
-  final List<int> verseNumbersInSection;
-  final dynamic allVerseDataInChapter;
+  final List<int>
+      verseNumbersInSection; // Lista dos números dos versos desta seção (ex: [1,2,3,4,5])
+  final dynamic
+      allVerseDataInChapter; // Dados da tradução principal para o capítulo inteiro
   final String bookSlug;
   final String bookAbbrev;
   final int chapterNumber;
   final String versesRangeStr;
   final Map<String, String> userHighlights;
   final Map<String, String> userNotes;
-  final bool isHebrew;
-  final bool isRead; // Parâmetro que vem do widget pai (_BiblePageState)
+  final bool
+      isHebrew; // Indica se a TRADUÇÃO PRINCIPAL (allVerseDataInChapter) é hebraica
+  final bool isRead;
+
+  // NOVOS PARÂMETROS PARA INTERLINEAR
+  final bool showHebrewInterlinear;
+  // Dados hebraicos para TODOS os versos DESTA SEÇÃO, se showHebrewInterlinear for true.
+  // Cada item na lista externa corresponde a um versículo da seção.
+  // Cada item na lista interna (List<Map<String, String>>) são as palavras hebraicas daquele versículo.
+  final List<List<Map<String, String>>>? hebrewInterlinearSectionData;
 
   const SectionItemWidget({
-    super.key, // Chave do próprio SectionItemWidget
+    super.key,
     required this.sectionTitle,
     required this.verseNumbersInSection,
     required this.allVerseDataInChapter,
@@ -33,7 +43,9 @@ class SectionItemWidget extends StatefulWidget {
     required this.userHighlights,
     required this.userNotes,
     this.isHebrew = false,
-    required this.isRead, // Recebe o status de leitura do pai
+    required this.isRead,
+    required this.showHebrewInterlinear, // NOVO
+    this.hebrewInterlinearSectionData, // NOVO (pode ser null se showHebrewInterlinear for false)
   });
 
   @override
@@ -46,17 +58,15 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   bool _isLoadingCommentary = false;
 
   @override
-  bool get wantKeepAlive => true; // Para manter o estado do widget na ListView
+  bool get wantKeepAlive => true;
 
   String get _sectionIdForTracking {
-    // Garante que versesRangeStr não seja nulo ou vazio ao construir o ID
     final range =
         widget.versesRangeStr.isNotEmpty ? widget.versesRangeStr : "all";
     return "${widget.bookAbbrev}_c${widget.chapterNumber}_v$range";
   }
 
   String get _commentaryDocId {
-    // Garante que versesRangeStr não seja nulo ou vazio ao construir o ID
     final range =
         widget.versesRangeStr.isNotEmpty ? widget.versesRangeStr : "all";
     return "${widget.bookSlug}_c${widget.chapterNumber}_v$range";
@@ -87,7 +97,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent, // Para DraggableScrollableSheet
+        backgroundColor: Colors.transparent,
         builder: (_) => SectionCommentaryModal(
           sectionTitle: widget.sectionTitle,
           commentaryItems: commentaryItems,
@@ -103,12 +113,10 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Necessário para AutomaticKeepAliveClientMixin
+    super.build(context);
     final theme = Theme.of(context);
     final sectionId = _sectionIdForTracking;
-    final bool currentIsRead = widget.isRead; // Usa o valor passado pelo pai
-
-    // print("SectionItemWidget build: ${widget.sectionTitle}, isRead: $currentIsRead, sectionId: $sectionId");
+    final bool currentIsRead = widget.isRead;
 
     return Card(
       elevation: 2,
@@ -156,11 +164,10 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       ? "Marcar como não lido"
                       : "Marcar como lido",
                   onPressed: () {
-                    // print("Botão Marcar Lido Pressionado para ${widget.sectionTitle}. Novo Status: ${!currentIsRead}");
                     StoreProvider.of<AppState>(context, listen: false).dispatch(
                       ToggleSectionReadStatusAction(
                         bookAbbrev: widget.bookAbbrev,
-                        sectionId: sectionId, // Usa o ID calculado
+                        sectionId: sectionId,
                         markAsRead: !currentIsRead,
                       ),
                     );
@@ -189,50 +196,75 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: widget.verseNumbersInSection.length,
-              itemBuilder: (context, index) {
-                final verseNumber = widget.verseNumbersInSection[index];
-                dynamic verseDataItem;
-                // Determina o sufixo da chave com base no tipo de tradução e também adiciona livro/capítulo
-                // para garantir unicidade mesmo entre diferentes capítulos/livros com o mesmo verso e tradução
-                String verseKeySuffix = widget.isHebrew
-                    ? "hebrew_${widget.bookAbbrev}_${widget.chapterNumber}"
-                    : "other_${widget.bookAbbrev}_${widget.chapterNumber}";
+              itemBuilder: (context, indexInSecao) {
+                // index na lista de versos da seção
+                final verseNumber = widget.verseNumbersInSection[indexInSecao];
+                dynamic mainTranslationVerseDataItem; // Para NVI, ACF, etc.
+                List<Map<String, String>>?
+                    hebrewDataForThisVerse; // Para o interlinear
 
+                // Pega o dado da tradução principal
                 if (widget.isHebrew) {
+                  // Se a tradução principal FOR hebraico
                   if (widget.allVerseDataInChapter
                           is List<List<Map<String, String>>> &&
                       verseNumber > 0 &&
                       verseNumber <=
                           (widget.allVerseDataInChapter as List).length) {
-                    verseDataItem = (widget.allVerseDataInChapter
+                    mainTranslationVerseDataItem = (widget.allVerseDataInChapter
                         as List<List<Map<String, String>>>)[verseNumber - 1];
                   }
                 } else {
+                  // Se a tradução principal NÃO FOR hebraico (ex: NVI)
                   if (widget.allVerseDataInChapter is List<String> &&
                       verseNumber > 0 &&
                       verseNumber <=
                           (widget.allVerseDataInChapter as List).length) {
-                    verseDataItem = (widget.allVerseDataInChapter
+                    mainTranslationVerseDataItem = (widget.allVerseDataInChapter
                         as List<String>)[verseNumber - 1];
                   }
                 }
 
-                if (verseDataItem != null) {
+                // Pega os dados hebraicos para o interlinear, se showHebrewInterlinear for true
+                // E a tradução principal NÃO for o hebraico original
+                if (widget.showHebrewInterlinear &&
+                    !widget
+                        .isHebrew && // Só mostra interlinear se a principal não for já o hebraico
+                    widget.hebrewInterlinearSectionData != null &&
+                    indexInSecao <
+                        widget.hebrewInterlinearSectionData!.length) {
+                  // hebrewInterlinearSectionData é uma lista de versos, cada verso é uma lista de palavras.
+                  // O indexInSecao corresponde ao índice do verso DENTRO desta seção.
+                  hebrewDataForThisVerse =
+                      widget.hebrewInterlinearSectionData![indexInSecao];
+                }
+
+                String verseKeySuffix = widget.isHebrew ? "hebrew" : "other";
+                if (widget.showHebrewInterlinear &&
+                    hebrewDataForThisVerse != null) {
+                  verseKeySuffix += "_interlinear";
+                }
+
+                if (mainTranslationVerseDataItem != null) {
                   return BiblePageWidgets.buildVerseItem(
-                    // A chave aqui é para o widget específico do verso dentro desta seção
                     key: ValueKey<String>(
                         '${widget.bookAbbrev}_${widget.chapterNumber}_${verseNumber}_$verseKeySuffix'),
                     verseNumber: verseNumber,
-                    verseData: verseDataItem,
+                    verseData:
+                        mainTranslationVerseDataItem, // Texto da tradução principal
                     selectedBook: widget.bookAbbrev,
                     selectedChapter: widget.chapterNumber,
                     context: context,
                     userHighlights: widget.userHighlights,
                     userNotes: widget.userNotes,
-                    isHebrew: widget.isHebrew,
+                    isHebrew: widget.isHebrew, // Se a VIEW PRINCIPAL é hebraica
+                    // NOVOS PARÂMETROS PARA O INTERLINEAR
+                    showHebrewInterlinear: widget.showHebrewInterlinear &&
+                        !widget
+                            .isHebrew, // Só mostra se a principal não for hebraico
+                    hebrewVerseData: hebrewDataForThisVerse,
                   );
                 } else {
-                  // Isso pode acontecer se verseNumbersInSection tiver um número que não existe em allVerseDataInChapter
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
                     child: Text(

@@ -11,12 +11,13 @@ class BiblePageHelper {
     return json.decode(data);
   }
 
-  // Carrega o léxico de Strong e o armazena em cache
-  static Future<Map<String, dynamic>?> getStrongsLexicon() async {
+  // Método assíncrono para carregar e cachear
+  static Future<Map<String, dynamic>?> loadAndCacheStrongsLexicon() async {
+    // Renomeado para clareza
     if (_strongsLexicon == null) {
       try {
         final String data = await rootBundle.loadString(
-            'assets/Biblia/completa_traducoes/hebrew_strong_lexicon_traduzido.json'); // Caminho correto
+            'assets/Biblia/completa_traducoes/hebrew_strong_lexicon_traduzido.json');
         _strongsLexicon = json.decode(data);
         print("Léxico de Strong Hebraico carregado e cacheado.");
       } catch (e) {
@@ -27,6 +28,12 @@ class BiblePageHelper {
     return _strongsLexicon;
   }
 
+  // NOVO: Getter síncrono para o léxico cacheado
+  static Map<String, dynamic>? get cachedStrongsLexicon {
+    return _strongsLexicon;
+  }
+
+  // ... (loadChapterDataComparison e loadSingleVerseText como antes)
   static Future<Map<String, dynamic>> loadChapterDataComparison(
     String bookAbbrev,
     int chapter,
@@ -34,10 +41,8 @@ class BiblePageHelper {
     String? translation2,
   ) async {
     List<Map<String, dynamic>> sections = [];
-    Map<String, dynamic> verseData =
-        {}; // Alterado para dynamic para suportar formatos diferentes
+    Map<String, dynamic> verseData = {};
 
-    // Carregar Estrutura das Seções (como antes)
     try {
       final String sectionStructurePath =
           'assets/Biblia/blocos/$bookAbbrev/$chapter.json';
@@ -66,47 +71,35 @@ class BiblePageHelper {
       sections = [];
     }
 
-    // Carregar Texto dos Versículos (Tradução 1)
     try {
       verseData[translation1] =
           await _loadVerseDataForTranslation(bookAbbrev, chapter, translation1);
-      print("Dados carregados para $translation1.");
     } catch (e) {
       print('Erro CRÍTICO ao carregar dados para $translation1: $e');
       return {'sectionStructure': [], 'verseData': {}};
     }
 
-    // Carregar Texto dos Versículos (Tradução 2 - Se necessário)
     if (translation2 != null) {
       try {
         verseData[translation2] = await _loadVerseDataForTranslation(
             bookAbbrev, chapter, translation2);
-        print("Dados carregados para $translation2.");
       } catch (e) {
         print('Erro ao carregar dados para $translation2: $e');
-        verseData[translation2] = []; // Define como vazio para indicar falha
+        verseData[translation2] = [];
       }
     }
-    return {
-      'sectionStructure': sections,
-      'verseData': verseData
-    }; // Alterado para verseData
+    return {'sectionStructure': sections, 'verseData': verseData};
   }
 
   static Future<dynamic> _loadVerseDataForTranslation(
-      // Retorno agora é dynamic
-      String bookAbbrev,
-      int chapter,
-      String translation) async {
+      String bookAbbrev, int chapter, String translation) async {
     final String verseDataPath =
-        'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json'; // Adapte o caminho
+        'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
     final String verseDataString = await rootBundle.loadString(verseDataPath);
     final decodedVerseData = json.decode(verseDataString);
 
     if (translation == 'hebrew_original') {
-      // Chave da sua tradução hebraica
       if (decodedVerseData is List) {
-        // Espera-se List<List<Map<String, String>>>
         return List<List<Map<String, String>>>.from(
             decodedVerseData.map((verse) {
           if (verse is List) {
@@ -115,21 +108,17 @@ class BiblePageHelper {
                 return Map<String, String>.from(wordData.map((key, value) =>
                     MapEntry(key.toString(), value.toString())));
               }
-              return <String, String>{}; // Palavra inválida
-            }).where((wordMap) => wordMap.isNotEmpty) // Filtra mapas vazios
-                );
+              return <String, String>{};
+            }).where((wordMap) => wordMap.isNotEmpty));
           }
-          return <List<Map<String, String>>>[]; // Verso inválido
-        }).where((verseList) => verseList
-                .isNotEmpty) // Filtra listas de versos vazias (embora improvável)
-            );
+          return <List<Map<String, String>>>[];
+        }).where((verseList) => verseList.isNotEmpty));
       } else {
         print(
             'Formato inesperado para dados hebraicos ($translation/$bookAbbrev/$chapter): $decodedVerseData');
         return [];
       }
     } else {
-      // Para outras traduções (formato de string por verso)
       if (decodedVerseData is List) {
         return List<String>.from(
             decodedVerseData.map((item) => item.toString()));
@@ -143,12 +132,7 @@ class BiblePageHelper {
 
   static Future<String> loadSingleVerseText(
       String verseId, String translation) async {
-    // Esta função pode precisar de adaptação se você quiser mostrar hebraico aqui também,
-    // ou pode ser usada apenas para traduções baseadas em string.
-    // Por simplicidade, vamos mantê-la para strings por enquanto.
-    // Se translation for 'hebrew_original', você precisaria de uma lógica para concatenar as palavras.
     if (translation == 'hebrew_original') {
-      // TODO: Implementar lógica para buscar e concatenar palavras hebraicas
       return "[Visualização de verso único em hebraico não implementada]";
     }
 
