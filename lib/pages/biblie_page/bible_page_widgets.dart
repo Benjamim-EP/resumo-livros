@@ -217,6 +217,7 @@ class BiblePageWidgets {
           children: [
             Text(
               hebrewText,
+              textDirection: TextDirection.rtl,
               style: TextStyle(
                 fontSize: 20,
                 color: theme.textTheme.bodyLarge?.color,
@@ -272,6 +273,8 @@ class BiblePageWidgets {
       mainTranslationWidget = Wrap(
         alignment: WrapAlignment.end,
         textDirection: TextDirection.rtl,
+        runSpacing: 4.0, // Espaçamento vertical entre as linhas do Wrap
+        spacing: 4.0, // Espaçamento horizontal entre as palavras no Wrap
         children: hebrewWordWidgets,
       );
     } else if (verseData is String) {
@@ -307,6 +310,8 @@ class BiblePageWidgets {
             Wrap(
               alignment: WrapAlignment.end,
               textDirection: TextDirection.rtl,
+              runSpacing: 4.0,
+              spacing: 4.0,
               children: interlinearHebrewWords,
             ),
           ],
