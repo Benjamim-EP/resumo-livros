@@ -467,17 +467,138 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Future<void> _showGoToDialog() async {
-    // ... (como antes)
+    final TextEditingController controller = TextEditingController();
+    String? errorTextInDialog;
+    await showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(builder: (sfbContext, setDialogState) {
+            final theme = Theme.of(sfbContext);
+            return AlertDialog(
+              backgroundColor: theme.dialogBackgroundColor,
+              title: Text("Ir para Referência",
+                  style: TextStyle(color: theme.colorScheme.onSurface)),
+              content: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(
+                  controller: controller,
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                  decoration: InputDecoration(
+                      hintText: "Ex: Gn 1 ou João 3:16",
+                      errorText: errorTextInDialog),
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (value) => _parseAndNavigateForGoTo(
+                      value, dialogContext, (newError) {
+                    if (mounted)
+                      setDialogState(() => errorTextInDialog = newError);
+                  }),
+                ),
+                const SizedBox(height: 8),
+                Text("Formatos: Livro Cap ou Livro Cap:Ver",
+                    style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontSize: 12)),
+              ]),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: Text("Cancelar",
+                        style: TextStyle(
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.7)))),
+                TextButton(
+                    onPressed: () => _parseAndNavigateForGoTo(
+                            controller.text, dialogContext, (newError) {
+                          if (mounted)
+                            setDialogState(() => errorTextInDialog = newError);
+                        }),
+                    child: Text("Ir",
+                        style: TextStyle(color: theme.colorScheme.primary))),
+              ],
+            );
+          });
+        });
   }
 
   void _parseAndNavigateForGoTo(String input, BuildContext dialogContext,
       Function(String?) updateErrorText) {
-    // ... (como antes)
+    String userInput = input.trim();
+    if (userInput.isEmpty) {
+      updateErrorText("Digite uma referência.");
+      return;
+    }
+    String normalizedUserInput = _normalizeSearchText(userInput);
+    String? foundBookAbbrev;
+    String remainingInputForChapterAndVerse = "";
+
+    List<String> sortedVariationKeys = _bookVariationsMap.keys.toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+
+    for (String normalizedVariationKeyInMap in sortedVariationKeys) {
+      if (normalizedUserInput.startsWith(normalizedVariationKeyInMap)) {
+        foundBookAbbrev = _bookVariationsMap[normalizedVariationKeyInMap];
+        remainingInputForChapterAndVerse = normalizedUserInput
+            .substring(normalizedVariationKeyInMap.length)
+            .trim();
+        if (normalizedVariationKeyInMap == "jo" &&
+            (userInput.toLowerCase().startsWith("jó") ||
+                userInput.toLowerCase().startsWith("job"))) {
+          if (_bookVariationsMap.containsValue("job")) {
+            bool isPotentiallyJob = _bookVariationsMap.entries.any((e) =>
+                (e.key == "jó" ||
+                    e.key == "job" ||
+                    e.key == "jo com acento circunflexo" ||
+                    e.key == "jô") &&
+                e.value == "job");
+            if (isPotentiallyJob && foundBookAbbrev == "jo") {
+              foundBookAbbrev = "job";
+            }
+          }
+        }
+        break;
+      }
+    }
+
+    if (foundBookAbbrev == null) {
+      updateErrorText(
+          "Livro não reconhecido. Verifique o nome e tente novamente.");
+      return;
+    }
+
+    final RegExp chapVerseRegex =
+        RegExp(r"^\s*(\d+)\s*(?:[:\.]\s*(\d+)(?:\s*-\s*(\d+))?)?\s*$");
+    final Match? cvMatch =
+        chapVerseRegex.firstMatch(remainingInputForChapterAndVerse);
+
+    if (cvMatch == null || cvMatch.group(1) == null) {
+      updateErrorText(
+          "Formato de capítulo/versículo inválido. Use 'Livro Cap' ou 'Livro Cap:Ver'.");
+      return;
+    }
+    final int? chapter = int.tryParse(cvMatch.group(1)!);
+    if (chapter == null) {
+      updateErrorText("Número do capítulo inválido.");
+      return;
+    }
+    _finalizeNavigation(
+        foundBookAbbrev, chapter, dialogContext, updateErrorText);
   }
 
   void _finalizeNavigation(String bookAbbrev, int chapter,
       BuildContext dialogContext, Function(String?) updateErrorText) {
-    // ... (como antes)
+    if (booksMap != null && booksMap!.containsKey(bookAbbrev)) {
+      final bookData = booksMap![bookAbbrev];
+      if (chapter >= 1 && chapter <= (bookData['capitulos'] as int)) {
+        _applyNavigationState(bookAbbrev, chapter, forceKeyUpdate: true);
+        if (Navigator.canPop(dialogContext)) Navigator.of(dialogContext).pop();
+        updateErrorText(null);
+      } else {
+        updateErrorText(
+            'Capítulo $chapter inválido para ${bookData['nome']}. (${bookData['capitulos']} caps).');
+      }
+    } else {
+      updateErrorText(
+          'Livro "$bookAbbrev" (abreviação) não encontrado no sistema.');
+    }
   }
 
   @override
@@ -601,7 +722,37 @@ class _BiblePageState extends State<BiblePage> {
                 ? const SizedBox.shrink()
                 : null,
             actions: _isSemanticSearchActive
-                ? [/* ... Ações de busca semântica ... */]
+                ? [
+                    IconButton(
+                      icon: Icon(Icons.search,
+                          color: theme.appBarTheme.actionsIconTheme?.color),
+                      onPressed: () {
+                        if (_semanticQueryController.text.isNotEmpty &&
+                            mounted) {
+                          StoreProvider.of<AppState>(context, listen: false)
+                              .dispatch(SearchBibleSemanticAction(
+                                  _semanticQueryController.text));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => BibleSearchResultsPage(
+                                      initialQuery:
+                                          _semanticQueryController.text)));
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close,
+                          color: theme.appBarTheme.actionsIconTheme?.color),
+                      onPressed: () {
+                        if (mounted)
+                          setState(() {
+                            _isSemanticSearchActive = false;
+                            _semanticQueryController.clear();
+                          });
+                      },
+                    )
+                  ]
                 : [
                     if (!_isFocusModeActive && viewModel.pendingWritesCount > 0)
                       Padding(
@@ -1186,7 +1337,13 @@ class _BiblePageState extends State<BiblePage> {
     if (verseColumnData.isEmpty &&
         sections.isEmpty &&
         currentTranslation.isNotEmpty) {
-      return Center(/* ... */);
+      return Center(
+          child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text("Tradução '$currentTranslation' indisponível.",
+                  style: TextStyle(
+                      color: theme.textTheme.bodyMedium?.color, fontSize: 13),
+                  textAlign: TextAlign.center)));
     }
     return StoreConnector<AppState, _BibleContentViewModel>(
         converter: (store) =>
