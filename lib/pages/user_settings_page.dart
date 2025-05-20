@@ -1,4 +1,5 @@
 // lib/pages/user_settings_page.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
@@ -17,13 +18,14 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   bool _isLoading = false;
-
-  // Para o seletor de tema
-  AppThemeOption? _selectedThemeOption; // Estado local para o dropdown
+  AppThemeOption? _selectedThemeOption;
 
   @override
   void initState() {
     super.initState();
+    // Acessa o store de forma segura no initState
+    // É melhor usar addPostFrameCallback para interagir com o Store se houver risco do context não estar pronto
+    // Mas para ler dados iniciais, listen: false é seguro.
     final userDetails = StoreProvider.of<AppState>(context, listen: false)
             .state
             .userState
@@ -33,11 +35,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _descriptionController =
         TextEditingController(text: userDetails['descrição'] ?? '');
 
-    // Inicializa o _selectedThemeOption com o tema ativo do Redux
-    // Isso deve ser feito após o primeiro frame para garantir que o context do StoreProvider esteja disponível
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // Verifica se o widget ainda está montado
         setState(() {
           _selectedThemeOption =
               StoreProvider.of<AppState>(context, listen: false)
@@ -57,21 +56,28 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   }
 
   Future<void> _showLogoutConfirmationDialog(BuildContext context) async {
+    // Captura o context do StoreProvider ANTES do showDialog, se for usá-lo para despachar
+    // No entanto, para o dispatch, o context da UserSettingsPage (widget.context ou simplesmente context) é suficiente
+    // E para o Navigator.pop do diálogo, usamos dialogContext
+    final store = StoreProvider.of<AppState>(context,
+        listen: false); // Store da UserSettingsPage
+
     return showDialog<void>(
-      context: context,
+      context: context, // Contexto para exibir o diálogo
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
+        // Contexto específico do diálogo
         return AlertDialog(
-          backgroundColor:
-              Theme.of(context).dialogBackgroundColor, // Usa cor do tema
+          backgroundColor: Theme.of(dialogContext).dialogBackgroundColor,
           title: Text('Confirmar Saída',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              style: TextStyle(
+                  color: Theme.of(dialogContext).colorScheme.onSurface)),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
                 Text('Você tem certeza que deseja sair?',
                     style: TextStyle(
-                        color: Theme.of(context)
+                        color: Theme.of(dialogContext)
                             .colorScheme
                             .onSurface
                             .withOpacity(0.7))),
@@ -82,7 +88,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             TextButton(
               child: Text('Cancelar',
                   style: TextStyle(
-                      color: Theme.of(context)
+                      color: Theme.of(dialogContext)
                           .colorScheme
                           .onSurface
                           .withOpacity(0.7))),
@@ -91,12 +97,23 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             TextButton(
               child:
                   const Text('Sair', style: TextStyle(color: Colors.redAccent)),
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                StoreProvider.of<AppState>(context, listen: false)
-                    .dispatch(UserLoggedOutAction());
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/login', (Route<dynamic> route) => false);
+
+                await FirebaseAuth.instance.signOut();
+                print("Usuário deslogado do Firebase.");
+
+                // Usa o 'store' capturado antes do showDialog ou o context da UserSettingsPage
+                // que ainda deve estar montado neste ponto.
+                store.dispatch(UserLoggedOutAction());
+
+                // É crucial que o context usado para a navegação global seja o correto.
+                // Usar o context da UserSettingsPage com rootNavigator: true.
+                if (mounted) {
+                  Navigator.of(context, rootNavigator: true)
+                      .pushNamedAndRemoveUntil(
+                          '/login', (Route<dynamic> route) => false);
+                }
               },
             ),
           ],
@@ -112,24 +129,44 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       final newName = _nameController.text.trim();
       final newDescription = _descriptionController.text.trim();
 
+      // Verifica se houve realmente mudança antes de despachar
+      bool changed = false;
       if (newName !=
           (storeInstance.state.userState.userDetails?['nome'] ?? '')) {
         storeInstance.dispatch(UpdateUserFieldAction('nome', newName));
+        changed = true;
       }
       if (newDescription !=
           (storeInstance.state.userState.userDetails?['descrição'] ?? '')) {
         storeInstance
             .dispatch(UpdateUserFieldAction('descrição', newDescription));
+        changed = true;
       }
 
-      Future.delayed(const Duration(seconds: 1), () {
+      // Simula um delay para a operação de salvar e atualiza o estado
+      // Em um app real, isso seria uma chamada assíncrona ao backend/Firestore
+      Future.delayed(const Duration(milliseconds: 500), () {
+        // Reduzido delay para feedback mais rápido
         if (mounted) {
-          // Verifica se o widget ainda está montado
-          storeInstance.dispatch(LoadUserStatsAction());
+          // A ação UpdateUserFieldAction já deve ter atualizado o Firestore via middleware.
+          // A UserStatsLoadedAction (ou UserDetailsLoadedAction) no middleware de UpdateUserFieldAction
+          // deve ter atualizado o estado do Redux.
+          // Portanto, não é estritamente necessário despachar LoadUserStatsAction aqui DE NOVO,
+          // a menos que UpdateUserFieldAction não recarregue os dados.
+          // Vamos assumir que o middleware de UpdateUserFieldAction recarrega os dados após a escrita.
+          // storeInstance.dispatch(LoadUserStatsAction()); // Opcional, dependendo do middleware
+
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Alterações salvas com sucesso!')),
-          );
+          if (changed) {
+            // Só mostra o SnackBar se algo mudou
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Alterações salvas com sucesso!')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Nenhuma alteração para salvar.')),
+            );
+          }
         }
       });
     }
@@ -143,15 +180,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         return 'Septima Escuro';
       case AppThemeOption.septimaLight:
         return 'Septima Claro';
-      default:
-        return '';
-    }
+    } // Default não é necessário pois o enum cobre todos os casos.
   }
 
   @override
   Widget build(BuildContext context) {
-    // Garante que _selectedThemeOption é inicializado se ainda for null
-    // Isso pode acontecer se o addPostFrameCallback ainda não rodou.
     _selectedThemeOption ??= StoreProvider.of<AppState>(context, listen: false)
         .state
         .themeState
@@ -160,20 +193,35 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configurações'),
-        // backgroundColor e elevation são herdados do tema global
       ),
       body: StoreConnector<AppState, Map<String, dynamic>>(
+          // Usar um ViewModel mais específico pode ser melhor se UserDetails for grande
           converter: (s) => s.state.userState.userDetails ?? {},
-          onWillChange: (prevVm, newVm) {
-            if (!mounted) return; // Proteção adicional
-            if (prevVm?['nome'] != newVm['nome']) {
-              _nameController.text = newVm['nome'] ?? '';
-            }
-            if (prevVm?['descrição'] != newVm['descrição']) {
-              _descriptionController.text = newVm['descrição'] ?? '';
+          // onWillChange é chamado antes do builder se o ViewModel mudou.
+          // Útil para atualizar controllers, mas cuidado com setState aqui.
+          onWillChange: (Map<String, dynamic>? previousViewModel,
+              Map<String, dynamic> newViewModel) {
+            // Atualiza os controllers APENAS se o valor no Redux realmente mudou
+            // e se o valor do controller é diferente, para evitar loops de atualização.
+            // Isso é mais seguro do que no initState apenas, caso os dados sejam atualizados
+            // no Redux enquanto a página está visível.
+            if (mounted) {
+              // Garante que o widget está na árvore
+              if (_nameController.text != (newViewModel['nome'] ?? '')) {
+                _nameController.text = newViewModel['nome'] ?? '';
+              }
+              if (_descriptionController.text !=
+                  (newViewModel['descrição'] ?? '')) {
+                _descriptionController.text = newViewModel['descrição'] ?? '';
+              }
             }
           },
           builder: (context, userDetails) {
+            // userDetails aqui é o resultado do converter
+            // Não é ideal atualizar controllers dentro do builder, pois pode causar loops.
+            // _nameController.text = userDetails['nome'] ?? ''; // MOVIDO PARA onWillChange
+            // _descriptionController.text = userDetails['descrição'] ?? ''; // MOVIDO PARA onWillChange
+
             return SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Form(
@@ -181,7 +229,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    // --- Seção Editar Perfil ---
                     Text(
                       'Editar Perfil',
                       style: TextStyle(
@@ -202,6 +249,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         if (value == null || value.isEmpty) {
                           return 'Por favor, insira seu nome.';
                         }
+                        if (value.length > 50) {
+                          // Exemplo de validação de tamanho
+                          return 'O nome não pode exceder 50 caracteres.';
+                        }
                         return null;
                       },
                     ),
@@ -215,6 +266,13 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         // Estilos herdam do inputDecorationTheme
                       ),
                       maxLines: 3,
+                      validator: (value) {
+                        if (value != null && value.length > 200) {
+                          // Exemplo
+                          return 'A descrição não pode exceder 200 caracteres.';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
@@ -224,9 +282,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                               height: 20,
                               padding: const EdgeInsets.all(2.0),
                               child: CircularProgressIndicator(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimary, // Cor de acordo com o botão
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 strokeWidth: 2,
                               ),
                             )
@@ -239,13 +295,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                             color: Theme.of(context).colorScheme.onPrimary),
                       ),
                       onPressed: _isLoading ? null : _saveChanges,
-                      // Estilo do botão é herdado do elevatedButtonTheme
                     ),
                     const SizedBox(height: 32),
                     Divider(color: Theme.of(context).dividerColor),
                     const SizedBox(height: 16),
 
-                    // --- Seção Tema do Aplicativo ---
                     Text(
                       'Tema do Aplicativo',
                       style: TextStyle(
@@ -272,18 +326,19 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                                   .withOpacity(0.5))),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<AppThemeOption>(
-                          value: _selectedThemeOption,
+                          value: _selectedThemeOption, // Usa o estado local
                           isExpanded: true,
-                          dropdownColor: Theme.of(context)
-                              .dialogBackgroundColor, // Cor de fundo do dropdown
+                          dropdownColor:
+                              Theme.of(context).dialogBackgroundColor,
                           icon: Icon(Icons.arrow_drop_down,
                               color: Theme.of(context).colorScheme.onSurface),
                           onChanged: (AppThemeOption? newValue) {
                             if (newValue != null) {
                               setState(() {
-                                _selectedThemeOption =
-                                    newValue; // Atualiza o estado local para o UI
+                                // Atualiza o estado local para o UI do dropdown
+                                _selectedThemeOption = newValue;
                               });
+                              // Despacha a ação para o Redux (que também persistirá)
                               StoreProvider.of<AppState>(context, listen: false)
                                   .dispatch(SetThemeAction(newValue));
                             }
@@ -309,7 +364,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                     Divider(color: Theme.of(context).dividerColor),
                     const SizedBox(height: 16),
 
-                    // --- Seção Outras Ações ---
                     Text(
                       'Outras Ações',
                       style: TextStyle(
@@ -332,16 +386,14 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ),
                       onPressed: () => _showLogoutConfirmationDialog(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .error, // Cor de erro do tema
-                        // foregroundColor é definido pelo onPrimary do error
+                        backgroundColor: Theme.of(context).colorScheme.error,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20), // Espaço extra no final
                   ],
                 ),
               ),

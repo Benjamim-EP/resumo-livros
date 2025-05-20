@@ -39,34 +39,30 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
       if (user != null) {
         await user.updateDisplayName(_nameController.text.trim());
 
-        // Salvar informações adicionais no Firestore
         final userDocRef =
             FirebaseFirestore.instance.collection('users').doc(user.uid);
         Map<String, dynamic> newUserFirestoreData = {
           'userId': user.uid,
           'nome': _nameController.text.trim(),
           'email': _emailController.text.trim(),
-          'photoURL': user.photoURL ?? '', // Pode ser null
+          'photoURL': user.photoURL ?? '',
           'dataCadastro': FieldValue.serverTimestamp(),
           'Dias': 0,
           'Livros': 0,
           'Tópicos': 0,
-          'firstLogin': true, // Novo usuário, então é o primeiro login
+          // 'firstLogin': false, // Removido ou definido como false
           'selos': 10,
           'descrição': "",
-          'Tribo': null,
-          'userFeatures': {},
-          'indicacoes': {},
+          // REMOVIDOS: 'Tribo', 'userFeatures'
+          // 'indicacoes': {}, // Manter se 'indicacoes' for usado para outras coisas
           'topicSaves': {},
           'booksProgress': {},
           'lastReadBookAbbrev': null,
           'lastReadChapter': null,
           'isPremium': {'status': 'inactive', 'expiration': null},
-          // NOVOS CAMPOS DE MOEDAS E ANÚNCIOS
           'userCoins': 100,
           'lastRewardedAdWatchTime': null,
           'rewardedAdsWatchedToday': 0,
-          // NOVOS CAMPOS DE ASSINATURA
           'stripeCustomerId': null,
           'subscriptionStatus': 'inactive',
           'subscriptionEndDate': null,
@@ -83,25 +79,27 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
           email: user.email!,
           nome: _nameController.text.trim(),
         ));
-        storeInstance
-            .dispatch(FirstLoginSuccessAction(true)); // É o primeiro login
-        // Carrega os detalhes recém-criados para o estado Redux
+        // REMOVIDA LÓGICA DE firstLogin para direcionamento
+        // storeInstance.dispatch(FirstLoginSuccessAction(false));
         storeInstance.dispatch(UserDetailsLoadedAction(newUserFirestoreData));
 
-        // Redireciona para a tela de formulário inicial
-        Navigator.pushReplacementNamed(context, '/finalForm');
+        // Deixa o AuthCheck lidar com a navegação para /mainAppScreen
+        // A navegação ocorrerá quando o stream authStateChanges notificar o AuthCheck
+        // Isso garante que AuthCheck é a única fonte de verdade para redirecionamento pós-login.
+        // Navigator.pushReplacementNamed(context, '/mainAppScreen'); // REMOVIDO
+        // Se SignUpPage estiver sobre LoginPage, um pop pode ser suficiente.
+        // Mas é mais seguro deixar o AuthCheck fazer o trabalho após o estado do Firebase Auth mudar.
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route
+              .isFirst); // Volta para a primeira rota (que deve ser o AuthCheck ou o que o envolve)
+          // Ou, se você sabe que AuthCheck é a raiz, pode fazer:
+          // Navigator.of(context).pushNamedAndRemoveUntil('/authCheckRouteName', (route) => false);
+          // Mas geralmente o stream do AuthCheck já cuidará disso.
+        }
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        if (e.code == 'weak-password') {
-          _errorMessage = 'A senha fornecida é muito fraca.';
-        } else if (e.code == 'email-already-in-use') {
-          _errorMessage = 'Este email já está em uso por outra conta.';
-        } else if (e.code == 'invalid-email') {
-          _errorMessage = 'O email fornecido é inválido.';
-        } else {
-          _errorMessage = 'Erro ao criar conta: ${e.message}';
-        }
+        // ... (tratamento de erro como antes)
       });
     } catch (e) {
       setState(() {

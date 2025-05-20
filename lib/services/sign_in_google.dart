@@ -1,84 +1,123 @@
+// lib/services/sign_in_google.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in/google_sign_in.dart'; // Importar GoogleSignIn
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+// Removido: import 'package:resumo_dos_deuses_flutter/redux/actions.dart'; // Se UpdateUserUidAction não for mais usada aqui
+// Removido: import 'package:resumo_dos_deuses_flutter/redux/store.dart';   // Se store.dispatch não for mais usado aqui
 
 Future<User?> signInWithGoogle(BuildContext context) async {
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp();
   }
 
+  final GoogleSignIn googleSignIn = GoogleSignIn(); // Instanciar
+
   try {
-    final googleUser = await GoogleSignIn().signIn();
+    // **PASSO CRUCIAL: Tentar deslogar do GoogleSignIn primeiro**
+    // Isso ajuda a garantir que o seletor de contas seja mostrado se houver múltiplas contas
+    // ou se o usuário quiser trocar de conta.
+    try {
+      await googleSignIn.signOut();
+      print('GoogleSignIn signOut bem-sucedido (ou já estava deslogado).');
+    } catch (e) {
+      print(
+          'Erro ao tentar googleSignIn.signOut(): $e. Prosseguindo com o signIn.');
+      // Não é um erro crítico se o signOut falhar, podemos prosseguir para o signIn.
+    }
+    // Você também pode tentar googleSignIn.disconnect() se quiser uma desconexão mais completa,
+    // mas signOut() geralmente é suficiente para forçar o seletor.
+    // await googleSignIn.disconnect();
+
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
     if (googleUser == null) {
-      print('Login cancelado pelo usuário');
+      print(
+          'Login com Google cancelado pelo usuário ou falhou ao obter conta Google.');
       return null;
     }
 
-    final googleAuth = await googleUser.authentication;
-    print('Credenciais do Google obtidas: ${googleAuth.accessToken}');
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
+    print(
+        'Credenciais do Google obtidas: AccessToken ${googleAuth.accessToken != null}, IDToken ${googleAuth.idToken != null}');
 
-    final credential = GoogleAuthProvider.credential(
+    final AuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 
-    // Login no Firebase com credenciais do Google
-    final userCredential =
+    final UserCredential userCredential =
         await FirebaseAuth.instance.signInWithCredential(credential);
-    final user = userCredential.user;
+    final User? user = userCredential.user;
 
     if (user != null) {
-      print('Usuário logado com Google: ${user.email}');
+      print('Usuário logado no Firebase com Google: ${user.email}');
 
-      // Despachar a ação para salvar o UID no Redux
-      store.dispatch(UpdateUserUidAction(user.uid));
-
-      // Verifique se o usuário já está cadastrado no Firestore
-      final userDoc =
+      // A lógica de Redux e Firestore para criar/verificar usuário permanece a mesma
+      final userDocRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
-
-      final docSnapshot = await userDoc.get();
+      final docSnapshot = await userDocRef.get();
 
       if (!docSnapshot.exists) {
-        // Novo usuário - Salve os dados no Firestore
-        await userDoc.set({
-          'nome': user.displayName ?? '',
+        print(
+            'signInWithGoogle: Novo usuário. Criando documento no Firestore.');
+        final Map<String, dynamic> newUserFirestoreData = {
+          'userId': user.uid,
+          'nome': user.displayName ?? 'Usuário Google',
           'email': user.email ?? '',
           'photoURL': user.photoURL ?? '',
-          'dataCadastro': DateTime.now().toIso8601String(),
+          'dataCadastro': FieldValue.serverTimestamp(),
           'Dias': 0,
           'Livros': 0,
           'Tópicos': 0,
-          'firstLogin': true,
           'selos': 10,
           'descrição': "",
-        });
-        print('Novo usuário cadastrado: ${user.email}');
-        // Redireciona para a tela de primeiro login
-        Navigator.pushReplacementNamed(context, '/finalForm');
+          'topicSaves': {},
+          'booksProgress': {},
+          'lastReadBookAbbrev': null,
+          'lastReadChapter': null,
+          'isPremium': {'status': 'inactive', 'expiration': null},
+          'userCoins': 100,
+          'lastRewardedAdWatchTime': null,
+          'rewardedAdsWatchedToday': 0,
+          'stripeCustomerId': null,
+          'subscriptionStatus': 'inactive',
+          'subscriptionEndDate': null,
+          'stripeSubscriptionId': null,
+          'activePriceId': null,
+        };
+        await userDocRef.set(newUserFirestoreData);
+        // A navegação é tratada pelo AuthCheck
       } else {
-        // Usuário existente - Verifica o estado de "firstLogin"
-        final isFirstLogin = docSnapshot.data()?['firstLogin'] ?? false;
-
-        if (isFirstLogin) {
-          // Redireciona para a tela de primeiro login
-          Navigator.pushReplacementNamed(context, '/finalForm');
-        } else {
-          // Redireciona para a tela principal
-          Navigator.pushReplacementNamed(context, '/mainAppScreen');
-        }
+        print('signInWithGoogle: Usuário existente.');
+        // A navegação é tratada pelo AuthCheck
       }
+      return user;
     }
-    return user;
   } on FirebaseAuthException catch (e) {
-    print('Erro ao fazer login com Google: ${e.message}');
-  } catch (e) {
+    print(
+        'Erro FirebaseAuthException no login com Google: ${e.code} - ${e.message}');
+    if (context.mounted) {
+      // Adicionar verificação de mounted
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                'Erro ao fazer login com Google: ${e.message ?? "Tente novamente"}')),
+      );
+    }
+  } catch (e, s) {
     print('Erro geral no login com Google: $e');
+    print(s);
+    if (context.mounted) {
+      // Adicionar verificação de mounted
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('Ocorreu um erro inesperado durante o login com Google.')),
+      );
+    }
   }
   return null;
 }
