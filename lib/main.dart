@@ -19,7 +19,7 @@ void main() async {
   // Despacha a ação para carregar o tema salvo ANTES de construir o MaterialApp
   store.dispatch(LoadSavedThemeAction());
   store.dispatch(LoadPendingBibleProgressAction());
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

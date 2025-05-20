@@ -150,7 +150,7 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
             firstAdIn6HourWindow.add(SIX_HOUR_WINDOW_DURATION);
         final remainingWindowTime = windowEndTime.difference(now);
         blockReason =
-            "Limite de ${MAX_ADS_PER_SIX_HOUR_WINDOW} anúncios a cada ${SIX_HOUR_WINDOW_DURATION.inHours}h atingido. Tente novamente em ${remainingWindowTime.inHours}h ${remainingWindowTime.inMinutes.remainder(60)}min.";
+            "Limite de $MAX_ADS_PER_SIX_HOUR_WINDOW anúncios a cada ${SIX_HOUR_WINDOW_DURATION.inHours}h atingido. Tente novamente em ${remainingWindowTime.inHours}h ${remainingWindowTime.inMinutes.remainder(60)}min.";
       }
     }
 
@@ -224,7 +224,7 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
             store.state.userState.rewardedAdsWatchedToday;
 
         await firestoreService.updateUserCoinsAndAdStats(
-          userId!, // Sabemos que não é nulo aqui
+          userId, // Sabemos que não é nulo aqui
           newTotalCoins,
           adWatchedTime,
           adsWatchedTodayForFirestore,

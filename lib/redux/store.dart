@@ -61,8 +61,8 @@ class AppState {
       chatState: chatState ?? this.chatState,
       themeState: themeState ?? this.themeState,
       bibleSearchState: bibleSearchState ?? this.bibleSearchState, // NOVO
-      metadataState: metadataState ??
-          this.metadataState, // Mantém o estado de metadados atual
+      metadataState:
+          metadataState ?? metadataState, // Mantém o estado de metadados atual
     );
   }
 }

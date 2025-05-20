@@ -29,15 +29,17 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _signInWithEmail() async {
     if (_emailController.text.trim().isEmpty ||
         _passwordController.text.isEmpty) {
-      if (mounted)
+      if (mounted) {
         setState(() => _errorMessage = 'Por favor, preencha todos os campos.');
+      }
       return;
     }
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
+    }
 
     try {
       User? user = await signInWithEmail(
@@ -81,11 +83,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isGoogleLoading = true;
         _errorMessage = null;
       });
+    }
 
     // Passar `context` para `signInWithGoogle` se ele ainda precisar para `ScaffoldMessenger`
     User? user = await signInWithGoogle(context);

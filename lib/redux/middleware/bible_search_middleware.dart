@@ -124,7 +124,7 @@ void _handleSearchBibleSemantic(Store<AppState> store,
           if (currentContext.mounted) {
             // Verifica de novo
             ScaffoldMessenger.of(currentContext).showSnackBar(
-              SnackBar(
+              const SnackBar(
                   content:
                       Text('$BIBLE_SEARCH_COST moedas usadas para a busca.')),
             );
@@ -201,6 +201,7 @@ void _handleSearchBibleSemantic(Store<AppState> store,
 List<Middleware<AppState>> createBibleSearchMiddleware() {
   return [
     TypedMiddleware<AppState, SearchBibleSemanticAction>(
-        _handleSearchBibleSemantic),
+            _handleSearchBibleSemantic)
+        .call,
   ];
 }

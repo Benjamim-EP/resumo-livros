@@ -152,7 +152,7 @@ class _UserPageState extends State<UserPage> {
               lineHeight: 10.0,
               barRadius: const Radius.circular(5),
               backgroundColor:
-                  theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               progressColor: theme.colorScheme.secondary.withOpacity(0.3),
               center: Text("0%",
                   style: TextStyle(
@@ -187,7 +187,8 @@ class _UserPageState extends State<UserPage> {
           percent: safeProgress,
           lineHeight: 10.0,
           barRadius: const Radius.circular(5),
-          backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+          backgroundColor:
+              theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
           progressColor: theme.colorScheme.secondary,
           center: Text(
             "${(safeProgress * 100).toStringAsFixed(0)}%",
@@ -381,12 +382,14 @@ class _UserPageState extends State<UserPage> {
                 vm.bibleSectionCounts['total_secoes_novo_testamento'] as int? ??
                     0;
 
-            if (totalSectionsInAT == 0 && vm.bibleSectionCounts.isNotEmpty)
+            if (totalSectionsInAT == 0 && vm.bibleSectionCounts.isNotEmpty) {
               print(
                   "AVISO UserPage Progresso: 'total_secoes_antigo_testamento' é 0 ou nulo nos metadados.");
-            if (totalSectionsInNT == 0 && vm.bibleSectionCounts.isNotEmpty)
+            }
+            if (totalSectionsInNT == 0 && vm.bibleSectionCounts.isNotEmpty) {
               print(
                   "AVISO UserPage Progresso: 'total_secoes_novo_testamento' é 0 ou nulo nos metadados.");
+            }
 
             if (totalSectionsInAT == 0) totalSectionsInAT = 1;
             if (totalSectionsInNT == 0) totalSectionsInNT = 1;
@@ -424,8 +427,9 @@ class _UserPageState extends State<UserPage> {
               final bookMetaForName =
                   _localBooksMap?[bookAbbrev] as Map<String, dynamic>?;
 
-              if (bookMetaFromCounts == null || bookMetaForName == null)
+              if (bookMetaFromCounts == null || bookMetaForName == null) {
                 continue;
+              }
 
               final bookProgressData = vm.allBooksProgress[bookAbbrev];
               int totalSectionsInThisBook =
@@ -467,8 +471,8 @@ class _UserPageState extends State<UserPage> {
                       percent: bookProgressPercent,
                       lineHeight: 12.0,
                       barRadius: const Radius.circular(6),
-                      backgroundColor:
-                          theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest
+                          .withOpacity(0.5),
                       progressColor: theme.colorScheme.primary,
                     ),
                   ],
@@ -542,8 +546,8 @@ class _UserPageState extends State<UserPage> {
                     ),
                     circularStrokeCap: CircularStrokeCap.round,
                     progressColor: theme.colorScheme.primary,
-                    backgroundColor:
-                        theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.5),
                   ),
                   const SizedBox(height: 24),
                   _buildTestamentProgress("Antigo Testamento", atProgress,
@@ -594,8 +598,9 @@ class _UserPageState extends State<UserPage> {
                 ],
                 selected: <HighlightType>{_selectedHighlightType},
                 onSelectionChanged: (Set<HighlightType> newSelection) {
-                  if (mounted)
+                  if (mounted) {
                     setState(() => _selectedHighlightType = newSelection.first);
+                  }
                 },
                 style: SegmentedButton.styleFrom(
                   backgroundColor: theme.colorScheme.surface.withOpacity(0.1),
@@ -611,10 +616,11 @@ class _UserPageState extends State<UserPage> {
                 builder: (context, highlightsVm) {
                   if (_selectedHighlightType == HighlightType.verses) {
                     final highlights = highlightsVm.userVerseHighlights;
-                    if (highlights.isEmpty)
+                    if (highlights.isEmpty) {
                       return const Center(
                           child: Text("Nenhum versículo destacado ainda.",
                               style: TextStyle(fontSize: 16)));
+                    }
                     final highlightList = highlights.entries.toList();
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
@@ -661,20 +667,22 @@ class _UserPageState extends State<UserPage> {
                                   verseId, 'nvi'),
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState ==
-                                    ConnectionState.waiting)
+                                    ConnectionState.waiting) {
                                   return Text("Carregando texto...",
                                       style: TextStyle(
                                           color:
                                               theme.textTheme.bodySmall?.color,
                                           fontSize: 12));
+                                }
                                 if (snapshot.hasError ||
                                     !snapshot.hasData ||
-                                    snapshot.data!.isEmpty)
+                                    snapshot.data!.isEmpty) {
                                   return Text("Texto indisponível",
                                       style: TextStyle(
                                           color: theme.colorScheme.error
                                               .withOpacity(0.7),
                                           fontSize: 12));
+                                }
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(snapshot.data!,
@@ -697,10 +705,11 @@ class _UserPageState extends State<UserPage> {
                               constraints: const BoxConstraints(),
                               tooltip: "Remover Destaque",
                               onPressed: () {
-                                if (mounted)
+                                if (mounted) {
                                   StoreProvider.of<AppState>(context,
                                           listen: false)
                                       .dispatch(ToggleHighlightAction(verseId));
+                                }
                               },
                             ),
                             onTap: () => _navigateToBibleVerseAndTab(verseId),
@@ -712,10 +721,11 @@ class _UserPageState extends State<UserPage> {
                     // Comments
                     final commentHighlights =
                         highlightsVm.userCommentHighlights;
-                    if (commentHighlights.isEmpty)
+                    if (commentHighlights.isEmpty) {
                       return const Center(
                           child: Text("Nenhum comentário marcado ainda.",
                               style: TextStyle(fontSize: 16)));
+                    }
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16.0, vertical: 8.0),
@@ -741,13 +751,14 @@ class _UserPageState extends State<UserPage> {
             }
           },
           builder: (context, notes) {
-            if (notes.isEmpty)
+            if (notes.isEmpty) {
               return Center(
                   child: Text("Nenhuma nota adicionada ainda.",
                       style: TextStyle(
                           color: theme.textTheme.bodyMedium?.color
                               ?.withOpacity(0.7),
                           fontSize: 16)));
+            }
             final noteList = notes.entries.toList();
             return ListView.builder(
               padding:
@@ -796,9 +807,10 @@ class _UserPageState extends State<UserPage> {
                       constraints: const BoxConstraints(),
                       tooltip: "Remover Nota",
                       onPressed: () {
-                        if (mounted)
+                        if (mounted) {
                           StoreProvider.of<AppState>(context, listen: false)
                               .dispatch(DeleteNoteAction(verseId));
+                        }
                       },
                     ),
                     onTap: () => _navigateToBibleVerseAndTab(verseId),
@@ -819,13 +831,14 @@ class _UserPageState extends State<UserPage> {
             }
           },
           builder: (context, history) {
-            if (history.isEmpty)
+            if (history.isEmpty) {
               return Center(
                   child: Text("Nenhum histórico de leitura encontrado.",
                       style: TextStyle(
                           color: theme.textTheme.bodyMedium?.color
                               ?.withOpacity(0.7),
                           fontSize: 16)));
+            }
             final DateFormat formatter = DateFormat('dd/MM/yy \'às\' HH:mm');
             return ListView.builder(
               padding:
@@ -969,11 +982,11 @@ class _UserPageState extends State<UserPage> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Expanded(
+                            const Expanded(
                               child: Column(
                                 children: [
                                   ProfilePicture(),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: 12),
                                   UserInfo(),
                                 ],
                               ),

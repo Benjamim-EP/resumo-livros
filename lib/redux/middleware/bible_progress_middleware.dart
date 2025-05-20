@@ -19,7 +19,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
   // Esta função carrega o progresso de um livro específico do Firestore
   // e atualiza o estado Redux. É chamado, por exemplo, quando a BiblePage é aberta
   // para um livro específico, ou após uma sincronização de escrita bem-sucedida.
-  void _handleLoadBibleBookProgress(Store<AppState> store,
+  void handleLoadBibleBookProgress(Store<AppState> store,
       LoadBibleBookProgressAction action, NextDispatcher next) async {
     next(action); // Passa a ação para o próximo middleware ou reducer.
     // O reducer para esta ação NÃO deve fazer chamadas de API.
@@ -83,8 +83,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
   }
 
   // Persistência com SharedPreferences
-  Future<void> _savePendingProgressToPrefs(
-      Map<String, Set<String>> pendingToAdd,
+  Future<void> savePendingProgressToPrefs(Map<String, Set<String>> pendingToAdd,
       Map<String, Set<String>> pendingToRemove) async {
     final prefs = await SharedPreferences.getInstance();
     // Converter Set<String> para List<String> para jsonEncode
@@ -101,7 +100,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
 
   // Handler para ToggleSectionReadStatusAction
   // Esta é a ação que a UI despacha quando o usuário clica no botão "marcar como lido".
-  void _handleToggleSectionReadStatus(Store<AppState> store,
+  void handleToggleSectionReadStatus(Store<AppState> store,
       ToggleSectionReadStatusAction action, NextDispatcher next) async {
     // 1. NÃO FAÇA next(action) para a ToggleSectionReadStatusAction original se o reducer não a trata otimisticamente.
     //    Em vez disso, o middleware orquestra as ações otimistas e de persistência/sincronização.
@@ -128,7 +127,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
 
     // É CRUCIAL que o estado seja lido DEPOIS que o reducer da ação otimista rodou.
     // O dispatch acima é síncrono, então o estado DEVE estar atualizado aqui.
-    _savePendingProgressToPrefs(store.state.userState.pendingSectionsToAdd,
+    savePendingProgressToPrefs(store.state.userState.pendingSectionsToAdd,
         store.state.userState.pendingSectionsToRemove);
 
     // A ação original ToggleSectionReadStatusAction agora serve apenas como um gatilho para este middleware.
@@ -142,7 +141,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
     // next(action); // Opcional, se outros middlewares precisarem ver.
   }
 
-  void _handleProcessPendingBibleProgress(Store<AppState> store,
+  void handleProcessPendingBibleProgress(Store<AppState> store,
       ProcessPendingBibleProgressAction action, NextDispatcher next) async {
     next(action);
 
@@ -210,7 +209,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
         print(
             "Middleware Sync: Sincronização Firestore para $bookAbbrev BEM-SUCEDIDA.");
         store.dispatch(ClearPendingBibleProgressAction(bookAbbrev));
-        _savePendingProgressToPrefs(
+        savePendingProgressToPrefs(
             // Salva o estado de pendências atualizado (agora vazio para este livro)
             store.state.userState.pendingSectionsToAdd,
             store.state.userState.pendingSectionsToRemove);
@@ -226,7 +225,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
     print("Middleware Sync: Processamento de pendências finalizado.");
   }
 
-  void _handleLoadPendingProgress(Store<AppState> store,
+  void handleLoadPendingProgress(Store<AppState> store,
       LoadPendingBibleProgressAction action, NextDispatcher next) async {
     next(action);
     final prefs = await SharedPreferences.getInstance();
@@ -267,7 +266,7 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
   // Handler para LoadAllBibleProgressAction
   // Carrega o progresso de TODOS os livros do usuário.
   // Usado geralmente na inicialização do app ou na UserPage.
-  void _handleLoadAllBibleProgress(Store<AppState> store,
+  void handleLoadAllBibleProgress(Store<AppState> store,
       LoadAllBibleProgressAction action, NextDispatcher next) async {
     next(action);
     final userId = store.state.userState.userId;
@@ -291,14 +290,19 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
 
   return [
     TypedMiddleware<AppState, LoadBibleBookProgressAction>(
-        _handleLoadBibleBookProgress),
+            handleLoadBibleBookProgress)
+        .call,
     TypedMiddleware<AppState, ToggleSectionReadStatusAction>(
-        _handleToggleSectionReadStatus),
+            handleToggleSectionReadStatus)
+        .call,
     TypedMiddleware<AppState, LoadAllBibleProgressAction>(
-        _handleLoadAllBibleProgress),
+            handleLoadAllBibleProgress)
+        .call,
     TypedMiddleware<AppState, ProcessPendingBibleProgressAction>(
-        _handleProcessPendingBibleProgress),
+            handleProcessPendingBibleProgress)
+        .call,
     TypedMiddleware<AppState, LoadPendingBibleProgressAction>(
-        _handleLoadPendingProgress),
+            handleLoadPendingProgress)
+        .call,
   ];
 }

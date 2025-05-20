@@ -153,7 +153,6 @@ class _CenterNextButton extends StatefulWidget {
   final VoidCallback onNext;
 
   const _CenterNextButton({
-    super.key,
     required this.animationController,
     required this.onNext,
   });
@@ -246,7 +245,6 @@ class _TopBackSkipView extends StatelessWidget {
   final VoidCallback onBack;
 
   const _TopBackSkipView({
-    super.key,
     required this.animationController,
     required this.onSkip,
     required this.onBack,

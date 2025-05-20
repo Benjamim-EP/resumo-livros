@@ -1,5 +1,4 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';

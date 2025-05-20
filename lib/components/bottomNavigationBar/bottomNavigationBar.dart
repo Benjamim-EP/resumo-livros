@@ -62,7 +62,7 @@ class _UserCoinsViewModel {
 
 class _UnderConstructionPlaceholder extends StatelessWidget {
   final String pageTitle;
-  const _UnderConstructionPlaceholder({super.key, required this.pageTitle});
+  const _UnderConstructionPlaceholder({required this.pageTitle});
 
   @override
   Widget build(BuildContext context) {

@@ -261,8 +261,9 @@ class _BiblePageState extends State<BiblePage> {
 
   void _syncScrollFrom1To2() {
     if (_isSyncingScroll) return;
-    if (!_scrollController1.hasClients || !_scrollController2.hasClients)
+    if (!_scrollController1.hasClients || !_scrollController2.hasClients) {
       return;
+    }
     _isSyncingScroll = true;
     if (_scrollController2.offset != _scrollController1.offset) {
       _scrollController2.jumpTo(_scrollController1.offset);
@@ -272,8 +273,9 @@ class _BiblePageState extends State<BiblePage> {
 
   void _syncScrollFrom2To1() {
     if (_isSyncingScroll) return;
-    if (!_scrollController1.hasClients || !_scrollController2.hasClients)
+    if (!_scrollController1.hasClients || !_scrollController2.hasClients) {
       return;
+    }
     _isSyncingScroll = true;
     if (_scrollController1.offset != _scrollController2.offset) {
       _scrollController1.jumpTo(_scrollController2.offset);
@@ -438,8 +440,9 @@ class _BiblePageState extends State<BiblePage> {
     if (!mounted) return;
     final store = StoreProvider.of<AppState>(context, listen: false);
     if (store.state.userState.userId != null) {
-      if (store.state.userState.readSectionsByBook.isEmpty)
+      if (store.state.userState.readSectionsByBook.isEmpty) {
         store.dispatch(LoadAllBibleProgressAction());
+      }
     }
   }
 
@@ -456,9 +459,10 @@ class _BiblePageState extends State<BiblePage> {
   void _recordHistory(String bookAbbrev, int chapter) {
     final currentRef = "${bookAbbrev}_$chapter";
     if (_lastRecordedHistoryRef != currentRef) {
-      if (mounted)
+      if (mounted) {
         StoreProvider.of<AppState>(context, listen: false)
             .dispatch(RecordReadingHistoryAction(bookAbbrev, chapter));
+      }
       _lastRecordedHistoryRef = currentRef;
     }
   }
@@ -468,8 +472,9 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _previousChapter() {
-    if (selectedBook == null || selectedChapter == null || booksMap == null)
+    if (selectedBook == null || selectedChapter == null || booksMap == null) {
       return;
+    }
     String newBookAbbrev = selectedBook!;
     int newChapter = selectedChapter!;
     if (selectedChapter! > 1) {
@@ -488,8 +493,9 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _nextChapter() {
-    if (selectedBook == null || selectedChapter == null || booksMap == null)
+    if (selectedBook == null || selectedChapter == null || booksMap == null) {
       return;
+    }
     String newBookAbbrev = selectedBook!;
     int newChapter = selectedChapter!;
     int totalChaptersInCurrentBook =
@@ -531,8 +537,9 @@ class _BiblePageState extends State<BiblePage> {
                   textInputAction: TextInputAction.search,
                   onSubmitted: (value) => _parseAndNavigateForGoTo(
                       value, dialogContext, (newError) {
-                    if (mounted)
+                    if (mounted) {
                       setDialogState(() => errorTextInDialog = newError);
+                    }
                   }),
                 ),
                 const SizedBox(height: 8),
@@ -551,8 +558,9 @@ class _BiblePageState extends State<BiblePage> {
                 TextButton(
                     onPressed: () => _parseAndNavigateForGoTo(
                             controller.text, dialogContext, (newError) {
-                          if (mounted)
+                          if (mounted) {
                             setDialogState(() => errorTextInDialog = newError);
+                          }
                         }),
                     child: Text("Ir",
                         style: TextStyle(color: theme.colorScheme.primary))),
@@ -788,11 +796,12 @@ class _BiblePageState extends State<BiblePage> {
                       icon: Icon(Icons.close,
                           color: theme.appBarTheme.actionsIconTheme?.color),
                       onPressed: () {
-                        if (mounted)
+                        if (mounted) {
                           setState(() {
                             _isSemanticSearchActive = false;
                             _semanticQueryController.clear();
                           });
+                        }
                       },
                     )
                   ]
@@ -917,8 +926,9 @@ class _BiblePageState extends State<BiblePage> {
                               color: theme.appBarTheme.actionsIconTheme?.color),
                           tooltip: "Busca Semântica",
                           onPressed: () {
-                            if (mounted)
+                            if (mounted) {
                               setState(() => _isSemanticSearchActive = true);
+                            }
                           },
                         ),
                       ]),
@@ -1047,8 +1057,9 @@ class _BiblePageState extends State<BiblePage> {
                                     selectedBook: selectedBook,
                                     booksMap: booksMap,
                                     onChanged: (value) {
-                                      if (mounted && value != null)
+                                      if (mounted && value != null) {
                                         _navigateToChapter(value, 1);
+                                      }
                                     })),
                             const SizedBox(width: 8),
                             if (selectedBook != null)
@@ -1302,8 +1313,7 @@ class _BiblePageState extends State<BiblePage> {
 
               return SectionItemWidget(
                 key: ValueKey(
-                    '${_selectedBookSlug}_${selectedChapter}_${section['title']}_${versesRange}_${selectedTranslation1}_$isSectionRead' +
-                        (_showHebrewInterlinear ? '_hebInt' : '')),
+                    '${_selectedBookSlug}_${selectedChapter}_${section['title']}_${versesRange}_${selectedTranslation1}_$isSectionRead${_showHebrewInterlinear ? '_hebInt' : ''}'),
                 sectionTitle: section['title'] ?? 'Seção',
                 verseNumbersInSection:
                     (section['verses'] as List?)?.cast<int>() ?? [],
@@ -1346,8 +1356,7 @@ class _BiblePageState extends State<BiblePage> {
 
                     return BiblePageWidgets.buildVerseItem(
                       key: ValueKey<String>(
-                          '${selectedBook}_${selectedChapter}_${verseNumber}_$selectedTranslation1' +
-                              (_showHebrewInterlinear ? '_hebInt' : '')),
+                          '${selectedBook}_${selectedChapter}_${verseNumber}_$selectedTranslation1${_showHebrewInterlinear ? '_hebInt' : ''}'),
                       verseNumber: verseNumber,
                       verseData: listData[verseIndexInChapter],
                       selectedBook: selectedBook,
@@ -1433,8 +1442,7 @@ class _BiblePageState extends State<BiblePage> {
 
                 return Column(
                     key: ValueKey(
-                        'compare_section_${sectionTitle}_${currentTranslation}_$sectionKeyIdentifier' +
-                            (isSectionRead ? '_read' : '_unread')),
+                        'compare_section_${sectionTitle}_${currentTranslation}_$sectionKeyIdentifier${isSectionRead ? '_read' : '_unread'}'),
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
@@ -1509,7 +1517,7 @@ class _BiblePageState extends State<BiblePage> {
               } else if (verseColumnData.isNotEmpty) {
                 return Column(
                     key: ValueKey(
-                        'all_verses_column_${currentTranslation}_${selectedBook}_${selectedChapter}'),
+                        'all_verses_column_${currentTranslation}_${selectedBook}_$selectedChapter'),
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children:
                         List.generate(verseColumnData.length, (verseIndex) {

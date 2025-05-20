@@ -1,5 +1,4 @@
 import 'package:redux/redux.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../actions.dart';
 import '../store.dart';
 import '../../services/firestore_service.dart'; // Assumindo criação

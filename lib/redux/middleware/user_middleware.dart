@@ -1,11 +1,10 @@
 // lib/redux/middleware/user_middleware.dart
 
 import 'package:redux/redux.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../actions.dart';
 import '../store.dart';
 import '../../services/firestore_service.dart'; // Assumindo a criação deste serviço
-import '../../services/local_storage_service.dart'; // Assumindo a criação
+// Assumindo a criação
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();

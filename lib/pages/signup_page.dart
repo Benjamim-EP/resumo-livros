@@ -97,7 +97,7 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
           // Mas geralmente o stream do AuthCheck já cuidará disso.
         }
       }
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       setState(() {
         // ... (tratamento de erro como antes)
       });

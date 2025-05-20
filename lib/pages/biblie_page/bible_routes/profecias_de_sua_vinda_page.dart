@@ -75,8 +75,9 @@ class _ProfeciasDeSuaVindaPageState extends State<ProfeciasDeSuaVindaPage> {
   }
 
   Widget _buildSection(String title, List<dynamic>? referencias) {
-    if (referencias == null || referencias.isEmpty)
+    if (referencias == null || referencias.isEmpty) {
       return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

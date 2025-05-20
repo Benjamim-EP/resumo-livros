@@ -173,7 +173,7 @@ class _AuthorPageState extends State<AuthorPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AuthorCoverInformations(authorId: widget.authorId),
-              AuthorDescriptionData(),
+              const AuthorDescriptionData(),
               ButtonSelectionWidget(
                 selectedIndex: _selectedIndex,
                 onTabSelected: (index) => setState(() {

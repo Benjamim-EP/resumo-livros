@@ -651,9 +651,8 @@ UserState userReducer(UserState state, dynamic action) {
         List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
     final operationWithId = Map<String, dynamic>.from(action.operation);
     if (operationWithId['id'] == null) {
-      operationWithId['id'] = DateTime.now().millisecondsSinceEpoch.toString() +
-          '_' +
-          (newPendingWrites.length).toString();
+      operationWithId['id'] =
+          '${DateTime.now().millisecondsSinceEpoch}_${newPendingWrites.length}';
     }
     newPendingWrites.add(operationWithId);
     return state.copyWith(pendingFirestoreWrites: newPendingWrites);

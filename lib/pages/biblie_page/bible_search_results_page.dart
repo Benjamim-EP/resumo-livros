@@ -184,7 +184,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                   state.error == null &&
                   state.results.isEmpty &&
                   state.currentQuery.isEmpty)
-                Expanded(
+                const Expanded(
                     child: Center(
                         child: Padding(
                   padding: EdgeInsets.all(16.0),
@@ -221,7 +221,8 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                         margin: const EdgeInsets.symmetric(vertical: 6.0),
                         child: ListTile(
                           title: Text(reference,
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -231,13 +232,13 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                                   padding: const EdgeInsets.only(
                                       top: 4.0, bottom: 4.0),
                                   child: Text("Comentário: $commentaryTitle",
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontSize: 13,
                                           fontStyle: FontStyle.italic)),
                                 ),
                               Container(
                                 // Usar Container para controlar melhor a altura e evitar overflow do Markdown
-                                constraints: BoxConstraints(
+                                constraints: const BoxConstraints(
                                     maxHeight:
                                         70), // Altura máxima para o snippet
                                 child: SingleChildScrollView(
@@ -290,9 +291,10 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                             } else {
                               print(
                                   "Erro: metadados insuficientes para navegação - Livro: $bookAbbrev, Capítulo: $chapterStr");
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text(
-                                      'Não foi possível navegar para esta referência.')));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Não foi possível navegar para esta referência.')));
                             }
                           },
                         ),
@@ -430,21 +432,22 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
             ),
             const SizedBox(width: 10),
             ElevatedButton.icon(
-              icon: Icon(Icons.filter_list, size: 16),
+              icon: const Icon(Icons.filter_list, size: 16),
               onPressed: () => _applyFiltersAndSearch(context),
               label: const Text("Filtrar", style: TextStyle(fontSize: 12)),
               style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
             const SizedBox(width: 4),
             IconButton(
-              icon: Icon(Icons.clear_all, size: 20),
+              icon: const Icon(Icons.clear_all, size: 20),
               tooltip: "Limpar Filtros",
               onPressed: () => _clearAllFilters(context),
               padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
+              constraints: const BoxConstraints(),
             ),
           ],
         ),
@@ -455,8 +458,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
 
 // Helper extension para capitalizar a primeira letra de cada palavra
 extension StringExtension on String {
-  String get capitalizeFirstOfEach => this
-      .split(" ")
+  String get capitalizeFirstOfEach => split(" ")
       .map((str) =>
           str.isEmpty ? "" : '${str[0].toUpperCase()}${str.substring(1)}')
       .join(" ");
