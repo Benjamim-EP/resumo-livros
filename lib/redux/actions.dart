@@ -548,3 +548,19 @@ class UpdateRewardedAdControlDataAction {
     required this.adsWatchedToday,
   });
 }
+
+class LoadAdLimitDataAction {}
+
+class AdLimitDataLoadedAction {
+  final DateTime? firstAdTimestamp;
+  final int adsInWindowCount;
+  AdLimitDataLoadedAction(
+      {this.firstAdTimestamp, required this.adsInWindowCount});
+}
+
+class UpdateAdWindowStatsAction {
+  final DateTime? firstAdTimestamp; // Pode ser null para resetar a janela
+  final int adsInWindowCount;
+  UpdateAdWindowStatsAction(
+      {this.firstAdTimestamp, required this.adsInWindowCount});
+}

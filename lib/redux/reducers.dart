@@ -215,6 +215,9 @@ class UserState {
   final Map<String, Set<String>> pendingSectionsToAdd;
   final Map<String, Set<String>> pendingSectionsToRemove;
 
+  final DateTime? firstAdIn6HourWindowTimestamp; // NOVO
+  final int adsWatchedIn6HourWindow; // NOVO
+
   UserState({
     this.userId,
     this.email,
@@ -253,6 +256,8 @@ class UserState {
     this.pendingSectionsToAdd = const {}, // Inicializa
     this.pendingSectionsToRemove = const {}, // Inicializa
     this.pendingFirestoreWrites = const [],
+    this.firstAdIn6HourWindowTimestamp, // NOVO
+    this.adsWatchedIn6HourWindow = 0, // NOVO: inicializa com 0
   });
 
   UserState copyWith({
@@ -301,6 +306,9 @@ class UserState {
     Map<String, Set<String>>? pendingSectionsToAdd, // Adicionado
     Map<String, Set<String>>? pendingSectionsToRemove, // Adicionado
     List<Map<String, dynamic>>? pendingFirestoreWrites,
+    DateTime? firstAdIn6HourWindowTimestamp, // NOVO
+    bool clearFirstAdIn6HourWindowTimestamp = false, // NOVO: para resetar
+    int? adsWatchedIn6HourWindow, // NOVO
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -349,10 +357,15 @@ class UserState {
           : bibleProgressError ?? this.bibleProgressError,
       pendingFirestoreWrites:
           pendingFirestoreWrites ?? this.pendingFirestoreWrites,
-      pendingSectionsToAdd:
-          pendingSectionsToAdd ?? this.pendingSectionsToAdd, // Adicionado
+      pendingSectionsToAdd: pendingSectionsToAdd ?? this.pendingSectionsToAdd,
       pendingSectionsToRemove:
-          pendingSectionsToRemove ?? this.pendingSectionsToRemove, // Adicionado
+          pendingSectionsToRemove ?? this.pendingSectionsToRemove,
+      firstAdIn6HourWindowTimestamp: clearFirstAdIn6HourWindowTimestamp
+          ? null
+          : (firstAdIn6HourWindowTimestamp ??
+              this.firstAdIn6HourWindowTimestamp), // NOVO
+      adsWatchedIn6HourWindow:
+          adsWatchedIn6HourWindow ?? this.adsWatchedIn6HourWindow, // NOVO
     );
   }
 }
@@ -672,6 +685,18 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(
       pendingSectionsToAdd: action.pendingToAdd,
       pendingSectionsToRemove: action.pendingToRemove,
+    );
+  } else if (action is AdLimitDataLoadedAction) {
+    // NOVO
+    return state.copyWith(
+      firstAdIn6HourWindowTimestamp: action.firstAdTimestamp,
+      adsWatchedIn6HourWindow: action.adsInWindowCount,
+    );
+  } else if (action is UpdateAdWindowStatsAction) {
+    // NOVO
+    return state.copyWith(
+      firstAdIn6HourWindowTimestamp: action.firstAdTimestamp,
+      adsWatchedIn6HourWindow: action.adsInWindowCount,
     );
   }
   return state;
