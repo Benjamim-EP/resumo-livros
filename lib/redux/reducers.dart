@@ -698,6 +698,9 @@ UserState userReducer(UserState state, dynamic action) {
       firstAdIn6HourWindowTimestamp: action.firstAdTimestamp,
       adsWatchedIn6HourWindow: action.adsInWindowCount,
     );
+  } else if (action is UpdateUserCoinsAction) {
+    // NOVO
+    return state.copyWith(userCoins: action.newCoinAmount);
   }
   return state;
 }

@@ -564,3 +564,9 @@ class UpdateAdWindowStatsAction {
   UpdateAdWindowStatsAction(
       {this.firstAdTimestamp, required this.adsInWindowCount});
 }
+
+class UpdateUserCoinsAction {
+  // NOVO
+  final int newCoinAmount;
+  UpdateUserCoinsAction(this.newCoinAmount);
+}
