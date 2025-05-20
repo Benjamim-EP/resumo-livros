@@ -11,14 +11,15 @@ import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
+// Removido: import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Não usado diretamente aqui
 import 'package:resumo_dos_deuses_flutter/redux/middleware/ad_middleware.dart'; // Para MAX_COINS_LIMIT
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
-// Removido: import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Não usado diretamente aqui
 import 'package:redux/redux.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart'; // <<< IMPORTANTE PARA ProcessPendingBibleProgressAction
 
 // ViewModel para o StoreConnector das moedas
 class _UserCoinsViewModel {
@@ -60,13 +61,12 @@ class _UserCoinsViewModel {
 }
 
 class _UnderConstructionPlaceholder extends StatelessWidget {
-  final String pageTitle; // Adicionar para personalizar o título
+  final String pageTitle;
   const _UnderConstructionPlaceholder({super.key, required this.pageTitle});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Removida a AppBar daqui, pois será controlada pela MainAppScreen
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -101,14 +101,10 @@ class MainAppScreen extends StatefulWidget {
 class _MainAppScreenState extends State<MainAppScreen> {
   int _selectedIndex = 0;
 
-  // Navigator Keys para cada aba principal com navegação interna
   final GlobalKey<NavigatorState> _userNavigatorKey =
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _bibleNavigatorKey =
       GlobalKey<NavigatorState>();
-  // As abas "Cânticos" e "Chat" usarão _UnderConstructionPlaceholder,
-  // então não precisam de NavigatorKeys dedicados se não tiverem navegação interna.
-  // Se precisarem no futuro, adicione as chaves aqui.
 
   late final List<Widget> _pages;
   ads.BannerAd? _bannerAd;
@@ -122,7 +118,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
     _pages = [
       _buildTabNavigator(_userNavigatorKey, const UserPage()), // Índice 0
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()), // Índice 1
-      // Para placeholders, podemos passar null como chave ou uma chave dummy se _buildTabNavigator exigir
       _buildTabNavigator(
           null,
           const _UnderConstructionPlaceholder(
@@ -152,6 +147,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final userId = user.uid;
+      // Obtém a instância global do store diretamente, se ela for exportada de store.dart
+      // ou passa o store do context para cá se necessário.
+      // Assumindo que 'store' é a instância global de redux/store.dart
       final storeInstance = store;
       _userDocSubscription?.cancel();
       _userDocSubscription = FirebaseFirestore.instance
@@ -223,8 +221,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
   Widget _buildTabNavigator(
       GlobalKey<NavigatorState>? navigatorKey, Widget child) {
-    // Se navigatorKey for null (para placeholders), não envolvemos com Navigator,
-    // apenas retornamos o child. Isso simplifica o _onWillPop.
     if (navigatorKey == null) {
       return child;
     }
@@ -253,27 +249,22 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return _userNavigatorKey;
       case 1:
         return _bibleNavigatorKey;
-      // As abas 2 (Cânticos) e 3 (Chat) não têm navegação interna no momento.
-      // Se _buildTabNavigator retorna o child diretamente para elas, _currentNavigatorKey será null.
       case 2:
-        return null; // Cânticos (Placeholder)
+        return null;
       case 3:
-        return null; // Chat (Placeholder)
+        return null;
       default:
-        return _userNavigatorKey; // Fallback seguro
+        return _userNavigatorKey;
     }
   }
 
   Future<bool> _onWillPop() async {
     final currentKey = _currentNavigatorKey;
-    // Se a aba atual não tem um NavigatorKey (é um placeholder) ou se o Navigator não pode dar pop,
-    // permite que o WillPopScope feche o app/tela atual.
     if (currentKey == null ||
         currentKey.currentState == null ||
         !currentKey.currentState!.canPop()) {
       return true;
     }
-    // Se pode dar pop, faz o pop e impede o fechamento do app.
     currentKey.currentState!.pop();
     return false;
   }
@@ -305,18 +296,13 @@ class _MainAppScreenState extends State<MainAppScreen> {
           int oldTargetIndex = newViewModel.targetBottomNavIndex!;
           int? newSelectedActualIndex;
 
-          // Mapeamento de índices antigos (com Explore) para novos (sem Explore)
-          // Antigo: User(0), Explore(1), Bible(2), Cântico(3), Chat(4)
-          // Novo:   User(0),            Bible(1), Cântico(2), Chat(3)
           if (oldTargetIndex == 0) {
-            // User
             newSelectedActualIndex = 0;
           } else if (oldTargetIndex == 1) {
-            // Era Explore, redirecionar para User (ou não fazer nada)
-            print("Redirecionamento da antiga aba Explore para Usuário.");
+            print(
+                "Redirecionamento da antiga aba Explore para Usuário (índice 0).");
             newSelectedActualIndex = 0;
           } else if (oldTargetIndex > 1) {
-            // Aba após Explore
             newSelectedActualIndex = oldTargetIndex - 1;
           }
 
@@ -398,21 +384,54 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   currentIndex: _selectedIndex,
                   onTap: (index) {
                     if (mounted) {
-                      setState(() => _selectedIndex = index);
+                      int previousIndex =
+                          _selectedIndex; // Guarda o índice anterior
+
+                      setState(() {
+                        _selectedIndex = index; // Atualiza para o novo índice
+                      });
+
+                      // Verifica se o usuário estava na BiblePage (índice 1) e mudou para OUTRA aba
+                      if (previousIndex == 1 && index != 1) {
+                        // Usa o context daqui que é válido ou a instância global do store
+                        final currentStore =
+                            StoreProvider.of<AppState>(context, listen: false);
+                        final userState = currentStore.state.userState;
+
+                        if (userState.userId != null) {
+                          final pendingToAdd = userState.pendingSectionsToAdd;
+                          final pendingToRemove =
+                              userState.pendingSectionsToRemove;
+                          if (pendingToAdd.isNotEmpty ||
+                              pendingToRemove.isNotEmpty) {
+                            print(
+                                "BottomNav onTap: Saindo da BiblePage com pendências. Disparando ProcessPendingBibleProgressAction.");
+                            currentStore
+                                .dispatch(ProcessPendingBibleProgressAction());
+                          } else {
+                            print(
+                                "BottomNav onTap: Saindo da BiblePage sem pendências de progresso bíblico.");
+                          }
+                        }
+                      }
+                      // Limpa qualquer alvo de navegação pendente do bottom nav
                       StoreProvider.of<AppState>(context, listen: false)
                           .dispatch(ClearTargetBottomNavAction());
                     }
                   },
                   items: const [
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.account_circle), label: 'User'),
+                        icon: Icon(Icons.account_circle),
+                        label: 'User'), // Índice 0
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.book_outlined), label: 'Bible'),
+                        icon: Icon(Icons.book_outlined),
+                        label: 'Bible'), // Índice 1
                     BottomNavigationBarItem(
                         icon: Icon(Icons.music_note_outlined),
-                        label: 'Cântico'),
+                        label: 'Cântico'), // Índice 2
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+                        icon: Icon(Icons.chat_bubble_outline),
+                        label: 'Chat'), // Índice 3
                   ],
                 ),
               ],
@@ -426,8 +445,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
 class _MainAppScreenViewModel {
   final Map<String, dynamic>? userDetails;
-  final int?
-      targetBottomNavIndex; // Este deve ser o índice ANTIGO, vindo do estado
+  final int? targetBottomNavIndex;
   final bool isPremium;
 
   _MainAppScreenViewModel({
@@ -452,8 +470,7 @@ class _MainAppScreenViewModel {
     }
     return _MainAppScreenViewModel(
       userDetails: userDetails,
-      targetBottomNavIndex: store.state.userState
-          .targetBottomNavIndex, // Pega o índice como está no store
+      targetBottomNavIndex: store.state.userState.targetBottomNavIndex,
       isPremium: premiumStatus,
     );
   }
