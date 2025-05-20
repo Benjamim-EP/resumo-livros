@@ -23,11 +23,10 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
   String? _selectedBookAbbrev;
   String? _selectedType;
 
-  final List<String> _tiposDisponiveis = [
-    "biblia_comentario_secao", // Exemplo de tipo de metadado do Pinecone
-    "versiculo_biblico_unico", // Exemplo
-    "capitulo_completo" // Exemplo
-    // Adicione outros tipos que você tem no seu metadado 'tipo' do Pinecone
+  final List<Map<String, String>> _tiposDeConteudoDisponiveis = [
+    {'value': 'biblia_comentario_secao', 'display': 'Comentário da Seção'},
+    {'value': 'biblia_versiculos', 'display': 'Versículos Bíblicos'},
+    // Adicione outros se houver, ou remova se só tiver esses dois
   ];
 
   @override
@@ -155,42 +154,6 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
           return Column(
             children: [
               _buildFilterWidgets(context, state.activeFilters),
-              if (state.isLoading)
-                const Expanded(
-                    child: Center(child: CircularProgressIndicator())),
-              if (state.error != null && !state.isLoading)
-                Expanded(
-                    child: Center(
-                        child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Erro: ${state.error}',
-                    style: TextStyle(color: theme.colorScheme.error),
-                    textAlign: TextAlign.center,
-                  ),
-                ))),
-              if (!state.isLoading &&
-                  state.error == null &&
-                  state.results.isEmpty &&
-                  state.currentQuery.isNotEmpty)
-                const Expanded(
-                    child: Center(
-                        child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('Nenhum resultado encontrado para sua busca.',
-                      textAlign: TextAlign.center),
-                ))),
-              if (!state.isLoading &&
-                  state.error == null &&
-                  state.results.isEmpty &&
-                  state.currentQuery.isEmpty)
-                const Expanded(
-                    child: Center(
-                        child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('Digite algo para buscar ou refine seus filtros.',
-                      textAlign: TextAlign.center),
-                ))),
               if (!state.isLoading &&
                   state.error == null &&
                   state.results.isNotEmpty)
@@ -208,12 +171,29 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                             (key, value) => MapEntry(key.toString(), value)));
                       }
 
-                      final content = metadata['content'] as String? ??
-                          'Conteúdo não disponível.';
+                      // --- LÓGICA DE CONTEÚDO AJUSTADA ---
+                      final tipoResultado = metadata['tipo'] as String?;
+                      String displayContent = 'Conteúdo não disponível.';
+                      String? commentaryTitle =
+                          metadata['titulo_comentario'] as String?;
+
+                      if (tipoResultado == 'biblia_comentario_secao') {
+                        // Para comentários, o "conteúdo" principal pode ser o título do comentário
+                        displayContent = commentaryTitle ??
+                            'Comentário de seção indisponível.';
+                        // Mantém o commentaryTitle separado se quiser exibi-lo de forma distinta
+                      } else if (tipoResultado == 'biblia_versiculos') {
+                        // Para versículos, o "conteúdo" é a própria referência.
+                        // Não teremos um 'content' separado do Pinecone para este tipo.
+                        // O título do comentário não se aplica aqui.
+                        commentaryTitle = null; // Garante que não será exibido
+                        displayContent =
+                            "Referência bíblica pura. Detalhes na navegação."; // Ou deixe vazio
+                      }
+                      // Se você tiver outros tipos, adicione a lógica aqui.
+
                       final reference =
                           "${metadata['livro_completo'] ?? metadata['livro_curto'] ?? 'Livro Desconhecido'} ${metadata['capitulo'] ?? '?'}:${metadata['versiculos'] ?? '?'}";
-                      final commentaryTitle =
-                          metadata['titulo_comentario'] as String?;
                       final score = item['score'] as double?;
 
                       return Card(
@@ -221,43 +201,61 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                         margin: const EdgeInsets.symmetric(vertical: 6.0),
                         child: ListTile(
                           title: Text(reference,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Exibe o título do comentário APENAS se existir e o tipo for apropriado
                               if (commentaryTitle != null &&
-                                  commentaryTitle.isNotEmpty)
+                                  tipoResultado == 'biblia_comentario_secao')
                                 Padding(
                                   padding: const EdgeInsets.only(
                                       top: 4.0, bottom: 4.0),
                                   child: Text("Comentário: $commentaryTitle",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 13,
-                                          fontStyle: FontStyle.italic)),
+                                          fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight
+                                              .w500 // Dar um pouco mais de destaque
+                                          )),
                                 ),
-                              Container(
-                                // Usar Container para controlar melhor a altura e evitar overflow do Markdown
-                                constraints: const BoxConstraints(
-                                    maxHeight:
-                                        70), // Altura máxima para o snippet
-                                child: SingleChildScrollView(
-                                  // Permite scroll se o conteúdo for maior
-                                  child: MarkdownBody(
-                                    data: content,
-                                    styleSheet: MarkdownStyleSheet.fromTheme(
-                                            Theme.of(context))
-                                        .copyWith(
-                                      p: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                              fontSize:
-                                                  12.5), // Não precisa de overflow aqui
+
+                              // Exibe o displayContent (que agora é adaptado)
+                              // Só mostra o MarkdownBody se tivermos um conteúdo real para ele
+                              // e não for apenas a referência de versículos
+                              if (tipoResultado != 'biblia_versiculos' &&
+                                  displayContent.isNotEmpty &&
+                                  displayContent !=
+                                      'Conteúdo não disponível.' &&
+                                  displayContent !=
+                                      'Comentário de seção indisponível.')
+                                Container(
+                                  constraints: BoxConstraints(maxHeight: 70),
+                                  child: SingleChildScrollView(
+                                    child: MarkdownBody(
+                                      data:
+                                          displayContent, // Usa o conteúdo adaptado
+                                      styleSheet: MarkdownStyleSheet.fromTheme(
+                                              Theme.of(context))
+                                          .copyWith(
+                                        p: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(fontSize: 12.5),
+                                      ),
                                     ),
                                   ),
+                                )
+                              else if (tipoResultado == 'biblia_versiculos')
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    "Toque para ver os versículos.", // Mensagem para tipo 'biblia_versiculos'
+                                    style: TextStyle(
+                                        fontSize: 12.5, color: theme.hintColor),
+                                  ),
                                 ),
-                              ),
+
                               if (score != null)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
@@ -269,8 +267,12 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                                 ),
                             ],
                           ),
-                          isThreeLine: true,
+                          isThreeLine: commentaryTitle != null ||
+                              (tipoResultado != 'biblia_versiculos' &&
+                                  displayContent
+                                      .isNotEmpty), // Ajusta para acomodar o título do comentário
                           onTap: () {
+                            // ... (lógica de navegação mantida) ...
                             final bookAbbrev =
                                 metadata['livro_curto'] as String?;
                             final chapterStr = metadata['capitulo']?.toString();
@@ -285,16 +287,15 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                                       bookAbbrev, chapterInt));
                               StoreProvider.of<AppState>(context, listen: false)
                                   .dispatch(RequestBottomNavChangeAction(
-                                      2)); // 2 é o índice da Bíblia
+                                      1)); // Assumindo que Bíblia é índice 1
                               Navigator.popUntil(context,
                                   ModalRoute.withName('/mainAppScreen'));
                             } else {
                               print(
                                   "Erro: metadados insuficientes para navegação - Livro: $bookAbbrev, Capítulo: $chapterStr");
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          'Não foi possível navegar para esta referência.')));
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                  content: Text(
+                                      'Não foi possível navegar para esta referência.')));
                             }
                           },
                         ),
@@ -327,7 +328,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
             (a.value['nome'] as String).compareTo(b.value['nome'] as String));
       for (var entry in sortedBooks) {
         bookItems.add(DropdownMenuItem<String>(
-          value: entry.key, // A abreviação (livro_curto)
+          value: entry.key,
           child: Text(entry.value['nome'] as String,
               style: TextStyle(
                   fontSize: 12, color: theme.textTheme.bodyLarge?.color)),
@@ -335,16 +336,18 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
       }
     }
 
+    // ATUALIZADO: Dropdown para os novos tipos de conteúdo
     List<DropdownMenuItem<String>> typeItems = [
       DropdownMenuItem<String>(
-          value: null,
+          value: null, // Representa "Todos Tipos"
           child: Text("Todos Tipos",
               style: TextStyle(fontSize: 12, color: theme.hintColor))),
     ];
-    for (var tipo in _tiposDisponiveis) {
+    for (var tipoMap in _tiposDeConteudoDisponiveis) {
+      // Itera sobre a nova lista
       typeItems.add(DropdownMenuItem<String>(
-        value: tipo,
-        child: Text(tipo.replaceAll("_", " ").capitalizeFirstOfEach,
+        value: tipoMap['value'],
+        child: Text(tipoMap['display']!, // Usa o 'display' para o texto do item
             style: TextStyle(
                 fontSize: 12, color: theme.textTheme.bodyLarge?.color)),
       ));
@@ -361,6 +364,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
         child: Row(
           children: <Widget>[
             SizedBox(
+              // Dropdown Testamento
               width: 125,
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -383,8 +387,10 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                                   color: theme.textTheme.bodyLarge?.color)));
                     })
                   ],
-                  onChanged: (String? newValue) =>
-                      setState(() => _selectedTestament = newValue),
+                  onChanged: (String? newValue) {
+                    // ATUALIZADO: _applyFiltersAndSearch é chamado pelo botão "Filtrar"
+                    setState(() => _selectedTestament = newValue);
+                  },
                   style: TextStyle(
                       color: theme.textTheme.bodyLarge?.color, fontSize: 12),
                   dropdownColor: theme.dialogBackgroundColor,
@@ -394,6 +400,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
             ),
             const SizedBox(width: 6),
             SizedBox(
+              // Dropdown Livro
               width: 140,
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -402,8 +409,10 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                       style: TextStyle(fontSize: 12, color: theme.hintColor)),
                   value: _selectedBookAbbrev,
                   items: bookItems,
-                  onChanged: (String? newValue) =>
-                      setState(() => _selectedBookAbbrev = newValue),
+                  onChanged: (String? newValue) {
+                    // ATUALIZADO
+                    setState(() => _selectedBookAbbrev = newValue);
+                  },
                   style: TextStyle(
                       color: theme.textTheme.bodyLarge?.color, fontSize: 12),
                   dropdownColor: theme.dialogBackgroundColor,
@@ -413,16 +422,19 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
             ),
             const SizedBox(width: 6),
             SizedBox(
-              width: 135,
+              // Dropdown Tipo de Conteúdo (ATUALIZADO)
+              width: 155, // Ajuste a largura se necessário
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   isExpanded: true,
                   hint: Text("Tipo",
                       style: TextStyle(fontSize: 12, color: theme.hintColor)),
                   value: _selectedType,
-                  items: typeItems,
-                  onChanged: (String? newValue) =>
-                      setState(() => _selectedType = newValue),
+                  items: typeItems, // Usa os novos itens de tipo
+                  onChanged: (String? newValue) {
+                    // ATUALIZADO
+                    setState(() => _selectedType = newValue);
+                  },
                   style: TextStyle(
                       color: theme.textTheme.bodyLarge?.color, fontSize: 12),
                   dropdownColor: theme.dialogBackgroundColor,
@@ -432,22 +444,23 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
             ),
             const SizedBox(width: 10),
             ElevatedButton.icon(
-              icon: const Icon(Icons.filter_list, size: 16),
-              onPressed: () => _applyFiltersAndSearch(context),
+              icon: Icon(Icons.filter_list, size: 16),
+              onPressed: () => _applyFiltersAndSearch(
+                  context), // Chama a função que aplica e busca
               label: const Text("Filtrar", style: TextStyle(fontSize: 12)),
               style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
             const SizedBox(width: 4),
             IconButton(
-              icon: const Icon(Icons.clear_all, size: 20),
+              icon: Icon(Icons.clear_all, size: 20),
               tooltip: "Limpar Filtros",
-              onPressed: () => _clearAllFilters(context),
+              onPressed: () =>
+                  _clearAllFilters(context), // Chama a função que limpa e busca
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+              constraints: BoxConstraints(),
             ),
           ],
         ),

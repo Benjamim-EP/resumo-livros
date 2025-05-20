@@ -14,7 +14,7 @@ const int MAX_COINS_LIMIT = 100;
 const int MAX_ADS_PER_DAY = 12;
 const Duration ADS_COOLDOWN_DURATION = Duration(seconds: 10);
 const Duration SIX_HOUR_WINDOW_DURATION = Duration(hours: 6); // NOVO
-const int MAX_ADS_PER_SIX_HOUR_WINDOW = 3; // NOVO
+const int MAX_ADS_PER_SIX_HOUR_WINDOW = 30; // NOVO
 
 // Chaves para SharedPreferences
 const String _prefsFirstAdIn6HourWindowKey =

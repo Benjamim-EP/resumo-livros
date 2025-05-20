@@ -111,7 +111,7 @@ async def query_pinecone_async(vector: list[float], top_k: int, filters: dict | 
         raise ValueError("Vetor de query inválido.")
     if not isinstance(top_k, int) or top_k <= 0:
         print(f"AVISO (query_pinecone_async): top_k inválido ({top_k}), usando padrão 1.")
-        top_k = 1 # Um valor padrão seguro para evitar erros
+        top_k = 1
 
     request_url = f"{PINECONE_ENDPOINT}/query"
     headers = {
@@ -125,21 +125,47 @@ async def query_pinecone_async(vector: list[float], top_k: int, filters: dict | 
         "includeMetadata": True,
         "includeValues": False
     }
+
+    # --- AJUSTE PRINCIPAL AQUI ---
+    # O Pinecone espera que o filtro seja um dicionário onde as chaves são os campos
+    # de metadados e os valores são os valores exatos para filtrar.
+    # Se você tiver filtros como {"testamento": "Novo", "tipo": "biblia_versiculos"},
+    # isso já deve estar no formato correto se 'filters' vier assim do Flutter.
+
     if filters and isinstance(filters, dict) and filters:
-        payload["filter"] = filters
-        print(f"Consultando Pinecone em {request_url} com filtros: {filters}")
+        # Garante que estamos passando apenas os filtros que têm valor (não nulos ou vazios)
+        # Se o Flutter envia {"testamento": "Novo", "livro_curto": null},
+        # não queremos incluir "livro_curto": null no filtro do Pinecone.
+        # O Pinecone geralmente não lida bem com filtros `null` para igualdade,
+        # a menos que seja uma sintaxe específica como {"campo": {"$exists": false}}.
+        # Para filtros de igualdade simples, só passamos os que têm valor.
+        
+        actual_pinecone_filter = {}
+        for key, value in filters.items():
+            if value is not None and value != "": # Só adiciona se tiver valor
+                actual_pinecone_filter[key] = value
+        
+        if actual_pinecone_filter: # Se ainda houver filtros após remover os nulos/vazios
+            payload["filter"] = actual_pinecone_filter
+            print(f"Consultando Pinecone em {request_url} com filtros: {actual_pinecone_filter}")
+        else:
+            print(f"Consultando Pinecone em {request_url} sem filtros (filtros recebidos eram nulos/vazios).")
     else:
         print(f"Consultando Pinecone em {request_url} sem filtros.")
+    # --- FIM DO AJUSTE PRINCIPAL ---
 
     try:
         response = await _httpx_client.post(request_url, headers=headers, json=payload)
-        response.raise_for_status() # Lança exceção para erros HTTP (4xx ou 5xx)
+        response.raise_for_status() 
         result_data = response.json()
         matches = result_data.get("matches", [])
         if not isinstance(matches, list):
             print(f"AVISO (query_pinecone_async): 'matches' não é uma lista na resposta do Pinecone. Recebido: {type(matches)}")
             return []
         print(f"Consulta ao Pinecone bem-sucedida. Recebidos {len(matches)} resultados.")
+        # Adicionar log para ver os metadados dos resultados retornados
+        # for i, match in enumerate(matches[:3]): # Loga os 3 primeiros resultados
+        #     print(f"Resultado {i+1} - ID: {match.get('id')}, Score: {match.get('score')}, Metadata: {match.get('metadata')}")
         return matches
     except httpx.HTTPStatusError as e_http:
         error_message = f"Falha na comunicação com Pinecone (HTTP {e_http.response.status_code})."
@@ -147,18 +173,17 @@ async def query_pinecone_async(vector: list[float], top_k: int, filters: dict | 
         try:
             error_body = e_http.response.json()
             print(f"Corpo do erro do Pinecone (JSON): {error_body}")
-            # Tenta extrair uma mensagem mais específica do erro, se disponível
             if isinstance(error_body, dict) and "message" in error_body:
                 error_message += f" Detalhe: {error_body['message']}"
         except Exception:
             print(f"Corpo do erro do Pinecone (Texto): {e_http.response.text}")
         traceback.print_exc()
         raise ConnectionError(error_message) from e_http
-    except httpx.RequestError as e_req: # Erros de rede, DNS, timeout
+    except httpx.RequestError as e_req: 
         print(f"Erro de requisição ao consultar Pinecone: {e_req}")
         traceback.print_exc()
         raise ConnectionError(f"Erro de rede ao conectar com Pinecone: {e_req}")
-    except Exception as e_generic: # Outros erros (ex: JSONDecodeError se a resposta não for JSON)
+    except Exception as e_generic: 
         print(f"Erro inesperado durante a consulta ao Pinecone: {e_generic}")
         traceback.print_exc()
         raise Exception(f"Erro desconhecido ao consultar Pinecone: {e_generic}")
