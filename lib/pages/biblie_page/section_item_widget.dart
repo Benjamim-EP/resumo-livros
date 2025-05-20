@@ -10,25 +10,17 @@ import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.da
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;
-  final List<int>
-      verseNumbersInSection; // Lista dos números dos versos desta seção (ex: [1,2,3,4,5])
-  final dynamic
-      allVerseDataInChapter; // Dados da tradução principal para o capítulo inteiro
+  final List<int> verseNumbersInSection;
+  final dynamic allVerseDataInChapter;
   final String bookSlug;
   final String bookAbbrev;
   final int chapterNumber;
   final String versesRangeStr;
   final Map<String, String> userHighlights;
   final Map<String, String> userNotes;
-  final bool
-      isHebrew; // Indica se a TRADUÇÃO PRINCIPAL (allVerseDataInChapter) é hebraica
+  final bool isHebrew;
   final bool isRead;
-
-  // NOVOS PARÂMETROS PARA INTERLINEAR
   final bool showHebrewInterlinear;
-  // Dados hebraicos para TODOS os versos DESTA SEÇÃO, se showHebrewInterlinear for true.
-  // Cada item na lista externa corresponde a um versículo da seção.
-  // Cada item na lista interna (List<Map<String, String>>) são as palavras hebraicas daquele versículo.
   final List<List<Map<String, String>>>? hebrewInterlinearSectionData;
 
   const SectionItemWidget({
@@ -44,8 +36,8 @@ class SectionItemWidget extends StatefulWidget {
     required this.userNotes,
     this.isHebrew = false,
     required this.isRead,
-    required this.showHebrewInterlinear, // NOVO
-    this.hebrewInterlinearSectionData, // NOVO (pode ser null se showHebrewInterlinear for false)
+    required this.showHebrewInterlinear,
+    this.hebrewInterlinearSectionData,
   });
 
   @override
@@ -135,77 +127,66 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- Linha do Título e Botão de Comentário ---
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Alinha o topo dos itens
               children: [
                 Expanded(
-                  child: Text(
-                    widget.sectionTitle,
-                    style: TextStyle(
-                        color: currentIsRead
-                            ? theme.primaryColor
-                            : theme.colorScheme.primary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                        top:
+                            8.0), // Ajuste para alinhar melhor com o IconButton
+                    child: Text(
+                      widget.sectionTitle,
+                      style: TextStyle(
+                          color: currentIsRead
+                              ? theme.primaryColor
+                              : theme.colorScheme.primary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    currentIsRead
-                        ? Icons.check_circle
-                        : Icons.check_circle_outline,
-                    color: currentIsRead
-                        ? theme.primaryColor
-                        : theme.iconTheme.color?.withOpacity(0.7),
-                    size: 26,
-                  ),
-                  tooltip: currentIsRead
-                      ? "Marcar como não lido"
-                      : "Marcar como lido",
-                  onPressed: () {
-                    StoreProvider.of<AppState>(context, listen: false).dispatch(
-                      ToggleSectionReadStatusAction(
-                        bookAbbrev: widget.bookAbbrev,
-                        sectionId: sectionId,
-                        markAsRead: !currentIsRead,
-                      ),
-                    );
-                  },
                 ),
                 _isLoadingCommentary
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Padding(
-                          padding: EdgeInsets.all(4.0),
+                    ? Container(
+                        // Container para dar tamanho ao CircularProgressIndicator
+                        width: 40, // Largura similar ao IconButton
+                        height: 40, // Altura similar ao IconButton
+                        alignment: Alignment.center,
+                        child: const SizedBox(
+                          width: 20, // Tamanho do indicador
+                          height: 20,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         ))
                     : IconButton(
-                        icon: Icon(Icons.comment_outlined,
-                            color: theme.iconTheme.color?.withOpacity(0.7)),
+                        icon: Icon(
+                          Icons.comment_outlined,
+                          color: theme.iconTheme.color?.withOpacity(0.7),
+                          size: 22, // Tamanho do ícone
+                        ),
                         tooltip: "Ver Comentário da Seção",
                         onPressed: () => _showCommentary(context),
+                        splashRadius: 20, // Raio do splash
+                        padding:
+                            const EdgeInsets.all(8), // Padding interno do botão
                       ),
               ],
             ),
             Divider(color: theme.dividerColor.withOpacity(0.5)),
             const SizedBox(height: 8),
+            // --- Lista de Versículos ---
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: widget.verseNumbersInSection.length,
               itemBuilder: (context, indexInSecao) {
-                // index na lista de versos da seção
                 final verseNumber = widget.verseNumbersInSection[indexInSecao];
-                dynamic mainTranslationVerseDataItem; // Para NVI, ACF, etc.
-                List<Map<String, String>>?
-                    hebrewDataForThisVerse; // Para o interlinear
+                dynamic mainTranslationVerseDataItem;
+                List<Map<String, String>>? hebrewDataForThisVerse;
 
-                // Pega o dado da tradução principal
                 if (widget.isHebrew) {
-                  // Se a tradução principal FOR hebraico
                   if (widget.allVerseDataInChapter
                           is List<List<Map<String, String>>> &&
                       verseNumber > 0 &&
@@ -215,7 +196,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         as List<List<Map<String, String>>>)[verseNumber - 1];
                   }
                 } else {
-                  // Se a tradução principal NÃO FOR hebraico (ex: NVI)
                   if (widget.allVerseDataInChapter is List<String> &&
                       verseNumber > 0 &&
                       verseNumber <=
@@ -225,16 +205,11 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   }
                 }
 
-                // Pega os dados hebraicos para o interlinear, se showHebrewInterlinear for true
-                // E a tradução principal NÃO for o hebraico original
                 if (widget.showHebrewInterlinear &&
-                    !widget
-                        .isHebrew && // Só mostra interlinear se a principal não for já o hebraico
+                    !widget.isHebrew &&
                     widget.hebrewInterlinearSectionData != null &&
                     indexInSecao <
                         widget.hebrewInterlinearSectionData!.length) {
-                  // hebrewInterlinearSectionData é uma lista de versos, cada verso é uma lista de palavras.
-                  // O indexInSecao corresponde ao índice do verso DENTRO desta seção.
                   hebrewDataForThisVerse =
                       widget.hebrewInterlinearSectionData![indexInSecao];
                 }
@@ -250,18 +225,15 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     key: ValueKey<String>(
                         '${widget.bookAbbrev}_${widget.chapterNumber}_${verseNumber}_$verseKeySuffix'),
                     verseNumber: verseNumber,
-                    verseData:
-                        mainTranslationVerseDataItem, // Texto da tradução principal
+                    verseData: mainTranslationVerseDataItem,
                     selectedBook: widget.bookAbbrev,
                     selectedChapter: widget.chapterNumber,
                     context: context,
                     userHighlights: widget.userHighlights,
                     userNotes: widget.userNotes,
-                    isHebrew: widget.isHebrew, // Se a VIEW PRINCIPAL é hebraica
-                    // NOVOS PARÂMETROS PARA O INTERLINEAR
-                    showHebrewInterlinear: widget.showHebrewInterlinear &&
-                        !widget
-                            .isHebrew, // Só mostra se a principal não for hebraico
+                    isHebrew: widget.isHebrew,
+                    showHebrewInterlinear:
+                        widget.showHebrewInterlinear && !widget.isHebrew,
                     hebrewVerseData: hebrewDataForThisVerse,
                   );
                 } else {
@@ -273,6 +245,63 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   );
                 }
               },
+            ),
+            // --- Botão Marcar como Lido (Movido para Baixo) ---
+            const SizedBox(height: 12), // Espaçamento acima do botão
+            Align(
+              alignment: Alignment.centerRight, // Alinha o botão à direita
+              child: Material(
+                // Material para efeito de tinta no InkWell
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    StoreProvider.of<AppState>(context, listen: false).dispatch(
+                      ToggleSectionReadStatusAction(
+                        bookAbbrev: widget.bookAbbrev,
+                        sectionId: sectionId,
+                        markAsRead: !currentIsRead,
+                      ),
+                    );
+                  },
+                  borderRadius:
+                      BorderRadius.circular(20), // Raio da borda para o InkWell
+                  splashColor: theme.primaryColor.withOpacity(0.3),
+                  highlightColor: theme.primaryColor.withOpacity(0.15),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6), // Padding interno
+                    child: Row(
+                      mainAxisSize: MainAxisSize
+                          .min, // Para o Row ocupar apenas o espaço necessário
+                      children: [
+                        Icon(
+                          currentIsRead
+                              ? Icons.check_circle
+                              : Icons.check_circle_outline,
+                          color: currentIsRead
+                              ? theme.primaryColor
+                              : theme.iconTheme.color?.withOpacity(0.8),
+                          size: 20, // Tamanho menor para o ícone
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          currentIsRead ? "Lido" : "Marcar como Lido",
+                          style: TextStyle(
+                            color: currentIsRead
+                                ? theme.primaryColor
+                                : theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.9),
+                            fontSize: 13, // Tamanho menor para o texto
+                            fontWeight: currentIsRead
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

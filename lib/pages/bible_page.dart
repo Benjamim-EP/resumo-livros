@@ -16,9 +16,6 @@ import 'package:redux/redux.dart';
 import 'package:flutter/foundation.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-// Para a extensão capitalizeFirstOfEach, certifique-se que está importada corretamente
-// Se ela está definida em bible_search_results_page.dart, o import abaixo é uma forma
-// de acessá-la. Se estiver em outro local, ajuste o import.
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart'
     show StringExtension;
 
@@ -148,6 +145,7 @@ class _BiblePageState extends State<BiblePage> {
   String? _filterSelectedTestament;
   String? _filterSelectedBookAbbrev;
   String? _filterSelectedContentType;
+  bool _showExtraOptions = false;
 
   final List<Map<String, String>> _tiposDeConteudoDisponiveisParaFiltro = [
     {'value': 'biblia_comentario_secao', 'display': 'Comentário da Seção'},
@@ -170,16 +168,9 @@ class _BiblePageState extends State<BiblePage> {
     _scrollController1.addListener(_syncScrollFrom1To2);
     _scrollController2.addListener(_syncScrollFrom2To1);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _store != null) {
-        final initialFilters = _store!.state.bibleSearchState.activeFilters;
-        setState(() {
-          _filterSelectedTestament = initialFilters['testamento'] as String?;
-          _filterSelectedBookAbbrev = initialFilters['livro_curto'] as String?;
-          _filterSelectedContentType = initialFilters['tipo'] as String?;
-        });
-      }
-    });
+    // _store é inicializado em didChangeDependencies, então não podemos usá-lo aqui diretamente
+    // para ler o estado inicial dos filtros. A lógica de leitura inicial dos filtros
+    // permanece no onInit do StoreConnector no build method.
   }
 
   @override
@@ -187,7 +178,29 @@ class _BiblePageState extends State<BiblePage> {
     super.didChangeDependencies();
     if (_store == null) {
       _store = StoreProvider.of<AppState>(context);
-      print("BiblePage: Instância do Store obtida em didChangeDependencies.");
+      // Agora que _store está disponível, podemos inicializar os filtros locais
+      // se o widget for reconstruído (o que pode acontecer).
+      final initialFilters = _store!.state.bibleSearchState.activeFilters;
+      // Usar setState aqui é seguro porque didChangeDependencies pode ser chamado múltiplas vezes.
+      // No entanto, para evitar setState desnecessário, podemos verificar se os valores já foram definidos.
+      if (_filterSelectedTestament != initialFilters['testamento'] ||
+          _filterSelectedBookAbbrev != initialFilters['livro_curto'] ||
+          _filterSelectedContentType != initialFilters['tipo']) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // Adia para após o build
+          if (mounted) {
+            setState(() {
+              _filterSelectedTestament =
+                  initialFilters['testamento'] as String?;
+              _filterSelectedBookAbbrev =
+                  initialFilters['livro_curto'] as String?;
+              _filterSelectedContentType = initialFilters['tipo'] as String?;
+            });
+          }
+        });
+      }
+      print(
+          "BiblePage: Instância do Store obtida/confirmada em didChangeDependencies.");
     }
   }
 
@@ -542,10 +555,8 @@ class _BiblePageState extends State<BiblePage> {
     String normalizedUserInput = _normalizeSearchText(userInput);
     String? foundBookAbbrev;
     String remainingInputForChapterAndVerse = "";
-
     List<String> sortedVariationKeys = _bookVariationsMap.keys.toList()
       ..sort((a, b) => b.length.compareTo(a.length));
-
     for (String normalizedVariationKeyInMap in sortedVariationKeys) {
       if (normalizedUserInput.startsWith(normalizedVariationKeyInMap)) {
         foundBookAbbrev = _bookVariationsMap[normalizedVariationKeyInMap];
@@ -642,6 +653,112 @@ class _BiblePageState extends State<BiblePage> {
     _store!.dispatch(ClearBibleSearchFiltersAction());
   }
 
+  List<Widget> _buildAppBarActions(
+      BuildContext context, ThemeData theme, _BiblePageViewModel viewModel) {
+    if (_isSemanticSearchActive) {
+      return [
+        IconButton(
+          icon: Icon(Icons.search,
+              color: theme.appBarTheme.actionsIconTheme?.color),
+          tooltip: "Buscar com filtros",
+          onPressed: _applyFiltersToReduxAndSearch,
+        ),
+        IconButton(
+          icon: Icon(Icons.close,
+              color: theme.appBarTheme.actionsIconTheme?.color),
+          tooltip: "Fechar Busca",
+          onPressed: () {
+            if (mounted) {
+              setState(() {
+                _isSemanticSearchActive = false;
+                _showExtraOptions = false;
+              });
+            }
+          },
+        ),
+      ];
+    } else if (_isFocusModeActive) {
+      return [
+        IconButton(
+          icon: Icon(Icons.fullscreen_exit,
+              color: theme.appBarTheme.actionsIconTheme?.color ??
+                  theme.colorScheme.onPrimary),
+          tooltip: "Sair do Modo Foco",
+          onPressed: () {
+            if (mounted) {
+              setState(() {
+                _isFocusModeActive = false;
+              });
+            }
+          },
+        ),
+      ];
+    } else {
+      // Modo Normal
+      return [
+        if (viewModel.pendingWritesCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(right: 0.0),
+            child: Center(
+              child: Badge(
+                label: Text('${viewModel.pendingWritesCount}',
+                    style: TextStyle(
+                        fontSize: 10, color: theme.colorScheme.onError)),
+                backgroundColor: theme.colorScheme.error,
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: IconButton(
+                  icon: Icon(Icons.sync_problem_outlined,
+                      color: theme.colorScheme.error, size: 24),
+                  tooltip:
+                      "Sincronizar Alterações (${viewModel.pendingWritesCount} pendentes)",
+                  onPressed: () {
+                    StoreProvider.of<AppState>(context, listen: false)
+                        .dispatch(ProcessPendingFirestoreWritesAction());
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text(
+                                "Tentando sincronizar... Verifique o console.")),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+        IconButton(
+          icon: Icon(Icons.manage_search_outlined,
+              color: theme.appBarTheme.actionsIconTheme?.color),
+          tooltip: "Ir para referência",
+          onPressed: _showGoToDialog,
+        ),
+        IconButton(
+          icon: Icon(Icons.search_sharp,
+              color: theme.appBarTheme.actionsIconTheme?.color),
+          tooltip: "Busca Semântica",
+          onPressed: () {
+            if (mounted) {
+              setState(() {
+                _isSemanticSearchActive = true;
+                _showExtraOptions = false;
+              });
+            }
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.more_vert,
+              color: theme.appBarTheme.actionsIconTheme?.color),
+          tooltip: "Mais Opções",
+          onPressed: () {
+            setState(() {
+              _showExtraOptions = !_showExtraOptions;
+            });
+          },
+        ),
+      ];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -649,6 +766,7 @@ class _BiblePageState extends State<BiblePage> {
     return StoreConnector<AppState, _BiblePageViewModel>(
       converter: (store) => _BiblePageViewModel.fromStore(store),
       onInit: (store) {
+        _store = store;
         if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && !_hasProcessedInitialNavigation) {
@@ -658,6 +776,25 @@ class _BiblePageState extends State<BiblePage> {
           });
         }
         _loadUserDataIfNeeded(context);
+        final initialFilters = store.state.bibleSearchState.activeFilters;
+        // A inicialização dos filtros locais agora é feita em didChangeDependencies ou aqui
+        // para garantir que _store não seja nulo.
+        if (_filterSelectedTestament != initialFilters['testamento'] ||
+            _filterSelectedBookAbbrev != initialFilters['livro_curto'] ||
+            _filterSelectedContentType != initialFilters['tipo']) {
+          // Usar WidgetsBinding se estiver dentro de onInit ou build diretamente
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _filterSelectedTestament =
+                    initialFilters['testamento'] as String?;
+                _filterSelectedBookAbbrev =
+                    initialFilters['livro_curto'] as String?;
+                _filterSelectedContentType = initialFilters['tipo'] as String?;
+              });
+            }
+          });
+        }
       },
       onDidChange: (previousViewModel, newViewModel) {
         if (mounted && booksMap != null) {
@@ -704,28 +841,13 @@ class _BiblePageState extends State<BiblePage> {
 
         String appBarTitle = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
         if (!_isSemanticSearchActive) {
-          if (_isFocusModeActive &&
-              selectedBook != null &&
-              booksMap != null &&
-              booksMap!.containsKey(selectedBook)) {
+          if (_isFocusModeActive) {
             appBarTitle = booksMap![selectedBook]!['nome'] ?? 'Bíblia';
             if (selectedChapter != null) appBarTitle += ' $selectedChapter';
           } else if (_isCompareModeActive) {
             appBarTitle = 'Comparar Traduções';
-          } else if (selectedBook != null &&
-              booksMap != null &&
-              booksMap!.containsKey(selectedBook)) {
-            appBarTitle = booksMap![selectedBook]!['nome'] ?? 'Bíblia';
-            if (selectedChapter != null) appBarTitle += ' $selectedChapter';
           }
-        } // Se _isSemanticSearchActive for true, o título será o TextField
-
-        bool isCurrentTranslation1PrimaryHebrew =
-            selectedTranslation1 == 'hebrew_original';
-        bool canShowHebrewToggle =
-            booksMap?[selectedBook]?['testament'] == 'Antigo' &&
-                !isCurrentTranslation1PrimaryHebrew &&
-                !_isCompareModeActive;
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -749,462 +871,416 @@ class _BiblePageState extends State<BiblePage> {
                     },
                   )
                 : Text(appBarTitle),
-            leading: _isFocusModeActive &&
-                    !_isSemanticSearchActive // Só mostra back se não estiver em foco E não em busca
-                ? null
-                : (_isSemanticSearchActive // Se busca ativa, não mostra leading
-                    ? const SizedBox.shrink()
-                    : null),
-            actions: _isSemanticSearchActive
-                ? [
-                    IconButton(
-                      icon: Icon(Icons.search,
-                          color: theme.appBarTheme.actionsIconTheme?.color),
-                      tooltip: "Buscar com filtros",
-                      onPressed: _applyFiltersToReduxAndSearch,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close,
-                          color: theme.appBarTheme.actionsIconTheme?.color),
-                      onPressed: () {
-                        if (mounted) {
-                          setState(() {
-                            _isSemanticSearchActive = false;
-                          });
-                        }
-                      },
-                    )
-                  ]
-                : [
-                    if (!_isFocusModeActive && viewModel.pendingWritesCount > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 0.0),
-                        child: Center(
-                          child: Badge(
-                            label: Text('${viewModel.pendingWritesCount}',
-                                style: TextStyle(
-                                    fontSize: 10,
-                                    color: theme.colorScheme.onError)),
-                            backgroundColor: theme.colorScheme.error,
-                            padding: const EdgeInsets.symmetric(horizontal: 5),
-                            child: IconButton(
-                              icon: Icon(Icons.sync_problem_outlined,
-                                  color: theme.colorScheme.error, size: 24),
-                              tooltip:
-                                  "Sincronizar Alterações (${viewModel.pendingWritesCount} pendentes)",
-                              onPressed: () {
-                                StoreProvider.of<AppState>(context,
-                                        listen: false)
-                                    .dispatch(
-                                        ProcessPendingFirestoreWritesAction());
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            "Tentando sincronizar... Verifique o console.")),
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (canShowHebrewToggle && !_isFocusModeActive)
-                      IconButton(
-                        icon: Icon(
-                          _showHebrewInterlinear
-                              ? Icons.font_download_off_outlined
-                              : Icons.font_download_outlined,
-                          color: _showHebrewInterlinear
-                              ? theme.colorScheme.secondary
-                              : theme.appBarTheme.actionsIconTheme?.color,
-                        ),
-                        tooltip: _showHebrewInterlinear
-                            ? "Ocultar Hebraico Interlinear"
-                            : "Mostrar Hebraico Interlinear",
-                        onPressed: () {
-                          setState(() {
-                            _showHebrewInterlinear = !_showHebrewInterlinear;
-                            _loadCurrentChapterHebrewDataIfNeeded();
-                          });
-                        },
-                      ),
-                    IconButton(
-                      icon: Icon(
-                          _isFocusModeActive
-                              ? Icons.fullscreen_exit
-                              : Icons.fullscreen,
-                          color: _isFocusModeActive
-                              ? theme.colorScheme.secondary
-                              : theme.appBarTheme.actionsIconTheme?.color),
-                      tooltip: _isFocusModeActive
-                          ? "Sair do Modo Foco"
-                          : "Modo Leitura",
-                      onPressed: () {
-                        if (mounted)
-                          setState(
-                              () => _isFocusModeActive = !_isFocusModeActive);
-                      },
-                    ),
-                    Visibility(
-                      visible: !_isFocusModeActive,
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        IconButton(
-                          icon: Icon(
-                              _isCompareModeActive
-                                  ? Icons.compare_arrows
-                                  : Icons.compare_arrows_outlined,
-                              color: _isCompareModeActive
-                                  ? theme.colorScheme.secondary
-                                  : theme.appBarTheme.actionsIconTheme?.color),
-                          tooltip: _isCompareModeActive
-                              ? "Desativar Comparação"
-                              : "Comparar Traduções",
-                          onPressed: () {
-                            if (mounted) {
-                              setState(() {
-                                _isCompareModeActive = !_isCompareModeActive;
-                                if (_isCompareModeActive &&
-                                    selectedTranslation1 ==
-                                        selectedTranslation2) {
-                                  selectedTranslation2 =
-                                      (selectedTranslation1 == 'nvi')
-                                          ? 'acf'
-                                          : 'nvi';
-                                }
-                                if (!_isCompareModeActive &&
-                                    _showHebrewInterlinear &&
-                                    selectedTranslation1 == 'hebrew_original') {
-                                  _showHebrewInterlinear = false;
-                                }
-                                _updateFutureBuilderKey();
-                              });
-                            }
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.manage_search_outlined,
-                              color: theme.appBarTheme.actionsIconTheme?.color),
-                          tooltip: "Ir para referência",
-                          onPressed: _showGoToDialog,
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.search_sharp,
-                              color: theme.appBarTheme.actionsIconTheme?.color),
-                          tooltip: "Busca Semântica",
-                          onPressed: () {
-                            if (mounted)
-                              setState(() => _isSemanticSearchActive = true);
-                          },
-                        ),
-                      ]),
-                    ),
-                  ],
+            leading: _isFocusModeActive || _isSemanticSearchActive
+                ? const SizedBox.shrink()
+                : null,
+            actions: _buildAppBarActions(context, theme, viewModel),
           ),
           body: PageStorage(
             bucket: _pageStorageBucket,
             child: Column(
               children: [
-                if (_isSemanticSearchActive)
+                if (_isSemanticSearchActive &&
+                    !_isFocusModeActive) // Não mostrar filtros no modo foco
                   _buildSemanticSearchFilterWidgets(theme),
-                if (selectedBook != null &&
-                    selectedChapter != null &&
-                    _selectedBookSlug != null &&
-                    !_isSemanticSearchActive)
-                  Expanded(
-                      child: FutureBuilder<Map<String, dynamic>>(
-                    key: _futureBuilderKey,
-                    future: BiblePageHelper.loadChapterDataComparison(
-                        selectedBook!,
-                        selectedChapter!,
-                        selectedTranslation1,
-                        _isCompareModeActive ? selectedTranslation2 : null),
-                    builder: (context, snapshot) {
-                      return DelayedLoading(
-                        loading:
-                            snapshot.connectionState == ConnectionState.waiting,
-                        delay: const Duration(milliseconds: 200),
-                        loadingIndicator: Center(
-                            child: CircularProgressIndicator(
-                                color: theme.colorScheme.primary)),
-                        child: () {
-                          if (snapshot.hasError ||
-                              !snapshot.hasData ||
-                              snapshot.data == null) {
-                            return Center(
-                                child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Text(
-                                        'Erro: ${snapshot.error ?? 'Dados não encontrados'}',
-                                        style: TextStyle(
-                                            color: theme.colorScheme.error),
-                                        textAlign: TextAlign.center)));
-                          }
-                          final chapterData = snapshot.data!;
-                          final List<Map<String, dynamic>> sections =
-                              chapterData['sectionStructure'] ?? [];
-                          final Map<String, dynamic> verseDataMap =
-                              chapterData['verseData'] ?? {};
-                          final dynamic primaryTranslationVerseData =
-                              verseDataMap[selectedTranslation1];
-                          final dynamic comparisonTranslationVerseData =
-                              (_isCompareModeActive &&
-                                      selectedTranslation2 != null)
-                                  ? verseDataMap[selectedTranslation2!]
-                                  : null;
 
-                          if ((isCurrentTranslation1PrimaryHebrew &&
-                                  (primaryTranslationVerseData == null ||
-                                      (primaryTranslationVerseData as List)
-                                          .isEmpty)) ||
-                              (!isCurrentTranslation1PrimaryHebrew &&
-                                  (primaryTranslationVerseData == null ||
-                                      (primaryTranslationVerseData
-                                              as List<String>)
-                                          .isEmpty))) {
-                            return Center(
-                                child: Text(
-                                    'Capítulo não encontrado para $selectedTranslation1.',
-                                    style: TextStyle(
-                                        color: theme
-                                            .textTheme.bodyMedium?.color)));
-                          }
+                if (_showExtraOptions &&
+                    !_isSemanticSearchActive &&
+                    !_isFocusModeActive)
+                  _buildExtraOptionsBar(theme),
 
-                          if (!_isCompareModeActive) {
-                            dynamic hebrewDataForInterlinearView;
-                            if (_showHebrewInterlinear &&
-                                _currentChapterHebrewData != null &&
-                                _currentChapterHebrewData!['book'] ==
-                                    selectedBook &&
-                                _currentChapterHebrewData!['chapter'] ==
-                                    selectedChapter) {
-                              hebrewDataForInterlinearView =
-                                  _currentChapterHebrewData!['data'];
-                            }
-                            return _buildSingleViewContent(
-                                theme,
-                                sections,
-                                primaryTranslationVerseData,
-                                isCurrentTranslation1PrimaryHebrew,
-                                hebrewDataForInterlinearView);
-                          } else {
-                            if (comparisonTranslationVerseData == null ||
-                                (comparisonTranslationVerseData as List)
-                                        .isEmpty &&
-                                    selectedTranslation2 != null) {
-                              return Center(
-                                  child: Text(
-                                      'Tradução "$selectedTranslation2" não encontrada.',
-                                      style: TextStyle(
-                                          color: theme.colorScheme.error)));
-                            }
-                            final list1Data =
-                                primaryTranslationVerseData as List;
-                            final list2Data =
-                                comparisonTranslationVerseData as List?;
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                    child: _buildComparisonColumn(
-                                        context,
-                                        sections,
-                                        list1Data,
-                                        _scrollController1,
-                                        selectedTranslation1,
-                                        isHebrew:
-                                            isCurrentTranslation1PrimaryHebrew,
-                                        listViewKey: PageStorageKey<String>(
-                                            '$selectedBook-$selectedChapter-$selectedTranslation1-compareView'))),
-                                VerticalDivider(
-                                    width: 1,
-                                    color: theme.dividerColor.withOpacity(0.5),
-                                    thickness: 0.5),
-                                Expanded(
-                                    child: _buildComparisonColumn(
-                                        context,
-                                        sections,
-                                        list2Data ?? [],
-                                        _scrollController2,
-                                        selectedTranslation2!,
-                                        isHebrew: selectedTranslation2 ==
-                                            'hebrew_original',
-                                        listViewKey: PageStorageKey<String>(
-                                            '$selectedBook-$selectedChapter-$selectedTranslation2-compareView'))),
-                              ],
-                            );
-                          }
-                        },
-                      );
-                    },
-                  ))
-                else if (_isSemanticSearchActive)
-                  Expanded(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          "Digite sua busca e aplique filtros se desejar.",
-                          style: TextStyle(
-                              fontStyle: FontStyle.italic,
-                              color: theme.textTheme.bodyMedium?.color),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                if (!_isSemanticSearchActive &&
-                    (selectedBook == null ||
-                        selectedChapter == null ||
-                        _selectedBookSlug == null))
-                  const Expanded(
-                      child: Center(
-                          child: Text("Selecione um livro e capítulo."))),
-                Visibility(
-                    visible: !_isFocusModeActive && !_isSemanticSearchActive,
-                    child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0, vertical: 12.0),
-                        child: Column(children: [
-                          Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                ElevatedButton.icon(
-                                    icon: const Icon(Icons.translate, size: 18),
-                                    label: Text(
-                                        selectedTranslation1.toUpperCase(),
-                                        style: const TextStyle(fontSize: 12)),
-                                    onPressed: () => BiblePageWidgets
-                                            .showTranslationSelection(
-                                          context: context,
-                                          selectedTranslation:
+                // Conteúdo Principal
+                Expanded(
+                  child: (selectedBook != null &&
+                          selectedChapter != null &&
+                          _selectedBookSlug != null &&
+                          !_isSemanticSearchActive)
+                      ? FutureBuilder<Map<String, dynamic>>(
+                          key: _futureBuilderKey,
+                          future: BiblePageHelper.loadChapterDataComparison(
+                              selectedBook!,
+                              selectedChapter!,
+                              selectedTranslation1,
+                              _isCompareModeActive
+                                  ? selectedTranslation2
+                                  : null),
+                          builder: (context, snapshot) {
+                            bool isCurrentTranslation1PrimaryHebrew =
+                                selectedTranslation1 == 'hebrew_original';
+                            return DelayedLoading(
+                              loading: snapshot.connectionState ==
+                                  ConnectionState.waiting,
+                              delay: const Duration(milliseconds: 200),
+                              loadingIndicator: Center(
+                                  child: CircularProgressIndicator(
+                                      color: theme.colorScheme.primary)),
+                              child: () {
+                                if (snapshot.hasError ||
+                                    !snapshot.hasData ||
+                                    snapshot.data == null) {
+                                  return Center(
+                                      child: Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Text(
+                                              'Erro: ${snapshot.error ?? 'Dados não encontrados'}',
+                                              style: TextStyle(
+                                                  color:
+                                                      theme.colorScheme.error),
+                                              textAlign: TextAlign.center)));
+                                }
+                                final chapterData = snapshot.data!;
+                                final List<Map<String, dynamic>> sections =
+                                    chapterData['sectionStructure'] ?? [];
+                                final Map<String, dynamic> verseDataMap =
+                                    chapterData['verseData'] ?? {};
+                                final dynamic primaryTranslationVerseData =
+                                    verseDataMap[selectedTranslation1];
+                                final dynamic comparisonTranslationVerseData =
+                                    (_isCompareModeActive &&
+                                            selectedTranslation2 != null)
+                                        ? verseDataMap[selectedTranslation2!]
+                                        : null;
+
+                                if ((isCurrentTranslation1PrimaryHebrew &&
+                                        (primaryTranslationVerseData == null ||
+                                            (primaryTranslationVerseData
+                                                    as List)
+                                                .isEmpty)) ||
+                                    (!isCurrentTranslation1PrimaryHebrew &&
+                                        (primaryTranslationVerseData == null ||
+                                            (primaryTranslationVerseData
+                                                    as List<String>)
+                                                .isEmpty))) {
+                                  return Center(
+                                      child: Text(
+                                          'Capítulo não encontrado para $selectedTranslation1.',
+                                          style: TextStyle(
+                                              color: theme.textTheme.bodyMedium
+                                                  ?.color)));
+                                }
+
+                                if (!_isCompareModeActive) {
+                                  dynamic hebrewDataForInterlinearView;
+                                  if (_showHebrewInterlinear &&
+                                      _currentChapterHebrewData != null &&
+                                      _currentChapterHebrewData!['book'] ==
+                                          selectedBook &&
+                                      _currentChapterHebrewData!['chapter'] ==
+                                          selectedChapter) {
+                                    hebrewDataForInterlinearView =
+                                        _currentChapterHebrewData!['data'];
+                                  }
+                                  return _buildSingleViewContent(
+                                      theme,
+                                      sections,
+                                      primaryTranslationVerseData,
+                                      isCurrentTranslation1PrimaryHebrew,
+                                      hebrewDataForInterlinearView);
+                                } else {
+                                  if (comparisonTranslationVerseData == null ||
+                                      (comparisonTranslationVerseData as List)
+                                              .isEmpty &&
+                                          selectedTranslation2 != null) {
+                                    return Center(
+                                        child: Text(
+                                            'Tradução "$selectedTranslation2" não encontrada.',
+                                            style: TextStyle(
+                                                color:
+                                                    theme.colorScheme.error)));
+                                  }
+                                  final list1Data =
+                                      primaryTranslationVerseData as List;
+                                  final list2Data =
+                                      comparisonTranslationVerseData as List?;
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                          child: _buildComparisonColumn(
+                                              context,
+                                              sections,
+                                              list1Data,
+                                              _scrollController1,
                                               selectedTranslation1,
-                                          onTranslationSelected: (value) {
-                                            if (mounted &&
-                                                value != selectedTranslation2)
-                                              setState(() {
-                                                selectedTranslation1 = value;
-                                                _updateFutureBuilderKey();
-                                              });
-                                          },
-                                          currentSelectedBookAbbrev:
-                                              selectedBook,
-                                          booksMap: booksMap,
-                                        ),
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: theme.cardColor,
-                                        foregroundColor:
-                                            theme.textTheme.bodyLarge?.color,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 8),
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20)),
-                                        elevation: 2)),
-                                if (_isCompareModeActive)
-                                  ElevatedButton.icon(
-                                      icon:
-                                          const Icon(Icons.translate, size: 18),
-                                      label: Text(
-                                          selectedTranslation2?.toUpperCase() ??
-                                              '...',
-                                          style: const TextStyle(fontSize: 12)),
-                                      onPressed: () => BiblePageWidgets
-                                              .showTranslationSelection(
-                                            context: context,
-                                            selectedTranslation:
-                                                selectedTranslation2 ?? 'aa',
-                                            onTranslationSelected: (value) {
-                                              if (mounted &&
-                                                  value != selectedTranslation1)
-                                                setState(() {
-                                                  selectedTranslation2 = value;
-                                                  _updateFutureBuilderKey();
-                                                });
-                                            },
-                                            currentSelectedBookAbbrev:
-                                                selectedBook,
-                                            booksMap: booksMap,
-                                          ),
-                                      style: ElevatedButton.styleFrom(
-                                          backgroundColor: theme.cardColor,
-                                          foregroundColor:
-                                              theme.textTheme.bodyLarge?.color,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 8),
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20)),
-                                          elevation: 2)),
-                                ElevatedButton.icon(
-                                    icon: const Icon(Icons.school_outlined,
-                                        size: 18),
-                                    label: const Text("Estudos",
-                                        style: TextStyle(fontSize: 12)),
-                                    onPressed: () {
-                                      if (mounted)
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    const StudyHubPage()));
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: theme.cardColor,
-                                        foregroundColor:
-                                            theme.textTheme.bodyLarge?.color,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 8),
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20)),
-                                        elevation: 2)),
-                              ]),
-                          const SizedBox(height: 10),
-                          Row(children: [
-                            IconButton(
-                                icon: Icon(Icons.chevron_left,
-                                    color: theme.iconTheme.color, size: 32),
-                                onPressed: _previousChapter,
-                                tooltip: "Capítulo Anterior",
-                                splashRadius: 24),
-                            Expanded(
-                                flex: 3,
-                                child: UtilsBiblePage.buildBookDropdown(
-                                    selectedBook: selectedBook,
-                                    booksMap: booksMap,
-                                    onChanged: (value) {
-                                      if (mounted && value != null)
-                                        _navigateToChapter(value, 1);
-                                    })),
-                            const SizedBox(width: 8),
-                            if (selectedBook != null)
-                              Expanded(
-                                  flex: 2,
-                                  child: UtilsBiblePage.buildChapterDropdown(
-                                      selectedChapter: selectedChapter,
-                                      booksMap: booksMap,
-                                      selectedBook: selectedBook,
-                                      onChanged: (value) {
-                                        if (mounted &&
-                                            value != null &&
-                                            selectedBook != null)
-                                          _navigateToChapter(
-                                              selectedBook!, value);
-                                      })),
-                            IconButton(
-                                icon: Icon(Icons.chevron_right,
-                                    color: theme.iconTheme.color, size: 32),
-                                onPressed: _nextChapter,
-                                tooltip: "Próximo Capítulo",
-                                splashRadius: 24),
-                          ]),
-                        ]))),
+                                              isHebrew:
+                                                  isCurrentTranslation1PrimaryHebrew,
+                                              listViewKey: PageStorageKey<
+                                                      String>(
+                                                  '$selectedBook-$selectedChapter-$selectedTranslation1-compareView'))),
+                                      VerticalDivider(
+                                          width: 1,
+                                          color: theme.dividerColor
+                                              .withOpacity(0.5),
+                                          thickness: 0.5),
+                                      Expanded(
+                                          child: _buildComparisonColumn(
+                                              context,
+                                              sections,
+                                              list2Data ?? [],
+                                              _scrollController2,
+                                              selectedTranslation2!,
+                                              isHebrew: selectedTranslation2 ==
+                                                  'hebrew_original',
+                                              listViewKey: PageStorageKey<
+                                                      String>(
+                                                  '$selectedBook-$selectedChapter-$selectedTranslation2-compareView'))),
+                                    ],
+                                  );
+                                }
+                              },
+                            );
+                          },
+                        )
+                      : (_isSemanticSearchActive &&
+                              !_isFocusModeActive) // Mensagem de busca (não em modo foco)
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Text(
+                                  _semanticQueryController.text.isEmpty
+                                      ? "Digite sua busca e aplique filtros se desejar."
+                                      : "Pressione o botão de busca para ver os resultados.",
+                                  style: TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: theme.textTheme.bodyMedium?.color),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            )
+                          : (!_isSemanticSearchActive &&
+                                  (selectedBook == null ||
+                                      selectedChapter == null ||
+                                      _selectedBookSlug == null))
+                              ? const Center(
+                                  child: Text("Selecione um livro e capítulo."))
+                              : const SizedBox
+                                  .shrink(), // Caso para modo foco ou outros não cobertos
+                ),
+
+                Visibility(
+                    visible: !_isFocusModeActive &&
+                        !_isSemanticSearchActive &&
+                        !_showExtraOptions,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0, vertical: 12.0),
+                      child: Row(children: [
+                        IconButton(
+                            icon: Icon(Icons.chevron_left,
+                                color: theme.iconTheme.color, size: 32),
+                            onPressed: _previousChapter,
+                            tooltip: "Capítulo Anterior",
+                            splashRadius: 24),
+                        Expanded(
+                            flex: 3,
+                            child: UtilsBiblePage.buildBookDropdown(
+                                selectedBook: selectedBook,
+                                booksMap: booksMap,
+                                onChanged: (value) {
+                                  if (mounted && value != null)
+                                    _navigateToChapter(value, 1);
+                                })),
+                        const SizedBox(width: 8),
+                        if (selectedBook != null)
+                          Expanded(
+                              flex: 2,
+                              child: UtilsBiblePage.buildChapterDropdown(
+                                  selectedChapter: selectedChapter,
+                                  booksMap: booksMap,
+                                  selectedBook: selectedBook,
+                                  onChanged: (value) {
+                                    if (mounted &&
+                                        value != null &&
+                                        selectedBook != null)
+                                      _navigateToChapter(selectedBook!, value);
+                                  })),
+                        IconButton(
+                            icon: Icon(Icons.chevron_right,
+                                color: theme.iconTheme.color, size: 32),
+                            onPressed: _nextChapter,
+                            tooltip: "Próximo Capítulo",
+                            splashRadius: 24),
+                      ]),
+                    )),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildExtraOptionsBar(ThemeData theme) {
+    bool isCurrentTranslation1PrimaryHebrew =
+        selectedTranslation1 == 'hebrew_original';
+    bool canShowHebrewToggle =
+        booksMap?[selectedBook]?['testament'] == 'Antigo' &&
+            !isCurrentTranslation1PrimaryHebrew &&
+            !_isCompareModeActive;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: theme.cardColor.withOpacity(0.1),
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8.0,
+        runSpacing: 4.0,
+        children: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.translate, size: 18),
+            label: Text(selectedTranslation1.toUpperCase(),
+                style: const TextStyle(fontSize: 12)),
+            onPressed: () => BiblePageWidgets.showTranslationSelection(
+              context: context,
+              selectedTranslation: selectedTranslation1,
+              onTranslationSelected: (value) {
+                if (mounted && value != selectedTranslation2) {
+                  setState(() {
+                    selectedTranslation1 = value;
+                    if (value == 'hebrew_original' &&
+                        _isCompareModeActive &&
+                        selectedTranslation2 == 'hebrew_original') {
+                      selectedTranslation2 = 'nvi';
+                    }
+                    _updateFutureBuilderKey();
+                    if (value == 'hebrew_original')
+                      _showHebrewInterlinear = false;
+                  });
+                }
+              },
+              currentSelectedBookAbbrev: selectedBook,
+              booksMap: booksMap,
+            ),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: theme.cardColor,
+                foregroundColor: theme.textTheme.bodyLarge?.color,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                elevation: 1),
+          ),
+          if (_isCompareModeActive)
+            ElevatedButton.icon(
+              icon: const Icon(Icons.translate, size: 18),
+              label: Text(selectedTranslation2?.toUpperCase() ?? '...',
+                  style: const TextStyle(fontSize: 12)),
+              onPressed: () => BiblePageWidgets.showTranslationSelection(
+                context: context,
+                selectedTranslation: selectedTranslation2 ?? 'acf',
+                onTranslationSelected: (value) {
+                  if (mounted && value != selectedTranslation1) {
+                    setState(() {
+                      selectedTranslation2 = value;
+                      _updateFutureBuilderKey();
+                    });
+                  }
+                },
+                currentSelectedBookAbbrev: selectedBook,
+                booksMap: booksMap,
+              ),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.cardColor,
+                  foregroundColor: theme.textTheme.bodyLarge?.color,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  elevation: 1),
+            ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.school_outlined, size: 18),
+            label: const Text("Estudos", style: TextStyle(fontSize: 12)),
+            onPressed: () {
+              if (mounted) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const StudyHubPage()));
+              }
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: theme.cardColor,
+                foregroundColor: theme.textTheme.bodyLarge?.color,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                elevation: 1),
+          ),
+          IconButton(
+            icon: Icon(
+                _isFocusModeActive ? Icons.fullscreen_exit : Icons.fullscreen,
+                size: 22),
+            tooltip: _isFocusModeActive ? "Sair do Modo Foco" : "Modo Leitura",
+            onPressed: () {
+              if (mounted)
+                setState(() => _isFocusModeActive = !_isFocusModeActive);
+            },
+            color: _isFocusModeActive
+                ? theme.colorScheme.secondary
+                : theme.iconTheme.color,
+            splashRadius: 20,
+          ),
+          IconButton(
+            icon: Icon(
+                _isCompareModeActive
+                    ? Icons.compare_arrows
+                    : Icons.compare_arrows_outlined,
+                size: 22),
+            tooltip: _isCompareModeActive
+                ? "Desativar Comparação"
+                : "Comparar Traduções",
+            onPressed: () {
+              if (mounted) {
+                setState(() {
+                  _isCompareModeActive = !_isCompareModeActive;
+                  if (_isCompareModeActive &&
+                      selectedTranslation1 == selectedTranslation2) {
+                    selectedTranslation2 =
+                        (selectedTranslation1 == 'nvi') ? 'acf' : 'nvi';
+                  }
+                  if (!_isCompareModeActive &&
+                      _showHebrewInterlinear &&
+                      selectedTranslation1 == 'hebrew_original') {
+                    _showHebrewInterlinear = false;
+                  }
+                  _updateFutureBuilderKey();
+                });
+              }
+            },
+            color: _isCompareModeActive
+                ? theme.colorScheme.secondary
+                : theme.iconTheme.color,
+            splashRadius: 20,
+          ),
+          if (canShowHebrewToggle)
+            IconButton(
+              icon: Icon(
+                  _showHebrewInterlinear
+                      ? Icons.font_download_off_outlined
+                      : Icons.font_download_outlined,
+                  size: 22),
+              tooltip: _showHebrewInterlinear
+                  ? "Ocultar Hebraico Interlinear"
+                  : "Mostrar Hebraico Interlinear",
+              onPressed: () {
+                setState(() {
+                  _showHebrewInterlinear = !_showHebrewInterlinear;
+                  _loadCurrentChapterHebrewDataIfNeeded();
+                });
+              },
+              color: _showHebrewInterlinear
+                  ? theme.colorScheme.secondary
+                  : theme.iconTheme.color,
+              splashRadius: 20,
+            ),
+        ],
+      ),
     );
   }
 
