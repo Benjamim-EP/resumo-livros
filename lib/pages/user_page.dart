@@ -49,15 +49,21 @@ class _UserPageState extends State<UserPage> {
       if (!mounted) return;
       final storeInstance = StoreProvider.of<AppState>(context, listen: false);
 
+      // Carrega contagens de seções se não estiverem carregadas e não estiverem carregando
       if (storeInstance.state.metadataState.bibleSectionCounts.isEmpty &&
           !storeInstance.state.metadataState.isLoadingSectionCounts) {
+        print("UserPage initState: Disparando LoadBibleSectionCountsAction");
         storeInstance.dispatch(LoadBibleSectionCountsAction());
       }
+      // Carrega progresso de todos os livros se não estiver carregado e não estiver carregando
       if (storeInstance.state.userState.allBooksProgress.isEmpty &&
-          storeInstance.state.userState.userId != null) {
+          storeInstance.state.userState.userId != null &&
+          !storeInstance.state.userState.isLoadingAllBibleProgress) {
+        print("UserPage initState: Disparando LoadAllBibleProgressAction");
         storeInstance.dispatch(LoadAllBibleProgressAction());
       }
 
+      // Outros carregamentos
       if (storeInstance.state.userState.userId != null) {
         storeInstance.dispatch(LoadUserStatsAction());
         storeInstance.dispatch(LoadUserDiariesAction());
@@ -99,6 +105,21 @@ class _UserPageState extends State<UserPage> {
       setState(() {
         _selectedTab = tab;
       });
+      // Se a aba "Progresso" for selecionada e os dados ainda não foram carregados/estão sendo carregados,
+      // a lógica no onInit do StoreConnector dela cuidará disso.
+      if (tab == 'Progresso') {
+        final storeInstance =
+            StoreProvider.of<AppState>(context, listen: false);
+        if (storeInstance.state.metadataState.bibleSectionCounts.isEmpty &&
+            !storeInstance.state.metadataState.isLoadingSectionCounts) {
+          storeInstance.dispatch(LoadBibleSectionCountsAction());
+        }
+        if (storeInstance.state.userState.allBooksProgress.isEmpty &&
+            storeInstance.state.userState.userId != null &&
+            !storeInstance.state.userState.isLoadingAllBibleProgress) {
+          storeInstance.dispatch(LoadAllBibleProgressAction());
+        }
+      }
     }
   }
 
@@ -117,10 +138,7 @@ class _UserPageState extends State<UserPage> {
 
   Widget _buildTestamentProgress(String title, double progress,
       int readSections, int totalSections, ThemeData theme) {
-    // Se não há seções totais e nenhuma seção lida, não mostra nada (ou mostra "N/A")
     if (totalSections == 0 && readSections == 0) {
-      // Você pode retornar um SizedBox.shrink() ou um Text indicando que não há dados.
-      // Para manter o layout, vamos retornar um widget com a informação.
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Column(
@@ -130,7 +148,6 @@ class _UserPageState extends State<UserPage> {
                     color: theme.colorScheme.secondary.withOpacity(0.7))),
             const SizedBox(height: 8),
             LinearPercentIndicator(
-              // Mostra a barra zerada ou com um estilo diferente
               percent: 0.0,
               lineHeight: 10.0,
               barRadius: const Radius.circular(5),
@@ -153,14 +170,12 @@ class _UserPageState extends State<UserPage> {
         ),
       );
     }
-    // Se totalSections for 0, mas houver seções lidas (improvável, mas para segurança), consideramos 100% do que foi lido.
-    // Ou melhor, se totalSections do JSON for 0, significa que não há seções definidas para este testamento nos metadados.
     double safeProgress = totalSections > 0
         ? (readSections / totalSections).clamp(0.0, 1.0)
         : (readSections > 0 ? 1.0 : 0.0);
     int displayTotalSections = totalSections > 0
         ? totalSections
-        : (readSections > 0 ? readSections : 0); // Para exibição
+        : (readSections > 0 ? readSections : 0);
 
     return Column(
       children: [
@@ -209,20 +224,17 @@ class _UserPageState extends State<UserPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"$selectedSnippet"', // Aspas para indicar que é uma citação
+              '"$selectedSnippet"',
               style: TextStyle(
-                // color: Colors.amber[700], // Uma cor âmbar para destaque
-                backgroundColor: Colors.amber
-                    .withOpacity(0.3), // Ou um fundo destacado sutil
+                backgroundColor: Colors.amber.withOpacity(0.3),
                 color: theme.brightness == Brightness.dark
                     ? Colors.amber[300]
-                    : Colors.amber[800], // Ajusta cor do texto para contraste
+                    : Colors.amber[800],
                 fontSize: 16,
-                fontWeight: FontWeight
-                    .bold, // Pode manter ou remover o negrito se preferir
+                fontWeight: FontWeight.bold,
                 fontStyle: FontStyle.italic,
               ),
-              maxLines: 3, // Ajuste conforme necessário
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
@@ -259,7 +271,6 @@ class _UserPageState extends State<UserPage> {
                     tooltip: "Remover Marcação do Comentário",
                     onPressed: () {
                       if (context.mounted) {
-                        // Use context.mounted se estiver em um método de um State
                         StoreProvider.of<AppState>(context, listen: false)
                             .dispatch(
                                 RemoveCommentHighlightAction(highlightId));
@@ -283,9 +294,10 @@ class _UserPageState extends State<UserPage> {
             _selectedTab == 'Progresso');
 
     if (stillLoadingBookNames && _selectedTab != 'Diário') {
-      // Diário não depende de _localBooksMap
       return Center(
-          child: CircularProgressIndicator(color: theme.colorScheme.primary));
+          child: CircularProgressIndicator(
+              color: theme.colorScheme.primary,
+              key: const ValueKey("tab_content_books_map_loader")));
     }
     if (_localBooksMap == null &&
         (_selectedTab == 'Destaques' ||
@@ -304,39 +316,62 @@ class _UserPageState extends State<UserPage> {
           onInit: (store) {
             if (store.state.userState.allBooksProgress.isEmpty &&
                 store.state.userState.userId != null &&
-                !store.state.metadataState
-                    .isLoadingSectionCounts /* Evita disparar se já estiver carregando */) {
+                !store.state.userState.isLoadingAllBibleProgress) {
+              print(
+                  "UserPage Progresso onInit: Disparando LoadAllBibleProgressAction");
               store.dispatch(LoadAllBibleProgressAction());
             }
             if (store.state.metadataState.bibleSectionCounts.isEmpty &&
                 !store.state.metadataState.isLoadingSectionCounts) {
+              print(
+                  "UserPage Progresso onInit: Disparando LoadBibleSectionCountsAction");
               store.dispatch(LoadBibleSectionCountsAction());
             }
           },
           builder: (context, vm) {
-            if (vm.isLoadingCounts || vm.isLoadingProgress) {
-              // Verifica ambos os loadings
+            if (vm.isLoadingCounts || vm.isLoadingUserProgress) {
               return Center(
                   child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary));
+                      color: theme.colorScheme.primary,
+                      key: const ValueKey("progress_tab_loader")));
             }
             if (vm.countsError != null) {
               return Center(
                   child: Text(
-                      "Erro ao carregar dados de progresso: ${vm.countsError}",
-                      style: TextStyle(color: theme.colorScheme.error)));
+                "Erro ao carregar metadados: ${vm.countsError}",
+                style: TextStyle(color: theme.colorScheme.error),
+                textAlign: TextAlign.center,
+              ));
             }
-            if (vm.bibleSectionCounts.isEmpty) {
+            if (vm.userProgressError != null) {
               return Center(
                   child: Text(
-                      "Metadados de progresso da Bíblia não disponíveis.",
-                      style:
-                          TextStyle(color: theme.textTheme.bodyMedium?.color)));
+                "Erro ao carregar progresso do usuário: ${vm.userProgressError}",
+                style: TextStyle(color: theme.colorScheme.error),
+                textAlign: TextAlign.center,
+              ));
+            }
+            if (vm.bibleSectionCounts.isEmpty &&
+                vm.userId != null &&
+                !vm.isLoadingCounts) {
+              return Center(
+                  child: Text(
+                "Metadados de progresso da Bíblia não disponíveis ou erro ao carregar.",
+                style: TextStyle(color: theme.textTheme.bodyMedium?.color),
+                textAlign: TextAlign.center,
+              ));
             }
 
             int totalSectionsInBible =
-                vm.bibleSectionCounts['total_secoes_biblia'] as int? ?? 1;
-            if (totalSectionsInBible == 0) totalSectionsInBible = 1;
+                vm.bibleSectionCounts['total_secoes_biblia'] as int? ?? 0;
+            if (totalSectionsInBible == 0 && vm.bibleSectionCounts.isNotEmpty) {
+              print(
+                  "AVISO UserPage Progresso: 'total_secoes_biblia' é 0 ou nulo nos metadados carregados. Verifique o JSON bible_sections_count.json.");
+              totalSectionsInBible =
+                  1; // Fallback para evitar divisão por zero, mas indica problema no JSON.
+            } else if (totalSectionsInBible == 0) {
+              totalSectionsInBible = 1;
+            }
 
             int totalSectionsInAT =
                 vm.bibleSectionCounts['total_secoes_antigo_testamento']
@@ -345,6 +380,14 @@ class _UserPageState extends State<UserPage> {
             int totalSectionsInNT =
                 vm.bibleSectionCounts['total_secoes_novo_testamento'] as int? ??
                     0;
+
+            if (totalSectionsInAT == 0 && vm.bibleSectionCounts.isNotEmpty)
+              print(
+                  "AVISO UserPage Progresso: 'total_secoes_antigo_testamento' é 0 ou nulo nos metadados.");
+            if (totalSectionsInNT == 0 && vm.bibleSectionCounts.isNotEmpty)
+              print(
+                  "AVISO UserPage Progresso: 'total_secoes_novo_testamento' é 0 ou nulo nos metadados.");
+
             if (totalSectionsInAT == 0) totalSectionsInAT = 1;
             if (totalSectionsInNT == 0) totalSectionsInNT = 1;
 
@@ -376,7 +419,6 @@ class _UserPageState extends State<UserPage> {
 
             List<Widget> bookProgressWidgets = [];
             for (String bookAbbrev in CANONICAL_BOOK_ORDER) {
-              // Usa a lista canônica importada
               final bookMetaFromCounts =
                   booksMetadataFromCounts[bookAbbrev] as Map<String, dynamic>?;
               final bookMetaForName =
@@ -387,8 +429,9 @@ class _UserPageState extends State<UserPage> {
 
               final bookProgressData = vm.allBooksProgress[bookAbbrev];
               int totalSectionsInThisBook =
-                  bookMetaFromCounts['total_secoes_livro'] as int? ?? 1;
+                  bookMetaFromCounts['total_secoes_livro'] as int? ?? 0;
               if (totalSectionsInThisBook == 0) totalSectionsInThisBook = 1;
+
               int readSectionsInThisBook =
                   bookProgressData?.readSections.length ?? 0;
               double bookProgressPercent =
@@ -431,6 +474,41 @@ class _UserPageState extends State<UserPage> {
                   ],
                 ),
               ));
+            }
+
+            if (vm.allBooksProgress.isEmpty &&
+                vm.userId != null &&
+                !vm.isLoadingUserProgress) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                    Icon(Icons.auto_stories_outlined,
+                        size: 60,
+                        color: theme.colorScheme.primary.withOpacity(0.7)),
+                    const SizedBox(height: 20),
+                    Text(
+                      "Seu progresso na Bíblia aparecerá aqui!",
+                      style: theme.textTheme.headlineSmall
+                          ?.copyWith(color: theme.textTheme.bodyMedium?.color),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Text(
+                        "Comece a ler os livros e marcar seções como lidas para acompanhar sua jornada pela Palavra.",
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: theme.textTheme.bodySmall?.color),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
 
             return SingleChildScrollView(
@@ -481,11 +559,11 @@ class _UserPageState extends State<UserPage> {
                   const SizedBox(height: 8),
                   if (bookProgressWidgets.isEmpty &&
                       vm.userId != null &&
-                      !vm.isLoadingProgress /* Só mostra se não estiver carregando e usuário logado */)
+                      !vm.isLoadingUserProgress)
                     Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Text(
-                        "Comece a ler para ver seu progresso por livro.",
+                        "Seu progresso por livro aparecerá aqui.",
                         style: theme.textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
@@ -811,13 +889,13 @@ class _UserPageState extends State<UserPage> {
     return StoreConnector<AppState, _UserPageViewModel>(
       converter: (store) => _UserPageViewModel.fromStore(store),
       onInit: (store) {
+        // Ações globais que não dependem da aba selecionada podem ir aqui,
+        // mas com cuidado para não causar loops se já estiverem sendo carregadas.
+        // A lógica de onInit de CADA StoreConnector de ABA é mais específica.
         if (store.state.metadataState.bibleSectionCounts.isEmpty &&
             !store.state.metadataState.isLoadingSectionCounts) {
-          store.dispatch(LoadBibleSectionCountsAction());
-        }
-        if (store.state.userState.allBooksProgress.isEmpty &&
-            store.state.userState.userId != null) {
-          store.dispatch(LoadAllBibleProgressAction());
+          // print("UserPage onInit (main): Disparando LoadBibleSectionCountsAction");
+          // store.dispatch(LoadBibleSectionCountsAction()); // Pode ser redundante se a aba progresso carregar
         }
       },
       builder: (context, vm) {
@@ -825,16 +903,39 @@ class _UserPageState extends State<UserPage> {
             (_selectedTab == 'Destaques' ||
                 _selectedTab == 'Notas' ||
                 _selectedTab == 'Histórico' ||
-                _selectedTab ==
-                    'Progresso'); // Progresso também usa _localBooksMap para nomes
+                _selectedTab == 'Progresso');
 
         if (shouldShowPageLoader && _selectedTab != 'Diário') {
-          // Diário é independente
           return Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
               body: Center(
                   child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary)));
+                      color: theme.colorScheme.primary,
+                      key: const ValueKey("user_page_book_map_loader"))));
+        }
+
+        // Indicador de loading para a aba "Progresso" se os dados estiverem carregando
+        if (vm.isLoadingAllBibleProgress && _selectedTab == 'Progresso') {
+          return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: Center(
+                  child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary,
+                      key:
+                          const ValueKey("userpage_general_progress_loader"))));
+        }
+        // Mostrar erro geral do progresso se houver e a aba "Progresso" estiver selecionada
+        if (vm.bibleProgressError != null && _selectedTab == 'Progresso') {
+          return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: Center(
+                  child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                    "Erro ao carregar progresso: ${vm.bibleProgressError}",
+                    style: TextStyle(color: theme.colorScheme.error),
+                    textAlign: TextAlign.center),
+              )));
         }
 
         return Scaffold(
@@ -920,15 +1021,15 @@ class _UserPageViewModel {
   final String? userId;
   final Map<String, dynamic> userDetails;
   final int userDiariesCount;
-  // Adicionando isLoadingProgress do UserState para o ViewModel geral,
-  // pois é usado no builder principal do StoreConnector da UserPage.
-  final bool isLoadingUserProgress; // Novo
+  final bool isLoadingAllBibleProgress;
+  final String? bibleProgressError;
 
   _UserPageViewModel({
     required this.userId,
     required this.userDetails,
     required this.userDiariesCount,
-    required this.isLoadingUserProgress, // Novo
+    required this.isLoadingAllBibleProgress,
+    this.bibleProgressError,
   });
 
   static _UserPageViewModel fromStore(Store<AppState> store) {
@@ -936,9 +1037,9 @@ class _UserPageViewModel {
       userId: store.state.userState.userId,
       userDetails: store.state.userState.userDetails ?? {},
       userDiariesCount: store.state.userState.userDiaries.length,
-      // Define isLoadingUserProgress com base no estado UserState
-      isLoadingUserProgress: store.state.userState.userId != null &&
-          store.state.userState.allBooksProgress.isEmpty, // Novo
+      isLoadingAllBibleProgress:
+          store.state.userState.isLoadingAllBibleProgress,
+      bibleProgressError: store.state.userState.bibleProgressError,
     );
   }
 
@@ -950,14 +1051,16 @@ class _UserPageViewModel {
           userId == other.userId &&
           mapEquals(userDetails, other.userDetails) &&
           userDiariesCount == other.userDiariesCount &&
-          isLoadingUserProgress == other.isLoadingUserProgress; // Novo
+          isLoadingAllBibleProgress == other.isLoadingAllBibleProgress &&
+          bibleProgressError == other.bibleProgressError;
 
   @override
   int get hashCode =>
       userId.hashCode ^
       userDetails.hashCode ^
       userDiariesCount.hashCode ^
-      isLoadingUserProgress.hashCode; // Novo
+      isLoadingAllBibleProgress.hashCode ^
+      bibleProgressError.hashCode;
 }
 
 class _HighlightsViewModel {
@@ -992,30 +1095,54 @@ class _HighlightsViewModel {
 class _UserProgressViewModel {
   final String? userId;
   final bool isLoadingCounts;
-  final bool isLoadingProgress; // Já existia, mantém
+  final bool isLoadingUserProgress;
   final Map<String, BibleBookProgressData> allBooksProgress;
   final Map<String, dynamic> bibleSectionCounts;
   final String? countsError;
+  final String? userProgressError;
 
   _UserProgressViewModel({
     this.userId,
     required this.isLoadingCounts,
-    required this.isLoadingProgress,
+    required this.isLoadingUserProgress,
     required this.allBooksProgress,
     required this.bibleSectionCounts,
     this.countsError,
+    this.userProgressError,
   });
 
   static _UserProgressViewModel fromStore(Store<AppState> store) {
-    bool stillLoadingUserProgress = store.state.userState.userId != null &&
-        store.state.userState.allBooksProgress.isEmpty;
     return _UserProgressViewModel(
       userId: store.state.userState.userId,
       isLoadingCounts: store.state.metadataState.isLoadingSectionCounts,
-      isLoadingProgress: stillLoadingUserProgress,
+      isLoadingUserProgress: store.state.userState.isLoadingAllBibleProgress,
       allBooksProgress: store.state.userState.allBooksProgress,
       bibleSectionCounts: store.state.metadataState.bibleSectionCounts,
       countsError: store.state.metadataState.sectionCountsError,
+      userProgressError: store.state.userState.bibleProgressError,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _UserProgressViewModel &&
+          runtimeType == other.runtimeType &&
+          userId == other.userId &&
+          isLoadingCounts == other.isLoadingCounts &&
+          isLoadingUserProgress == other.isLoadingUserProgress &&
+          mapEquals(allBooksProgress, other.allBooksProgress) &&
+          mapEquals(bibleSectionCounts, other.bibleSectionCounts) &&
+          countsError == other.countsError &&
+          userProgressError == other.userProgressError;
+
+  @override
+  int get hashCode =>
+      userId.hashCode ^
+      isLoadingCounts.hashCode ^
+      isLoadingUserProgress.hashCode ^
+      allBooksProgress.hashCode ^
+      bibleSectionCounts.hashCode ^
+      countsError.hashCode ^
+      userProgressError.hashCode;
 }
