@@ -212,6 +212,8 @@ class UserState {
   final String? bibleProgressError; // NOVO CAMPO DE ERRO
 
   final List<Map<String, dynamic>> pendingFirestoreWrites;
+  final Map<String, Set<String>> pendingSectionsToAdd;
+  final Map<String, Set<String>> pendingSectionsToRemove;
 
   UserState({
     this.userId,
@@ -248,6 +250,8 @@ class UserState {
     this.allBooksProgress = const {},
     this.isLoadingAllBibleProgress = false, // Valor inicial da nova flag
     this.bibleProgressError, // Valor inicial do novo erro
+    this.pendingSectionsToAdd = const {}, // Inicializa
+    this.pendingSectionsToRemove = const {}, // Inicializa
     this.pendingFirestoreWrites = const [],
   });
 
@@ -294,6 +298,8 @@ class UserState {
     bool? isLoadingAllBibleProgress, // Adicionado ao copyWith
     String? bibleProgressError, // Adicionado ao copyWith
     bool clearBibleProgressError = false, // Para limpar o erro
+    Map<String, Set<String>>? pendingSectionsToAdd, // Adicionado
+    Map<String, Set<String>>? pendingSectionsToRemove, // Adicionado
     List<Map<String, dynamic>>? pendingFirestoreWrites,
   }) {
     return UserState(
@@ -343,6 +349,10 @@ class UserState {
           : bibleProgressError ?? this.bibleProgressError,
       pendingFirestoreWrites:
           pendingFirestoreWrites ?? this.pendingFirestoreWrites,
+      pendingSectionsToAdd:
+          pendingSectionsToAdd ?? this.pendingSectionsToAdd, // Adicionado
+      pendingSectionsToRemove:
+          pendingSectionsToRemove ?? this.pendingSectionsToRemove, // Adicionado
     );
   }
 }
@@ -574,18 +584,55 @@ UserState userReducer(UserState state, dynamic action) {
       bibleProgressError: action.error,
     );
   } else if (action is OptimisticToggleSectionReadStatusAction) {
-    final newReadSectionsByBook =
-        Map<String, Set<String>>.from(state.readSectionsByBook);
-    final sectionsForBook =
+    final newReadSectionsByBook = Map<String, Set<String>>.from(
+        state.readSectionsByBook); // << Cria nova cópia do Map
+    final sectionsForBookUI = Set<String>.from(
+        newReadSectionsByBook[action.bookAbbrev] ??
+            {}); // << Cria nova cópia do Set
+    // OBTER OU CRIAR O SET PARA O LIVRO ATUAL, GARANTINDO QUE É UMA NOVA INSTÂNCIA
+    final Set<String> sectionsForThisBook =
         Set<String>.from(newReadSectionsByBook[action.bookAbbrev] ?? {});
+    print(
+        "Reducer (Optimistic) ANTES - Livro: ${action.bookAbbrev}, Seção: ${action.sectionId}, Marcar: ${action.markAsRead}, Seções Atuais para este livro: $sectionsForThisBook");
+    if (action.markAsRead) {
+      sectionsForBookUI.add(action.sectionId);
+    } else {
+      sectionsForBookUI.remove(action.sectionId);
+    }
+    newReadSectionsByBook[action.bookAbbrev] = sectionsForBookUI;
+    print(
+        "Reducer (Optimistic) DEPOIS - Livro: ${action.bookAbbrev}, Seções Atualizadas para este livro: $sectionsForThisBook");
+    print(
+        "Reducer (Optimistic) DEPOIS - Conteúdo completo de newReadSectionsByBook: $newReadSectionsByBook");
+    // 2. Atualiza as listas pendentes
+    final newPendingToAdd =
+        Map<String, Set<String>>.from(state.pendingSectionsToAdd);
+    final newPendingToRemove =
+        Map<String, Set<String>>.from(state.pendingSectionsToRemove);
+
+    final bookToAddSet =
+        Set<String>.from(newPendingToAdd[action.bookAbbrev] ?? {});
+    final bookToRemoveSet =
+        Set<String>.from(newPendingToRemove[action.bookAbbrev] ?? {});
 
     if (action.markAsRead) {
-      sectionsForBook.add(action.sectionId);
+      bookToAddSet.add(action.sectionId);
+      bookToRemoveSet
+          .remove(action.sectionId); // Se estava para remover, cancela
     } else {
-      sectionsForBook.remove(action.sectionId);
+      bookToRemoveSet.add(action.sectionId);
+      bookToAddSet
+          .remove(action.sectionId); // Se estava para adicionar, cancela
     }
-    newReadSectionsByBook[action.bookAbbrev] = sectionsForBook;
-    return state.copyWith(readSectionsByBook: newReadSectionsByBook);
+
+    newPendingToAdd[action.bookAbbrev] = bookToAddSet;
+    newPendingToRemove[action.bookAbbrev] = bookToRemoveSet;
+    print(
+        "Reducer (Optimistic) - Pending Add: $newPendingToAdd, Pending Remove: $newPendingToRemove");
+    return state.copyWith(
+        readSectionsByBook: newReadSectionsByBook,
+        pendingSectionsToAdd: newPendingToAdd,
+        pendingSectionsToRemove: newPendingToRemove);
   } else if (action is EnqueueFirestoreWriteAction) {
     final newPendingWrites =
         List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
@@ -609,6 +656,23 @@ UserState userReducer(UserState state, dynamic action) {
     print(
         "Reducer: Operação ${action.operationId} removida da fila (FALHA): ${action.error}");
     return state.copyWith(pendingFirestoreWrites: newPendingWrites);
+  } else if (action is ClearPendingBibleProgressAction) {
+    final newPendingToAdd =
+        Map<String, Set<String>>.from(state.pendingSectionsToAdd);
+    final newPendingToRemove =
+        Map<String, Set<String>>.from(state.pendingSectionsToRemove);
+
+    newPendingToAdd.remove(action.bookAbbrev);
+    newPendingToRemove.remove(action.bookAbbrev);
+
+    return state.copyWith(
+        pendingSectionsToAdd: newPendingToAdd,
+        pendingSectionsToRemove: newPendingToRemove);
+  } else if (action is LoadedPendingBibleProgressAction) {
+    return state.copyWith(
+      pendingSectionsToAdd: action.pendingToAdd,
+      pendingSectionsToRemove: action.pendingToRemove,
+    );
   }
   return state;
 }

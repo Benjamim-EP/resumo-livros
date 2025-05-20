@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:resumo_dos_deuses_flutter/components/bottomNavigationBar/bottomNavigationBar.dart';
 // Removido: import 'package:resumo_dos_deuses_flutter/design/theme.dart'; // Será obtido do Redux
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
 import 'package:resumo_dos_deuses_flutter/services/auth_check.dart';
 import './services/navigation_service.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
@@ -17,6 +18,7 @@ void main() async {
   await AppInitialization.init();
   // Despacha a ação para carregar o tema salvo ANTES de construir o MaterialApp
   store.dispatch(LoadSavedThemeAction());
+  store.dispatch(LoadPendingBibleProgressAction());
   runApp(MyApp());
 }
 

@@ -1,10 +1,16 @@
 // lib/redux/middleware/bible_progress_middleware.dart
+import 'dart:convert';
+
 import 'package:redux/redux.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para BibleBookProgressData
+import 'package:resumo_dos_deuses_flutter/redux/reducers.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Para BibleBookProgressData
+
+const String _pendingBibleToAddKey = 'pendingBibleSectionsToAdd';
+const String _pendingBibleToRemoveKey = 'pendingBibleSectionsToRemove';
 
 List<Middleware<AppState>> createBibleProgressMiddleware() {
   final firestoreService = FirestoreService();
@@ -76,47 +82,186 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
     }
   }
 
+  // Persistência com SharedPreferences
+  Future<void> _savePendingProgressToPrefs(
+      Map<String, Set<String>> pendingToAdd,
+      Map<String, Set<String>> pendingToRemove) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Converter Set<String> para List<String> para jsonEncode
+    final encodableToAdd =
+        pendingToAdd.map((key, value) => MapEntry(key, value.toList()));
+    final encodableToRemove =
+        pendingToRemove.map((key, value) => MapEntry(key, value.toList()));
+
+    await prefs.setString(_pendingBibleToAddKey, jsonEncode(encodableToAdd));
+    await prefs.setString(
+        _pendingBibleToRemoveKey, jsonEncode(encodableToRemove));
+    print("Progresso pendente da Bíblia salvo no SharedPreferences.");
+  }
+
   // Handler para ToggleSectionReadStatusAction
   // Esta é a ação que a UI despacha quando o usuário clica no botão "marcar como lido".
   void _handleToggleSectionReadStatus(Store<AppState> store,
       ToggleSectionReadStatusAction action, NextDispatcher next) async {
-    // 1. Passa a ação original. Isso permite que outros middlewares ou loggers a vejam,
-    // mas o reducer principal para ToggleSectionReadStatusAction NÃO deve mais existir
-    // ou não deve modificar o estado de `readSectionsByBook` diretamente.
-    // A atualização otimista é feita pela OptimisticToggleSectionReadStatusAction.
-    next(action);
+    // 1. NÃO FAÇA next(action) para a ToggleSectionReadStatusAction original se o reducer não a trata otimisticamente.
+    //    Em vez disso, o middleware orquestra as ações otimistas e de persistência/sincronização.
 
-    // 2. Despacha a ação otimista para atualizar a UI imediatamente
-    // O reducer para OptimisticToggleSectionReadStatusAction fará a mudança no `readSectionsByBook` do UserState.
+    // 2. Despache a ação otimista IMEDIATAMENTE.
+    //    O reducer para OptimisticToggleSectionReadStatusAction atualizará a UI
+    //    e também as listas pendingSectionsToAdd/ToRemove.
     store.dispatch(OptimisticToggleSectionReadStatusAction(
       bookAbbrev: action.bookAbbrev,
       sectionId: action.sectionId,
       markAsRead: action.markAsRead,
     ));
-    // print("BibleProgressMiddleware: Despachou OptimisticToggle para ${action.sectionId}, markAsRead: ${action.markAsRead}");
+    print(
+        "BibleProgressMiddleware: Despachou OptimisticToggle para ${action.sectionId}, markAsRead: ${action.markAsRead}");
 
-    // 3. Enfileira a operação de escrita no Firestore
-    // Cria um ID único para esta operação específica para que possa ser rastreada e removida da fila.
-    final operationId =
-        '${action.bookAbbrev}_${action.sectionId}_${DateTime.now().millisecondsSinceEpoch}_${action.markAsRead.toString()}';
-    final operation = {
-      'id': operationId,
-      'type':
-          'toggleSectionReadStatus', // Tipo da operação para o firestore_sync_middleware
-      'payload': {
-        'bookAbbrev': action.bookAbbrev,
-        'sectionId': action.sectionId,
-        'markAsRead': action.markAsRead,
-        // Não precisamos passar totalSectionsInBook aqui, o firestore_sync_middleware pegará do estado Redux
+    // 3. Após o estado ser atualizado pelo reducer (de forma síncrona após o dispatch acima),
+    //    salve as pendências no SharedPreferences.
+    //    Usar um pequeno Future.delayed para garantir que o reducer teve chance de processar
+    //    antes de ler o estado para salvar pode ser uma boa prática, embora o dispatch seja síncrono.
+    //    Ou, melhor ainda, o middleware que salva no SharedPreferences poderia ouvir
+    //    a OptimisticToggleSectionReadStatusAction. Mas, por simplicidade, vamos manter aqui por enquanto.
+    //    A chamada direta a _savePendingProgressToPrefs após o dispatch da ação otimista deve funcionar
+    //    porque o dispatch da ação otimista é síncrono e o estado é atualizado antes da próxima linha.
+
+    // É CRUCIAL que o estado seja lido DEPOIS que o reducer da ação otimista rodou.
+    // O dispatch acima é síncrono, então o estado DEVE estar atualizado aqui.
+    _savePendingProgressToPrefs(store.state.userState.pendingSectionsToAdd,
+        store.state.userState.pendingSectionsToRemove);
+
+    // A ação original ToggleSectionReadStatusAction agora serve apenas como um gatilho para este middleware.
+    // Não precisamos chamar next(action) se ela não tiver mais um reducer.
+    // Se você quiser que ela seja logada ou passada para outros middlewares, você pode chamar next(action)
+    // no início, mas certifique-se que nenhum reducer está tentando fazer a atualização otimista
+    // para ela também.
+    // Por clareza, se ToggleSectionReadStatusAction SÓ existe para ser pega por este middleware,
+    // o next(action) pode ser omitido ou chamado no início ANTES de despachar a ação otimista.
+    // Vamos chamar no início por consistência com outros middlewares, mas o reducer para ela não deve existir.
+    // next(action); // Opcional, se outros middlewares precisarem ver.
+  }
+
+  void _handleProcessPendingBibleProgress(Store<AppState> store,
+      ProcessPendingBibleProgressAction action, NextDispatcher next) async {
+    next(action);
+
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print("Middleware Sync: Usuário não logado, abortando sincronização.");
+      return;
+    }
+
+    final pendingToAdd = Map<String, Set<String>>.from(
+        store.state.userState.pendingSectionsToAdd);
+    final pendingToRemove = Map<String, Set<String>>.from(
+        store.state.userState.pendingSectionsToRemove);
+
+    if (pendingToAdd.isEmpty && pendingToRemove.isEmpty) {
+      print("Middleware Sync: Nenhuma pendência para sincronizar.");
+      return;
+    }
+
+    print(
+        "Middleware Sync: Iniciando. Pendentes Adicionar: $pendingToAdd, Pendentes Remover: $pendingToRemove");
+
+    final booksToProcess =
+        {...pendingToAdd.keys, ...pendingToRemove.keys}.toList();
+    print("Middleware Sync: Livros para processar: $booksToProcess");
+
+    for (String bookAbbrev in booksToProcess) {
+      final sectionsToAdd = pendingToAdd[bookAbbrev] ?? {};
+      final sectionsToRemove = pendingToRemove[bookAbbrev] ?? {};
+
+      if (sectionsToAdd.isEmpty && sectionsToRemove.isEmpty) {
+        print(
+            "Middleware Sync: Nenhuma mudança para o livro $bookAbbrev, pulando.");
+        continue;
       }
-    };
-    store.dispatch(EnqueueFirestoreWriteAction(operation));
-    // print("BibleProgressMiddleware: Enfileirou operação de escrita para ${action.sectionId}. ID da op: $operationId");
+      print(
+          "Middleware Sync: Processando livro $bookAbbrev. Adicionar: $sectionsToAdd, Remover: $sectionsToRemove");
 
-    // 4. Opcional: Disparar ProcessPendingFirestoreWritesAction imediatamente para teste.
-    // Em produção, isso seria acionado por outros gatilhos (sair da tela, etc.).
-    // Para testes, pode ser útil:
-    // store.dispatch(ProcessPendingFirestoreWritesAction());
+      try {
+        int totalSectionsInBook =
+            store.state.metadataState.bibleSectionCounts['livros']?[bookAbbrev]
+                    ?['total_secoes_livro'] as int? ??
+                store.state.userState.totalSectionsPerBook[bookAbbrev] ??
+                0;
+
+        if (totalSectionsInBook == 0) {
+          final existingProgress =
+              await firestoreService.getBibleBookProgress(userId, bookAbbrev);
+          if (existingProgress != null && existingProgress.exists) {
+            totalSectionsInBook = (existingProgress.data()
+                    as Map<String, dynamic>)['totalSectionsInBook'] as int? ??
+                0;
+          }
+        }
+        print(
+            "Middleware Sync: Total de seções para $bookAbbrev: $totalSectionsInBook");
+
+        await firestoreService.batchUpdateBibleProgress(
+          userId,
+          bookAbbrev,
+          sectionsToAdd.toList(),
+          sectionsToRemove.toList(),
+          totalSectionsInBook,
+        );
+        print(
+            "Middleware Sync: Sincronização Firestore para $bookAbbrev BEM-SUCEDIDA.");
+        store.dispatch(ClearPendingBibleProgressAction(bookAbbrev));
+        _savePendingProgressToPrefs(
+            // Salva o estado de pendências atualizado (agora vazio para este livro)
+            store.state.userState.pendingSectionsToAdd,
+            store.state.userState.pendingSectionsToRemove);
+        store.dispatch(LoadBibleBookProgressAction(bookAbbrev,
+            knownTotalSections:
+                totalSectionsInBook > 0 ? totalSectionsInBook : null));
+      } catch (e) {
+        print(
+            "Middleware Sync: ERRO ao sincronizar progresso para $bookAbbrev: $e");
+        // As pendências permanecem no estado para a próxima tentativa.
+      }
+    }
+    print("Middleware Sync: Processamento de pendências finalizado.");
+  }
+
+  void _handleLoadPendingProgress(Store<AppState> store,
+      LoadPendingBibleProgressAction action, NextDispatcher next) async {
+    next(action);
+    final prefs = await SharedPreferences.getInstance();
+    final String? addJson = prefs.getString(_pendingBibleToAddKey);
+    final String? removeJson = prefs.getString(_pendingBibleToRemoveKey);
+
+    Map<String, Set<String>> pendingToAdd = {};
+    Map<String, Set<String>> pendingToRemove = {};
+
+    if (addJson != null) {
+      final Map<String, dynamic> decodedAdd = jsonDecode(addJson);
+      pendingToAdd = decodedAdd
+          .map((key, value) => MapEntry(key, Set<String>.from(value as List)));
+    }
+    if (removeJson != null) {
+      final Map<String, dynamic> decodedRemove = jsonDecode(removeJson);
+      pendingToRemove = decodedRemove
+          .map((key, value) => MapEntry(key, Set<String>.from(value as List)));
+    }
+    print(
+        "Middleware LoadPending: Pendentes Adicionar Carregados: $pendingToAdd");
+    print(
+        "Middleware LoadPending: Pendentes Remover Carregados: $pendingToRemove");
+    store.dispatch(LoadedPendingBibleProgressAction(
+        pendingToAdd: pendingToAdd, pendingToRemove: pendingToRemove));
+    print("Progresso pendente da Bíblia carregado do SharedPreferences.");
+
+    if (pendingToAdd.isNotEmpty || pendingToRemove.isNotEmpty) {
+      print(
+          "Middleware LoadPending: Despachando ProcessPendingBibleProgressAction após carregar pendências.");
+      store.dispatch(ProcessPendingBibleProgressAction());
+    } else {
+      print(
+          "Middleware LoadPending: Nenhuma pendência carregada para sincronizar.");
+    }
   }
 
   // Handler para LoadAllBibleProgressAction
@@ -151,5 +296,9 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
         _handleToggleSectionReadStatus),
     TypedMiddleware<AppState, LoadAllBibleProgressAction>(
         _handleLoadAllBibleProgress),
+    TypedMiddleware<AppState, ProcessPendingBibleProgressAction>(
+        _handleProcessPendingBibleProgress),
+    TypedMiddleware<AppState, LoadPendingBibleProgressAction>(
+        _handleLoadPendingProgress),
   ];
 }

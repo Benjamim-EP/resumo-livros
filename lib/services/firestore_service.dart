@@ -1101,6 +1101,79 @@ class FirestoreService {
     }
   }
 
+  Future<void> batchUpdateBibleProgress(
+    String userId,
+    String bookAbbrev,
+    List<String> sectionsToAdd,
+    List<String> sectionsToRemove,
+    int totalSectionsInBook, // Adicionado para calcular 'completed'
+  ) async {
+    final docRef = _db
+        .collection('users')
+        .doc(userId)
+        .collection('bibleProgress')
+        .doc(bookAbbrev);
+
+    bool finalCompletedStatusForPrint =
+        false; // Variável para o print fora da transação
+
+    await _db.runTransaction((transaction) async {
+      DocumentSnapshot snapshot = await transaction.get(docRef);
+      Set<String> currentReadSections;
+      bool currentCompletedStatus = false;
+      int currentTotalSections = totalSectionsInBook;
+
+      if (!snapshot.exists) {
+        currentReadSections = {};
+        print(
+            "FirestoreService: Criando novo doc de progresso para $bookAbbrev durante batchUpdate. Total Seções: $currentTotalSections");
+      } else {
+        final data = snapshot.data() as Map<String, dynamic>;
+        currentReadSections =
+            Set<String>.from(data['readSections'] as List<dynamic>? ?? []);
+        currentCompletedStatus = data['completed'] as bool? ?? false;
+        int totalFromDb = data['totalSectionsInBook'] as int? ?? 0;
+        if (totalFromDb > 0) {
+          currentTotalSections = totalFromDb;
+        }
+      }
+
+      currentReadSections.addAll(sectionsToAdd);
+      currentReadSections.removeAll(sectionsToRemove);
+
+      // Esta variável é local para a transação, mas seu valor final será atribuído
+      // à variável de escopo externo para o print.
+      bool newCompletedStatusTransactionLocal = currentCompletedStatus;
+      if (currentTotalSections > 0) {
+        newCompletedStatusTransactionLocal =
+            currentReadSections.length >= currentTotalSections;
+      } else if (sectionsToAdd.isNotEmpty &&
+          currentReadSections.isNotEmpty &&
+          currentTotalSections == 0) {
+        newCompletedStatusTransactionLocal = false;
+      }
+
+      finalCompletedStatusForPrint =
+          newCompletedStatusTransactionLocal; // Atribui para uso no print
+
+      transaction.set(
+        docRef,
+        {
+          'readSections': currentReadSections.toList(),
+          'totalSectionsInBook': currentTotalSections,
+          'completed':
+              newCompletedStatusTransactionLocal, // Usa a variável local da transação
+          'lastReadTimestamp': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    });
+
+    // Agora usa a variável que foi atualizada dentro da transação
+    print(
+        "Progresso da Bíblia para $userId/$bookAbbrev atualizado em lote. Adicionadas: ${sectionsToAdd.length}, Removidas: ${sectionsToRemove.length}. Total Seções: $totalSectionsInBook, Completado: $finalCompletedStatusForPrint");
+  }
+
   // --- Helpers ---
 
   /// Extrai o número do capítulo do nome do capítulo (se existir).

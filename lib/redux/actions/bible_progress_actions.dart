@@ -100,8 +100,29 @@ class FirestoreWriteFailedAction {
       this.operationId, this.originalOperation, this.error);
 }
 
-// Ação para limpar operações processadas da fila (pode ser combinada com SuccessfulAction)
-// class ClearProcessedPendingOperationsAction {
-//   final List<String> processedOperationIds;
-//   ClearProcessedPendingOperationsAction(this.processedOperationIds);
-// }
+class ProcessPendingBibleProgressAction {
+  // Pode ser genérica ou específica para um livro se necessário
+  // final String? bookAbbrev; // Opcional
+  ProcessPendingBibleProgressAction();
+}
+
+// Ação para limpar as listas pendentes de um livro após sincronização bem-sucedida
+class ClearPendingBibleProgressAction {
+  final String bookAbbrev;
+  ClearPendingBibleProgressAction(this.bookAbbrev);
+}
+
+// Ações para persistência (se usar redux_persist ou similar)
+class SavePendingBibleProgressAction {
+  /* Pode ser usada pelo middleware de persistência */
+}
+
+class LoadPendingBibleProgressAction {/* Para carregar no início do app */}
+
+class LoadedPendingBibleProgressAction {
+  // Resultado do carregamento
+  final Map<String, Set<String>> pendingToAdd;
+  final Map<String, Set<String>> pendingToRemove;
+  LoadedPendingBibleProgressAction(
+      {required this.pendingToAdd, required this.pendingToRemove});
+}

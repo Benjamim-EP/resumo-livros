@@ -82,6 +82,12 @@ class _BibleContentViewModel {
 
   static _BibleContentViewModel fromStore(
       Store<AppState> store, String? currentSelectedBook) {
+    final sections = currentSelectedBook != null
+        ? store.state.userState.readSectionsByBook[currentSelectedBook] ??
+            const {}
+        : const {};
+    print(
+        "BibleContentViewModel.fromStore: Livro: $currentSelectedBook, Seções Lidas: $sections"); // DEBUG
     return _BibleContentViewModel(
       userHighlights: store.state.userState.userHighlights,
       userNotes: store.state.userState.userNotes,
@@ -144,6 +150,7 @@ class _BiblePageState extends State<BiblePage> {
   bool _isSyncingScroll = false;
 
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
+  Store<AppState>? _store; // Variável para armazenar a instância do Store
 
   @override
   void initState() {
@@ -156,6 +163,18 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Obtenha a instância do Store aqui, pois o context está disponível e o widget está na árvore.
+    // É chamado após initState e quando as dependências do widget mudam.
+    if (_store == null) {
+      // Só atribui uma vez
+      _store = StoreProvider.of<AppState>(context);
+      print("BiblePage: Instância do Store obtida em didChangeDependencies.");
+    }
+  }
+
+  @override
   void dispose() {
     _semanticQueryController.dispose();
     _scrollController1.removeListener(_syncScrollFrom1To2);
@@ -163,17 +182,41 @@ class _BiblePageState extends State<BiblePage> {
     _scrollController1.dispose();
     _scrollController2.dispose();
 
-    if (mounted &&
-        StoreProvider.of<AppState>(context, listen: false)
-            .state
-            .userState
-            .pendingFirestoreWrites
-            .isNotEmpty) {
-      StoreProvider.of<AppState>(context, listen: false)
-          .dispatch(ProcessPendingFirestoreWritesAction());
+    // Agora use a variável de instância _store
+    if (_store != null) {
+      // Verifica se o store foi inicializado
+      final userState = _store!.state.userState;
+
+      if (userState.userId != null) {
+        final pendingToAdd = userState.pendingSectionsToAdd;
+        final pendingToRemove = userState.pendingSectionsToRemove;
+
+        if (pendingToAdd.isNotEmpty || pendingToRemove.isNotEmpty) {
+          print(
+              "BiblePage dispose: Disparando ProcessPendingBibleProgressAction.");
+          _store!.dispatch(ProcessPendingBibleProgressAction());
+        } else {
+          print(
+              "BiblePage dispose: Nenhuma pendência de progresso bíblico para sincronizar.");
+        }
+      } else {
+        print(
+            "BiblePage dispose: Usuário não logado, não despachando sincronização de progresso bíblico.");
+      }
+
+      if (userState.pendingFirestoreWrites.isNotEmpty) {
+        print(
+            "BiblePage dispose: Disparando ProcessPendingFirestoreWritesAction.");
+        _store!.dispatch(ProcessPendingFirestoreWritesAction());
+      } else {
+        print(
+            "BiblePage dispose: Nenhuma pendência de escrita genérica para sincronizar.");
+      }
+    } else {
       print(
-          "BiblePage dispose: Disparando ProcessPendingFirestoreWritesAction.");
+          "BiblePage dispose: ERRO - Instância do Store não foi inicializada (_store é null).");
     }
+
     super.dispose();
   }
 
@@ -1234,7 +1277,8 @@ class _BiblePageState extends State<BiblePage> {
               final bool isSectionRead = contentViewModel
                   .readSectionsForCurrentBook
                   .contains(currentSectionId);
-
+              print(
+                  "StoreConnector Builder: sectionId: $currentSectionId, isSectionRead: $isSectionRead, readSectionsForCurrentBook: ${contentViewModel.readSectionsForCurrentBook}");
               List<List<Map<String, String>>>? hebrewDataForThisSection;
               if (_showHebrewInterlinear &&
                   hebrewInterlinearChapterData != null &&
@@ -1349,6 +1393,8 @@ class _BiblePageState extends State<BiblePage> {
         converter: (store) =>
             _BibleContentViewModel.fromStore(store, selectedBook),
         builder: (context, contentViewModel) {
+          print(
+              ">>> StoreConnector (_BibleContentViewModel) REBUILDING - Livro: $selectedBook");
           return ListView.builder(
             key: listViewKey,
             controller: scrollController,
