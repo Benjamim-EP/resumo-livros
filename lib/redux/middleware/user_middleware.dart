@@ -30,17 +30,10 @@ List<Middleware<AppState>> createUserMiddleware() {
     TypedMiddleware<AppState, SaveVerseToCollectionAction>(
             _saveVerseToCollection(firestoreService))
         .call,
-    // TypedMiddleware<AppState, LoadBooksInProgressAction>(_loadBooksInProgress(firestoreService)), // Desativado
-    // TypedMiddleware<AppState, LoadBooksDetailsAction>(_loadBooksDetails(firestoreService)), // Desativado
     TypedMiddleware<AppState, UpdateUserFieldAction>(
             _updateUserField(firestoreService))
         .call,
-    TypedMiddleware<AppState, SaveUserFeaturesAction>(
-            _saveUserFeatures(firestoreService))
-        .call,
-    TypedMiddleware<AppState, CheckFirstLoginAction>(
-            _checkFirstLogin(firestoreService))
-        .call,
+
     TypedMiddleware<AppState, LoadTopicsContentUserSavesAction>(
             _loadTopicsContentUserSaves(firestoreService))
         .call,
@@ -274,17 +267,6 @@ void Function(Store<AppState>, SaveVerseToCollectionAction, NextDispatcher)
   };
 }
 
-// --- Middlewares de Progresso de Livro (Comentados) ---
-/*
-void Function(Store<AppState>, LoadBooksInProgressAction, NextDispatcher) _loadBooksInProgress(FirestoreService firestoreService) {
-  // ... (lógica original)
-}
-
-void Function(Store<AppState>, LoadBooksDetailsAction, NextDispatcher) _loadBooksDetails(FirestoreService firestoreService) {
-  // ... (lógica original)
-}
-*/
-
 void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
     _updateUserField(FirestoreService firestoreService) {
   return (Store<AppState> store, UpdateUserFieldAction action,
@@ -302,41 +284,6 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
       print('Campo "${action.field}" atualizado com sucesso.');
     } catch (e) {
       print('Erro ao atualizar o campo "${action.field}": $e');
-    }
-  };
-}
-
-void Function(Store<AppState>, SaveUserFeaturesAction, NextDispatcher)
-    _saveUserFeatures(FirestoreService firestoreService) {
-  return (Store<AppState> store, SaveUserFeaturesAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) {
-      print('UID do usuário ausente. Não é possível salvar features.');
-      return;
-    }
-    try {
-      await firestoreService.updateUserFeatures(userId, action.features);
-      store.dispatch(UserFeaturesLoadedAction(action.features));
-      print('Features do usuário salvas com sucesso.');
-    } catch (e) {
-      print('Erro ao salvar features do usuário: $e');
-    }
-  };
-}
-
-void Function(Store<AppState>, CheckFirstLoginAction, NextDispatcher)
-    _checkFirstLogin(FirestoreService firestoreService) {
-  return (Store<AppState> store, CheckFirstLoginAction action,
-      NextDispatcher next) async {
-    next(action);
-    try {
-      final isFirstLogin =
-          await firestoreService.checkAndSetFirstLogin(action.userId);
-      store.dispatch(FirstLoginSuccessAction(isFirstLogin));
-    } catch (e) {
-      store.dispatch(FirstLoginFailureAction('Erro ao verificar login: $e'));
     }
   };
 }

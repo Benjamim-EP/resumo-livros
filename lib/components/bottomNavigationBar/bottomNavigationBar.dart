@@ -10,19 +10,20 @@ import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware/ad_middleware.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
+import 'package:resumo_dos_deuses_flutter/redux/middleware/ad_middleware.dart'; // Para MAX_COINS_LIMIT
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
+// Removido: import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Não usado diretamente aqui
 import 'package:redux/redux.dart';
 
 // ViewModel para o StoreConnector das moedas
 class _UserCoinsViewModel {
   final int userCoins;
-  final bool isPremium; // Para decidir se mostra o botão de ganhar moedas
+  final bool isPremium;
 
   _UserCoinsViewModel({required this.userCoins, required this.isPremium});
 
@@ -36,8 +37,7 @@ class _UserCoinsViewModel {
         if (endDateTimestamp != null) {
           premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
         } else {
-          premiumStatus =
-              true; // Assinatura ativa sem data de término (ex: vitalícia)
+          premiumStatus = true;
         }
       }
     }
@@ -60,33 +60,29 @@ class _UserCoinsViewModel {
 }
 
 class _UnderConstructionPlaceholder extends StatelessWidget {
-  const _UnderConstructionPlaceholder({super.key});
+  final String pageTitle; // Adicionar para personalizar o título
+  const _UnderConstructionPlaceholder({super.key, required this.pageTitle});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Em Construção"),
-        // backgroundColor já definido pelo tema
-      ),
-      body: const Center(
+      // Removida a AppBar daqui, pois será controlada pela MainAppScreen
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.construction, size: 80, color: Colors.amber),
-            SizedBox(height: 20),
+            Icon(Icons.construction,
+                size: 80, color: Theme.of(context).colorScheme.secondary),
+            const SizedBox(height: 20),
             Text(
-              'Esta seção está em construção!',
-              style: TextStyle(
-                fontSize: 20, /*color: Colors.white*/
-              ), // Cor do tema
+              'A seção "$pageTitle" está em construção!',
+              style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
               'Volte em breve para novidades.',
-              style: TextStyle(
-                fontSize: 16, /*color: Colors.white70*/
-              ), // Cor do tema
+              style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
           ],
@@ -105,37 +101,37 @@ class MainAppScreen extends StatefulWidget {
 class _MainAppScreenState extends State<MainAppScreen> {
   int _selectedIndex = 0;
 
+  // Navigator Keys para cada aba principal com navegação interna
   final GlobalKey<NavigatorState> _userNavigatorKey =
-      GlobalKey<NavigatorState>();
-  final GlobalKey<NavigatorState> _exploreNavigatorKey =
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _bibleNavigatorKey =
       GlobalKey<NavigatorState>();
-  final GlobalKey<NavigatorState> _rotaNavigatorKey =
-      GlobalKey<NavigatorState>(); // Era cântico
-  final GlobalKey<NavigatorState> _chatNavigatorKey =
-      GlobalKey<NavigatorState>();
+  // As abas "Cânticos" e "Chat" usarão _UnderConstructionPlaceholder,
+  // então não precisam de NavigatorKeys dedicados se não tiverem navegação interna.
+  // Se precisarem no futuro, adicione as chaves aqui.
 
   late final List<Widget> _pages;
   ads.BannerAd? _bannerAd;
   StreamSubscription? _userDocSubscription;
-  bool _isPremiumFromState = false; // Estado local para controlar o banner
+  bool _isPremiumFromState = false;
 
   @override
   void initState() {
     super.initState();
     _setupUserListener();
     _pages = [
-      _buildTabNavigator(_userNavigatorKey, const UserPage()),
-      _buildTabNavigator(_exploreNavigatorKey,
-          const _UnderConstructionPlaceholder()), // Explore
-      _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
-      _buildTabNavigator(_rotaNavigatorKey,
-          const _UnderConstructionPlaceholder()), // Cântico/Hymns
+      _buildTabNavigator(_userNavigatorKey, const UserPage()), // Índice 0
+      _buildTabNavigator(_bibleNavigatorKey, const BiblePage()), // Índice 1
+      // Para placeholders, podemos passar null como chave ou uma chave dummy se _buildTabNavigator exigir
       _buildTabNavigator(
-          _chatNavigatorKey, const _UnderConstructionPlaceholder()), // Chat
+          null,
+          const _UnderConstructionPlaceholder(
+              pageTitle: "Cânticos")), // Índice 2
+      _buildTabNavigator(
+          null,
+          const _UnderConstructionPlaceholder(
+              pageTitle: "Chat IA")), // Índice 3
     ];
-    // Carrega o estado premium inicial do Redux
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final initialViewModel = _UserCoinsViewModel.fromStore(
@@ -176,10 +172,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
             customerId: userData['stripeCustomerId'] as String?,
             priceId: userData['activePriceId'] as String?,
           ));
-          storeInstance.dispatch(
-              UserDetailsLoadedAction(userData)); // Atualiza todos os detalhes
-
-          // Atualiza o estado de premium para a UI do banner
+          storeInstance.dispatch(UserDetailsLoadedAction(userData));
           final currentViewModel = _UserCoinsViewModel.fromStore(storeInstance);
           _updatePremiumUI(currentViewModel.isPremium);
         }
@@ -187,7 +180,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
     }
   }
 
-  // Nova função para atualizar a UI do banner com base no estado premium
   void _updatePremiumUI(bool isNowPremium) {
     if (!mounted) return;
     if (isNowPremium != _isPremiumFromState) {
@@ -203,16 +195,12 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 
   void _disposeBannerAd() {
-    if (_bannerAd != null) {
-      _bannerAd?.dispose();
-      _bannerAd = null;
-    }
+    _bannerAd?.dispose();
+    _bannerAd = null;
   }
 
   void _initBannerAd() {
-    if (_bannerAd != null || !mounted || _isPremiumFromState) {
-      return; // Não carrega se for premium
-    }
+    if (_bannerAd != null || !mounted || _isPremiumFromState) return;
     _bannerAd = ads.BannerAd(
       adUnitId: AdHelper.bannerAdUnitId,
       size: ads.AdSize.banner,
@@ -223,42 +211,33 @@ class _MainAppScreenState extends State<MainAppScreen> {
             ad.dispose();
             return;
           }
-          setState(() {
-            _bannerAd = ad as ads.BannerAd;
-          });
+          setState(() => _bannerAd = ad as ads.BannerAd);
         },
         onAdFailedToLoad: (ad, err) {
           ad.dispose();
-          if (mounted) {
-            setState(() {
-              _bannerAd = null;
-            });
-          }
+          if (mounted) setState(() => _bannerAd = null);
         },
       ),
     )..load();
   }
 
   Widget _buildTabNavigator(
-      GlobalKey<NavigatorState> navigatorKey, Widget child) {
-    // ... (como antes)
+      GlobalKey<NavigatorState>? navigatorKey, Widget child) {
+    // Se navigatorKey for null (para placeholders), não envolvemos com Navigator,
+    // apenas retornamos o child. Isso simplifica o _onWillPop.
+    if (navigatorKey == null) {
+      return child;
+    }
     return Navigator(
       key: navigatorKey,
       onGenerateRoute: (settings) {
-        if (child is _UnderConstructionPlaceholder) {
-          return MaterialPageRoute(builder: (_) => child, settings: settings);
-        }
         WidgetBuilder? builder;
         if (settings.name == '/bookDetails') {
           final bookId = settings.arguments as String?;
-          if (bookId != null) {
-            builder = (_) => BookDetailsPage(bookId: bookId);
-          }
+          if (bookId != null) builder = (_) => BookDetailsPage(bookId: bookId);
         } else if (settings.name == '/authorPage') {
           final authorId = settings.arguments as String?;
-          if (authorId != null) {
-            builder = (_) => AuthorPage(authorId: authorId);
-          }
+          if (authorId != null) builder = (_) => AuthorPage(authorId: authorId);
         } else if (settings.name == '/queryResults') {
           builder = (_) => const QueryResultsPage();
         }
@@ -268,49 +247,46 @@ class _MainAppScreenState extends State<MainAppScreen> {
     );
   }
 
-  GlobalKey<NavigatorState> get _currentNavigatorKey {
-    // ... (como antes)
+  GlobalKey<NavigatorState>? get _currentNavigatorKey {
     switch (_selectedIndex) {
       case 0:
         return _userNavigatorKey;
       case 1:
-        return _exploreNavigatorKey;
-      case 2:
         return _bibleNavigatorKey;
+      // As abas 2 (Cânticos) e 3 (Chat) não têm navegação interna no momento.
+      // Se _buildTabNavigator retorna o child diretamente para elas, _currentNavigatorKey será null.
+      case 2:
+        return null; // Cânticos (Placeholder)
       case 3:
-        return _rotaNavigatorKey;
-      case 4:
-        return _chatNavigatorKey;
+        return null; // Chat (Placeholder)
       default:
-        return _userNavigatorKey;
+        return _userNavigatorKey; // Fallback seguro
     }
   }
 
   Future<bool> _onWillPop() async {
-    // ... (como antes)
-    if (_selectedIndex == 1 || _selectedIndex == 3 || _selectedIndex == 4) {
+    final currentKey = _currentNavigatorKey;
+    // Se a aba atual não tem um NavigatorKey (é um placeholder) ou se o Navigator não pode dar pop,
+    // permite que o WillPopScope feche o app/tela atual.
+    if (currentKey == null ||
+        currentKey.currentState == null ||
+        !currentKey.currentState!.canPop()) {
       return true;
     }
-    final currentNavigator = _currentNavigatorKey.currentState;
-    if (currentNavigator != null && currentNavigator.canPop()) {
-      currentNavigator.pop();
-      return false;
-    }
-    return true;
+    // Se pode dar pop, faz o pop e impede o fechamento do app.
+    currentKey.currentState!.pop();
+    return false;
   }
 
-  // Função para obter o título da AppBar com base no índice selecionado
   String _getAppBarTitle(int index) {
     switch (index) {
       case 0:
         return "Meu Perfil";
       case 1:
-        return "Explorar";
-      case 2:
         return "Bíblia";
+      case 2:
+        return "Cânticos";
       case 3:
-        return "Cânticos"; // Ou Rotas, se for o caso
-      case 4:
         return "Chat IA";
       default:
         return "Septima";
@@ -323,15 +299,33 @@ class _MainAppScreenState extends State<MainAppScreen> {
       converter: (store) => _MainAppScreenViewModel.fromStore(store),
       onDidChange: (previousViewModel, newViewModel) {
         if (!mounted) return;
+        _updatePremiumUI(newViewModel.isPremium);
 
-        _updatePremiumUI(
-            newViewModel.isPremium); // Atualiza o banner com base no ViewModel
+        if (newViewModel.targetBottomNavIndex != null) {
+          int oldTargetIndex = newViewModel.targetBottomNavIndex!;
+          int? newSelectedActualIndex;
 
-        if (newViewModel.targetBottomNavIndex != null &&
-            newViewModel.targetBottomNavIndex != _selectedIndex) {
-          setState(() {
-            _selectedIndex = newViewModel.targetBottomNavIndex!;
-          });
+          // Mapeamento de índices antigos (com Explore) para novos (sem Explore)
+          // Antigo: User(0), Explore(1), Bible(2), Cântico(3), Chat(4)
+          // Novo:   User(0),            Bible(1), Cântico(2), Chat(3)
+          if (oldTargetIndex == 0) {
+            // User
+            newSelectedActualIndex = 0;
+          } else if (oldTargetIndex == 1) {
+            // Era Explore, redirecionar para User (ou não fazer nada)
+            print("Redirecionamento da antiga aba Explore para Usuário.");
+            newSelectedActualIndex = 0;
+          } else if (oldTargetIndex > 1) {
+            // Aba após Explore
+            newSelectedActualIndex = oldTargetIndex - 1;
+          }
+
+          if (newSelectedActualIndex != null &&
+              newSelectedActualIndex != _selectedIndex) {
+            setState(() {
+              _selectedIndex = newSelectedActualIndex!;
+            });
+          }
           StoreProvider.of<AppState>(context, listen: false)
               .dispatch(ClearTargetBottomNavAction());
         }
@@ -341,18 +335,13 @@ class _MainAppScreenState extends State<MainAppScreen> {
           onWillPop: _onWillPop,
           child: Scaffold(
             appBar: AppBar(
-              // AppBar adicionada aqui
               title: Text(_getAppBarTitle(_selectedIndex)),
-              // Estilo do AppBar será herdado do tema
               actions: [
-                // StoreConnector para exibir moedas e botão de ganhar
                 StoreConnector<AppState, _UserCoinsViewModel>(
                   converter: (store) => _UserCoinsViewModel.fromStore(store),
                   builder: (context, coinsViewModel) {
-                    // Só mostra o sistema de moedas se o usuário não for premium
                     if (coinsViewModel.isPremium) {
-                      return const SizedBox
-                          .shrink(); // Não mostra nada para premium
+                      return const SizedBox.shrink();
                     }
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
@@ -381,11 +370,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
                           else
                             const Padding(
                               padding: EdgeInsets.only(left: 8.0),
-                              child: Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
-                                size: 22,
-                              ),
+                              child: Icon(Icons.check_circle,
+                                  color: Colors.green, size: 22),
                             ),
                         ],
                       ),
@@ -401,10 +387,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
             bottomNavigationBar: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (!_isPremiumFromState &&
-                    _bannerAd != null) // Usa _isPremiumFromState
+                if (!_isPremiumFromState && _bannerAd != null)
                   SizedBox(
-                    // Envolve com SizedBox para garantir que o banner tenha espaço
                     width: _bannerAd!.size.width.toDouble(),
                     height: _bannerAd!.size.height.toDouble(),
                     child: ads.AdWidget(ad: _bannerAd!),
@@ -414,20 +398,14 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   currentIndex: _selectedIndex,
                   onTap: (index) {
                     if (mounted) {
-                      setState(() {
-                        _selectedIndex = index;
-                      });
+                      setState(() => _selectedIndex = index);
                       StoreProvider.of<AppState>(context, listen: false)
                           .dispatch(ClearTargetBottomNavAction());
                     }
                   },
-                  // selectedItemColor e unselectedItemColor virão do tema
-                  // backgroundColor virá do tema
                   items: const [
                     BottomNavigationBarItem(
                         icon: Icon(Icons.account_circle), label: 'User'),
-                    BottomNavigationBarItem(
-                        icon: Icon(Icons.explore_outlined), label: 'Explore'),
                     BottomNavigationBarItem(
                         icon: Icon(Icons.book_outlined), label: 'Bible'),
                     BottomNavigationBarItem(
@@ -446,10 +424,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 }
 
-// ViewModel para o StoreConnector principal da MainAppScreen (para targetBottomNavIndex e premium status)
 class _MainAppScreenViewModel {
-  final Map<String, dynamic>? userDetails; // Para verificar o status premium
-  final int? targetBottomNavIndex;
+  final Map<String, dynamic>? userDetails;
+  final int?
+      targetBottomNavIndex; // Este deve ser o índice ANTIGO, vindo do estado
   final bool isPremium;
 
   _MainAppScreenViewModel({
@@ -474,7 +452,8 @@ class _MainAppScreenViewModel {
     }
     return _MainAppScreenViewModel(
       userDetails: userDetails,
-      targetBottomNavIndex: store.state.userState.targetBottomNavIndex,
+      targetBottomNavIndex: store.state.userState
+          .targetBottomNavIndex, // Pega o índice como está no store
       isPremium: premiumStatus,
     );
   }

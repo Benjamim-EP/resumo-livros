@@ -249,38 +249,6 @@ class UserPremiumStatusLoadedAction {
   UserPremiumStatusLoadedAction(this.premiumStatus);
 }
 
-class SaveUserFeaturesAction {
-  final Map<String, dynamic> features;
-
-  SaveUserFeaturesAction(this.features);
-}
-
-class UserFeaturesLoadedAction {
-  final Map<String, dynamic> features;
-
-  UserFeaturesLoadedAction(this.features);
-}
-
-// embeddings e vector search
-
-class EmbedAndSearchFeaturesAction {
-  final Map<String, String> features;
-
-  EmbedAndSearchFeaturesAction(this.features);
-}
-
-class EmbedAndSearchSuccessAction {
-  final List<Map<String, dynamic>> recommendations;
-
-  EmbedAndSearchSuccessAction(this.recommendations);
-}
-
-class EmbedAndSearchFailureAction {
-  final String error;
-
-  EmbedAndSearchFailureAction(this.error);
-}
-
 class SearchByQueryAction {
   final String query;
 
@@ -297,22 +265,6 @@ class SearchFailureAction {
   final String error;
 
   SearchFailureAction(this.error);
-}
-
-class FetchTribeTopicsAction {
-  final Map<String, dynamic> features;
-
-  FetchTribeTopicsAction(this.features);
-}
-
-class FetchTribeTopicsSuccessAction {
-  final Map<String, List<Map<String, dynamic>>> topicsByFeature;
-  FetchTribeTopicsSuccessAction(this.topicsByFeature);
-}
-
-class FetchTribeTopicsFailureAction {
-  final String error;
-  FetchTribeTopicsFailureAction(this.error);
 }
 
 // Ação para iniciar o carregamento

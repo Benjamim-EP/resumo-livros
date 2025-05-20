@@ -178,12 +178,7 @@ class UserState {
   final Map<String, List<Map<String, String>>> userBooks;
   final Map<String, List<String>> topicSaves;
   final List<Map<String, dynamic>> booksInProgress;
-  final Map<String, dynamic>? userFeatures;
-  final List<Map<String, dynamic>>? userTribeRecommendations;
   final List<Map<String, dynamic>> searchResults;
-  final bool? isFirstLogin;
-  final List<Map<String, dynamic>> tribeTopics;
-  final Map<String, List<Map<String, dynamic>>> tribeTopicsByFeature;
   final Map<String, List<Map<String, dynamic>>> savedTopicsContent;
   final List<Map<String, dynamic>> booksInProgressDetails;
   final List<Map<String, dynamic>> rotaAtual;
@@ -223,17 +218,12 @@ class UserState {
     this.email,
     this.nome,
     this.isLoggedIn = false,
-    this.isFirstLogin,
     this.tags = const [],
     this.userDetails,
     this.userBooks = const {},
     this.topicSaves = const {},
     this.booksInProgress = const [],
-    this.userFeatures,
-    this.userTribeRecommendations,
     this.searchResults = const [],
-    this.tribeTopics = const [],
-    this.tribeTopicsByFeature = const {},
     this.savedTopicsContent = const {},
     this.booksInProgressDetails = const [],
     this.rotaAtual = const [],
@@ -311,18 +301,12 @@ class UserState {
       email: email ?? this.email,
       nome: nome ?? this.nome,
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
-      isFirstLogin: isFirstLogin ?? this.isFirstLogin,
       tags: tags ?? this.tags,
       userDetails: userDetails ?? this.userDetails,
       userBooks: userBooks ?? this.userBooks,
       topicSaves: topicSaves ?? this.topicSaves,
       booksInProgress: booksInProgress ?? this.booksInProgress,
-      userFeatures: userFeatures ?? this.userFeatures,
-      userTribeRecommendations:
-          userTribeRecommendations ?? this.userTribeRecommendations,
       searchResults: searchResults ?? this.searchResults,
-      tribeTopics: tribeTopics ?? this.tribeTopics,
-      tribeTopicsByFeature: tribeTopicsByFeature ?? this.tribeTopicsByFeature,
       savedTopicsContent: savedTopicsContent ?? this.savedTopicsContent,
       booksInProgressDetails:
           booksInProgressDetails ?? this.booksInProgressDetails,
@@ -424,21 +408,6 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(topicSaves: updatedCollections);
   } else if (action is BooksInProgressLoadedAction) {
     return state.copyWith(booksInProgress: action.books);
-  } else if (action is UserFeaturesLoadedAction) {
-    return state.copyWith(userFeatures: action.features);
-  } else if (action is EmbedAndSearchSuccessAction) {
-    return state.copyWith(
-      userTribeRecommendations: action.recommendations,
-    );
-  } else if (action is EmbedAndSearchFailureAction) {
-    print('Erro no middleware de embedding: ${action.error}');
-    return state;
-  } else if (action is SearchSuccessAction) {
-    return state.copyWith(
-      searchResults: action.topics,
-    );
-  } else if (action is SearchFailureAction) {
-    print(action.error); // Log para depuração
   } else if (action is TopicsLoadedAction) {
     return state.copyWith(
       userTribeRecommendations: action.topics,
@@ -447,21 +416,6 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(isFirstLogin: action.isFirstLogin);
   } else if (action is FirstLoginFailureAction) {
     return state.copyWith(isFirstLogin: null);
-  } else if (action is FetchTribeTopicsSuccessAction) {
-    return state.copyWith(
-      tribeTopicsByFeature: action.topicsByFeature,
-    );
-  } else if (action is FetchTribeTopicsFailureAction) {
-    print('Erro ao buscar tópicos: ${action.error}');
-    return state; // Retorna o estado anterior sem alteração
-  } else if (action is TopicsByFeatureLoadedAction) {
-    return state.copyWith(
-      tribeTopicsByFeature: action.topicsByFeature,
-    );
-  } else if (action is LoadTopicsContentUserSavesSuccessAction) {
-    return state.copyWith(
-      savedTopicsContent: action.topicsByCollection,
-    );
   } else if (action is LoadTopicsContentUserSavesFailureAction) {
     print('Erro ao carregar conteúdo dos tópicos salvos: ${action.error}');
     return state; // Retorna o estado sem alterações

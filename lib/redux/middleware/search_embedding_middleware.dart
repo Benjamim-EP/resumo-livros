@@ -11,46 +11,10 @@ List<Middleware<AppState>> createSearchEmbeddingMiddleware() {
   final firestoreService = FirestoreService();
 
   return [
-    TypedMiddleware<AppState, EmbedAndSearchFeaturesAction>(
-            _handleEmbedAndSearchFeatures(openAIService, pineconeService))
-        .call, // Este pode ser obsoleto se FetchTribeTopicsAction o substitui
     TypedMiddleware<AppState, SearchByQueryAction>(_handleSearchByQuery(
             openAIService, pineconeService, firestoreService))
         .call,
   ];
-}
-
-void Function(Store<AppState>, EmbedAndSearchFeaturesAction, NextDispatcher)
-    _handleEmbedAndSearchFeatures(
-        OpenAIService openAIService, PineconeService pineconeService) {
-  return (Store<AppState> store, EmbedAndSearchFeaturesAction action,
-      NextDispatcher next) async {
-    next(action);
-    // Lógica similar a FetchTribeTopicsAction, mas talvez focada apenas em gerar recomendações e não salvar em 'indicacoes'
-    // Esta ação pode ser redundante dependendo do fluxo exato.
-    // Se for usada, extraia a lógica de embedding/query como em FetchTribeTopicsAction
-    try {
-      List<Map<String, dynamic>> allMatches = [];
-      for (var entry in action.features.entries) {
-        if ((entry.value).isNotEmpty) {
-          final embedding = await openAIService.generateEmbedding(entry.value);
-          final results = await pineconeService.queryPinecone(
-              embedding, 100); // Ajuste topK
-          allMatches.addAll(results); // Acumula resultados
-        }
-      }
-      // Processar 'allMatches' se necessário (ex: pegar IDs, buscar no Firestore)
-      // e despachar EmbedAndSearchSuccessAction
-      // Exemplo simplificado:
-      // final topicIds = allMatches.map((m) => m['id'] as String).toSet().toList();
-      // final topics = await firestoreService.fetchTopicsByIds(topicIds);
-      // store.dispatch(EmbedAndSearchSuccessAction(topics)); // Supondo que a ação espera tópicos
-    } catch (e) {
-      print("Erro em EmbedAndSearchFeaturesAction: $e");
-      store
-          .dispatch(EmbedAndSearchFailureAction('Erro durante o processo: $e'));
-    }
-  };
 }
 
 void Function(Store<AppState>, SearchByQueryAction, NextDispatcher)

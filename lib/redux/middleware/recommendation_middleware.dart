@@ -18,9 +18,6 @@ List<Middleware<AppState>> createRecommendationMiddleware() {
     TypedMiddleware<AppState, LoadWeeklyRecommendationsAction>(
             _loadWeeklyRecommendations(firestoreService))
         .call,
-    TypedMiddleware<AppState, FetchTribeTopicsAction>(_handleFetchTribeTopics(
-            firestoreService, openAIService, pineconeService))
-        .call,
     TypedMiddleware<AppState, LoadTopicsByFeatureAction>(
             _handleLoadTopicsByFeature(firestoreService, openAIService,
                 pineconeService, localStorageService))
@@ -40,54 +37,6 @@ void Function(Store<AppState>, LoadWeeklyRecommendationsAction, NextDispatcher)
       store.dispatch(WeeklyRecommendationsLoadedAction(topBooks));
     } catch (e) {
       print("Erro ao carregar recomendações semanais: $e");
-    }
-  };
-}
-
-void Function(Store<AppState>, FetchTribeTopicsAction, NextDispatcher)
-    _handleFetchTribeTopics(
-  FirestoreService firestoreService,
-  OpenAIService openAIService,
-  PineconeService pineconeService,
-) {
-  return (Store<AppState> store, FetchTribeTopicsAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) {
-      store.dispatch(FetchTribeTopicsFailureAction("Usuário não autenticado."));
-      return;
-    }
-
-    try {
-      Map<String, List<Map<String, dynamic>>> topicsByFeature = {};
-      final updatedIndicacoes = <String, List<String>>{};
-
-      for (var feature in action.features.entries) {
-        final key = feature.key;
-        final value = feature.value;
-
-        final embedding = await openAIService.generateEmbedding(value);
-        final results = await pineconeService.queryPinecone(
-            embedding, 100); // Ajustar topK conforme necessário
-
-        final topicIds = results
-            .map((match) =>
-                match['id'] as String) // Assumindo que 'results' é List<Map>
-            .toList();
-
-        List<Map<String, dynamic>> topics =
-            await firestoreService.fetchTopicsByIds(topicIds);
-        topicsByFeature[key] = topics;
-        updatedIndicacoes[key] = topicIds;
-      }
-
-      await firestoreService.updateUserIndicacoes(userId, updatedIndicacoes);
-      store.dispatch(FetchTribeTopicsSuccessAction(topicsByFeature));
-    } catch (e) {
-      print("Erro no FetchTribeTopicsAction: $e");
-      store.dispatch(
-          FetchTribeTopicsFailureAction('Erro ao buscar tópicos: $e'));
     }
   };
 }
