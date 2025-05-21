@@ -6,12 +6,13 @@ import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_commentary_modal.dart';
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para BiblePageHelper.loadBooksMap() se necessário para nome
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;
   final List<int> verseNumbersInSection;
-  final dynamic allVerseDataInChapter;
+  final dynamic
+      allVerseDataInChapter; // Pode ser List<String> ou List<List<Map<String, String>>>
   final String bookSlug;
   final String bookAbbrev;
   final int chapterNumber;
@@ -19,9 +20,13 @@ class SectionItemWidget extends StatefulWidget {
   final Map<String, String> userHighlights;
   final Map<String, String> userNotes;
   final bool isHebrew;
+  final bool isGreekInterlinear; // <<< NOVO
   final bool isRead;
   final bool showHebrewInterlinear;
+  final bool showGreekInterlinear; // <<< NOVO
   final List<List<Map<String, String>>>? hebrewInterlinearSectionData;
+  final List<List<Map<String, String>>>?
+      greekInterlinearSectionData; // <<< NOVO
 
   const SectionItemWidget({
     super.key,
@@ -35,9 +40,12 @@ class SectionItemWidget extends StatefulWidget {
     required this.userHighlights,
     required this.userNotes,
     this.isHebrew = false,
+    this.isGreekInterlinear = false, // <<< NOVO
     required this.isRead,
     required this.showHebrewInterlinear,
+    required this.showGreekInterlinear, // <<< NOVO
     this.hebrewInterlinearSectionData,
+    this.greekInterlinearSectionData, // <<< NOVO
   });
 
   @override
@@ -72,12 +80,14 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         await _firestoreService.getSectionCommentary(_commentaryDocId);
     String bookFullName = widget.bookAbbrev.toUpperCase();
     try {
+      // Tentar obter o nome completo do livro (opcional, mas melhora a UI do modal)
       final booksMap = await BiblePageHelper.loadBooksMap();
       if (booksMap.containsKey(widget.bookAbbrev)) {
         bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
       }
     } catch (e) {
-      print("Erro ao carregar nome do livro em SectionItemWidget: $e");
+      print(
+          "Erro ao carregar nome do livro em SectionItemWidget para comentário: $e");
     }
 
     if (mounted) {
@@ -105,7 +115,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    super.build(context); // Necessário para AutomaticKeepAliveClientMixin
     final theme = Theme.of(context);
     final sectionId = _sectionIdForTracking;
     final bool currentIsRead = widget.isRead;
@@ -127,16 +137,12 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Linha do Título e Botão de Comentário ---
             Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start, // Alinha o topo dos itens
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(
-                        top:
-                            8.0), // Ajuste para alinhar melhor com o IconButton
+                    padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       widget.sectionTitle,
                       style: TextStyle(
@@ -150,12 +156,11 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 ),
                 _isLoadingCommentary
                     ? Container(
-                        // Container para dar tamanho ao CircularProgressIndicator
-                        width: 40, // Largura similar ao IconButton
-                        height: 40, // Altura similar ao IconButton
+                        width: 40,
+                        height: 40,
                         alignment: Alignment.center,
                         child: const SizedBox(
-                          width: 20, // Tamanho do indicador
+                          width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
@@ -164,19 +169,17 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         icon: Icon(
                           Icons.comment_outlined,
                           color: theme.iconTheme.color?.withOpacity(0.7),
-                          size: 22, // Tamanho do ícone
+                          size: 22,
                         ),
                         tooltip: "Ver Comentário da Seção",
                         onPressed: () => _showCommentary(context),
-                        splashRadius: 20, // Raio do splash
-                        padding:
-                            const EdgeInsets.all(8), // Padding interno do botão
+                        splashRadius: 20,
+                        padding: const EdgeInsets.all(8),
                       ),
               ],
             ),
             Divider(color: theme.dividerColor.withOpacity(0.5)),
             const SizedBox(height: 8),
-            // --- Lista de Versículos ---
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -185,8 +188,20 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 final verseNumber = widget.verseNumbersInSection[indexInSecao];
                 dynamic mainTranslationVerseDataItem;
                 List<Map<String, String>>? hebrewDataForThisVerse;
+                List<Map<String, String>>? greekDataForThisVerse; // <<< NOVO
 
-                if (widget.isHebrew) {
+                // Determina o dado da tradução principal
+                if (widget.isGreekInterlinear) {
+                  // <<< SE FOR GREGO INTERLINEAR PRINCIPAL
+                  if (widget.allVerseDataInChapter
+                          is List<List<Map<String, String>>> &&
+                      verseNumber > 0 &&
+                      verseNumber <=
+                          (widget.allVerseDataInChapter as List).length) {
+                    mainTranslationVerseDataItem = (widget.allVerseDataInChapter
+                        as List<List<Map<String, String>>>)[verseNumber - 1];
+                  }
+                } else if (widget.isHebrew) {
                   if (widget.allVerseDataInChapter
                           is List<List<Map<String, String>>> &&
                       verseNumber > 0 &&
@@ -196,6 +211,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         as List<List<Map<String, String>>>)[verseNumber - 1];
                   }
                 } else {
+                  // Tradução normal (string)
                   if (widget.allVerseDataInChapter is List<String> &&
                       verseNumber > 0 &&
                       verseNumber <=
@@ -205,8 +221,10 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   }
                 }
 
+                // Determina dados para interlinear complementar HEBRAICO
                 if (widget.showHebrewInterlinear &&
-                    !widget.isHebrew &&
+                    !widget
+                        .isHebrew && // Só mostra se não for a tradução principal
                     widget.hebrewInterlinearSectionData != null &&
                     indexInSecao <
                         widget.hebrewInterlinearSectionData!.length) {
@@ -214,10 +232,26 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       widget.hebrewInterlinearSectionData![indexInSecao];
                 }
 
-                String verseKeySuffix = widget.isHebrew ? "hebrew" : "other";
+                // Determina dados para interlinear complementar GREGO
+                if (widget.showGreekInterlinear &&
+                    !widget
+                        .isGreekInterlinear && // Só mostra se não for a tradução principal
+                    widget.greekInterlinearSectionData != null &&
+                    indexInSecao < widget.greekInterlinearSectionData!.length) {
+                  greekDataForThisVerse =
+                      widget.greekInterlinearSectionData![indexInSecao];
+                }
+
+                String verseKeySuffix = widget.isHebrew
+                    ? "hebrew"
+                    : (widget.isGreekInterlinear ? "greek" : "other");
                 if (widget.showHebrewInterlinear &&
                     hebrewDataForThisVerse != null) {
-                  verseKeySuffix += "_interlinear";
+                  verseKeySuffix += "_heb_interlinear";
+                }
+                if (widget.showGreekInterlinear &&
+                    greekDataForThisVerse != null) {
+                  verseKeySuffix += "_grk_interlinear";
                 }
 
                 if (mainTranslationVerseDataItem != null) {
@@ -232,26 +266,29 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     userHighlights: widget.userHighlights,
                     userNotes: widget.userNotes,
                     isHebrew: widget.isHebrew,
+                    isGreekInterlinear:
+                        widget.isGreekInterlinear, // <<< PASSANDO
                     showHebrewInterlinear:
                         widget.showHebrewInterlinear && !widget.isHebrew,
+                    showGreekInterlinear: widget.showGreekInterlinear &&
+                        !widget.isGreekInterlinear, // <<< PASSANDO
                     hebrewVerseData: hebrewDataForThisVerse,
+                    greekVerseData: greekDataForThisVerse, // <<< PASSANDO
                   );
                 } else {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
                     child: Text(
-                        'Erro: Verso $verseNumber não encontrado nos dados do capítulo.',
+                        'Erro: Verso $verseNumber não encontrado nos dados do capítulo para esta seção.',
                         style: TextStyle(color: theme.colorScheme.error)),
                   );
                 }
               },
             ),
-            // --- Botão Marcar como Lido (Movido para Baixo) ---
-            const SizedBox(height: 12), // Espaçamento acima do botão
+            const SizedBox(height: 12),
             Align(
-              alignment: Alignment.centerRight, // Alinha o botão à direita
+              alignment: Alignment.centerRight,
               child: Material(
-                // Material para efeito de tinta no InkWell
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
@@ -263,16 +300,14 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       ),
                     );
                   },
-                  borderRadius:
-                      BorderRadius.circular(20), // Raio da borda para o InkWell
+                  borderRadius: BorderRadius.circular(20),
                   splashColor: theme.primaryColor.withOpacity(0.3),
                   highlightColor: theme.primaryColor.withOpacity(0.15),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6), // Padding interno
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     child: Row(
-                      mainAxisSize: MainAxisSize
-                          .min, // Para o Row ocupar apenas o espaço necessário
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           currentIsRead
@@ -281,7 +316,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                           color: currentIsRead
                               ? theme.primaryColor
                               : theme.iconTheme.color?.withOpacity(0.8),
-                          size: 20, // Tamanho menor para o ícone
+                          size: 20,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -291,7 +326,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                                 ? theme.primaryColor
                                 : theme.textTheme.bodyMedium?.color
                                     ?.withOpacity(0.9),
-                            fontSize: 13, // Tamanho menor para o texto
+                            fontSize: 13,
                             fontWeight: currentIsRead
                                 ? FontWeight.bold
                                 : FontWeight.normal,

@@ -40,6 +40,7 @@ class BiblePageWidgets {
           style: const TextStyle(
             fontSize: 12,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -54,14 +55,19 @@ class BiblePageWidgets {
   }) {
     final theme = Theme.of(context);
     bool showHebrewOption = false;
+    bool showGreekOption = false;
 
     if (currentSelectedBookAbbrev != null &&
         booksMap != null &&
         booksMap.containsKey(currentSelectedBookAbbrev)) {
       final bookData =
           booksMap[currentSelectedBookAbbrev] as Map<String, dynamic>?;
-      if (bookData != null && bookData['testament'] == 'Antigo') {
-        showHebrewOption = true;
+      if (bookData != null) {
+        if (bookData['testament'] == 'Antigo') {
+          showHebrewOption = true;
+        } else if (bookData['testament'] == 'Novo') {
+          showGreekOption = true;
+        }
       }
     }
 
@@ -107,6 +113,21 @@ class BiblePageWidgets {
           selectedTranslation: selectedTranslation,
           onPressed: () {
             onTranslationSelected('hebrew_original');
+            Navigator.pop(context);
+          },
+        ),
+      );
+    }
+
+    if (showGreekOption) {
+      translationButtons.add(
+        buildTranslationButton(
+          context: context,
+          translationKey: 'greek_interlinear',
+          translationLabel: 'Grego (Interlinear)',
+          selectedTranslation: selectedTranslation,
+          onPressed: () {
+            onTranslationSelected('greek_interlinear');
             Navigator.pop(context);
           },
         ),
@@ -183,29 +204,37 @@ class BiblePageWidgets {
 
   static Widget _buildHebrewInterlinearWord(
     BuildContext context,
-    Map<String, String> wordData,
+    Map<String, String> wordData, // wordData é para UMA palavra
     String? selectedBook,
     int? selectedChapter,
-    int verseNumber,
-    Map<String, dynamic>? lexicon,
+    int verseNumber, // verseNumber é int
+    Map<String, dynamic>? hebrewLexicon,
   ) {
     final theme = Theme.of(context);
     final hebrewText = wordData['text'] ?? '';
     final strongNumberWithPrefix = wordData['strong'] ?? '';
-    final String strongNumber =
+    final String strongNumberOnly =
         strongNumberWithPrefix.replaceAll(RegExp(r'^[Hc]/'), '');
-    String transliteration = "---";
+    String transliteration = wordData['translit'] ?? "---";
 
-    if (strongNumber.isNotEmpty && lexicon != null) {
-      final lexiconEntry = lexicon[strongNumber] as Map<String, dynamic>?;
+    if (transliteration == "---" &&
+        strongNumberOnly.isNotEmpty &&
+        hebrewLexicon != null) {
+      final lexiconEntry =
+          hebrewLexicon[strongNumberOnly] as Map<String, dynamic>?;
       transliteration = lexiconEntry?['transliteration'] ?? transliteration;
     }
 
     return GestureDetector(
       onTap: () {
-        if (strongNumber.isNotEmpty) {
-          _showVerseLexiconModal(context, selectedBook!, selectedChapter!,
-              verseNumber, [wordData], lexicon);
+        if (strongNumberOnly.isNotEmpty && strongNumberOnly != "N/A") {
+          _showVerseLexiconModalHebrew(
+              context,
+              selectedBook!,
+              selectedChapter!,
+              verseNumber, // Este é o número do versículo
+              strongNumberWithPrefix, // Passa o strong da palavra clicada
+              hebrewLexicon);
         }
       },
       child: Padding(
@@ -236,18 +265,85 @@ class BiblePageWidgets {
     );
   }
 
+  static Widget _buildGreekInterlinearWord(
+    BuildContext context,
+    Map<String, String> wordData, // wordData é para UMA palavra
+    String? selectedBook,
+    int? selectedChapter,
+    int verseNumber, // verseNumber é int
+    Map<String, dynamic>? greekLexicon,
+  ) {
+    final theme = Theme.of(context);
+    final greekText = wordData['text'] ?? '';
+    final strongNumber = wordData['strong'] ?? '';
+    final morphology = wordData['morph'] ?? 'N/A';
+
+    return GestureDetector(
+      onTap: () {
+        if (strongNumber.isNotEmpty && strongNumber != "N/A") {
+          _showVerseLexiconModalGreek(
+            context,
+            selectedBook!,
+            selectedChapter!,
+            verseNumber, // Número do versículo
+            strongNumber, // Strong da palavra clicada
+            greekLexicon,
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 1.5),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              greekText,
+              style: TextStyle(
+                fontSize: 19,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
+            ),
+            // if (strongNumber.isNotEmpty && strongNumber != "N/A")
+            //   Text(
+            //     strongNumber,
+            //     style: TextStyle(
+            //       fontSize: 10,
+            //       color: theme.colorScheme.secondary.withOpacity(0.8),
+            //     ),
+            //   ),
+            // Text(
+            //   morphology,
+            //   textAlign: TextAlign.center,
+            //   style: TextStyle(
+            //     fontSize: 9,
+            //     color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+            //   ),
+            // ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Widget buildVerseItem({
     required ValueKey<String> key,
-    required int verseNumber,
-    required dynamic verseData,
+    required int verseNumber, // Este é o número do versículo sendo renderizado
+    required dynamic
+        verseData, // Para interlinear: List<Map<String, String>>, para normal: String
     required String? selectedBook,
     required int? selectedChapter,
     required BuildContext context,
     required Map<String, String> userHighlights,
     required Map<String, String> userNotes,
     bool isHebrew = false,
+    bool isGreekInterlinear = false,
     bool showHebrewInterlinear = false,
-    List<Map<String, String>>? hebrewVerseData,
+    bool showGreekInterlinear = false,
+    List<Map<String, String>>?
+        hebrewVerseData, // Dados de UMA palavra hebraica se complementar
+    List<Map<String, String>>?
+        greekVerseData, // Dados de UMA palavra grega se complementar
   }) {
     final theme = Theme.of(context);
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
@@ -261,21 +357,70 @@ class BiblePageWidgets {
     Widget mainTranslationWidget;
     String verseTextForModalDialog = "";
 
-    if (isHebrew && verseData is List<Map<String, String>>) {
-      List<Widget> hebrewWordWidgets = [];
-      final lexicon = BiblePageHelper.cachedStrongsLexicon;
-      for (var wordData in verseData) {
-        verseTextForModalDialog += "${wordData['text'] ?? ''} ";
-        hebrewWordWidgets.add(_buildHebrewInterlinearWord(context, wordData,
-            selectedBook, selectedChapter, verseNumber, lexicon));
+    // verseData para interlinear é uma List<Map<String, String>> (palavras do verso atual)
+    // verseData para normal é uma String (texto completo do verso atual)
+    if (isGreekInterlinear && verseData is List<List<Map<String, String>>>) {
+      // CORREÇÃO: verseData é List<List<...>> quando vem do Helper
+      if (verseData.isNotEmpty && verseData[0] is List<Map<String, String>>) {
+        // Checa se o primeiro elemento (verso) é o esperado
+        List<Map<String, String>> currentVerseWords = verseData[
+            0]; // Assume que estamos processando o primeiro (e único) verso nesta chamada
+        List<Widget> greekWordWidgets = [];
+        final greekLexicon = BiblePageHelper.cachedGreekStrongsLexicon;
+        for (var wordDataMap in currentVerseWords) {
+          // Iterar sobre as palavras do verso
+          verseTextForModalDialog += "${wordDataMap['text'] ?? ''} ";
+          greekWordWidgets.add(_buildGreekInterlinearWord(
+            context,
+            wordDataMap, // Passa o Map da palavra
+            selectedBook,
+            selectedChapter,
+            verseNumber, // O número do versículo atual
+            greekLexicon,
+          ));
+        }
+        mainTranslationWidget = Wrap(
+          alignment: WrapAlignment.start,
+          runSpacing: 4.0,
+          spacing: 4.0,
+          children: greekWordWidgets,
+        );
+      } else {
+        verseTextForModalDialog =
+            "[Dados do verso grego interlinear em formato inesperado]";
+        mainTranslationWidget = Text(verseTextForModalDialog,
+            style: TextStyle(color: theme.colorScheme.error));
       }
-      mainTranslationWidget = Wrap(
-        alignment: WrapAlignment.end,
-        textDirection: TextDirection.rtl,
-        runSpacing: 4.0,
-        spacing: 4.0,
-        children: hebrewWordWidgets,
-      );
+    } else if (isHebrew && verseData is List<List<Map<String, String>>>) {
+      // CORREÇÃO: mesmo que acima
+      if (verseData.isNotEmpty && verseData[0] is List<Map<String, String>>) {
+        List<Map<String, String>> currentVerseWords = verseData[0];
+        List<Widget> hebrewWordWidgets = [];
+        final hebrewLexicon = BiblePageHelper.cachedHebrewStrongsLexicon;
+        for (var wordDataMap in currentVerseWords) {
+          verseTextForModalDialog += "${wordDataMap['text'] ?? ''} ";
+          hebrewWordWidgets.add(_buildHebrewInterlinearWord(
+            context,
+            wordDataMap,
+            selectedBook,
+            selectedChapter,
+            verseNumber,
+            hebrewLexicon,
+          ));
+        }
+        mainTranslationWidget = Wrap(
+          alignment: WrapAlignment.end,
+          textDirection: TextDirection.rtl,
+          runSpacing: 4.0,
+          spacing: 4.0,
+          children: hebrewWordWidgets,
+        );
+      } else {
+        verseTextForModalDialog =
+            "[Dados do verso hebraico interlinear em formato inesperado]";
+        mainTranslationWidget = Text(verseTextForModalDialog,
+            style: TextStyle(color: theme.colorScheme.error));
+      }
     } else if (verseData is String) {
       verseTextForModalDialog = verseData;
       mainTranslationWidget = RichText(
@@ -284,34 +429,94 @@ class BiblePageWidgets {
         ),
       );
     } else {
-      verseTextForModalDialog = "[Formato de verso principal inválido]";
+      verseTextForModalDialog =
+          "[Formato de verso principal inválido ou dados ausentes]";
       mainTranslationWidget = Text(verseTextForModalDialog,
           style: TextStyle(color: theme.colorScheme.error));
     }
 
-    Widget? hebrewInterlinearWidget;
+    // Interlinear COMPLEMENTAR (hebrewVerseData / greekVerseData são para UMA PALAVRA CADA,
+    // mas deveriam ser para o VERSO INTEIRO se quisermos mostrar o interlinear completo abaixo)
+    // A lógica atual para hebrewVerseData/greekVerseData parece ser para uma única palavra.
+    // Se a intenção é mostrar o interlinear *completo* do verso como complemento,
+    // hebrewVerseData e greekVerseData devem ser List<Map<String, String>> (palavras do verso).
+
+    // Widget para interlinear COMPLEMENTAR HEBRAICO
+    Widget? complementaryHebrewInterlinearWidget;
     if (showHebrewInterlinear &&
         hebrewVerseData != null &&
         hebrewVerseData.isNotEmpty) {
       List<Widget> interlinearHebrewWords = [];
-      final lexicon = BiblePageHelper.cachedStrongsLexicon;
-      for (var wordData in hebrewVerseData) {
-        interlinearHebrewWords.add(_buildHebrewInterlinearWord(context,
-            wordData, selectedBook, selectedChapter, verseNumber, lexicon));
+      final hebrewLexicon = BiblePageHelper.cachedHebrewStrongsLexicon;
+      for (var wordDataMap in hebrewVerseData) {
+        // Iterar sobre as palavras do verso
+        interlinearHebrewWords.add(_buildHebrewInterlinearWord(
+            context,
+            wordDataMap, // Passa o Map da palavra individual
+            selectedBook,
+            selectedChapter,
+            verseNumber,
+            hebrewLexicon));
       }
-
-      hebrewInterlinearWidget = Padding(
+      complementaryHebrewInterlinearWidget = Padding(
         padding: const EdgeInsets.only(top: 8.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end, // Hebraico é RTL
           children: [
             Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
+            // Text("Hebraico Interlinear:",
+            //     style: TextStyle(
+            //         fontSize: 11,
+            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+            //         fontStyle: FontStyle.italic)),
+            const SizedBox(height: 2),
             Wrap(
               alignment: WrapAlignment.end,
               textDirection: TextDirection.rtl,
               runSpacing: 4.0,
               spacing: 4.0,
               children: interlinearHebrewWords,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Widget para interlinear COMPLEMENTAR GREGO
+    Widget? complementaryGreekInterlinearWidget;
+    if (showGreekInterlinear &&
+        greekVerseData != null &&
+        greekVerseData.isNotEmpty) {
+      List<Widget> interlinearGreekWords = [];
+      final greekLexicon = BiblePageHelper.cachedGreekStrongsLexicon;
+      for (var wordDataMap in greekVerseData) {
+        // Iterar sobre as palavras do verso
+        interlinearGreekWords.add(_buildGreekInterlinearWord(
+            context,
+            wordDataMap, // Passa o Map da palavra individual
+            selectedBook,
+            selectedChapter,
+            verseNumber,
+            greekLexicon));
+      }
+      complementaryGreekInterlinearWidget = Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Grego é LTR
+          children: [
+            Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
+            // Text("Grego Interlinear:",
+            //     style: TextStyle(
+            //         fontSize: 11,
+            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+            //         fontStyle: FontStyle.italic)),
+            // const SizedBox(height: 2),
+            Wrap(
+              alignment: WrapAlignment.start,
+              // textDirection: TextDirection.ltr, // Padrão
+              runSpacing: 4.0,
+              spacing: 4.0,
+              children: interlinearGreekWords,
             ),
           ],
         ),
@@ -328,7 +533,7 @@ class BiblePageWidgets {
           userNotes[verseId],
           selectedBook!,
           selectedChapter!,
-          verseNumber,
+          verseNumber, // Este é o int verseNumber
           verseTextForModalDialog.trim(),
         );
       },
@@ -346,14 +551,18 @@ class BiblePageWidgets {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$verseNumber ',
+                  '$verseNumber ', // verseNumber é int, ok
                   style: TextStyle(
                       fontSize: 12,
                       color: theme.textTheme.bodySmall?.color,
                       fontWeight: FontWeight.bold),
                 ),
                 Expanded(child: mainTranslationWidget),
-                if (hasNote && !isHebrew && !showHebrewInterlinear)
+                if (hasNote &&
+                    !isHebrew &&
+                    !isGreekInterlinear &&
+                    !showHebrewInterlinear &&
+                    !showGreekInterlinear)
                   Padding(
                     padding:
                         const EdgeInsets.only(left: 5.0, right: 2.0, top: 2.0),
@@ -363,12 +572,22 @@ class BiblePageWidgets {
                   ),
               ],
             ),
-            if (hebrewInterlinearWidget != null) hebrewInterlinearWidget,
+            if (complementaryHebrewInterlinearWidget != null)
+              complementaryHebrewInterlinearWidget,
+            if (complementaryGreekInterlinearWidget != null)
+              complementaryGreekInterlinearWidget,
           ],
         ),
       ),
     );
   }
+
+  // --- Modais de Opções e Léxico ---
+  // _showVerseOptionsModal, _showVerseLexiconModalHebrew, _showVerseLexiconModalGreek
+  // (A lógica interna deles parece correta em relação a como buscam no léxico
+  // e exibem os dados. A principal mudança é garantir que as chamadas para eles
+  // a partir de _buildHebrewInterlinearWord e _buildGreekInterlinearWord
+  // passem o strongNumber correto da palavra clicada e o léxico apropriado.)
 
   static void _showVerseOptionsModal(
       BuildContext context,
@@ -407,7 +626,9 @@ class BiblePageWidgets {
                             fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
                     Text(
-                      verseText,
+                      verseText.isNotEmpty
+                          ? verseText
+                          : "[Conteúdo interlinear, veja acima]",
                       style: TextStyle(
                           color: theme.colorScheme.onSurface.withOpacity(0.7),
                           fontStyle: FontStyle.italic,
@@ -463,7 +684,9 @@ class BiblePageWidgets {
                       verseId: verseId,
                       initialText: currentNote,
                       bookReference: "$bookAbbrev $chapter:$verseNum",
-                      verseTextSample: verseText,
+                      verseTextSample: verseText.isNotEmpty
+                          ? verseText
+                          : "[Conteúdo interlinear]",
                     ),
                   );
                 },
@@ -511,29 +734,62 @@ class BiblePageWidgets {
     );
   }
 
-  static void _showVerseLexiconModal(
+  static void _showVerseLexiconModalHebrew(
     BuildContext context,
     String bookAbbrev,
     int chapter,
     int verseNum,
-    List<Map<String, String>> wordsToShow,
-    Map<String, dynamic>? lexicon,
+    String strongNumberWithPrefix,
+    Map<String, dynamic>? hebrewLexicon,
   ) {
     final theme = Theme.of(context);
-
-    if (lexicon == null && context.mounted) {
+    if (hebrewLexicon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Léxico de Strong não disponível.")));
+          const SnackBar(content: Text("Léxico Hebraico não disponível.")));
       return;
     }
-    if (!context.mounted) return;
 
-    String modalTitle;
-    if (wordsToShow.length == 1) {
-      final hebrewText = wordsToShow.first['text'] ?? '';
-      modalTitle = "Léxico para: $hebrewText ($bookAbbrev $chapter:$verseNum)";
-    } else {
-      modalTitle = "Léxico para: $bookAbbrev $chapter:$verseNum (Visão Geral)";
+    final String strongNumberOnly =
+        strongNumberWithPrefix.replaceAll(RegExp(r'^[Hc]/'), '');
+    final lexiconEntry =
+        hebrewLexicon[strongNumberOnly] as Map<String, dynamic>?;
+
+    if (lexiconEntry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              "Definição para ${strongNumberWithPrefix} não encontrada.")));
+      return;
+    }
+
+    final String lemma = lexiconEntry['lemma_hebrew'] ?? 'N/A';
+    final String translit = lexiconEntry['transliteration'] ?? 'N/A';
+    final String hebrewWordInEntry =
+        lexiconEntry['hebrew_word_in_entry'] ?? lemma;
+
+    List<String> definitionsToShow =
+        List<String>.from(lexiconEntry['definitions_pt'] ?? []);
+    if (definitionsToShow.isEmpty ||
+        definitionsToShow
+            .every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
+      definitionsToShow =
+          List<String>.from(lexiconEntry['definitions'] ?? ['N/A']);
+    }
+
+    Map<String, List<String>> notesToShow = {};
+    final notesOriginal = lexiconEntry['notes'] as Map<String, dynamic>? ?? {};
+    final notesPt = lexiconEntry['notes_pt'] as Map<String, dynamic>? ?? {};
+
+    for (var key in ['exegesis', 'explanation', 'translation']) {
+      String title = key.capitalizeFirstOfEach;
+      List<String> ptList = List<String>.from(notesPt['${key}_pt'] ?? []);
+      List<String> origList = List<String>.from(notesOriginal[key] ?? []);
+
+      if (ptList.isNotEmpty &&
+          !ptList.every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
+        notesToShow['$title (PT)'] = ptList;
+      } else if (origList.isNotEmpty) {
+        notesToShow['$title (Original)'] = origList;
+      }
     }
 
     showModalBottomSheet(
@@ -560,160 +816,96 @@ class BiblePageWidgets {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Container(
-                        width: 40,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: theme.dividerColor.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                              color: theme.dividerColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(10))),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16.0, vertical: 8.0),
-                      child: Text(
-                        modalTitle,
-                        style: TextStyle(
-                            color: theme.colorScheme.onSurface,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
+                      child: Column(
+                        children: [
+                          Text(
+                            "Léxico para: $strongNumberWithPrefix",
+                            style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            hebrewWordInEntry,
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              fontFamily: 'NotoSansHebrew',
+                              fontSize: 22,
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Divider(color: theme.dividerColor, height: 1),
                     Expanded(
-                      child: ListView.separated(
+                      child: ListView(
                         controller: scrollController,
-                        itemCount: wordsToShow.length,
                         padding: const EdgeInsets.all(16.0),
-                        separatorBuilder: (context, index) => Divider(
-                            color: theme.dividerColor.withOpacity(0.3),
-                            height: 20),
-                        itemBuilder: (context, index) {
-                          final wordData = wordsToShow[index];
-                          final hebrewText = wordData['text'] ?? '';
-                          final strongNumberWithPrefix =
-                              wordData['strong'] ?? '';
-                          final morph = wordData['morph'] ?? 'N/A';
-                          final String strongNumber = strongNumberWithPrefix
-                              .replaceAll(RegExp(r'^[Hc]/'), '');
-                          final lexiconEntry =
-                              lexicon?[strongNumber] as Map<String, dynamic>?;
-
-                          Widget buildNotesSection(
-                              String title, List<dynamic>? notesList) {
-                            if (notesList == null || notesList.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 8),
-                                Text(title,
+                        children: [
+                          Text("Lema Hebraico: $lemma",
+                              style: TextStyle(
+                                  color: theme.textTheme.bodyMedium?.color,
+                                  fontSize: 14)),
+                          Text("Transliteração: $translit",
+                              style: TextStyle(
+                                  color: theme.textTheme.bodyMedium?.color,
+                                  fontSize: 14)),
+                          const SizedBox(height: 10),
+                          Text("Definições:",
+                              style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500)),
+                          ...definitionsToShow.map((def) => Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 8.0, top: 2.0),
+                                child: Text("• $def",
                                     style: TextStyle(
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.85),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600)),
-                                ...notesList
-                                    .cast<String>()
-                                    .map((note) => Padding(
-                                          padding: const EdgeInsets.only(
-                                              left: 8.0, top: 2.0),
-                                          child: Text("• $note",
-                                              style: TextStyle(
-                                                  color: theme.textTheme
-                                                      .bodyMedium?.color,
-                                                  fontSize: 13)),
-                                        )),
-                              ],
-                            );
-                          }
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                hebrewText,
-                                textDirection: TextDirection.rtl,
+                                        color:
+                                            theme.textTheme.bodyMedium?.color,
+                                        fontSize: 13)),
+                              )),
+                          if (notesToShow.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text("Notas Adicionais:",
                                 style: TextStyle(
-                                    fontFamily: 'NotoSansHebrew',
-                                    fontSize: 22,
-                                    color: theme.colorScheme.secondary),
-                              ),
-                              if (lexiconEntry != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                    "Strong: H$strongNumber (${lexiconEntry['transliteration'] ?? 'N/A'})",
-                                    style: TextStyle(
-                                        color: theme.colorScheme.tertiary,
-                                        fontSize: 14)),
-                                Text("Morfologia: $morph",
-                                    style: TextStyle(
-                                        color: theme.textTheme.bodySmall?.color,
-                                        fontSize: 13)),
-                                const SizedBox(height: 6),
-                                Text("Definições (PT):",
-                                    style: TextStyle(
-                                        color: theme.colorScheme.onSurface,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500)),
-                                ...((lexiconEntry['definitions_pt']
-                                                as List<dynamic>?)
-                                            ?.cast<String>() ??
-                                        ['N/A'])
-                                    .map((def) => Padding(
-                                          padding: const EdgeInsets.only(
-                                              left: 8.0, top: 2.0),
-                                          child: Text("• $def",
-                                              style: TextStyle(
-                                                  color: theme.textTheme
-                                                      .bodyMedium?.color,
-                                                  fontSize: 13)),
-                                        )),
-                                if (lexiconEntry['notes_pt'] != null &&
-                                    lexiconEntry['notes_pt'] is Map) ...[
-                                  buildNotesSection(
-                                      "Exegese:",
-                                      (lexiconEntry['notes_pt']['exegesis_pt']
-                                          as List<dynamic>?)),
-                                  buildNotesSection(
-                                      "Explicação:",
-                                      (lexiconEntry['notes_pt']
-                                              ['explanation_pt']
-                                          as List<dynamic>?)),
-                                  buildNotesSection(
-                                      "Sugestões de Tradução:",
-                                      (lexiconEntry['notes_pt']
-                                              ['translation_pt']
-                                          as List<dynamic>?)),
-                                ]
-                              ] else if (strongNumber.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text("Strong: $strongNumberWithPrefix",
-                                    style: TextStyle(
-                                        color: theme.colorScheme.tertiary,
-                                        fontSize: 14)),
-                                Text("Morfologia: $morph",
-                                    style: TextStyle(
-                                        color: theme.textTheme.bodySmall?.color,
-                                        fontSize: 13)),
-                                Text("Definição de Strong não encontrada.",
-                                    style: TextStyle(
-                                        color: theme.colorScheme.error
-                                            .withOpacity(0.8),
-                                        fontSize: 13)),
-                              ] else if (morph != 'N/A' &&
-                                  morph.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text("Morfologia: $morph",
-                                    style: TextStyle(
-                                        color: theme.textTheme.bodySmall?.color,
-                                        fontSize: 13)),
-                              ]
-                            ],
-                          );
-                        },
+                                    color: theme.colorScheme.onSurface,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500)),
+                            ...notesToShow.entries.expand((entry) => [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 6.0, bottom: 2.0),
+                                    child: Text(entry.key,
+                                        style: TextStyle(
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.85),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600)),
+                                  ),
+                                  ...entry.value.map((noteLine) => Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 8.0, top: 2.0),
+                                        child: Text("• $noteLine",
+                                            style: TextStyle(
+                                                color: theme.textTheme
+                                                    .bodyMedium?.color,
+                                                fontSize: 13)),
+                                      )),
+                                ]),
+                          ],
+                        ],
                       ),
                     ),
                   ],
@@ -723,4 +915,241 @@ class BiblePageWidgets {
       },
     );
   }
+
+  static void _showVerseLexiconModalGreek(
+    BuildContext context,
+    String bookAbbrev,
+    int chapter,
+    int verseNum,
+    String strongNumberClicked,
+    Map<String, dynamic>? greekLexicon,
+  ) {
+    final theme = Theme.of(context);
+    if (greekLexicon == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Léxico Grego não disponível.")));
+      return;
+    }
+
+    final lexiconEntry =
+        greekLexicon[strongNumberClicked] as Map<String, dynamic>?;
+
+    if (lexiconEntry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text("Definição para ${strongNumberClicked} não encontrada.")));
+      return;
+    }
+
+    final String lemma = lexiconEntry['lemma_greek'] ?? 'N/A';
+    final String translit = lexiconEntry['transliteration'] ?? 'N/A';
+    final String pronunciation = lexiconEntry['pronunciation'] ?? 'N/A';
+
+    List<String> definitionsToShow =
+        List<String>.from(lexiconEntry['definitions_pt'] ?? []);
+    if (definitionsToShow.isEmpty ||
+        definitionsToShow
+            .every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
+      definitionsToShow =
+          List<String>.from(lexiconEntry['definitions'] ?? ['N/A']);
+    }
+
+    Map<String, List<String>> notesToShow = {};
+    final notesOriginal = lexiconEntry['notes'] as Map<String, dynamic>? ?? {};
+    final notesPt = lexiconEntry['notes_pt'] as Map<String, dynamic>? ?? {};
+
+    List<String> derivationPtList =
+        List<String>.from(notesPt['derivation_pt'] ?? []);
+    List<String> derivationOrigList =
+        List<String>.from(notesOriginal['derivation'] ?? []);
+    if (derivationPtList.isNotEmpty &&
+        !derivationPtList
+            .every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
+      notesToShow['Derivação (PT)'] = derivationPtList;
+    } else if (derivationOrigList.isNotEmpty) {
+      notesToShow['Derivação (Original)'] = derivationOrigList;
+    }
+
+    List<String> kjvDefPtList =
+        List<String>.from(notesPt['kjv_definition_pt'] ?? []);
+    List<String> kjvDefOrigList =
+        List<String>.from(notesOriginal['kjv_definition'] ?? []);
+    if (kjvDefPtList.isNotEmpty &&
+        !kjvDefPtList.every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
+      notesToShow['Definição KJV (PT)'] = kjvDefPtList;
+    } else if (kjvDefOrigList.isNotEmpty) {
+      notesToShow['Definição KJV (Original)'] = kjvDefOrigList;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.dialogBackgroundColor,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (modalContext) {
+        return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.4,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (_, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: theme.dialogBackgroundColor,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                              color: theme.dividerColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(10))),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      child: Text(
+                        "Léxico para: $strongNumberClicked",
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    if (lemma != 'N/A')
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(
+                          lemma,
+                          style: TextStyle(
+                            fontSize: 22,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    Divider(color: theme.dividerColor, height: 1),
+                    Expanded(
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(16.0),
+                        children: [
+                          Text("Transliteração: $translit",
+                              style: TextStyle(
+                                  color: theme.textTheme.bodyMedium?.color,
+                                  fontSize: 14)),
+                          Text("Pronúncia: $pronunciation",
+                              style: TextStyle(
+                                  color: theme.textTheme.bodyMedium?.color,
+                                  fontSize: 14)),
+                          const SizedBox(height: 10),
+                          Text("Definições:",
+                              style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500)),
+                          ...definitionsToShow.map((def) => Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 8.0, top: 2.0),
+                                child: Text("• $def",
+                                    style: TextStyle(
+                                        color:
+                                            theme.textTheme.bodyMedium?.color,
+                                        fontSize: 13)),
+                              )),
+                          if (notesToShow.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text("Notas Adicionais:",
+                                style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500)),
+                            ...notesToShow.entries.expand((entry) => [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 6.0, bottom: 2.0),
+                                    child: Text(entry.key,
+                                        style: TextStyle(
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.85),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600)),
+                                  ),
+                                  ...entry.value.map((noteLine) => Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 8.0, top: 2.0),
+                                        child: Text("• $noteLine",
+                                            style: TextStyle(
+                                                color: theme.textTheme
+                                                    .bodyMedium?.color,
+                                                fontSize: 13)),
+                                      )),
+                                ]),
+                          ],
+                          if (lexiconEntry['greek_references'] != null &&
+                              (lexiconEntry['greek_references'] as List)
+                                  .isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text("Referências Gregas:",
+                                style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.85),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600)),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(left: 8.0, top: 2.0),
+                              child: Text(
+                                  (lexiconEntry['greek_references'] as List)
+                                      .join(', '),
+                                  style: TextStyle(
+                                      color: theme.textTheme.bodySmall?.color,
+                                      fontSize: 12)),
+                            )
+                          ],
+                          if (lexiconEntry['hebrew_references'] != null &&
+                              (lexiconEntry['hebrew_references'] as List)
+                                  .isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text("Referências Hebraicas:",
+                                style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.85),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600)),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(left: 8.0, top: 2.0),
+                              child: Text(
+                                  (lexiconEntry['hebrew_references'] as List)
+                                      .join(', '),
+                                  style: TextStyle(
+                                      color: theme.textTheme.bodySmall?.color,
+                                      fontSize: 12)),
+                            )
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            });
+      },
+    );
+  }
+}
+
+extension StringExtension on String {
+  String get capitalizeFirstOfEach => split(" ")
+      .map((str) =>
+          str.isEmpty ? "" : '${str[0].toUpperCase()}${str.substring(1)}')
+      .join(" ");
 }

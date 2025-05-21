@@ -97,6 +97,7 @@ flutter:
     - assets/Biblia/book_variations_map_search.json
     - assets/Biblia/book_variations_map.json
     - assets/Biblia/completa_traducoes/hebrew_strong_lexicon_traduzido.json
+    - assets/Biblia/completa_traducoes/greek_strong_lexicon_traduzido.json
     
     - assets/Biblia/completa_traducoes/nvi/
     - assets/Biblia/completa_traducoes/aa/
@@ -351,6 +352,9 @@ flutter:
     - assets/Biblia/completa_traducoes/hebrew_original/ag/
     - assets/Biblia/completa_traducoes/hebrew_original/zc/
     - assets/Biblia/completa_traducoes/hebrew_original/ml/
+
+    - assets/Biblia/completa_traducoes/greek_original/1co/
+    - assets/Biblia/completa_traducoes/greek_original/1jn/
 
     # Blocos
     - assets/Biblia/blocos/gn/
