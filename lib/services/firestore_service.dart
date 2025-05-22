@@ -6,6 +6,7 @@ import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para formatar
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static const int READING_HISTORY_LIMIT = 20;
 
   // --- User Methods ---
   Future<List<Map<String, dynamic>>> getUserRoutes(String userId) async {
@@ -922,32 +923,67 @@ class FirestoreService {
   Future<void> addReadingHistoryEntry(
       String userId, String bookAbbrev, int chapter, String bookName) async {
     try {
-      await _db
-          .collection('users')
-          .doc(userId)
-          .collection('reading_history')
-          .add({
+      final historyCollectionRef =
+          _db.collection('users').doc(userId).collection('reading_history');
+
+      // 1. Adicionar a nova entrada de histórico
+      await historyCollectionRef.add({
         'bookAbbrev': bookAbbrev,
         'chapter': chapter,
-        'bookName': bookName,
+        'bookName':
+            bookName, // Nome completo do livro para exibição no histórico
         'timestamp': FieldValue.serverTimestamp(),
       });
+      print(
+          "FirestoreService: Nova entrada de histórico adicionada para $userId: $bookName $chapter");
+
+      // 2. Manter o histórico dentro do limite (ex: 20 entradas)
+      // Esta operação pode ser feita em uma Cloud Function para melhor desempenho e
+      // para evitar múltiplas leituras/escritas do cliente se o histórico for muito ativo.
+      // Mas, para uma implementação no cliente:
+      final QuerySnapshot snapshot = await historyCollectionRef
+          .orderBy('timestamp', descending: true) // Mais recentes primeiro
+          .get();
+
+      if (snapshot.docs.length > READING_HISTORY_LIMIT) {
+        // Determinar quantos documentos deletar
+        int docsToDeleteCount = snapshot.docs.length - READING_HISTORY_LIMIT;
+
+        // Pegar os IDs dos documentos mais antigos para deletar
+        // Os documentos já estão ordenados do mais recente para o mais antigo,
+        // então pegamos os últimos 'docsToDeleteCount' da lista.
+        List<DocumentSnapshot> docsToDelete =
+            snapshot.docs.sublist(READING_HISTORY_LIMIT);
+
+        // Deletar os documentos excedentes em um batch para eficiência
+        WriteBatch batch = _db.batch();
+        for (var doc in docsToDelete) {
+          batch.delete(doc.reference);
+          // print(
+          //     "FirestoreService: Marcado para deleção (histórico antigo): ${doc.id} - ${doc.data()?['bookName']} ${doc.data()?['chapter']}");
+        }
+        await batch.commit();
+        print(
+            "FirestoreService: Histórico antigo (além de ${READING_HISTORY_LIMIT} entradas) deletado para $userId.");
+      }
     } catch (e) {
-      print("FirestoreService: Erro ao adicionar histórico de leitura: $e");
-      rethrow;
+      print(
+          "FirestoreService: Erro ao adicionar/limpar histórico de leitura para $userId: $e");
+      // Não relançar o erro necessariamente, pois a adição principal pode ter funcionado.
+      // A limpeza é uma tarefa de manutenção.
     }
   }
 
-  /// Carrega o histórico de leitura do usuário, limitado por `limit`.
-  Future<List<Map<String, dynamic>>> loadReadingHistory(String userId,
-      {int limit = 50}) async {
+  /// Carrega o histórico de leitura do usuário, já limitado pelo Firestore.
+  Future<List<Map<String, dynamic>>> loadReadingHistory(String userId) async {
+    // Removido {int limit = 50}
     try {
       final snapshot = await _db
           .collection('users')
           .doc(userId)
           .collection('reading_history')
           .orderBy('timestamp', descending: true)
-          .limit(limit)
+          .limit(READING_HISTORY_LIMIT) // <<< USA O LIMITE DEFINIDO
           .get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
@@ -956,12 +992,14 @@ class FirestoreService {
           'id': doc.id,
           'bookAbbrev': data['bookAbbrev'],
           'chapter': data['chapter'],
-          'bookName': data['bookName'] ?? data['bookAbbrev'],
+          'bookName': data['bookName'] ??
+              data['bookAbbrev'], // Fallback para abreviação
           'timestamp': timestamp?.toDate(),
         };
       }).toList();
     } catch (e) {
-      print("FirestoreService: Erro ao carregar histórico de leitura: $e");
+      print(
+          "FirestoreService: Erro ao carregar histórico de leitura para $userId: $e");
       return [];
     }
   }
