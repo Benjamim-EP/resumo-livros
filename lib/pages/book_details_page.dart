@@ -19,13 +19,13 @@ class BookDetailsPage extends StatelessWidget {
       body: StoreConnector<AppState, Map<String, dynamic>>(
         onInit: (store) {
           store.dispatch(LoadBookDetailsAction(bookId));
-          if (store.state.userState.booksInProgressDetails.isEmpty) {
-            store.dispatch(LoadBooksInProgressAction());
-          }
+          // if (store.state.userState.booksInProgressDetails.isEmpty) {
+          //   store.dispatch(LoadBooksInProgressAction());
+          // }
         },
         converter: (store) => {
           'bookDetails': store.state.booksState.bookDetails,
-          'booksProgress': store.state.userState.booksInProgressDetails,
+          // 'booksProgress': store.state.userState.booksInProgressDetails,
         },
         builder: (context, data) {
           final bookDetails = data['bookDetails'] as Map<String, dynamic>?;

@@ -1,40 +1,33 @@
 // lib/redux/middleware/user_middleware.dart
-
 import 'package:redux/redux.dart';
-import '../actions.dart';
-import '../store.dart';
-import '../../services/firestore_service.dart'; // Assumindo a criação deste serviço
-// Assumindo a criação
+import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
+import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
+// import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Descomente se for usar para nomes de livros, etc.
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();
 
   return [
+    // --- User Details & Stats (Operam no doc /users/{userId}) ---
     TypedMiddleware<AppState, LoadUserStatsAction>(
             _loadUserStats(firestoreService))
         .call,
     TypedMiddleware<AppState, LoadUserDetailsAction>(
             _loadUserDetails(firestoreService))
         .call,
-    TypedMiddleware<AppState, LoadUserPremiumStatusAction>(
-            _loadUserPremiumStatus(firestoreService))
+    TypedMiddleware<AppState, UpdateUserFieldAction>(
+            _updateUserField(firestoreService))
         .call,
-    // Ação dinâmica para _loadUserCollections
+    // Se LoadUserPremiumStatusAction ainda for relevante e operar no doc principal:
+    // TypedMiddleware<AppState, LoadUserPremiumStatusAction>(_loadUserPremiumStatus(firestoreService)).call,
+
+    // --- Coleções de Tópicos de Livros de Resumo (Operam em 'topicSaves' no doc /users/{userId}) ---
     TypedMiddleware<AppState, dynamic>(
             _loadUserCollectionsMiddleware(firestoreService))
         .call,
     TypedMiddleware<AppState, SaveTopicToCollectionAction>(
             _saveTopicToCollection(firestoreService))
-        .call,
-    TypedMiddleware<AppState, SaveVerseToCollectionAction>(
-            _saveVerseToCollection(firestoreService))
-        .call,
-    TypedMiddleware<AppState, UpdateUserFieldAction>(
-            _updateUserField(firestoreService))
-        .call,
-
-    TypedMiddleware<AppState, LoadTopicsContentUserSavesAction>(
-            _loadTopicsContentUserSaves(firestoreService))
         .call,
     TypedMiddleware<AppState, DeleteTopicCollectionAction>(
             _deleteTopicCollection(firestoreService))
@@ -42,25 +35,19 @@ List<Middleware<AppState>> createUserMiddleware() {
     TypedMiddleware<AppState, DeleteSingleTopicFromCollectionAction>(
             _deleteSingleTopicFromCollection(firestoreService))
         .call,
+    TypedMiddleware<AppState, LoadTopicsContentUserSavesAction>(
+            _loadTopicsContentUserSaves(firestoreService))
+        .call,
+
+    // --- Diário do Usuário (Refs em /users/{userId}/user_diaries, conteúdo em /posts) ---
     TypedMiddleware<AppState, AddDiaryEntryAction>(
             _addDiaryEntry(firestoreService))
         .call,
     TypedMiddleware<AppState, LoadUserDiariesAction>(
             _loadUserDiaries(firestoreService))
         .call,
-    TypedMiddleware<AppState, LoadUserHighlightsAction>(
-            _loadUserHighlights(firestoreService))
-        .call,
-    TypedMiddleware<AppState, ToggleHighlightAction>(
-            _toggleHighlight(firestoreService))
-        .call,
-    TypedMiddleware<AppState, LoadUserNotesAction>(
-            _loadUserNotes(firestoreService))
-        .call,
-    TypedMiddleware<AppState, SaveNoteAction>(_saveNote(firestoreService)).call,
-    TypedMiddleware<AppState, DeleteNoteAction>(_deleteNote(firestoreService))
-        .call,
-    // Histórico de Leitura
+
+    // --- Histórico de Leitura da Bíblia (AJUSTADO para userBibleProgress) ---
     TypedMiddleware<AppState, RecordReadingHistoryAction>(
             _handleRecordReadingHistory(firestoreService))
         .call,
@@ -68,6 +55,23 @@ List<Middleware<AppState>> createUserMiddleware() {
             _handleLoadReadingHistory(firestoreService))
         .call,
 
+    // --- Destaques de Versículos Bíblicos (AJUSTADO para userVerseHighlights) ---
+    TypedMiddleware<AppState, LoadUserHighlightsAction>(
+            _loadUserHighlights(firestoreService))
+        .call,
+    TypedMiddleware<AppState, ToggleHighlightAction>(
+            _toggleHighlight(firestoreService))
+        .call,
+
+    // --- Notas de Versículos Bíblicos (AJUSTADO para userVerseNotes) ---
+    TypedMiddleware<AppState, LoadUserNotesAction>(
+            _loadUserNotes(firestoreService))
+        .call,
+    TypedMiddleware<AppState, SaveNoteAction>(_saveNote(firestoreService)).call,
+    TypedMiddleware<AppState, DeleteNoteAction>(_deleteNote(firestoreService))
+        .call,
+
+    // --- Destaques de Comentários Bíblicos (AJUSTADO para userCommentHighlights) ---
     TypedMiddleware<AppState, LoadUserCommentHighlightsAction>(
             _loadUserCommentHighlights(firestoreService))
         .call,
@@ -80,73 +84,7 @@ List<Middleware<AppState>> createUserMiddleware() {
   ];
 }
 
-// --- Handlers ---
-// --- Comment Highlight Middlewares ---
-void Function(Store<AppState>, LoadUserCommentHighlightsAction, NextDispatcher)
-    _loadUserCommentHighlights(FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) {
-      print(
-          "Middleware: Usuário não logado, não é possível carregar destaques de comentários.");
-      return;
-    }
-    try {
-      final highlights =
-          await firestoreService.loadUserCommentHighlights(userId);
-      store.dispatch(UserCommentHighlightsLoadedAction(highlights));
-    } catch (e) {
-      print("Erro no middleware ao carregar destaques de comentários: $e");
-      // Opcional: store.dispatch(LoadUserCommentHighlightsFailedAction(e.toString()));
-    }
-  };
-}
-
-void Function(Store<AppState>, AddCommentHighlightAction, NextDispatcher)
-    _addCommentHighlight(FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) {
-      print(
-          "Middleware: Usuário não logado, não é possível adicionar destaque de comentário.");
-      return;
-    }
-    try {
-      await firestoreService.addCommentHighlight(
-          userId, action.commentHighlightData);
-      store.dispatch(
-          LoadUserCommentHighlightsAction()); // Recarrega a lista para atualizar a UI
-    } catch (e) {
-      print("Erro no middleware ao adicionar destaque de comentário: $e");
-      // Opcional: store.dispatch(AddCommentHighlightFailedAction(e.toString()));
-    }
-  };
-}
-
-void Function(Store<AppState>, RemoveCommentHighlightAction, NextDispatcher)
-    _removeCommentHighlight(FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) {
-      print(
-          "Middleware: Usuário não logado, não é possível remover destaque de comentário.");
-      return;
-    }
-    try {
-      await firestoreService.removeCommentHighlight(
-          userId, action.commentHighlightId);
-      store.dispatch(
-          LoadUserCommentHighlightsAction()); // Recarrega a lista para atualizar a UI
-    } catch (e) {
-      print("Erro no middleware ao remover destaque de comentário: $e");
-      // Opcional: store.dispatch(RemoveCommentHighlightFailedAction(e.toString()));
-    }
-  };
-}
-
+// --- Handlers para User Details, Stats, Fields (operam no doc /users/{userId}) ---
 void Function(Store<AppState>, LoadUserStatsAction, NextDispatcher)
     _loadUserStats(FirestoreService firestoreService) {
   return (Store<AppState> store, LoadUserStatsAction action,
@@ -158,11 +96,9 @@ void Function(Store<AppState>, LoadUserStatsAction, NextDispatcher)
       final stats = await firestoreService.getUserStats(userId);
       if (stats != null) {
         store.dispatch(UserStatsLoadedAction(stats));
-      } else {
-        print('Usuário não encontrado no Firestore para stats.');
       }
     } catch (e) {
-      print('Erro ao carregar stats do usuário: $e');
+      print('UserMiddleware: Erro ao carregar stats do usuário: $e');
     }
   };
 }
@@ -177,91 +113,10 @@ void Function(Store<AppState>, LoadUserDetailsAction, NextDispatcher)
     try {
       final details = await firestoreService.getUserDetails(userId);
       if (details != null) {
-        store.dispatch(UserDetailsLoadedAction(
-            details)); // O reducer agora pega lastRead daqui
-      } else {
-        print('Usuário não encontrado no Firestore para details.');
+        store.dispatch(UserDetailsLoadedAction(details));
       }
     } catch (e) {
-      print('Erro ao carregar detalhes do usuário: $e');
-    }
-  };
-}
-
-void Function(Store<AppState>, LoadUserPremiumStatusAction, NextDispatcher)
-    _loadUserPremiumStatus(FirestoreService firestoreService) {
-  return (Store<AppState> store, LoadUserPremiumStatusAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      final premiumStatus = await firestoreService.getUserPremiumStatus(userId);
-      store.dispatch(UserPremiumStatusLoadedAction(premiumStatus ?? {}));
-    } catch (e) {
-      print('Erro ao carregar status premium do usuário: $e');
-    }
-  };
-}
-
-void Function(Store<AppState>, dynamic, NextDispatcher)
-    _loadUserCollectionsMiddleware(FirestoreService firestoreService) {
-  return (Store<AppState> store, dynamic action, NextDispatcher next) async {
-    next(action);
-    if (action is LoadUserTopicCollectionsAction ||
-        action is LoadUserCollectionsAction) {
-      final userId = store.state.userState.userId;
-      if (userId == null) return;
-      try {
-        final collections = await firestoreService.getUserCollections(userId);
-        if (action is LoadUserTopicCollectionsAction) {
-          store.dispatch(UserTopicCollectionsLoadedAction(collections ?? {}));
-        } else if (action is LoadUserCollectionsAction) {
-          store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
-        }
-      } catch (e) {
-        print('Erro ao carregar coleções do usuário: $e');
-      }
-    }
-  };
-}
-
-void Function(Store<AppState>, SaveTopicToCollectionAction, NextDispatcher)
-    _saveTopicToCollection(FirestoreService firestoreService) {
-  return (Store<AppState> store, SaveTopicToCollectionAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      await firestoreService.saveTopicToCollection(
-          userId, action.collectionName, action.topicId);
-      final collections = await firestoreService.getUserCollections(userId);
-      store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
-      print(
-          'Tópico ${action.topicId} salvo na coleção "${action.collectionName}".');
-    } catch (e) {
-      print('Erro ao salvar tópico na coleção: $e');
-    }
-  };
-}
-
-void Function(Store<AppState>, SaveVerseToCollectionAction, NextDispatcher)
-    _saveVerseToCollection(FirestoreService firestoreService) {
-  return (Store<AppState> store, SaveVerseToCollectionAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      await firestoreService.saveVerseToCollection(
-          userId, action.collectionName, action.verseId);
-      final collections = await firestoreService.getUserCollections(userId);
-      store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
-      print(
-          'Versículo ${action.verseId} salvo na coleção "${action.collectionName}".');
-    } catch (e) {
-      print('Erro ao salvar versículo na coleção: $e');
+      print('UserMiddleware: Erro ao carregar detalhes do usuário: $e');
     }
   };
 }
@@ -276,13 +131,103 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
     try {
       await firestoreService.updateUserField(
           userId, action.field, action.value);
-      final stats = await firestoreService.getUserStats(userId);
-      if (stats != null) {
-        store.dispatch(UserStatsLoadedAction(stats));
+      final details = await firestoreService
+          .getUserDetails(userId); // Recarrega após update
+      if (details != null) {
+        store.dispatch(UserDetailsLoadedAction(details));
       }
-      print('Campo "${action.field}" atualizado com sucesso.');
+      print(
+          'UserMiddleware: Campo "${action.field}" atualizado para usuário $userId.');
     } catch (e) {
-      print('Erro ao atualizar o campo "${action.field}": $e');
+      print(
+          'UserMiddleware: Erro ao atualizar o campo "${action.field}" para $userId: $e');
+    }
+  };
+}
+
+// --- Handlers para Coleções de Tópicos de Livros (não bíblicos) ---
+void Function(Store<AppState>, dynamic, NextDispatcher)
+    _loadUserCollectionsMiddleware(FirestoreService firestoreService) {
+  return (Store<AppState> store, dynamic action, NextDispatcher next) async {
+    next(action);
+    if (action is LoadUserTopicCollectionsAction ||
+        action is LoadUserCollectionsAction) {
+      final userId = store.state.userState.userId;
+      if (userId == null) return;
+      try {
+        final collections = await firestoreService
+            .getUserCollections(userId); // Lê 'topicSaves' de /users/{userId}
+        if (action is LoadUserTopicCollectionsAction) {
+          store.dispatch(UserTopicCollectionsLoadedAction(collections ?? {}));
+        } else if (action is LoadUserCollectionsAction) {
+          store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
+        }
+      } catch (e) {
+        print('UserMiddleware: Erro ao carregar coleções de tópicos: $e');
+      }
+    }
+  };
+}
+
+void Function(Store<AppState>, SaveTopicToCollectionAction, NextDispatcher)
+    _saveTopicToCollection(FirestoreService firestoreService) {
+  return (Store<AppState> store, SaveTopicToCollectionAction action,
+      NextDispatcher next) async {
+    next(action); // O reducer já atualiza otimisticamente topicSaves
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.saveTopicToCollection(
+          userId, action.collectionName, action.topicId);
+      // Opcional: recarregar se a fonte da verdade for apenas o Firestore, mas o reducer já atualizou.
+      // store.dispatch(LoadUserCollectionsAction());
+      print(
+          'UserMiddleware: Tópico ${action.topicId} salvo na coleção "${action.collectionName}".');
+    } catch (e) {
+      print('UserMiddleware: Erro ao salvar tópico na coleção: $e');
+      // Considerar reverter a atualização otimista se a escrita falhar
+    }
+  };
+}
+
+void Function(Store<AppState>, DeleteTopicCollectionAction, NextDispatcher)
+    _deleteTopicCollection(FirestoreService firestoreService) {
+  return (Store<AppState> store, DeleteTopicCollectionAction action,
+      NextDispatcher next) async {
+    next(action); // Reducer remove otimisticamente
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.deleteTopicCollection(
+          userId, action.collectionName);
+      // Opcional: recarregar, mas o reducer já atualizou.
+      // store.dispatch(LoadUserCollectionsAction());
+      // store.dispatch(LoadTopicsContentUserSavesAction()); // Para recarregar o conteúdo se a UI depender disso
+      print(
+          'UserMiddleware: Coleção de tópicos "${action.collectionName}" deletada.');
+    } catch (e) {
+      print('UserMiddleware: Erro ao excluir coleção de tópicos: $e');
+    }
+  };
+}
+
+void Function(
+        Store<AppState>, DeleteSingleTopicFromCollectionAction, NextDispatcher)
+    _deleteSingleTopicFromCollection(FirestoreService firestoreService) {
+  return (Store<AppState> store, DeleteSingleTopicFromCollectionAction action,
+      NextDispatcher next) async {
+    next(action); // Reducer remove otimisticamente
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.deleteSingleTopicFromCollection(
+          userId, action.collectionName, action.topicId);
+      // store.dispatch(LoadUserCollectionsAction());
+      // store.dispatch(LoadTopicsContentUserSavesAction());
+      print(
+          'UserMiddleware: Tópico ${action.topicId} removido da coleção "${action.collectionName}".');
+    } catch (e) {
+      print('UserMiddleware: Erro ao excluir tópico da coleção: $e');
     }
   };
 }
@@ -305,7 +250,7 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
 
       for (var entry in topicSaves.entries) {
         final collectionName = entry.key;
-        final ids = entry.value;
+        final ids = entry.value; // Lista de topicId ou verseId com prefixo
         final List<Map<String, dynamic>> contentList = [];
         List<String> topicIdsToFetch = [];
         List<String> verseIdsToProcess = [];
@@ -324,23 +269,25 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
           contentList.addAll(topicsData);
         }
 
-        for (var verseId in verseIdsToProcess) {
-          final parts = verseId.split("-");
-          if (parts.length == 4) {
-            final bookAbbrev = parts[1];
-            final chapter = parts[2];
-            final verse = parts[3];
+        for (var verseIdWithPrefix in verseIdsToProcess) {
+          final verseIdProper =
+              verseIdWithPrefix.replaceFirst("bibleverses-", "");
+          final parts = verseIdProper.split("_");
+          if (parts.length == 3) {
+            final bookAbbrev = parts[0];
+            final chapter = parts[1];
+            final verse = parts[2];
             String bookName =
                 await firestoreService.getBookNameFromAbbrev(bookAbbrev) ??
-                    bookAbbrev;
-            // Considerar buscar o texto real do versículo aqui se necessário para a UI 'Salvos'
-            // String verseText = await BiblePageHelper.loadSingleVerseText(verseId.replaceFirst("bibleverses-", "").replaceAll("-", "_"), 'nvi');
+                    bookAbbrev.toUpperCase();
+            // String verseText = await BiblePageHelper.loadSingleVerseText(verseIdProper, 'nvi');
             contentList.add({
-              'id': verseId,
+              'id': verseIdWithPrefix,
               'cover': 'assets/images/biblia_cover_placeholder.png',
-              'bookName': bookName, 'chapterName': chapter,
+              'bookName': bookName,
+              'chapterName': chapter,
               'titulo': "$bookName $chapter:$verse",
-              'conteudo': "Versículo salvo", // Placeholder
+              'conteudo': "Versículo: $bookName $chapter:$verse",
             });
           }
         }
@@ -350,65 +297,26 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
           LoadTopicsContentUserSavesSuccessAction(topicsByCollection));
     } catch (e) {
       store.dispatch(LoadTopicsContentUserSavesFailureAction(
-          'Erro ao carregar tópicos salvos: $e'));
+          'UserMiddleware: Erro ao carregar tópicos salvos: $e'));
     }
   };
 }
 
-void Function(Store<AppState>, DeleteTopicCollectionAction, NextDispatcher)
-    _deleteTopicCollection(FirestoreService firestoreService) {
-  return (Store<AppState> store, DeleteTopicCollectionAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      await firestoreService.deleteTopicCollection(
-          userId, action.collectionName);
-      final collections = await firestoreService.getUserCollections(userId);
-      store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
-      store.dispatch(
-          LoadTopicsContentUserSavesAction()); // Recarrega conteúdo após deletar
-    } catch (e) {
-      print('Erro ao excluir coleção de tópicos: $e');
-    }
-  };
-}
-
-void Function(
-        Store<AppState>, DeleteSingleTopicFromCollectionAction, NextDispatcher)
-    _deleteSingleTopicFromCollection(FirestoreService firestoreService) {
-  return (Store<AppState> store, DeleteSingleTopicFromCollectionAction action,
-      NextDispatcher next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      await firestoreService.deleteSingleTopicFromCollection(
-          userId, action.collectionName, action.topicId);
-      final collections = await firestoreService.getUserCollections(userId);
-      store.dispatch(UserCollectionsLoadedAction(collections ?? {}));
-      store.dispatch(
-          LoadTopicsContentUserSavesAction()); // Recarrega conteúdo após deletar item
-    } catch (e) {
-      print('Erro ao excluir tópico da coleção: $e');
-    }
-  };
-}
-
+// --- Handlers para Diário ---
 void Function(Store<AppState>, AddDiaryEntryAction, NextDispatcher)
     _addDiaryEntry(FirestoreService firestoreService) {
   return (Store<AppState> store, AddDiaryEntryAction action,
       NextDispatcher next) async {
-    next(action);
+    // next(action); // O reducer para AddDiaryEntryAction não precisa fazer nada se recarregarmos
     final userId = store.state.userState.userId;
     if (userId == null) return;
     try {
       await firestoreService.addDiaryEntry(
           userId, action.title, action.content);
       store.dispatch(LoadUserDiariesAction()); // Recarrega após adicionar
+      print("UserMiddleware: Entrada de diário adicionada.");
     } catch (e) {
-      print("Erro ao adicionar diário: $e");
+      print("UserMiddleware: Erro ao adicionar diário: $e");
     }
   };
 }
@@ -427,132 +335,56 @@ void Function(Store<AppState>, LoadUserDiariesAction, NextDispatcher)
       final diaries = await firestoreService.loadUserDiaries(userId);
       store.dispatch(LoadUserDiariesSuccessAction(diaries));
     } catch (e) {
-      print("Erro ao carregar os diários: $e");
+      print("UserMiddleware: Erro ao carregar os diários: $e");
       store.dispatch(LoadUserDiariesFailureAction(e.toString()));
     }
   };
 }
 
-// --- Highlight Middlewares ---
-void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
-    _loadUserHighlights(FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      final highlights = await firestoreService.loadUserHighlights(userId);
-      store.dispatch(UserHighlightsLoadedAction(highlights));
-    } catch (e) {
-      print("Erro ao carregar destaques do usuário: $e");
-    }
-  };
-}
+// --- Handlers AJUSTADOS para Histórico, Destaques e Notas ---
 
-void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
-    _toggleHighlight(FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      if (action.colorHex == null) {
-        await firestoreService.removeHighlight(userId, action.verseId);
-      } else {
-        await firestoreService.saveHighlight(
-            userId, action.verseId, action.colorHex!);
-      }
-      store.dispatch(LoadUserHighlightsAction()); // Recarrega após alteração
-    } catch (e) {
-      print("Erro ao adicionar/remover destaque: $e");
-    }
-  };
-}
-
-// --- Note Middlewares ---
-void Function(Store<AppState>, LoadUserNotesAction, NextDispatcher)
-    _loadUserNotes(FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      final notes = await firestoreService.loadUserNotes(userId);
-      store.dispatch(UserNotesLoadedAction(notes));
-    } catch (e) {
-      print("Erro ao carregar notas do usuário: $e");
-    }
-  };
-}
-
-void Function(Store<AppState>, SaveNoteAction, NextDispatcher) _saveNote(
-    FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      await firestoreService.saveNote(userId, action.verseId, action.text);
-      store.dispatch(LoadUserNotesAction()); // Recarrega notas
-    } catch (e) {
-      print("Erro ao salvar nota: $e");
-    }
-  };
-}
-
-void Function(Store<AppState>, DeleteNoteAction, NextDispatcher) _deleteNote(
-    FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      await firestoreService.removeNote(userId, action.verseId);
-      store.dispatch(LoadUserNotesAction()); // Recarrega notas
-    } catch (e) {
-      print("Erro ao deletar nota: $e");
-    }
-  };
-}
-
-// --- Reading History Middlewares ---
+// Histórico de Leitura da Bíblia
 void Function(Store<AppState>, RecordReadingHistoryAction, NextDispatcher)
     _handleRecordReadingHistory(FirestoreService firestoreService) {
   return (Store<AppState> store, RecordReadingHistoryAction action,
       NextDispatcher next) async {
-    // Atualiza o estado Redux imediatamente (otimista) para lastRead
-    store.dispatch(
-        UpdateLastReadLocationAction(action.bookAbbrev, action.chapter));
-    next(action);
+    // Ação original pode ser passada se houver um reducer, mas a atualização principal virá de UpdateLastReadLocationAction
+    // next(action);
 
     final userId = store.state.userState.userId;
     if (userId == null) {
-      print("Histórico: Usuário não logado.");
+      print("UserMiddleware (RecordHistory): Usuário não logado.");
       return;
     }
 
-    // Busca o nome do livro para salvar no histórico
-    String bookName = action.bookAbbrev.toUpperCase();
     try {
-      // Tentativa de pegar do booksMap local da BiblePage (idealmente via estado Redux se disponível)
-      // Se não disponível, busca no Firestore
-      final bookData =
-          await firestoreService.getBookDataByAbbrev(action.bookAbbrev);
-      if (bookData != null) {
-        bookName = bookData['titulo'] ?? bookName;
-      }
-    } catch (e) {
-      print("Erro ao buscar nome do livro para histórico: $e");
-    }
-
-    try {
-      // Salva no Firestore
+      // 1. Adiciona à subcoleção de histórico (users/{userId}/reading_history)
+      //    Esta parte é opcional se você decidir que o lastRead no userBibleProgress é suficiente.
+      String bookNameForHistory =
+          await firestoreService.getBookNameFromAbbrev(action.bookAbbrev) ??
+              action.bookAbbrev.toUpperCase();
       await firestoreService.addReadingHistoryEntry(
-          userId, action.bookAbbrev, action.chapter, bookName);
+          userId, action.bookAbbrev, action.chapter, bookNameForHistory);
+      print(
+          "UserMiddleware (RecordHistory): Entrada de histórico detalhado adicionada.");
+
+      // 2. Atualiza o último local lido na coleção `userBibleProgress`
+      //    Esta chamada irá criar/atualizar userBibleProgress/{userId} com os campos lastRead...
       await firestoreService.updateLastReadLocation(
           userId, action.bookAbbrev, action.chapter);
+      print(
+          "UserMiddleware (RecordHistory): Última leitura atualizada em userBibleProgress.");
+
+      // 3. Despacha a ação para atualizar o UserState com a última leitura geral
+      //    Isso garante que UserState.lastReadBookAbbrev e UserState.lastReadChapter sejam atualizados.
+      store.dispatch(
+          UpdateLastReadLocationAction(action.bookAbbrev, action.chapter));
+
+      // 4. Opcional: Se a UI que exibe o histórico detalhado estiver visível, pode recarregá-la.
+      // store.dispatch(LoadReadingHistoryAction());
     } catch (e) {
-      print('Erro ao salvar histórico/última leitura: $e');
+      print(
+          'UserMiddleware (RecordHistory): Erro ao salvar histórico/última leitura: $e');
     }
   };
 }
@@ -563,14 +395,175 @@ void Function(Store<AppState>, LoadReadingHistoryAction, NextDispatcher)
       NextDispatcher next) async {
     next(action);
     final userId = store.state.userState.userId;
+    if (userId == null) {
+      store.dispatch(ReadingHistoryLoadedAction([]));
+      return;
+    }
+    try {
+      final history = await firestoreService
+          .loadReadingHistory(userId); // Lê de users/{userId}/reading_history
+      store.dispatch(ReadingHistoryLoadedAction(history));
+    } catch (e) {
+      print(
+          'UserMiddleware: Erro ao carregar histórico de leitura detalhado: $e');
+      store.dispatch(ReadingHistoryLoadedAction([]));
+    }
+  };
+}
+
+// Destaques de Versículos Bíblicos
+void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
+    _loadUserHighlights(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      store.dispatch(UserHighlightsLoadedAction({}));
+      return;
+    }
+    try {
+      // FirestoreService.loadUserHighlights agora lê de /userVerseHighlights/{userId}/highlights
+      final highlights = await firestoreService.loadUserHighlights(userId);
+      store.dispatch(UserHighlightsLoadedAction(highlights));
+    } catch (e) {
+      print("UserMiddleware: Erro ao carregar destaques de versículos: $e");
+      store.dispatch(UserHighlightsLoadedAction({}));
+    }
+  };
+}
+
+void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
+    _toggleHighlight(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    // next(action); // O reducer desta ação pode não fazer nada se recarregarmos
+
+    final userId = store.state.userState.userId;
     if (userId == null) return;
 
     try {
-      final history = await firestoreService.loadReadingHistory(userId);
-      store.dispatch(ReadingHistoryLoadedAction(history));
+      if (action.colorHex == null) {
+        await firestoreService.removeHighlight(
+            userId, action.verseId); // Chama a função atualizada do service
+        print(
+            "UserMiddleware: Destaque de versículo removido para ${action.verseId}");
+      } else {
+        await firestoreService.saveHighlight(userId, action.verseId,
+            action.colorHex!); // Chama a função atualizada
+        print(
+            "UserMiddleware: Destaque de versículo salvo/atualizado para ${action.verseId} com cor ${action.colorHex}");
+      }
+      store.dispatch(
+          LoadUserHighlightsAction()); // Recarrega para atualizar o estado
     } catch (e) {
-      print('Erro ao carregar histórico de leitura: $e');
-      store.dispatch(ReadingHistoryLoadedAction([]));
+      print(
+          "UserMiddleware: Erro ao adicionar/remover destaque de versículo: $e");
+    }
+  };
+}
+
+// Notas de Versículos Bíblicos
+void Function(Store<AppState>, LoadUserNotesAction, NextDispatcher)
+    _loadUserNotes(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      store.dispatch(UserNotesLoadedAction({}));
+      return;
+    }
+    try {
+      final notes = await firestoreService
+          .loadUserNotes(userId); // Chama a função atualizada
+      store.dispatch(UserNotesLoadedAction(notes));
+    } catch (e) {
+      print("UserMiddleware: Erro ao carregar notas de versículos: $e");
+      store.dispatch(UserNotesLoadedAction({}));
+    }
+  };
+}
+
+void Function(Store<AppState>, SaveNoteAction, NextDispatcher) _saveNote(
+    FirestoreService firestoreService) {
+  return (store, action, next) async {
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.saveNote(
+          userId, action.verseId, action.text); // Chama a função atualizada
+      print("UserMiddleware: Nota salva para ${action.verseId}");
+      store.dispatch(LoadUserNotesAction());
+    } catch (e) {
+      print("UserMiddleware: Erro ao salvar nota: $e");
+    }
+  };
+}
+
+void Function(Store<AppState>, DeleteNoteAction, NextDispatcher) _deleteNote(
+    FirestoreService firestoreService) {
+  return (store, action, next) async {
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.removeNote(
+          userId, action.verseId); // Chama a função atualizada
+      print("UserMiddleware: Nota removida para ${action.verseId}");
+      store.dispatch(LoadUserNotesAction());
+    } catch (e) {
+      print("UserMiddleware: Erro ao deletar nota: $e");
+    }
+  };
+}
+
+// Destaques de Comentários Bíblicos
+void Function(Store<AppState>, LoadUserCommentHighlightsAction, NextDispatcher)
+    _loadUserCommentHighlights(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      store.dispatch(UserCommentHighlightsLoadedAction([]));
+      return;
+    }
+    try {
+      final highlights = await firestoreService
+          .loadUserCommentHighlights(userId); // Chama a função atualizada
+      store.dispatch(UserCommentHighlightsLoadedAction(highlights));
+    } catch (e) {
+      print("UserMiddleware: Erro ao carregar destaques de comentários: $e");
+      store.dispatch(UserCommentHighlightsLoadedAction([]));
+    }
+  };
+}
+
+void Function(Store<AppState>, AddCommentHighlightAction, NextDispatcher)
+    _addCommentHighlight(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.addCommentHighlight(
+          userId, action.commentHighlightData); // Chama a função atualizada
+      print("UserMiddleware: Destaque de comentário adicionado.");
+      store.dispatch(LoadUserCommentHighlightsAction());
+    } catch (e) {
+      print("UserMiddleware: Erro ao adicionar destaque de comentário: $e");
+    }
+  };
+}
+
+void Function(Store<AppState>, RemoveCommentHighlightAction, NextDispatcher)
+    _removeCommentHighlight(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.removeCommentHighlight(
+          userId, action.commentHighlightId); // Chama a função atualizada
+      print(
+          "UserMiddleware: Destaque de comentário removido: ${action.commentHighlightId}");
+      store.dispatch(LoadUserCommentHighlightsAction());
+    } catch (e) {
+      print("UserMiddleware: Erro ao remover destaque de comentário: $e");
     }
   };
 }

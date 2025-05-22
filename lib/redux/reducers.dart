@@ -168,96 +168,112 @@ BooksState booksReducer(BooksState state, dynamic action) {
   return state;
 }
 
+// --- UserState e userReducer (COM AS PRINCIPAIS ALTERAÇÕES) ---
 class UserState {
   final String? userId;
   final String? email;
   final String? nome;
   final bool isLoggedIn;
-  final List<String> tags;
-  final Map<String, dynamic>? userDetails;
-  final Map<String, List<Map<String, String>>> userBooks;
-  final Map<String, List<String>> topicSaves;
-  final List<Map<String, dynamic>> booksInProgress;
-  final List<Map<String, dynamic>> searchResults;
-  final Map<String, List<Map<String, dynamic>>> savedTopicsContent;
-  final List<Map<String, dynamic>> booksInProgressDetails;
+  // final List<String> tags; // Se tags forem globais, podem sair do UserState
+  final Map<String, dynamic>?
+      userDetails; // Para dados gerais do /users/{userId}
+  // final Map<String, List<Map<String, String>>> userBooks; // Se userBooks for específico, senão global
+  final Map<String, List<String>>
+      topicSaves; // Coleções de tópicos de resumos de livros
+  // final List<Map<String, dynamic>> booksInProgress; // Pode ser derivado ou obsoleto se progresso for mais detalhado
+  final List<Map<String, dynamic>> searchResults; // Para busca geral de tópicos
+  final Map<String, List<Map<String, dynamic>>>
+      savedTopicsContent; // Conteúdo de tópicos salvos
+  // final List<Map<String, dynamic>> booksInProgressDetails; // Detalhes de livros em progresso
   final List<Map<String, dynamic>> rotaAtual;
   final List<Map<String, dynamic>> userRoutes;
-  final Map<String, List<Map<String, dynamic>>> verseSaves;
+  // final Map<String, List<Map<String, dynamic>>> verseSaves; // Se for para versículos BÍBLICOS, isto será gerenciado de forma diferente
   final List<Map<String, dynamic>> userDiaries;
 
-  final Map<String, String> userHighlights;
-  final Map<String, String> userNotes;
+  // Campos para dados que agora vêm de coleções separadas, mas mantidos no UserState para a UI
+  final Map<String, String>
+      userHighlights; // Destaques de versículos bíblicos <verseId, colorHex>
+  final Map<String, String>
+      userNotes; // Notas de versículos bíblicos <verseId, noteText>
+  final List<Map<String, dynamic>>
+      userCommentHighlights; // Destaques de comentários bíblicos
 
   final String? initialBibleBook;
   final int? initialBibleChapter;
 
-  final List<Map<String, dynamic>> readingHistory;
-  final String? lastReadBookAbbrev;
-  final int? lastReadChapter;
+  final List<Map<String, dynamic>>
+      readingHistory; // Histórico geral de leitura da Bíblia
+  final String? lastReadBookAbbrev; // Último livro bíblico lido (geral)
+  final int? lastReadChapter; // Último capítulo bíblico lido (geral)
 
-  final List<Map<String, dynamic>> userCommentHighlights;
   final int? targetBottomNavIndex;
 
   final int userCoins;
   final DateTime? lastRewardedAdWatchTime;
   final int rewardedAdsWatchedToday;
 
-  final Map<String, Set<String>> readSectionsByBook;
-  final Map<String, int> totalSectionsPerBook;
-  final Map<String, bool> bookCompletionStatus;
+  // Progresso Bíblico Detalhado (agora populado a partir de userBibleProgress/{userId})
+  final Map<String, BibleBookProgressData>
+      allBooksProgress; // <bookAbbrev, BibleBookProgressData>
+  final Map<String, Set<String>>
+      readSectionsByBook; // <bookAbbrev, Set<sectionId>> (derivado de allBooksProgress para UI)
+  final Map<String, int>
+      totalSectionsPerBook; // <bookAbbrev, total> (derivado de allBooksProgress)
+  final Map<String, bool>
+      bookCompletionStatus; // <bookAbbrev, isCompleted> (derivado de allBooksProgress)
 
-  final Map<String, BibleBookProgressData> allBooksProgress;
-  final bool isLoadingAllBibleProgress; // NOVA FLAG
-  final String? bibleProgressError; // NOVO CAMPO DE ERRO
+  final bool isLoadingAllBibleProgress;
+  final String? bibleProgressError;
 
   final List<Map<String, dynamic>> pendingFirestoreWrites;
   final Map<String, Set<String>> pendingSectionsToAdd;
   final Map<String, Set<String>> pendingSectionsToRemove;
 
-  final DateTime? firstAdIn6HourWindowTimestamp; // NOVO
-  final int adsWatchedIn6HourWindow; // NOVO
+  final DateTime? firstAdIn6HourWindowTimestamp;
+  final int adsWatchedIn6HourWindow;
 
   UserState({
     this.userId,
     this.email,
     this.nome,
     this.isLoggedIn = false,
-    this.tags = const [],
-    this.userDetails,
-    this.userBooks = const {},
+    // this.tags = const [],
+    this.userDetails, // Continuará sendo o doc /users/{userId} sem os campos movidos
+    // this.userBooks = const {},
     this.topicSaves = const {},
-    this.booksInProgress = const [],
+    // this.booksInProgress = const [],
     this.searchResults = const [],
     this.savedTopicsContent = const {},
-    this.booksInProgressDetails = const [],
+    // this.booksInProgressDetails = const [],
     this.rotaAtual = const [],
     this.userRoutes = const [],
-    this.verseSaves = const {},
+    // this.verseSaves = const {},
     this.userDiaries = const [],
-    this.userHighlights = const {},
-    this.userNotes = const {},
+    this.userHighlights = const {}, // Inicializa vazio
+    this.userNotes = const {}, // Inicializa vazio
+    this.userCommentHighlights = const [], // Inicializa vazio
+
     this.initialBibleBook,
     this.initialBibleChapter,
     this.readingHistory = const [],
-    this.lastReadBookAbbrev,
-    this.lastReadChapter,
-    this.userCommentHighlights = const [],
+    this.lastReadBookAbbrev, // Será populado por UserBibleProgressDocumentLoadedAction
+    this.lastReadChapter, // Será populado por UserBibleProgressDocumentLoadedAction
+
     this.targetBottomNavIndex,
     this.userCoins = 0,
     this.lastRewardedAdWatchTime,
     this.rewardedAdsWatchedToday = 0,
-    this.readSectionsByBook = const {},
-    this.totalSectionsPerBook = const {},
-    this.bookCompletionStatus = const {},
-    this.allBooksProgress = const {},
-    this.isLoadingAllBibleProgress = false, // Valor inicial da nova flag
-    this.bibleProgressError, // Valor inicial do novo erro
-    this.pendingSectionsToAdd = const {}, // Inicializa
-    this.pendingSectionsToRemove = const {}, // Inicializa
+    this.allBooksProgress = const {}, // Inicializa vazio
+    this.readSectionsByBook = const {}, // Inicializa vazio
+    this.totalSectionsPerBook = const {}, // Inicializa vazio
+    this.bookCompletionStatus = const {}, // Inicializa vazio
+    this.isLoadingAllBibleProgress = false,
+    this.bibleProgressError,
     this.pendingFirestoreWrites = const [],
-    this.firstAdIn6HourWindowTimestamp, // NOVO
-    this.adsWatchedIn6HourWindow = 0, // NOVO: inicializa com 0
+    this.pendingSectionsToAdd = const {},
+    this.pendingSectionsToRemove = const {},
+    this.firstAdIn6HourWindowTimestamp,
+    this.adsWatchedIn6HourWindow = 0,
   });
 
   UserState copyWith({
@@ -265,364 +281,330 @@ class UserState {
     String? email,
     String? nome,
     bool? isLoggedIn,
-    bool? isFirstLogin,
-    List<String>? tags,
-    Map<String, dynamic>? userDetails,
-    Map<String, List<Map<String, String>>>? userBooks,
+    // List<String>? tags,
+    Map<String, dynamic>? userDetails, // Sem os campos movidos
+    // Map<String, List<Map<String, String>>>? userBooks,
     Map<String, List<String>>? topicSaves,
-    List<Map<String, dynamic>>? booksInProgress,
-    Map<String, dynamic>? userFeatures,
-    List<Map<String, dynamic>>? userTribeRecommendations,
+    // List<Map<String, dynamic>>? booksInProgress,
     List<Map<String, dynamic>>? searchResults,
-    List<Map<String, dynamic>>? tribeTopics,
-    Map<String, List<Map<String, dynamic>>>? tribeTopicsByFeature,
-    List<Map<String, dynamic>>? booksInProgressDetails,
     Map<String, List<Map<String, dynamic>>>? savedTopicsContent,
+    // List<Map<String, dynamic>>? booksInProgressDetails,
     List<Map<String, dynamic>>? rotaAtual,
     List<Map<String, dynamic>>? userRoutes,
-    Map<String, List<Map<String, dynamic>>>? verseSaves,
+    // Map<String, List<Map<String, dynamic>>>? verseSaves,
     List<Map<String, dynamic>>? userDiaries,
     Map<String, String>? userHighlights,
     Map<String, String>? userNotes,
+    List<Map<String, dynamic>>? userCommentHighlights,
     String? initialBibleBook,
     int? initialBibleChapter,
+    bool clearInitialBibleLocation = false, // Para limpar a intent
+
     List<Map<String, dynamic>>? readingHistory,
-    String? lastReadBookAbbrev,
-    int? lastReadChapter,
-    List<Map<String, dynamic>>? userCommentHighlights,
+    String?
+        lastReadBookAbbrev, // Agora virá de UserBibleProgressDocumentLoadedAction
+    int? lastReadChapter, // Agora virá de UserBibleProgressDocumentLoadedAction
+    bool clearLastReadLocation = false, // Para resetar ao deslogar
+
     int? targetBottomNavIndex,
     bool clearTargetBottomNavIndex = false,
     int? userCoins,
     DateTime? lastRewardedAdWatchTime,
     bool clearLastRewardedAdWatchTime = false,
     int? rewardedAdsWatchedToday,
-    Map<String, Set<String>>? readSectionsByBook,
-    Map<String, int>? totalSectionsPerBook,
-    Map<String, bool>? bookCompletionStatus,
     Map<String, BibleBookProgressData>? allBooksProgress,
-    bool? isLoadingAllBibleProgress, // Adicionado ao copyWith
-    String? bibleProgressError, // Adicionado ao copyWith
-    bool clearBibleProgressError = false, // Para limpar o erro
-    Map<String, Set<String>>? pendingSectionsToAdd, // Adicionado
-    Map<String, Set<String>>? pendingSectionsToRemove, // Adicionado
+    Map<String, Set<String>>? readSectionsByBook, // Derivado
+    Map<String, int>? totalSectionsPerBook, // Derivado
+    Map<String, bool>? bookCompletionStatus, // Derivado
+    bool? isLoadingAllBibleProgress,
+    String? bibleProgressError,
+    bool clearBibleProgressError = false,
     List<Map<String, dynamic>>? pendingFirestoreWrites,
-    DateTime? firstAdIn6HourWindowTimestamp, // NOVO
-    bool clearFirstAdIn6HourWindowTimestamp = false, // NOVO: para resetar
-    int? adsWatchedIn6HourWindow, // NOVO
+    Map<String, Set<String>>? pendingSectionsToAdd,
+    Map<String, Set<String>>? pendingSectionsToRemove,
+    DateTime? firstAdIn6HourWindowTimestamp,
+    bool clearFirstAdIn6HourWindowTimestamp = false,
+    int? adsWatchedIn6HourWindow,
   }) {
     return UserState(
       userId: userId ?? this.userId,
       email: email ?? this.email,
       nome: nome ?? this.nome,
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
-      tags: tags ?? this.tags,
+      // tags: tags ?? this.tags,
       userDetails: userDetails ?? this.userDetails,
-      userBooks: userBooks ?? this.userBooks,
+      // userBooks: userBooks ?? this.userBooks,
       topicSaves: topicSaves ?? this.topicSaves,
-      booksInProgress: booksInProgress ?? this.booksInProgress,
+      // booksInProgress: booksInProgress ?? this.booksInProgress,
       searchResults: searchResults ?? this.searchResults,
       savedTopicsContent: savedTopicsContent ?? this.savedTopicsContent,
-      booksInProgressDetails:
-          booksInProgressDetails ?? this.booksInProgressDetails,
+      // booksInProgressDetails: booksInProgressDetails ?? this.booksInProgressDetails,
       rotaAtual: rotaAtual ?? this.rotaAtual,
       userRoutes: userRoutes ?? this.userRoutes,
-      verseSaves: verseSaves ?? this.verseSaves,
+      // verseSaves: verseSaves ?? this.verseSaves,
       userDiaries: userDiaries ?? this.userDiaries,
+
       userHighlights: userHighlights ?? this.userHighlights,
       userNotes: userNotes ?? this.userNotes,
-      initialBibleBook: initialBibleBook ?? this.initialBibleBook,
-      initialBibleChapter: initialBibleChapter ?? this.initialBibleChapter,
-      readingHistory: readingHistory ?? this.readingHistory,
-      lastReadBookAbbrev: lastReadBookAbbrev ?? this.lastReadBookAbbrev,
-      lastReadChapter: lastReadChapter ?? this.lastReadChapter,
       userCommentHighlights:
           userCommentHighlights ?? this.userCommentHighlights,
+
+      initialBibleBook: clearInitialBibleLocation
+          ? null
+          : (initialBibleBook ?? this.initialBibleBook),
+      initialBibleChapter: clearInitialBibleLocation
+          ? null
+          : (initialBibleChapter ?? this.initialBibleChapter),
+
+      readingHistory: readingHistory ?? this.readingHistory,
+      lastReadBookAbbrev: clearLastReadLocation
+          ? null
+          : (lastReadBookAbbrev ?? this.lastReadBookAbbrev),
+      lastReadChapter: clearLastReadLocation
+          ? null
+          : (lastReadChapter ?? this.lastReadChapter),
+
       targetBottomNavIndex: clearTargetBottomNavIndex
           ? null
           : (targetBottomNavIndex ?? this.targetBottomNavIndex),
+
       userCoins: userCoins ?? this.userCoins,
       lastRewardedAdWatchTime: clearLastRewardedAdWatchTime
           ? null
           : (lastRewardedAdWatchTime ?? this.lastRewardedAdWatchTime),
       rewardedAdsWatchedToday:
           rewardedAdsWatchedToday ?? this.rewardedAdsWatchedToday,
-      readSectionsByBook: readSectionsByBook ?? this.readSectionsByBook,
-      totalSectionsPerBook: totalSectionsPerBook ?? this.totalSectionsPerBook,
-      bookCompletionStatus: bookCompletionStatus ?? this.bookCompletionStatus,
+
       allBooksProgress: allBooksProgress ?? this.allBooksProgress,
+      readSectionsByBook: readSectionsByBook ??
+          this.readSectionsByBook, // Será recalculado por AllBibleProgressLoadedAction
+      totalSectionsPerBook:
+          totalSectionsPerBook ?? this.totalSectionsPerBook, // Recalculado
+      bookCompletionStatus:
+          bookCompletionStatus ?? this.bookCompletionStatus, // Recalculado
       isLoadingAllBibleProgress:
           isLoadingAllBibleProgress ?? this.isLoadingAllBibleProgress,
       bibleProgressError: clearBibleProgressError
           ? null
           : bibleProgressError ?? this.bibleProgressError,
+
       pendingFirestoreWrites:
           pendingFirestoreWrites ?? this.pendingFirestoreWrites,
       pendingSectionsToAdd: pendingSectionsToAdd ?? this.pendingSectionsToAdd,
       pendingSectionsToRemove:
           pendingSectionsToRemove ?? this.pendingSectionsToRemove,
+
       firstAdIn6HourWindowTimestamp: clearFirstAdIn6HourWindowTimestamp
           ? null
           : (firstAdIn6HourWindowTimestamp ??
-              this.firstAdIn6HourWindowTimestamp), // NOVO
+              this.firstAdIn6HourWindowTimestamp),
       adsWatchedIn6HourWindow:
-          adsWatchedIn6HourWindow ?? this.adsWatchedIn6HourWindow, // NOVO
+          adsWatchedIn6HourWindow ?? this.adsWatchedIn6HourWindow,
     );
   }
 }
 
 UserState userReducer(UserState state, dynamic action) {
-  if (action is LoadUserDiariesSuccessAction) {
-    return state.copyWith(userDiaries: action.diaries);
-  } else if (action is UserVerseCollectionsUpdatedAction) {
-    return state.copyWith(verseSaves: action.verseSaves);
-  } else if (action is UserLoggedInAction) {
+  if (action is UserLoggedInAction) {
     return state.copyWith(
       userId: action.userId,
       email: action.email,
-      nome: action.nome,
+      nome: action
+          .nome, // Nome inicial, pode ser atualizado por UserDetailsLoadedAction
       isLoggedIn: true,
-      userCoins: state.userDetails?['userCoins'] as int? ??
-          100, // Define 100 como padrão
+      // Não reseta moedas ou outros dados aqui, UserDetailsLoadedAction ou
+      // uma ação de carregamento de dados do userBibleProgress cuidará disso.
     );
-  } else if (action is UserStatsLoadedAction) {
-    return state.copyWith(
-      userDetails: action.stats,
-      userCoins: action.stats['userCoins'] as int? ?? state.userCoins,
-      lastRewardedAdWatchTime:
-          (action.stats['lastRewardedAdWatchTime'] as Timestamp?)?.toDate(),
-      rewardedAdsWatchedToday:
-          action.stats['rewardedAdsWatchedToday'] as int? ?? 0,
-    );
-  } else if (action is TagsLoadedAction) {
-    print("Tags adicionadas ao estado do usuário: ${action.tags}"); // Debug
-    return state.copyWith(tags: action.tags);
   } else if (action is UserLoggedOutAction) {
-    return UserState(); // Retorna o estado inicial, usuário deslogado
+    // Retorna ao estado inicial completo, limpando todos os dados do usuário.
+    return UserState();
+  } else if (action is UpdateUserUidAction) {
+    // Usado pelo AuthCheck se o UID inicial for nulo
+    return state.copyWith(userId: action.uid);
   } else if (action is UserDetailsLoadedAction) {
+    // Esta ação carrega os dados do documento /users/{userId}
+    // Não deve mais conter bibleProgress, userHighlights, userNotes, userCommentHighlights, lastRead...
+    // Esses virão de ações específicas que leem as novas coleções.
     return state.copyWith(
       userDetails: action.userDetails,
-      lastReadBookAbbrev: action.userDetails['lastReadBookAbbrev'] as String?,
-      lastReadChapter: action.userDetails['lastReadChapter'] as int?,
-      userCoins: action.userDetails['userCoins'] as int? ?? state.userCoins,
+      // lastReadBookAbbrev e lastReadChapter NÃO são mais definidos aqui.
+      // Eles serão definidos quando os dados de userBibleProgress forem carregados (ex: AllBibleProgressLoadedAction).
+      userCoins: action.userDetails['userCoins'] as int? ??
+          state.userCoins, // Pega do doc ou mantém o do estado
       lastRewardedAdWatchTime:
           (action.userDetails['lastRewardedAdWatchTime'] as Timestamp?)
               ?.toDate(),
       rewardedAdsWatchedToday:
           action.userDetails['rewardedAdsWatchedToday'] as int? ?? 0,
+      // Outros campos do documento /users/{userId} podem ser atualizados aqui se necessário
+      // como nome, email (se puderem mudar e forem refletidos no doc principal), etc.
+      nome: action.userDetails['nome'] as String? ?? state.nome,
+      email: action.userDetails['email'] as String? ?? state.email,
     );
-  } else if (action is UpdateUserUidAction) {
-    return state.copyWith(userId: action.uid);
-  } else if (action is UserTopicCollectionsLoadedAction) {
-    return state.copyWith(topicSaves: action.topicSaves);
-  } else if (action is UserCollectionsLoadedAction) {
-    return state.copyWith(topicSaves: action.topicSaves);
+  }
+  // Ações de Coleções de Tópicos de Livros (não bíblicos)
+  else if (action is UserTopicCollectionsLoadedAction ||
+      action is UserCollectionsLoadedAction) {
+    Map<String, List<String>> collections =
+        (action is UserTopicCollectionsLoadedAction)
+            ? action.topicSaves
+            : (action as UserCollectionsLoadedAction).topicSaves;
+    return state.copyWith(topicSaves: collections);
   } else if (action is SaveTopicToCollectionAction) {
     final updatedCollections = Map<String, List<String>>.from(state.topicSaves);
-
-    if (!updatedCollections.containsKey(action.collectionName)) {
-      updatedCollections[action.collectionName] = [];
+    updatedCollections.putIfAbsent(action.collectionName, () => []);
+    if (!updatedCollections[action.collectionName]!.contains(action.topicId)) {
+      updatedCollections[action.collectionName]!.add(action.topicId);
     }
-
-    final collection = updatedCollections[action.collectionName]!;
-    if (!collection.contains(action.topicId)) {
-      collection.add(action.topicId);
-    }
-
     return state.copyWith(topicSaves: updatedCollections);
-  } else if (action is BooksInProgressLoadedAction) {
-    return state.copyWith(booksInProgress: action.books);
-  } else if (action is TopicsLoadedAction) {
-    return state.copyWith(
-      userTribeRecommendations: action.topics,
-    );
-  } else if (action is FirstLoginSuccessAction) {
-    return state.copyWith(isFirstLogin: action.isFirstLogin);
-  } else if (action is FirstLoginFailureAction) {
-    return state.copyWith(isFirstLogin: null);
-  } else if (action is LoadTopicsContentUserSavesFailureAction) {
-    print('Erro ao carregar conteúdo dos tópicos salvos: ${action.error}');
-    return state; // Retorna o estado sem alterações
-  } else if (action is LoadBooksUserProgressSuccessAction) {
-    return state.copyWith(booksInProgress: action.books);
-  } else if (action is LoadBooksUserProgressFailureAction) {
-    print(action.error); // Log para depuração
-    return state; // Retorna o estado atual sem alterações
-  } else if (action is LoadBooksDetailsSuccessAction) {
-    return state.copyWith(booksInProgressDetails: action.bookDetails);
-  } else if (action is LoadBooksDetailsFailureAction) {
-    print(action.error); // Log para depuração
-    return state;
-  } else if (action is AddTopicToRouteAction) {
-    final updatedRotaAtual = List<Map<String, dynamic>>.from(state.rotaAtual);
-    if (!updatedRotaAtual.any((topic) => topic['id'] == action.topicId)) {
-      updatedRotaAtual.add({'id': action.topicId});
-    }
-    return state.copyWith(rotaAtual: updatedRotaAtual);
-  } else if (action is ClearRouteAction) {
-    return state.copyWith(rotaAtual: []);
-  } else if (action is UserRoutesLoadedAction) {
-    return state.copyWith(userRoutes: action.routes);
-  } else if (action is UserRoutesLoadFailedAction) {
-    print(action.error); // Log de erro
   } else if (action is DeleteTopicCollectionAction) {
     final updatedTopicSaves = Map<String, List<String>>.from(state.topicSaves);
     updatedTopicSaves.remove(action.collectionName);
     return state.copyWith(topicSaves: updatedTopicSaves);
   } else if (action is DeleteSingleTopicFromCollectionAction) {
     final updatedTopicSaves = Map<String, List<String>>.from(state.topicSaves);
-    final updatedTopics = List<String>.from(
-      updatedTopicSaves[action.collectionName] ?? [],
-    );
-    updatedTopics.remove(action.topicId);
-    updatedTopicSaves[action.collectionName] = updatedTopics;
-    return state.copyWith(topicSaves: updatedTopicSaves);
-  } else if (action is SubscriptionStatusUpdatedAction) {
-    final updatedDetails = Map<String, dynamic>.from(state.userDetails ?? {});
-    updatedDetails['stripeCustomerId'] = action.customerId;
-    updatedDetails['subscriptionStatus'] = action.status;
-    updatedDetails['subscriptionEndDate'] = action.endDate;
-    updatedDetails['stripeSubscriptionId'] = action.subscriptionId;
-    updatedDetails['activePriceId'] = action.priceId;
-    return state.copyWith(userDetails: updatedDetails);
-  } else if (action is UserHighlightsLoadedAction) {
-    return state.copyWith(userHighlights: action.highlights);
-  } else if (action is ToggleHighlightAction) {
-    return state;
-  } else if (action is UserNotesLoadedAction) {
-    return state.copyWith(userNotes: action.notes);
-  } else if (action is SaveNoteAction) {
-    return state;
-  } else if (action is DeleteNoteAction) {
-    return state;
-  } else if (action is SetInitialBibleLocationAction) {
-    return state.copyWith(
-        initialBibleBook: action.bookAbbrev,
-        initialBibleChapter: action.chapter);
-  } else if (action is ReadingHistoryLoadedAction) {
-    return state.copyWith(readingHistory: action.history);
-  } else if (action is UpdateLastReadLocationAction) {
-    return state.copyWith(
-        lastReadBookAbbrev: action.bookAbbrev, lastReadChapter: action.chapter);
-  } else if (action is UserCommentHighlightsLoadedAction) {
-    return state.copyWith(userCommentHighlights: action.commentHighlights);
-  } else if (action is RequestBottomNavChangeAction) {
-    return state.copyWith(targetBottomNavIndex: action.index);
-  } else if (action is ClearTargetBottomNavAction) {
-    return state.copyWith(clearTargetBottomNavIndex: true);
-  } else if (action is RewardedAdWatchedAction) {
-    int currentCoins = state.userCoins;
-    int coinsToAdd = action.coinsAwarded;
-    int newTotalCoins = currentCoins + coinsToAdd;
-    if (newTotalCoins > 100) {
-      newTotalCoins = 100;
-    }
-    DateTime now = DateTime.now();
-    int updatedAdsWatchedToday = state.rewardedAdsWatchedToday + 1;
-    if (state.lastRewardedAdWatchTime != null) {
-      final lastWatchDate = state.lastRewardedAdWatchTime!;
-      if (now.year > lastWatchDate.year ||
-          now.month > lastWatchDate.month ||
-          now.day > lastWatchDate.day) {
-        updatedAdsWatchedToday = 1;
+    if (updatedTopicSaves.containsKey(action.collectionName)) {
+      final List<String> updatedList =
+          List.from(updatedTopicSaves[action.collectionName]!);
+      updatedList.remove(action.topicId);
+      if (updatedList.isEmpty) {
+        updatedTopicSaves.remove(action.collectionName);
+      } else {
+        updatedTopicSaves[action.collectionName] = updatedList;
       }
     }
-    return state.copyWith(
-      userCoins: newTotalCoins,
-      lastRewardedAdWatchTime: action.adWatchTime,
-      rewardedAdsWatchedToday: updatedAdsWatchedToday,
-    );
-  } else if (action is LoadAllBibleProgressAction) {
-    // <<< NOVO
+    return state.copyWith(topicSaves: updatedTopicSaves);
+  }
+
+  // Diário do Usuário
+  else if (action is LoadUserDiariesSuccessAction) {
+    return state.copyWith(userDiaries: action.diaries);
+  }
+  // AddDiaryEntryAction é tratada pelo middleware, que depois despacha LoadUserDiariesAction.
+
+  // Destaques de Versículos Bíblicos
+  else if (action is UserHighlightsLoadedAction) {
+    return state.copyWith(userHighlights: action.highlights);
+  }
+  // ToggleHighlightAction é tratada pelo middleware, que depois despacha LoadUserHighlightsAction.
+
+  // Notas de Versículos Bíblicos
+  else if (action is UserNotesLoadedAction) {
+    return state.copyWith(userNotes: action.notes);
+  }
+  // SaveNoteAction e DeleteNoteAction são tratadas pelo middleware, que depois despacha LoadUserNotesAction.
+
+  // Destaques de Comentários Bíblicos
+  else if (action is UserCommentHighlightsLoadedAction) {
+    return state.copyWith(userCommentHighlights: action.commentHighlights);
+  }
+  // AddCommentHighlightAction e RemoveCommentHighlightAction são tratadas pelo middleware.
+
+  // Progresso Bíblico (agora de userBibleProgress/{userId})
+  else if (action is LoadAllBibleProgressAction) {
     return state.copyWith(
       isLoadingAllBibleProgress: true,
       clearBibleProgressError: true, // Limpa erro anterior ao tentar carregar
     );
   } else if (action is AllBibleProgressLoadedAction) {
-    // <<< ATUALIZADO
     final newReadSectionsByBook = <String, Set<String>>{};
     final newTotalSectionsPerBook = <String, int>{};
     final newBookCompletionStatus = <String, bool>{};
+    String? overallLastReadBook;
+    int? overallLastReadChapter;
+    Timestamp? overallLastReadTimestamp;
+
+    // Tenta buscar o lastRead geral do payload da ação se o middleware o incluir.
+    // Se não, tentaremos derivar ou manter o existente.
+    // Idealmente, o middleware que carrega de /userBibleProgress/{userId} também obteria
+    // os campos lastReadBookAbbrev, lastReadChapter, lastReadTimestamp do nível raiz
+    // desse documento e os passaria na ação.
+    // Por ora, vamos assumir que AllBibleProgressLoadedAction foca no mapa 'books'.
 
     action.progressData.forEach((bookAbbrev, data) {
       newReadSectionsByBook[bookAbbrev] = data.readSections;
       newTotalSectionsPerBook[bookAbbrev] = data.totalSections;
       newBookCompletionStatus[bookAbbrev] = data.completed;
+      // Lógica para determinar o lastRead geral (o mais recente entre todos os livros)
+      if (data.lastReadTimestamp != null) {
+        if (overallLastReadTimestamp == null ||
+            data.lastReadTimestamp!.compareTo(overallLastReadTimestamp!) > 0) {
+          overallLastReadTimestamp = data.lastReadTimestamp;
+          // Se temos um lastReadTimestampBook, precisamos do livro e capítulo associado.
+          // Isto é uma simplificação. A fonte da verdade para lastReadBookAbbrev/Chapter GERAL
+          // deve ser o documento userBibleProgress/{userId} no nível raiz.
+          // Aqui, estamos apenas pegando o último livro que teve um 'lastReadTimestampBook'.
+          // overallLastReadBook = bookAbbrev;
+          // overallLastReadChapter = ???; // Precisaríamos do capítulo da última seção lida.
+        }
+      }
     });
+
+    // Para lastReadBookAbbrev e lastReadChapter GERAIS:
+    // Estes deveriam vir idealmente de uma ação que carrega o documento userBibleProgress/{userId}
+    // ou serem passados como parte do payload de AllBibleProgressLoadedAction se o middleware
+    // os extraiu do documento pai de userBibleProgress.
+    // Se não, a UI que depende deles pode precisar de um selector mais complexo
+    // ou eles permanecerão como estavam no estado.
 
     return state.copyWith(
       allBooksProgress: action.progressData,
       readSectionsByBook: newReadSectionsByBook,
       totalSectionsPerBook: newTotalSectionsPerBook,
       bookCompletionStatus: newBookCompletionStatus,
-      isLoadingAllBibleProgress: false, // Finaliza o carregamento
+      isLoadingAllBibleProgress: false,
+      // lastReadBookAbbrev: overallLastReadBook ?? state.lastReadBookAbbrev, // Atualização experimental
+      // lastReadChapter: overallLastReadChapter ?? state.lastReadChapter,  // Atualização experimental
     );
   } else if (action is BibleBookProgressLoadedAction) {
-    // <<< ATUALIZADO/REVISADO
-    final newReadSectionsByBook =
-        Map<String, Set<String>>.from(state.readSectionsByBook);
-    newReadSectionsByBook[action.bookAbbrev] = action.readSections;
-
-    final newTotalSectionsPerBook =
-        Map<String, int>.from(state.totalSectionsPerBook);
-    newTotalSectionsPerBook[action.bookAbbrev] = action.totalSectionsInBook;
-
-    final newBookCompletionStatus =
-        Map<String, bool>.from(state.bookCompletionStatus);
-    newBookCompletionStatus[action.bookAbbrev] = action.isCompleted;
-
-    // Atualiza também o allBooksProgress para este livro específico
     final newAllBooksProgress =
         Map<String, BibleBookProgressData>.from(state.allBooksProgress);
     newAllBooksProgress[action.bookAbbrev] = BibleBookProgressData(
-      readSections: action.readSections,
-      totalSections: action.totalSectionsInBook,
-      completed: action.isCompleted,
-      lastReadTimestamp: action.lastReadTimestamp,
-    );
+        readSections: action.readSections,
+        totalSections: action.totalSectionsInBook,
+        completed: action.isCompleted,
+        lastReadTimestamp: action.lastReadTimestamp);
+
+    final newReadSectionsByBook =
+        Map<String, Set<String>>.from(state.readSectionsByBook);
+    final newTotalSectionsPerBook =
+        Map<String, int>.from(state.totalSectionsPerBook);
+    final newBookCompletionStatus =
+        Map<String, bool>.from(state.bookCompletionStatus);
+
+    newReadSectionsByBook[action.bookAbbrev] = action.readSections;
+    newTotalSectionsPerBook[action.bookAbbrev] = action.totalSectionsInBook;
+    newBookCompletionStatus[action.bookAbbrev] = action.isCompleted;
 
     return state.copyWith(
+      allBooksProgress: newAllBooksProgress,
       readSectionsByBook: newReadSectionsByBook,
       totalSectionsPerBook: newTotalSectionsPerBook,
       bookCompletionStatus: newBookCompletionStatus,
-      allBooksProgress: newAllBooksProgress, // Importante atualizar este também
-      isLoadingAllBibleProgress:
-          false, // Pode setar para false se esta ação também indica fim de um loading geral
-      clearBibleProgressError:
-          true, // Limpa erro se o carregamento do livro específico foi bem sucedido
+      clearBibleProgressError: true,
     );
   } else if (action is BibleProgressFailureAction) {
-    // <<< NOVO
     return state.copyWith(
       isLoadingAllBibleProgress: false,
       bibleProgressError: action.error,
     );
   } else if (action is OptimisticToggleSectionReadStatusAction) {
-    final newReadSectionsByBook = Map<String, Set<String>>.from(
-        state.readSectionsByBook); // << Cria nova cópia do Map
-    final sectionsForBookUI = Set<String>.from(
-        newReadSectionsByBook[action.bookAbbrev] ??
-            {}); // << Cria nova cópia do Set
-    // OBTER OU CRIAR O SET PARA O LIVRO ATUAL, GARANTINDO QUE É UMA NOVA INSTÂNCIA
-    final Set<String> sectionsForThisBook =
+    final newReadSectionsByBook =
+        Map<String, Set<String>>.from(state.readSectionsByBook);
+    final sectionsForBookUI =
         Set<String>.from(newReadSectionsByBook[action.bookAbbrev] ?? {});
-    print(
-        "Reducer (Optimistic) ANTES - Livro: ${action.bookAbbrev}, Seção: ${action.sectionId}, Marcar: ${action.markAsRead}, Seções Atuais para este livro: $sectionsForThisBook");
+
     if (action.markAsRead) {
       sectionsForBookUI.add(action.sectionId);
     } else {
       sectionsForBookUI.remove(action.sectionId);
     }
     newReadSectionsByBook[action.bookAbbrev] = sectionsForBookUI;
-    print(
-        "Reducer (Optimistic) DEPOIS - Livro: ${action.bookAbbrev}, Seções Atualizadas para este livro: $sectionsForThisBook");
-    print(
-        "Reducer (Optimistic) DEPOIS - Conteúdo completo de newReadSectionsByBook: $newReadSectionsByBook");
-    // 2. Atualiza as listas pendentes
+
     final newPendingToAdd =
         Map<String, Set<String>>.from(state.pendingSectionsToAdd);
     final newPendingToRemove =
         Map<String, Set<String>>.from(state.pendingSectionsToRemove);
-
     final bookToAddSet =
         Set<String>.from(newPendingToAdd[action.bookAbbrev] ?? {});
     final bookToRemoveSet =
@@ -630,53 +612,52 @@ UserState userReducer(UserState state, dynamic action) {
 
     if (action.markAsRead) {
       bookToAddSet.add(action.sectionId);
-      bookToRemoveSet
-          .remove(action.sectionId); // Se estava para remover, cancela
+      bookToRemoveSet.remove(action.sectionId);
     } else {
       bookToRemoveSet.add(action.sectionId);
-      bookToAddSet
-          .remove(action.sectionId); // Se estava para adicionar, cancela
+      bookToAddSet.remove(action.sectionId);
     }
-
     newPendingToAdd[action.bookAbbrev] = bookToAddSet;
     newPendingToRemove[action.bookAbbrev] = bookToRemoveSet;
-    print(
-        "Reducer (Optimistic) - Pending Add: $newPendingToAdd, Pending Remove: $newPendingToRemove");
+
+    // Opcional: Atualizar otimisticamente allBooksProgress e bookCompletionStatus
+    // Isso envolveria recalcular 'completed' aqui.
+    // Por simplicidade, pode-se esperar o recarregamento após sincronização.
+    // Se for feito aqui, a lógica de 'completed' deve ser replicada.
+
     return state.copyWith(
         readSectionsByBook: newReadSectionsByBook,
         pendingSectionsToAdd: newPendingToAdd,
         pendingSectionsToRemove: newPendingToRemove);
-  } else if (action is EnqueueFirestoreWriteAction) {
+  }
+  // --- Ações de Pendências de Sincronização ---
+  else if (action is EnqueueFirestoreWriteAction) {
     final newPendingWrites =
         List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
     final operationWithId = Map<String, dynamic>.from(action.operation);
-    if (operationWithId['id'] == null) {
-      operationWithId['id'] =
-          '${DateTime.now().millisecondsSinceEpoch}_${newPendingWrites.length}';
-    }
+    operationWithId['id'] ??=
+        '${DateTime.now().millisecondsSinceEpoch}_${newPendingWrites.length}';
     newPendingWrites.add(operationWithId);
     return state.copyWith(pendingFirestoreWrites: newPendingWrites);
   } else if (action is FirestoreWriteSuccessfulAction) {
     final newPendingWrites =
-        List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
-    newPendingWrites.removeWhere((op) => op['id'] == action.operationId);
+        List<Map<String, dynamic>>.from(state.pendingFirestoreWrites)
+          ..removeWhere((op) => op['id'] == action.operationId);
     return state.copyWith(pendingFirestoreWrites: newPendingWrites);
   } else if (action is FirestoreWriteFailedAction) {
     final newPendingWrites =
-        List<Map<String, dynamic>>.from(state.pendingFirestoreWrites);
-    newPendingWrites.removeWhere((op) => op['id'] == action.operationId);
+        List<Map<String, dynamic>>.from(state.pendingFirestoreWrites)
+          ..removeWhere((op) => op['id'] == action.operationId);
     print(
         "Reducer: Operação ${action.operationId} removida da fila (FALHA): ${action.error}");
     return state.copyWith(pendingFirestoreWrites: newPendingWrites);
   } else if (action is ClearPendingBibleProgressAction) {
     final newPendingToAdd =
-        Map<String, Set<String>>.from(state.pendingSectionsToAdd);
+        Map<String, Set<String>>.from(state.pendingSectionsToAdd)
+          ..remove(action.bookAbbrev);
     final newPendingToRemove =
-        Map<String, Set<String>>.from(state.pendingSectionsToRemove);
-
-    newPendingToAdd.remove(action.bookAbbrev);
-    newPendingToRemove.remove(action.bookAbbrev);
-
+        Map<String, Set<String>>.from(state.pendingSectionsToRemove)
+          ..remove(action.bookAbbrev);
     return state.copyWith(
         pendingSectionsToAdd: newPendingToAdd,
         pendingSectionsToRemove: newPendingToRemove);
@@ -685,22 +666,109 @@ UserState userReducer(UserState state, dynamic action) {
       pendingSectionsToAdd: action.pendingToAdd,
       pendingSectionsToRemove: action.pendingToRemove,
     );
-  } else if (action is AdLimitDataLoadedAction) {
-    // NOVO
+  }
+
+  // --- Ações de Leitura Geral e Navegação ---
+  else if (action is UpdateLastReadLocationAction) {
+    // Esta ação é para atualizar o estado Redux sobre a última leitura geral.
+    // O middleware que chama firestoreService.updateLastReadLocation (na coleção userBibleProgress)
+    // deve despachar esta ação se a atualização no Firestore for bem-sucedida.
     return state.copyWith(
-      firstAdIn6HourWindowTimestamp: action.firstAdTimestamp,
-      adsWatchedIn6HourWindow: action.adsInWindowCount,
+      lastReadBookAbbrev: action.bookAbbrev,
+      lastReadChapter: action.chapter,
     );
-  } else if (action is UpdateAdWindowStatsAction) {
-    // NOVO
+  } else if (action is ReadingHistoryLoadedAction) {
+    return state.copyWith(readingHistory: action.history);
+  } else if (action is SetInitialBibleLocationAction) {
     return state.copyWith(
-      firstAdIn6HourWindowTimestamp: action.firstAdTimestamp,
-      adsWatchedIn6HourWindow: action.adsInWindowCount,
+        initialBibleBook: action.bookAbbrev,
+        initialBibleChapter: action.chapter,
+        clearInitialBibleLocation:
+            action.bookAbbrev == null && action.chapter == null);
+  } else if (action is RequestBottomNavChangeAction) {
+    return state.copyWith(targetBottomNavIndex: action.index);
+  } else if (action is ClearTargetBottomNavAction) {
+    return state.copyWith(clearTargetBottomNavIndex: true);
+  }
+
+  // --- Ações de Anúncios e Moedas ---
+  else if (action is RewardedAdWatchedAction) {
+    int currentCoins = state.userCoins;
+    int coinsToAdd = action.coinsAwarded; // Pode ser negativo se for dedução
+    int newTotalCoins = currentCoins + coinsToAdd;
+
+    // Aplica limite máximo apenas se estiver adicionando moedas
+    if (coinsToAdd > 0 && newTotalCoins > 100) {
+      // 100 é o MAX_COINS_LIMIT do ad_middleware
+      newTotalCoins = 100;
+    }
+    // Garante que não fique negativo se estiver deduzindo
+    if (newTotalCoins < 0) {
+      newTotalCoins = 0;
+    }
+
+    DateTime now = DateTime.now();
+    int updatedAdsWatchedToday = state.rewardedAdsWatchedToday;
+    // Só incrementa adsWatchedToday se for uma recompensa positiva
+    if (coinsToAdd > 0) {
+      updatedAdsWatchedToday += 1;
+      if (state.lastRewardedAdWatchTime != null) {
+        final lastWatchDate = state.lastRewardedAdWatchTime!;
+        if (now.year > lastWatchDate.year ||
+            now.month > lastWatchDate.month ||
+            now.day > lastWatchDate.day) {
+          updatedAdsWatchedToday = 1; // Reseta para o novo dia
+        }
+      }
+    }
+    return state.copyWith(
+      userCoins: newTotalCoins,
+      // Só atualiza lastRewardedAdWatchTime e rewardedAdsWatchedToday se for uma recompensa positiva
+      lastRewardedAdWatchTime:
+          coinsToAdd > 0 ? action.adWatchTime : state.lastRewardedAdWatchTime,
+      rewardedAdsWatchedToday: coinsToAdd > 0
+          ? updatedAdsWatchedToday
+          : state.rewardedAdsWatchedToday,
     );
   } else if (action is UpdateUserCoinsAction) {
-    // NOVO
-    return state.copyWith(userCoins: action.newCoinAmount);
+    // Ação mais direta para atualizar moedas
+    return state.copyWith(
+        userCoins: action.newCoinAmount
+            .clamp(0, 100)); // Garante que não ultrapasse limites
+  } else if (action is AdLimitDataLoadedAction) {
+    return state.copyWith(
+        firstAdIn6HourWindowTimestamp: action.firstAdTimestamp,
+        adsWatchedIn6HourWindow: action.adsInWindowCount);
+  } else if (action is UpdateAdWindowStatsAction) {
+    return state.copyWith(
+        firstAdIn6HourWindowTimestamp: action.firstAdTimestamp,
+        adsWatchedIn6HourWindow: action.adsInWindowCount,
+        clearFirstAdIn6HourWindowTimestamp:
+            action.firstAdTimestamp == null // Limpa se for nulo
+        );
   }
+
+  // Ações de Busca Geral de Tópicos
+  else if (action is SearchSuccessAction) {
+    return state.copyWith(searchResults: action.topics);
+  } else if (action is LoadTopicsContentUserSavesSuccessAction) {
+    return state.copyWith(savedTopicsContent: action.topicsByCollection);
+  }
+  // Ações de Rotas do Usuário
+  else if (action is AddTopicToRouteAction) {
+    final updatedRotaAtual = List<Map<String, dynamic>>.from(state.rotaAtual);
+    if (!updatedRotaAtual.any((topic) => topic['id'] == action.topicId)) {
+      updatedRotaAtual.add({
+        'id': action.topicId
+      }); // Adiciona apenas o ID ou o objeto do tópico se disponível
+    }
+    return state.copyWith(rotaAtual: updatedRotaAtual);
+  } else if (action is ClearRouteAction) {
+    return state.copyWith(rotaAtual: []);
+  } else if (action is UserRoutesLoadedAction) {
+    return state.copyWith(userRoutes: action.routes);
+  }
+
   return state;
 }
 

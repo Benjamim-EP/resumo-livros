@@ -72,21 +72,30 @@ class FirestoreService {
       String userId) async {
     try {
       final snapshot = await _db
-          .collection('users')
-          .doc(userId)
-          .collection('comment_highlights') // Nome da subcoleção
+          .collection('userCommentHighlights') // Coleção de Nível Superior
+          .doc(userId) // Documento do Usuário
+          .collection('highlights') // Subcoleção de Destaques
           .orderBy('timestamp', descending: true)
           .get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        return {
-          'id': doc.id, // Importante para remoção posterior
-          ...data,
-        };
+        return {'id': doc.id, ...data}; // Inclui o ID do documento do destaque
       }).toList();
     } catch (e) {
-      print("FirestoreService: Erro ao carregar destaques de comentários: $e");
+      print(
+          "FirestoreService: Erro ao carregar destaques de comentários para $userId: $e");
       return [];
+    }
+  }
+
+  Future<DocumentSnapshot?> getBibleProgressDocument(String userId) async {
+    try {
+      final docRef = _db.collection('userBibleProgress').doc(userId);
+      return await docRef.get();
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao buscar documento de progresso bíblico para $userId: $e");
+      return null;
     }
   }
 
@@ -97,32 +106,42 @@ class FirestoreService {
         ...highlightData,
         'timestamp': highlightData['timestamp'] ?? FieldValue.serverTimestamp(),
       };
+      // Primeiro, garante que o documento pai /userCommentHighlights/{userId} exista.
+      // Se ele não for criado explicitamente, a primeira escrita na subcoleção pode ser problemática
+      // ou o documento pai pode não aparecer no console do Firestore até que tenha campos.
+      // Uma forma simples é fazer um set com merge: true no documento pai.
+      await _db.collection('userCommentHighlights').doc(userId).set(
+          {'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
+
       final docRef = await _db
-          .collection('users')
+          .collection('userCommentHighlights')
           .doc(userId)
-          .collection('comment_highlights')
+          .collection('highlights')
           .add(dataWithTimestamp);
       print(
-          "FirestoreService: Destaque de comentário adicionado com ID: ${docRef.id}");
+          "FirestoreService: Destaque de comentário adicionado com ID: ${docRef.id} para usuário $userId");
       return docRef;
     } catch (e) {
-      print("FirestoreService: Erro ao adicionar destaque de comentário: $e");
+      print(
+          "FirestoreService: Erro ao adicionar destaque de comentário para $userId: $e");
       rethrow;
     }
   }
 
-  Future<void> removeCommentHighlight(String userId, String highlightId) async {
+  Future<void> removeCommentHighlight(
+      String userId, String highlightDocId) async {
     try {
       await _db
-          .collection('users')
+          .collection('userCommentHighlights')
           .doc(userId)
-          .collection('comment_highlights')
-          .doc(highlightId)
+          .collection('highlights')
+          .doc(highlightDocId) // ID do documento do destaque específico
           .delete();
-      print("FirestoreService: Destaque de comentário removido: $highlightId");
+      print(
+          "FirestoreService: Destaque de comentário removido: $highlightDocId para usuário $userId");
     } catch (e) {
       print(
-          "FirestoreService: Erro ao remover destaque de comentário $highlightId: $e");
+          "FirestoreService: Erro ao remover destaque de comentário $highlightDocId para $userId: $e");
       rethrow;
     }
   }
@@ -772,18 +791,26 @@ class FirestoreService {
   Future<void> saveHighlight(
       String userId, String verseId, String colorHex) async {
     try {
+      // verseId aqui é, por exemplo, "gn_1_1"
+      // Garante que o documento pai /userVerseHighlights/{userId} exista.
+      await _db.collection('userVerseHighlights').doc(userId).set(
+          {'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
+
       await _db
-          .collection('users')
+          .collection('userVerseHighlights')
           .doc(userId)
-          .collection('user_highlights')
-          .doc(verseId)
+          .collection('highlights')
+          .doc(verseId) // Usa verseId como ID do documento do destaque
           .set({
-        'verseId': verseId,
+        // 'verseId': verseId, // Não precisa repetir, já é o ID do doc
         'color': colorHex,
         'timestamp': FieldValue.serverTimestamp(),
       });
+      print(
+          "FirestoreService: Destaque de versículo $verseId salvo para $userId");
     } catch (e) {
-      print("FirestoreService: Erro ao salvar destaque $verseId: $e");
+      print(
+          "FirestoreService: Erro ao salvar destaque $verseId para $userId: $e");
       rethrow;
     }
   }
@@ -792,33 +819,36 @@ class FirestoreService {
   Future<void> removeHighlight(String userId, String verseId) async {
     try {
       await _db
-          .collection('users')
+          .collection('userVerseHighlights')
           .doc(userId)
-          .collection('user_highlights')
+          .collection('highlights')
           .doc(verseId)
           .delete();
+      print(
+          "FirestoreService: Destaque de versículo $verseId removido para $userId");
     } catch (e) {
-      print("FirestoreService: Erro ao remover destaque $verseId: $e");
+      print(
+          "FirestoreService: Erro ao remover destaque $verseId para $userId: $e");
       rethrow;
     }
   }
 
-  /// Carrega todos os destaques de um usuário.
   Future<Map<String, String>> loadUserHighlights(String userId) async {
     try {
       final snapshot = await _db
-          .collection('users')
+          .collection('userVerseHighlights')
           .doc(userId)
-          .collection('user_highlights')
+          .collection('highlights')
           .get();
       Map<String, String> highlights = {};
       for (var doc in snapshot.docs) {
-        highlights[doc.id] = doc.data()['color'] as String;
+        highlights[doc.id] =
+            doc.data()['color'] as String; // doc.id é o verseId
       }
       return highlights;
     } catch (e) {
       print(
-          "FirestoreService: Erro ao carregar destaques do usuário $userId: $e");
+          "FirestoreService: Erro ao carregar destaques de versículos para $userId: $e");
       return {};
     }
   }
@@ -828,52 +858,60 @@ class FirestoreService {
   /// Salva ou atualiza uma nota de versículo.
   Future<void> saveNote(String userId, String verseId, String text) async {
     try {
+      // Garante que o documento pai /userVerseNotes/{userId} exista.
+      await _db.collection('userVerseNotes').doc(userId).set(
+          {'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
+
       await _db
-          .collection('users')
+          .collection('userVerseNotes')
           .doc(userId)
-          .collection('user_notes')
-          .doc(verseId)
+          .collection('notes')
+          .doc(verseId) // Usa verseId como ID do documento da nota
           .set({
-        'verseId': verseId,
+        // 'verseId': verseId,
         'text': text,
         'timestamp': FieldValue.serverTimestamp(),
       });
+      print("FirestoreService: Nota para $verseId salva para usuário $userId");
     } catch (e) {
-      print("FirestoreService: Erro ao salvar nota $verseId: $e");
+      print(
+          "FirestoreService: Erro ao salvar nota para $verseId (usuário $userId): $e");
       rethrow;
     }
   }
 
-  /// Remove uma nota de versículo.
   Future<void> removeNote(String userId, String verseId) async {
     try {
       await _db
-          .collection('users')
+          .collection('userVerseNotes')
           .doc(userId)
-          .collection('user_notes')
+          .collection('notes')
           .doc(verseId)
           .delete();
+      print(
+          "FirestoreService: Nota para $verseId removida para usuário $userId");
     } catch (e) {
-      print("FirestoreService: Erro ao remover nota $verseId: $e");
+      print(
+          "FirestoreService: Erro ao remover nota para $verseId (usuário $userId): $e");
       rethrow;
     }
   }
 
-  /// Carrega todas as notas de um usuário.
   Future<Map<String, String>> loadUserNotes(String userId) async {
     try {
       final snapshot = await _db
-          .collection('users')
+          .collection('userVerseNotes')
           .doc(userId)
-          .collection('user_notes')
+          .collection('notes')
           .get();
       Map<String, String> notes = {};
       for (var doc in snapshot.docs) {
-        notes[doc.id] = doc.data()['text'] as String;
+        notes[doc.id] = doc.data()['text'] as String; // doc.id é o verseId
       }
       return notes;
     } catch (e) {
-      print("FirestoreService: Erro ao carregar notas do usuário $userId: $e");
+      print(
+          "FirestoreService: Erro ao carregar notas de versículos para $userId: $e");
       return {};
     }
   }
@@ -932,13 +970,18 @@ class FirestoreService {
   Future<void> updateLastReadLocation(
       String userId, String bookAbbrev, int chapter) async {
     try {
-      await _db.collection('users').doc(userId).set({
+      final docRef = _db.collection('userBibleProgress').doc(userId);
+      // Usa set com merge:true para criar o documento se não existir, ou atualizar campos existentes.
+      await docRef.set({
         'lastReadBookAbbrev': bookAbbrev,
         'lastReadChapter': chapter,
         'lastReadTimestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      print(
+          "FirestoreService: Última leitura atualizada em userBibleProgress para $userId: $bookAbbrev cap $chapter");
     } catch (e) {
-      print("FirestoreService: Erro ao atualizar última leitura: $e");
+      print(
+          "FirestoreService: Erro ao atualizar última leitura em userBibleProgress para $userId: $e");
       rethrow;
     }
   }
@@ -996,15 +1039,30 @@ class FirestoreService {
 
   // --- Métodos para Progresso de Leitura Bíblica ---
 
-  Future<DocumentSnapshot?> getBibleBookProgress(
+  Future<BibleBookProgressData?> getBibleBookProgress(
       String userId, String bookAbbrev) async {
     try {
-      final docRef = _db
-          .collection('users')
-          .doc(userId)
-          .collection('bibleProgress')
-          .doc(bookAbbrev);
-      return await docRef.get();
+      final docSnapshot =
+          await _db.collection('userBibleProgress').doc(userId).get();
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data() as Map<String, dynamic>;
+        // Acessa o mapa 'books' e depois a entrada específica do bookAbbrev
+        final booksData = data['books'] as Map<String, dynamic>? ?? {};
+        final bookProgressMap = booksData[bookAbbrev] as Map<String, dynamic>?;
+
+        if (bookProgressMap != null) {
+          return BibleBookProgressData(
+            readSections: Set<String>.from(
+                bookProgressMap['readSections'] as List<dynamic>? ?? []),
+            totalSections: bookProgressMap['totalSectionsInBook'] as int? ?? 0,
+            completed: bookProgressMap['completed'] as bool? ?? false,
+            lastReadTimestamp: bookProgressMap['lastReadTimestampBook']
+                as Timestamp?, // Assumindo que você terá este campo por livro
+          );
+        }
+      }
+      // print("FirestoreService: Nenhum progresso encontrado para livro $bookAbbrev ou usuário $userId não tem doc em userBibleProgress.");
+      return null;
     } catch (e) {
       print(
           "FirestoreService: Erro ao buscar progresso do livro $bookAbbrev para usuário $userId: $e");
@@ -1017,81 +1075,117 @@ class FirestoreService {
     String bookAbbrev,
     String sectionId,
     bool markAsRead,
-    int totalSectionsInBook, // Recebe o total de seções
+    int totalSectionsInBookFromMetadata,
   ) async {
-    final docRef = _db
-        .collection('users')
-        .doc(userId)
-        .collection('bibleProgress')
-        .doc(bookAbbrev);
+    final docRef = _db.collection('userBibleProgress').doc(userId);
 
     await _db.runTransaction((transaction) async {
       DocumentSnapshot snapshot = await transaction.get(docRef);
-      Set<String> readSections;
-      int currentTotalSections = totalSectionsInBook; // Usa o valor passado
-      bool currentCompletedStatus = false;
 
-      if (!snapshot.exists) {
-        // Documento do livro não existe, criar com esta seção
-        readSections = markAsRead ? {sectionId} : {};
-        // Se o total de seções do livro não foi passado ou é 0,
-        // aqui seria um bom lugar para buscar/calcular e armazenar pela primeira vez.
-        // Por ora, usamos o que foi passado.
-        print(
-            "FirestoreService: Criando doc de progresso para $bookAbbrev. Total de seções: $currentTotalSections");
+      // Se o documento do usuário não existir na coleção 'userBibleProgress', inicializa os dados.
+      Map<String, dynamic> userData = snapshot.exists
+          ? (snapshot.data() as Map<String, dynamic>? ?? {})
+          : {
+              'books': {},
+              'lastReadBookAbbrev': null,
+              'lastReadChapter': null,
+              'lastReadTimestamp': null
+            };
+
+      Map<String, dynamic> booksProgress =
+          Map<String, dynamic>.from(userData['books'] ?? {});
+      Map<String, dynamic> bookData =
+          Map<String, dynamic>.from(booksProgress[bookAbbrev] ?? {});
+
+      Set<String> readSections =
+          Set<String>.from(bookData['readSections'] as List<dynamic>? ?? []);
+      int currentTotalInDb = bookData['totalSectionsInBook'] as int? ?? 0;
+
+      // Usa o total de seções dos metadados se não houver no DB ou se o do DB for 0 e o dos metadados for maior.
+      // Isso é importante para a primeira vez que o progresso de um livro é atualizado.
+      int finalTotalSections = (currentTotalInDb > 0 &&
+              currentTotalInDb >= totalSectionsInBookFromMetadata)
+          ? currentTotalInDb
+          : totalSectionsInBookFromMetadata;
+      // Garante que se o metadado tiver um valor e o DB não, use o do metadado.
+      if (finalTotalSections == 0 && totalSectionsInBookFromMetadata > 0) {
+        finalTotalSections = totalSectionsInBookFromMetadata;
+      }
+
+      if (markAsRead) {
+        readSections.add(sectionId);
       } else {
-        final data = snapshot.data() as Map<String, dynamic>;
-        readSections =
-            Set<String>.from(data['readSections'] as List<dynamic>? ?? []);
-        currentTotalSections = data['totalSectionsInBook'] as int? ??
-            currentTotalSections; // Prioriza valor do DB se existir
-        currentCompletedStatus = data['completed'] as bool? ?? false;
-
-        if (markAsRead) {
-          readSections.add(sectionId);
-        } else {
-          readSections.remove(sectionId);
-        }
+        readSections.remove(sectionId);
       }
 
-      bool newCompletedStatus = currentCompletedStatus;
-      if (currentTotalSections > 0) {
-        // Só calcula 'completed' se soubermos o total
-        newCompletedStatus = readSections.length >= currentTotalSections;
-      }
+      // Calcula o status 'completed' apenas se soubermos o total de seções.
+      bool newCompletedStatus = (finalTotalSections > 0)
+          ? readSections.length >= finalTotalSections
+          : false;
 
-      transaction.set(
-          docRef,
-          {
-            'readSections':
-                readSections.toList(), // Salva como List no Firestore
-            'totalSectionsInBook':
-                currentTotalSections, // Garante que está salvo
-            'completed': newCompletedStatus,
-            'lastReadTimestamp': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true)); // Merge é importante se o doc já existe
+      // Atualiza os dados específicos do livro
+      bookData['readSections'] =
+          readSections.toList(); // Salva como List no Firestore
+      bookData['totalSectionsInBook'] =
+          finalTotalSections; // Garante que o total correto está salvo
+      bookData['completed'] = newCompletedStatus;
+      bookData['lastReadTimestampBook'] = FieldValue
+          .serverTimestamp(); // Timestamp da última interação com este livro
+
+      booksProgress[bookAbbrev] =
+          bookData; // Coloca os dados atualizados do livro de volta no mapa de livros
+
+      // Prepara os dados para serem escritos/atualizados no documento principal userBibleProgress/{userId}
+      Map<String, dynamic> dataToSet = {
+        'books':
+            booksProgress, // O mapa completo de progresso de todos os livros
+        'lastReadBookAbbrev':
+            bookAbbrev, // Assume que a última seção lida é deste livro
+        'lastReadChapter':
+            int.tryParse(sectionId.split('_c')[1].split('_v')[0]) ??
+                0, // Tenta extrair capítulo da sectionId
+        'lastReadTimestamp':
+            FieldValue.serverTimestamp(), // Timestamp geral da última leitura
+      };
+
+      if (snapshot.exists) {
+        transaction.update(docRef, dataToSet);
+      } else {
+        // Se o documento /userBibleProgress/{userId} não existe, cria ele com todos os dados.
+        transaction.set(docRef, dataToSet);
+      }
     });
+    print(
+        "Progresso para $userId/$bookAbbrev/$sectionId atualizado. MarkAsRead: $markAsRead");
   }
 
   Future<Map<String, BibleBookProgressData>> getAllBibleProgress(
       String userId) async {
     Map<String, BibleBookProgressData> allProgress = {};
     try {
-      QuerySnapshot snapshot = await _db
-          .collection('users')
-          .doc(userId)
-          .collection('bibleProgress')
-          .get();
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        allProgress[doc.id] = BibleBookProgressData(
-          readSections:
-              Set<String>.from(data['readSections'] as List<dynamic>? ?? []),
-          totalSections: data['totalSectionsInBook'] as int? ?? 0,
-          completed: data['completed'] as bool? ?? false,
-          lastReadTimestamp: data['lastReadTimestamp'] as Timestamp?,
-        );
+      DocumentSnapshot userProgressDoc =
+          await _db.collection('userBibleProgress').doc(userId).get();
+      if (userProgressDoc.exists && userProgressDoc.data() != null) {
+        final data = userProgressDoc.data() as Map<String, dynamic>;
+        final booksData = data['books'] as Map<String, dynamic>? ??
+            {}; // Acessa o mapa 'books'
+
+        booksData.forEach((bookAbbrev, bookProgressMap) {
+          if (bookProgressMap is Map) {
+            // Converte o mapa aninhado para o tipo correto
+            final typedBookProgressMap =
+                Map<String, dynamic>.from(bookProgressMap);
+            allProgress[bookAbbrev] = BibleBookProgressData(
+              readSections: Set<String>.from(
+                  typedBookProgressMap['readSections'] as List<dynamic>? ?? []),
+              totalSections:
+                  typedBookProgressMap['totalSectionsInBook'] as int? ?? 0,
+              completed: typedBookProgressMap['completed'] as bool? ?? false,
+              lastReadTimestamp:
+                  typedBookProgressMap['lastReadTimestampBook'] as Timestamp?,
+            );
+          }
+        });
       }
       return allProgress;
     } catch (e) {
@@ -1106,72 +1200,59 @@ class FirestoreService {
     String bookAbbrev,
     List<String> sectionsToAdd,
     List<String> sectionsToRemove,
-    int totalSectionsInBook, // Adicionado para calcular 'completed'
+    int totalSectionsInBookFromMetadata, // Total de seções do livro vindo dos metadados
   ) async {
-    final docRef = _db
-        .collection('users')
-        .doc(userId)
-        .collection('bibleProgress')
-        .doc(bookAbbrev);
-
-    bool finalCompletedStatusForPrint =
-        false; // Variável para o print fora da transação
+    final docRef = _db.collection('userBibleProgress').doc(userId);
 
     await _db.runTransaction((transaction) async {
       DocumentSnapshot snapshot = await transaction.get(docRef);
-      Set<String> currentReadSections;
-      bool currentCompletedStatus = false;
-      int currentTotalSections = totalSectionsInBook;
 
-      if (!snapshot.exists) {
-        currentReadSections = {};
-        print(
-            "FirestoreService: Criando novo doc de progresso para $bookAbbrev durante batchUpdate. Total Seções: $currentTotalSections");
-      } else {
-        final data = snapshot.data() as Map<String, dynamic>;
-        currentReadSections =
-            Set<String>.from(data['readSections'] as List<dynamic>? ?? []);
-        currentCompletedStatus = data['completed'] as bool? ?? false;
-        int totalFromDb = data['totalSectionsInBook'] as int? ?? 0;
-        if (totalFromDb > 0) {
-          currentTotalSections = totalFromDb;
-        }
+      Map<String, dynamic> userData = snapshot.exists
+          ? (snapshot.data() as Map<String, dynamic>? ?? {})
+          : {'books': {}};
+
+      Map<String, dynamic> booksProgress =
+          Map<String, dynamic>.from(userData['books'] ?? {});
+      Map<String, dynamic> bookData =
+          Map<String, dynamic>.from(booksProgress[bookAbbrev] ?? {});
+
+      Set<String> currentReadSections =
+          Set<String>.from(bookData['readSections'] as List<dynamic>? ?? []);
+      int currentTotalInDb = bookData['totalSectionsInBook'] as int? ?? 0;
+
+      int finalTotalSections = (currentTotalInDb > 0 &&
+              currentTotalInDb >= totalSectionsInBookFromMetadata)
+          ? currentTotalInDb
+          : totalSectionsInBookFromMetadata;
+      if (finalTotalSections == 0 && totalSectionsInBookFromMetadata > 0) {
+        finalTotalSections = totalSectionsInBookFromMetadata;
       }
 
       currentReadSections.addAll(sectionsToAdd);
       currentReadSections.removeAll(sectionsToRemove);
 
-      // Esta variável é local para a transação, mas seu valor final será atribuído
-      // à variável de escopo externo para o print.
-      bool newCompletedStatusTransactionLocal = currentCompletedStatus;
-      if (currentTotalSections > 0) {
-        newCompletedStatusTransactionLocal =
-            currentReadSections.length >= currentTotalSections;
-      } else if (sectionsToAdd.isNotEmpty &&
-          currentReadSections.isNotEmpty &&
-          currentTotalSections == 0) {
-        newCompletedStatusTransactionLocal = false;
+      bool newCompletedStatus = (finalTotalSections > 0)
+          ? currentReadSections.length >= finalTotalSections
+          : false;
+
+      bookData['readSections'] = currentReadSections.toList();
+      bookData['totalSectionsInBook'] = finalTotalSections;
+      bookData['completed'] = newCompletedStatus;
+      bookData['lastReadTimestampBook'] = FieldValue.serverTimestamp();
+
+      booksProgress[bookAbbrev] = bookData;
+
+      Map<String, dynamic> dataToSet = {'books': booksProgress};
+      // Não atualiza o lastRead geral aqui, pois é um batch. A última leitura real do usuário é mais relevante.
+
+      if (snapshot.exists) {
+        transaction.update(docRef, dataToSet);
+      } else {
+        transaction.set(docRef, dataToSet);
       }
-
-      finalCompletedStatusForPrint =
-          newCompletedStatusTransactionLocal; // Atribui para uso no print
-
-      transaction.set(
-        docRef,
-        {
-          'readSections': currentReadSections.toList(),
-          'totalSectionsInBook': currentTotalSections,
-          'completed':
-              newCompletedStatusTransactionLocal, // Usa a variável local da transação
-          'lastReadTimestamp': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
     });
-
-    // Agora usa a variável que foi atualizada dentro da transação
     print(
-        "Progresso da Bíblia para $userId/$bookAbbrev atualizado em lote. Adicionadas: ${sectionsToAdd.length}, Removidas: ${sectionsToRemove.length}. Total Seções: $totalSectionsInBook, Completado: $finalCompletedStatusForPrint");
+        "Progresso da Bíblia para $userId/$bookAbbrev atualizado em lote. Adicionadas: ${sectionsToAdd.length}, Removidas: ${sectionsToRemove.length}.");
   }
 
   // --- Helpers ---

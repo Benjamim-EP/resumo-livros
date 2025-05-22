@@ -1,7 +1,7 @@
 // lib/redux/middleware/firestore_sync_middleware.dart
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart'; // Ações gerais
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart'; // Nossas novas ações
+import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
+import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
 
@@ -10,7 +10,7 @@ List<Middleware<AppState>> createFirestoreSyncMiddleware() {
 
   void _handleProcessPendingWrites(Store<AppState> store,
       ProcessPendingFirestoreWritesAction action, NextDispatcher next) async {
-    next(action); // Passa a ação, embora ela seja principalmente um gatilho
+    next(action);
 
     final userId = store.state.userState.userId;
     if (userId == null) {
@@ -21,8 +21,8 @@ List<Middleware<AppState>> createFirestoreSyncMiddleware() {
 
     final List<Map<String, dynamic>> pendingWrites =
         List.from(store.state.userState.pendingFirestoreWrites);
+
     if (pendingWrites.isEmpty) {
-      // print("FirestoreSyncMiddleware: Nenhuma operação pendente para processar.");
       return;
     }
 
@@ -30,74 +30,104 @@ List<Middleware<AppState>> createFirestoreSyncMiddleware() {
         "FirestoreSyncMiddleware: Processando ${pendingWrites.length} operações pendentes...");
 
     for (var operation in pendingWrites) {
-      final operationId =
-          operation['id'] as String; // Assumindo que temos um ID
+      final operationId = operation['id'] as String?;
       final type = operation['type'] as String?;
       final payload = operation['payload'] as Map<String, dynamic>?;
 
-      if (type == null || payload == null) {
-        print(
-            "FirestoreSyncMiddleware: Operação inválida na fila (sem tipo ou payload): $operationId");
-        store.dispatch(FirestoreWriteFailedAction(
-            operationId, operation, "Operação inválida"));
+      if (operationId == null || type == null || payload == null) {
+        print("FirestoreSyncMiddleware: Operação inválida na fila: $operation");
+        if (operationId != null) {
+          store.dispatch(FirestoreWriteFailedAction(
+              operationId, operation, "Operação inválida na fila"));
+        }
         continue;
       }
 
-      try {
-        if (type == 'toggleSectionReadStatus') {
-          final bookAbbrev = payload['bookAbbrev'] as String;
-          final sectionId = payload['sectionId'] as String;
-          final markAsRead = payload['markAsRead'] as bool;
+      // --- TRATAMENTO PARA 'toggleSectionReadStatus' ---
+      if (type == 'toggleSectionReadStatus') {
+        final bookAbbrev = payload['bookAbbrev'] as String?;
+        final sectionId = payload['sectionId'] as String?;
+        final markAsRead = payload['markAsRead'] as bool?;
 
-          // Pegar o total de seções do livro do estado atual do Redux (que deve ter sido carregado)
-          int totalSectionsInBook =
+        if (bookAbbrev == null || sectionId == null || markAsRead == null) {
+          print(
+              "FirestoreSyncMiddleware: Payload inválido para 'toggleSectionReadStatus' (ID: $operationId).");
+          store.dispatch(FirestoreWriteFailedAction(operationId, operation,
+              "Payload inválido para toggleSectionReadStatus"));
+          continue;
+        }
+
+        try {
+          // Obter o total de seções do livro a partir do estado Redux (metadataState ou userState)
+          // Esta é a melhor fonte, pois deve estar atualizada com os metadados carregados.
+          int totalSectionsInBookFromState =
               store.state.metadataState.bibleSectionCounts['livros']
                       ?[bookAbbrev]?['total_secoes_livro'] as int? ??
                   store.state.userState.totalSectionsPerBook[bookAbbrev] ??
                   0;
 
-          if (totalSectionsInBook == 0) {
-            // Se ainda for 0, pode ser um problema. Tentar buscar do progresso salvo se existir.
-            final bookProgressData =
-                store.state.userState.allBooksProgress[bookAbbrev];
-            if (bookProgressData != null &&
-                bookProgressData.totalSections > 0) {
-              totalSectionsInBook = bookProgressData.totalSections;
-            } else {
-              print(
-                  "AVISO: totalSectionsInBook é 0 para $bookAbbrev ao tentar sincronizar seção. O status 'completed' pode não ser atualizado corretamente no Firestore.");
-            }
+          if (totalSectionsInBookFromState == 0) {
+            print(
+                "AVISO (FirestoreSync - toggle): totalSectionsInBookFromState é 0 para $bookAbbrev ao tentar sincronizar. O status 'completed' pode ser impreciso no Firestore.");
           }
 
+          // Chama a função do FirestoreService que opera na coleção userBibleProgress
           await firestoreService.toggleBibleSectionReadStatus(
             userId,
             bookAbbrev,
             sectionId,
             markAsRead,
-            totalSectionsInBook,
+            totalSectionsInBookFromState, // Passa o total de seções
           );
-          store.dispatch(FirestoreWriteSuccessfulAction(operationId));
           print(
-              "FirestoreSyncMiddleware: Operação '$type' para $sectionId bem-sucedida.");
-          // Despachar para recarregar o progresso do livro específico após a escrita bem-sucedida
+              "FirestoreSyncMiddleware: Operação '$type' para $sectionId (ID Fila: $operationId) BEM-SUCEDIDA.");
+          store.dispatch(
+              FirestoreWriteSuccessfulAction(operationId)); // Remove da fila
+
+          // Despacha para recarregar o progresso do livro específico após a escrita bem-sucedida
+          // Isso garante que o UserState reflita o estado persistido, incluindo 'completed' e 'lastReadTimestampBook'.
           store.dispatch(LoadBibleBookProgressAction(bookAbbrev,
-              knownTotalSections:
-                  totalSectionsInBook > 0 ? totalSectionsInBook : null));
-        }
-        // Adicionar 'else if' para outros tipos de operação (destaques, notas) aqui no futuro
-        else {
+              knownTotalSections: totalSectionsInBookFromState));
+
+          // Adicionalmente, se esta ação de toggle também deve atualizar o lastRead geral,
+          // o firestoreService.toggleBibleSectionReadStatus já faz isso no documento userBibleProgress.
+          // Para atualizar o UserState.lastReadBookAbbrev/Chapter, despachamos UpdateLastReadLocationAction.
+          final chapterMatch = RegExp(r'_c(\d+)_').firstMatch(sectionId);
+          if (chapterMatch != null) {
+            final chapterNum = int.tryParse(chapterMatch.group(1) ?? "");
+            if (chapterNum != null) {
+              store.dispatch(
+                  UpdateLastReadLocationAction(bookAbbrev, chapterNum));
+            }
+          }
+        } catch (e) {
           print(
-              "FirestoreSyncMiddleware: Tipo de operação desconhecido: $type");
-          store.dispatch(FirestoreWriteFailedAction(
-              operationId, operation, "Tipo desconhecido"));
+              "FirestoreSyncMiddleware: ERRO ao processar 'toggleSectionReadStatus' (ID Fila: $operationId) para $sectionId: $e");
+          store.dispatch(
+              FirestoreWriteFailedAction(operationId, operation, e.toString()));
+          // A operação permanece na fila para uma próxima tentativa se desejado, ou pode ser removida aqui.
+          // A lógica atual do reducer remove em caso de falha.
         }
-      } catch (e) {
-        print(
-            "FirestoreSyncMiddleware: Erro ao processar operação $operationId ($type): $e");
-        store.dispatch(
-            FirestoreWriteFailedAction(operationId, operation, e.toString()));
-        // TODO: Adicionar lógica de retentativa ou notificação ao usuário
       }
+      // --- FIM DO TRATAMENTO PARA 'toggleSectionReadStatus' ---
+
+      // Adicione aqui 'else if' para outros tipos de operações futuras
+      /*
+      else if (type == 'outroTipoDeOperacaoBackground') {
+        // ... lógica para outro tipo ...
+      }
+      */
+      else {
+        print(
+            "FirestoreSyncMiddleware: Tipo de operação desconhecido na fila: '$type' (ID: $operationId).");
+        store.dispatch(FirestoreWriteFailedAction(
+            operationId, operation, "Tipo de operação desconhecido"));
+      }
+    } // Fim do loop for
+
+    if (pendingWrites.isNotEmpty) {
+      print(
+          "FirestoreSyncMiddleware: Processamento da fila de escritas gerais concluído.");
     }
   }
 

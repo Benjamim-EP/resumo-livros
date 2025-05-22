@@ -126,3 +126,17 @@ class LoadedPendingBibleProgressAction {
   LoadedPendingBibleProgressAction(
       {required this.pendingToAdd, required this.pendingToRemove});
 }
+
+class UserBibleProgressDocumentLoadedAction {
+  final String? lastReadBookAbbrev;
+  final int? lastReadChapter;
+  final Timestamp? lastReadTimestamp;
+  // Não precisa incluir o mapa 'books' aqui, pois AllBibleProgressLoadedAction cuida disso.
+  // Esta ação é mais para os metadados de leitura geral do documento.
+
+  UserBibleProgressDocumentLoadedAction({
+    this.lastReadBookAbbrev,
+    this.lastReadChapter,
+    this.lastReadTimestamp,
+  });
+}
