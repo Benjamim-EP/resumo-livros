@@ -169,17 +169,20 @@ class BiblePageWidgets {
   }
 
   static List<TextSpan> _formatRegularVerseText(
-      String verseText, ThemeData theme) {
+      String verseText, ThemeData theme, double fontSizeMultiplier) {
     final List<TextSpan> spans = [];
     final RegExp regex =
         RegExp(r'(?<![\w])((\d+\.)|(\(\d+\)))(?!\w)\s*', multiLine: true);
     int currentPosition = 0;
+    final double baseFontSize = 16.0;
     final baseStyle = TextStyle(
-        color: theme.textTheme.bodyLarge?.color, fontSize: 16, height: 1.5);
+        color: theme.textTheme.bodyLarge?.color,
+        fontSize: baseFontSize * fontSizeMultiplier,
+        height: 1.5);
     final numberStyle = TextStyle(
         fontWeight: FontWeight.bold,
         color: theme.textTheme.bodyLarge?.color?.withOpacity(0.9),
-        fontSize: 16,
+        fontSize: baseFontSize * fontSizeMultiplier,
         height: 1.5);
 
     for (final Match match in regex.allMatches(verseText)) {
@@ -198,17 +201,21 @@ class BiblePageWidgets {
       spans.add(TextSpan(
           text: verseText.substring(currentPosition), style: baseStyle));
     }
-    if (spans.isEmpty) return [TextSpan(text: verseText, style: baseStyle)];
+    if (spans.isEmpty && verseText.isNotEmpty) {
+      // Adicionado verseText.isNotEmpty para evitar span vazio
+      return [TextSpan(text: verseText, style: baseStyle)];
+    }
     return spans;
   }
 
   static Widget _buildHebrewInterlinearWord(
     BuildContext context,
-    Map<String, String> wordData, // wordData é para UMA palavra
+    Map<String, String> wordData,
     String? selectedBook,
     int? selectedChapter,
-    int verseNumber, // verseNumber é int
+    int verseNumber,
     Map<String, dynamic>? hebrewLexicon,
+    double fontSizeMultiplier,
   ) {
     final theme = Theme.of(context);
     final hebrewText = wordData['text'] ?? '';
@@ -225,16 +232,14 @@ class BiblePageWidgets {
       transliteration = lexiconEntry?['transliteration'] ?? transliteration;
     }
 
+    final double baseHebrewFontSize = 20.0;
+    final double baseTranslitFontSize = 10.0;
+
     return GestureDetector(
       onTap: () {
         if (strongNumberOnly.isNotEmpty && strongNumberOnly != "N/A") {
-          _showVerseLexiconModalHebrew(
-              context,
-              selectedBook!,
-              selectedChapter!,
-              verseNumber, // Este é o número do versículo
-              strongNumberWithPrefix, // Passa o strong da palavra clicada
-              hebrewLexicon);
+          _showVerseLexiconModalHebrew(context, selectedBook!, selectedChapter!,
+              verseNumber, strongNumberWithPrefix, hebrewLexicon);
         }
       },
       child: Padding(
@@ -247,7 +252,7 @@ class BiblePageWidgets {
               hebrewText,
               textDirection: TextDirection.rtl,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: baseHebrewFontSize * fontSizeMultiplier,
                 color: theme.textTheme.bodyLarge?.color,
                 fontFamily: 'NotoSansHebrew',
               ),
@@ -255,7 +260,7 @@ class BiblePageWidgets {
             Text(
               transliteration,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: baseTranslitFontSize * fontSizeMultiplier,
                 color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
               ),
             ),
@@ -267,16 +272,20 @@ class BiblePageWidgets {
 
   static Widget _buildGreekInterlinearWord(
     BuildContext context,
-    Map<String, String> wordData, // wordData é para UMA palavra
+    Map<String, String> wordData,
     String? selectedBook,
     int? selectedChapter,
-    int verseNumber, // verseNumber é int
+    int verseNumber,
     Map<String, dynamic>? greekLexicon,
+    double fontSizeMultiplier,
   ) {
     final theme = Theme.of(context);
     final greekText = wordData['text'] ?? '';
     final strongNumber = wordData['strong'] ?? '';
     final morphology = wordData['morph'] ?? 'N/A';
+
+    final double baseGreekFontSize = 19.0;
+    final double baseStrongMorphFontSize = 9.0;
 
     return GestureDetector(
       onTap: () {
@@ -285,8 +294,8 @@ class BiblePageWidgets {
             context,
             selectedBook!,
             selectedChapter!,
-            verseNumber, // Número do versículo
-            strongNumber, // Strong da palavra clicada
+            verseNumber,
+            strongNumber,
             greekLexicon,
           );
         }
@@ -300,26 +309,27 @@ class BiblePageWidgets {
             Text(
               greekText,
               style: TextStyle(
-                fontSize: 19,
+                fontSize: baseGreekFontSize * fontSizeMultiplier,
                 color: theme.textTheme.bodyLarge?.color,
               ),
             ),
-            // if (strongNumber.isNotEmpty && strongNumber != "N/A")
-            //   Text(
-            //     strongNumber,
-            //     style: TextStyle(
-            //       fontSize: 10,
-            //       color: theme.colorScheme.secondary.withOpacity(0.8),
-            //     ),
-            //   ),
-            // Text(
-            //   morphology,
-            //   textAlign: TextAlign.center,
-            //   style: TextStyle(
-            //     fontSize: 9,
-            //     color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-            //   ),
-            // ),
+            if (strongNumber.isNotEmpty && strongNumber != "N/A")
+              Text(
+                strongNumber,
+                style: TextStyle(
+                  fontSize: (baseStrongMorphFontSize + 1) *
+                      fontSizeMultiplier, // Um pouco maior
+                  color: theme.colorScheme.secondary.withOpacity(0.8),
+                ),
+              ),
+            Text(
+              morphology,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: baseStrongMorphFontSize * fontSizeMultiplier,
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+              ),
+            ),
           ],
         ),
       ),
@@ -328,22 +338,23 @@ class BiblePageWidgets {
 
   static Widget buildVerseItem({
     required ValueKey<String> key,
-    required int verseNumber, // Este é o número do versículo sendo renderizado
+    required int verseNumber,
     required dynamic
-        verseData, // Para interlinear: List<Map<String, String>>, para normal: String
+        verseData, // Se interlinear, é List<Map<String,String>> (palavras do verso)
     required String? selectedBook,
     required int? selectedChapter,
     required BuildContext context,
     required Map<String, String> userHighlights,
     required Map<String, String> userNotes,
+    required double fontSizeMultiplier,
     bool isHebrew = false,
     bool isGreekInterlinear = false,
     bool showHebrewInterlinear = false,
     bool showGreekInterlinear = false,
     List<Map<String, String>>?
-        hebrewVerseData, // Dados de UMA palavra hebraica se complementar
+        hebrewVerseData, // Palavras do verso para interlinear complementar
     List<Map<String, String>>?
-        greekVerseData, // Dados de UMA palavra grega se complementar
+        greekVerseData, // Palavras do verso para interlinear complementar
   }) {
     final theme = Theme.of(context);
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
@@ -357,91 +368,62 @@ class BiblePageWidgets {
     Widget mainTranslationWidget;
     String verseTextForModalDialog = "";
 
-    // verseData para interlinear é uma List<Map<String, String>> (palavras do verso atual)
-    // verseData para normal é uma String (texto completo do verso atual)
-    if (isGreekInterlinear && verseData is List<List<Map<String, String>>>) {
-      // CORREÇÃO: verseData é List<List<...>> quando vem do Helper
-      if (verseData.isNotEmpty && verseData[0] is List<Map<String, String>>) {
-        // Checa se o primeiro elemento (verso) é o esperado
-        List<Map<String, String>> currentVerseWords = verseData[
-            0]; // Assume que estamos processando o primeiro (e único) verso nesta chamada
-        List<Widget> greekWordWidgets = [];
-        final greekLexicon = BiblePageHelper.cachedGreekStrongsLexicon;
-        for (var wordDataMap in currentVerseWords) {
-          // Iterar sobre as palavras do verso
-          verseTextForModalDialog += "${wordDataMap['text'] ?? ''} ";
-          greekWordWidgets.add(_buildGreekInterlinearWord(
+    if (isGreekInterlinear && verseData is List<Map<String, String>>) {
+      List<Widget> greekWordWidgets = [];
+      final greekLexicon = BiblePageHelper.cachedGreekStrongsLexicon;
+      for (var wordDataMap in verseData) {
+        verseTextForModalDialog += "${wordDataMap['text'] ?? ''} ";
+        greekWordWidgets.add(_buildGreekInterlinearWord(
             context,
-            wordDataMap, // Passa o Map da palavra
+            wordDataMap,
             selectedBook,
             selectedChapter,
-            verseNumber, // O número do versículo atual
+            verseNumber,
             greekLexicon,
-          ));
-        }
-        mainTranslationWidget = Wrap(
+            fontSizeMultiplier));
+      }
+      mainTranslationWidget = Wrap(
           alignment: WrapAlignment.start,
           runSpacing: 4.0,
           spacing: 4.0,
-          children: greekWordWidgets,
-        );
-      } else {
-        verseTextForModalDialog =
-            "[Dados do verso grego interlinear em formato inesperado]";
-        mainTranslationWidget = Text(verseTextForModalDialog,
-            style: TextStyle(color: theme.colorScheme.error));
-      }
-    } else if (isHebrew && verseData is List<List<Map<String, String>>>) {
-      // CORREÇÃO: mesmo que acima
-      if (verseData.isNotEmpty && verseData[0] is List<Map<String, String>>) {
-        List<Map<String, String>> currentVerseWords = verseData[0];
-        List<Widget> hebrewWordWidgets = [];
-        final hebrewLexicon = BiblePageHelper.cachedHebrewStrongsLexicon;
-        for (var wordDataMap in currentVerseWords) {
-          verseTextForModalDialog += "${wordDataMap['text'] ?? ''} ";
-          hebrewWordWidgets.add(_buildHebrewInterlinearWord(
+          children: greekWordWidgets);
+    } else if (isHebrew && verseData is List<Map<String, String>>) {
+      List<Widget> hebrewWordWidgets = [];
+      final hebrewLexicon = BiblePageHelper.cachedHebrewStrongsLexicon;
+      for (var wordDataMap in verseData) {
+        verseTextForModalDialog += "${wordDataMap['text'] ?? ''} ";
+        hebrewWordWidgets.add(_buildHebrewInterlinearWord(
             context,
             wordDataMap,
             selectedBook,
             selectedChapter,
             verseNumber,
             hebrewLexicon,
-          ));
-        }
-        mainTranslationWidget = Wrap(
+            fontSizeMultiplier));
+      }
+      mainTranslationWidget = Wrap(
           alignment: WrapAlignment.end,
           textDirection: TextDirection.rtl,
           runSpacing: 4.0,
           spacing: 4.0,
-          children: hebrewWordWidgets,
-        );
-      } else {
-        verseTextForModalDialog =
-            "[Dados do verso hebraico interlinear em formato inesperado]";
-        mainTranslationWidget = Text(verseTextForModalDialog,
-            style: TextStyle(color: theme.colorScheme.error));
-      }
+          children: hebrewWordWidgets);
     } else if (verseData is String) {
       verseTextForModalDialog = verseData;
       mainTranslationWidget = RichText(
         text: TextSpan(
-          children: _formatRegularVerseText(verseData, theme),
+          children:
+              _formatRegularVerseText(verseData, theme, fontSizeMultiplier),
         ),
       );
     } else {
       verseTextForModalDialog =
           "[Formato de verso principal inválido ou dados ausentes]";
       mainTranslationWidget = Text(verseTextForModalDialog,
-          style: TextStyle(color: theme.colorScheme.error));
+          style: TextStyle(
+              color: theme.colorScheme.error,
+              fontSize: 14 * fontSizeMultiplier));
     }
 
-    // Interlinear COMPLEMENTAR (hebrewVerseData / greekVerseData são para UMA PALAVRA CADA,
-    // mas deveriam ser para o VERSO INTEIRO se quisermos mostrar o interlinear completo abaixo)
-    // A lógica atual para hebrewVerseData/greekVerseData parece ser para uma única palavra.
-    // Se a intenção é mostrar o interlinear *completo* do verso como complemento,
-    // hebrewVerseData e greekVerseData devem ser List<Map<String, String>> (palavras do verso).
-
-    // Widget para interlinear COMPLEMENTAR HEBRAICO
     Widget? complementaryHebrewInterlinearWidget;
     if (showHebrewInterlinear &&
         hebrewVerseData != null &&
@@ -449,26 +431,26 @@ class BiblePageWidgets {
       List<Widget> interlinearHebrewWords = [];
       final hebrewLexicon = BiblePageHelper.cachedHebrewStrongsLexicon;
       for (var wordDataMap in hebrewVerseData) {
-        // Iterar sobre as palavras do verso
         interlinearHebrewWords.add(_buildHebrewInterlinearWord(
             context,
-            wordDataMap, // Passa o Map da palavra individual
+            wordDataMap,
             selectedBook,
             selectedChapter,
             verseNumber,
-            hebrewLexicon));
+            hebrewLexicon,
+            fontSizeMultiplier));
       }
       complementaryHebrewInterlinearWidget = Padding(
         padding: const EdgeInsets.only(top: 8.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end, // Hebraico é RTL
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
-            // Text("Hebraico Interlinear:",
-            //     style: TextStyle(
-            //         fontSize: 11,
-            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-            //         fontStyle: FontStyle.italic)),
+            Text("Hebraico Interlinear:",
+                style: TextStyle(
+                    fontSize: 11 * fontSizeMultiplier,
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                    fontStyle: FontStyle.italic)),
             const SizedBox(height: 2),
             Wrap(
               alignment: WrapAlignment.end,
@@ -482,7 +464,6 @@ class BiblePageWidgets {
       );
     }
 
-    // Widget para interlinear COMPLEMENTAR GREGO
     Widget? complementaryGreekInterlinearWidget;
     if (showGreekInterlinear &&
         greekVerseData != null &&
@@ -490,30 +471,29 @@ class BiblePageWidgets {
       List<Widget> interlinearGreekWords = [];
       final greekLexicon = BiblePageHelper.cachedGreekStrongsLexicon;
       for (var wordDataMap in greekVerseData) {
-        // Iterar sobre as palavras do verso
         interlinearGreekWords.add(_buildGreekInterlinearWord(
             context,
-            wordDataMap, // Passa o Map da palavra individual
+            wordDataMap,
             selectedBook,
             selectedChapter,
             verseNumber,
-            greekLexicon));
+            greekLexicon,
+            fontSizeMultiplier));
       }
       complementaryGreekInterlinearWidget = Padding(
         padding: const EdgeInsets.only(top: 8.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // Grego é LTR
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
-            // Text("Grego Interlinear:",
-            //     style: TextStyle(
-            //         fontSize: 11,
-            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-            //         fontStyle: FontStyle.italic)),
-            // const SizedBox(height: 2),
+            Text("Grego Interlinear:",
+                style: TextStyle(
+                    fontSize: 11 * fontSizeMultiplier,
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                    fontStyle: FontStyle.italic)),
+            const SizedBox(height: 2),
             Wrap(
               alignment: WrapAlignment.start,
-              // textDirection: TextDirection.ltr, // Padrão
               runSpacing: 4.0,
               spacing: 4.0,
               children: interlinearGreekWords,
@@ -533,7 +513,7 @@ class BiblePageWidgets {
           userNotes[verseId],
           selectedBook!,
           selectedChapter!,
-          verseNumber, // Este é o int verseNumber
+          verseNumber,
           verseTextForModalDialog.trim(),
         );
       },
@@ -551,9 +531,9 @@ class BiblePageWidgets {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$verseNumber ', // verseNumber é int, ok
+                  '$verseNumber ',
                   style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 12 * fontSizeMultiplier,
                       color: theme.textTheme.bodySmall?.color,
                       fontWeight: FontWeight.bold),
                 ),
@@ -568,7 +548,7 @@ class BiblePageWidgets {
                         const EdgeInsets.only(left: 5.0, right: 2.0, top: 2.0),
                     child: Icon(Icons.note_alt_rounded,
                         color: theme.colorScheme.secondary.withOpacity(0.7),
-                        size: 16),
+                        size: 16 * fontSizeMultiplier),
                   ),
               ],
             ),
@@ -581,13 +561,6 @@ class BiblePageWidgets {
       ),
     );
   }
-
-  // --- Modais de Opções e Léxico ---
-  // _showVerseOptionsModal, _showVerseLexiconModalHebrew, _showVerseLexiconModalGreek
-  // (A lógica interna deles parece correta em relação a como buscam no léxico
-  // e exibem os dados. A principal mudança é garantir que as chamadas para eles
-  // a partir de _buildHebrewInterlinearWord e _buildGreekInterlinearWord
-  // passem o strongNumber correto da palavra clicada e o léxico apropriado.)
 
   static void _showVerseOptionsModal(
       BuildContext context,
@@ -607,7 +580,6 @@ class BiblePageWidgets {
       ),
       builder: (modalContext) {
         final store = StoreProvider.of<AppState>(modalContext);
-
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
           child: Column(

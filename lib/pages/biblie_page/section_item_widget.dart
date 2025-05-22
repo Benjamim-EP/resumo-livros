@@ -27,6 +27,7 @@ class SectionItemWidget extends StatefulWidget {
   final List<List<Map<String, String>>>? hebrewInterlinearSectionData;
   final List<List<Map<String, String>>>?
       greekInterlinearSectionData; // <<< NOVO
+  final double fontSizeMultiplier; // <<< NOVO
 
   const SectionItemWidget({
     super.key,
@@ -46,6 +47,7 @@ class SectionItemWidget extends StatefulWidget {
     required this.showGreekInterlinear, // <<< NOVO
     this.hebrewInterlinearSectionData,
     this.greekInterlinearSectionData, // <<< NOVO
+    required this.fontSizeMultiplier,
   });
 
   @override
@@ -274,6 +276,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         !widget.isGreekInterlinear, // <<< PASSANDO
                     hebrewVerseData: hebrewDataForThisVerse,
                     greekVerseData: greekDataForThisVerse, // <<< PASSANDO
+                    fontSizeMultiplier: widget.fontSizeMultiplier,
                   );
                 } else {
                   return Padding(

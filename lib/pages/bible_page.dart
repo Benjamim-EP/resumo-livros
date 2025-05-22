@@ -19,6 +19,7 @@ import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.d
 // ignore: unused_import
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart'
     show StringExtension;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _BiblePageViewModel {
   final String? initialBook;
@@ -162,13 +163,59 @@ class _BiblePageState extends State<BiblePage> {
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   Store<AppState>? _store;
 
+  double _currentFontSizeMultiplier =
+      1.0; // 1.0 = normal, <1.0 = menor, >1.0 = maior
+  static const double MIN_FONT_MULTIPLIER = 0.8;
+  static const double MAX_FONT_MULTIPLIER = 1.6;
+  static const double FONT_STEP = 0.1;
+  static const String FONT_SIZE_PREF_KEY = 'bible_font_size_multiplier';
+
   @override
   void initState() {
+    _loadFontSizePreference();
     super.initState();
     _updateFutureBuilderKey(isInitial: true); // Chamar com isInitial
     _loadInitialData();
     _scrollController1.addListener(_syncScrollFrom1To2);
     _scrollController2.addListener(_syncScrollFrom2To1);
+  }
+
+  Future<void> _loadFontSizePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentFontSizeMultiplier = prefs.getDouble(FONT_SIZE_PREF_KEY) ?? 1.0;
+      // Atualiza a chave do FutureBuilder se a fonte mudar na inicialização,
+      // para que os itens já renderizados (se houver) usem a nova fonte.
+      _updateFutureBuilderKey();
+    });
+  }
+
+// Nova função para salvar a preferência de tamanho da fonte
+  Future<void> _saveFontSizePreference(double multiplier) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(FONT_SIZE_PREF_KEY, multiplier);
+  }
+
+  void _increaseFontSize() {
+    if (_currentFontSizeMultiplier < MAX_FONT_MULTIPLIER) {
+      setState(() {
+        _currentFontSizeMultiplier = (_currentFontSizeMultiplier + FONT_STEP)
+            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
+        _saveFontSizePreference(_currentFontSizeMultiplier);
+        _updateFutureBuilderKey(); // Força a reconstrução do conteúdo com a nova fonte
+      });
+    }
+  }
+
+  void _decreaseFontSize() {
+    if (_currentFontSizeMultiplier > MIN_FONT_MULTIPLIER) {
+      setState(() {
+        _currentFontSizeMultiplier = (_currentFontSizeMultiplier - FONT_STEP)
+            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
+        _saveFontSizePreference(_currentFontSizeMultiplier);
+        _updateFutureBuilderKey(); // Força a reconstrução
+      });
+    }
   }
 
   @override
@@ -363,7 +410,7 @@ class _BiblePageState extends State<BiblePage> {
       final keySuffix = isInitial ? '-initial' : '-updated';
       setState(() {
         _futureBuilderKey = ValueKey(
-            '$selectedBook-$selectedChapter-$selectedTranslation1-${_isCompareModeActive ? selectedTranslation2 : 'single'}-$_selectedBookSlug-${_showHebrewInterlinear}-${_showGreekInterlinear}$keySuffix'); // <<< ADICIONADO _showGreekInterlinear
+            '$selectedBook-$selectedChapter-$selectedTranslation1-${_isCompareModeActive ? selectedTranslation2 : 'single'}-$_selectedBookSlug-${_showHebrewInterlinear}-${_showGreekInterlinear}-${_currentFontSizeMultiplier}$keySuffix'); // <<< ADICIONADO _currentFontSizeMultiplier
       });
     }
   }
@@ -1070,13 +1117,15 @@ class _BiblePageState extends State<BiblePage> {
                                   }
 
                                   return _buildSingleViewContent(
-                                      theme,
-                                      sections,
-                                      primaryTranslationVerseData,
-                                      isCurrentTranslation1PrimaryHebrew,
-                                      isCurrentTranslation1PrimaryGreek,
-                                      hebrewDataForInterlinearView,
-                                      greekDataForInterlinearView);
+                                    theme,
+                                    sections,
+                                    primaryTranslationVerseData,
+                                    isCurrentTranslation1PrimaryHebrew,
+                                    isCurrentTranslation1PrimaryGreek,
+                                    hebrewDataForInterlinearView,
+                                    greekDataForInterlinearView,
+                                    _currentFontSizeMultiplier, // <<< PASSA O VALOR ATUAL
+                                  );
                                 } else {
                                   // Modo de comparação
                                   if (comparisonTranslationVerseData == null ||
@@ -1109,6 +1158,8 @@ class _BiblePageState extends State<BiblePage> {
                                                   isCurrentTranslation1PrimaryHebrew,
                                               isGreek:
                                                   isCurrentTranslation1PrimaryGreek,
+                                              fontSizeMultiplier:
+                                                  _currentFontSizeMultiplier, // <<< ADICIONADO AQUI
                                               listViewKey: PageStorageKey<
                                                       String>(
                                                   '$selectedBook-$selectedChapter-$selectedTranslation1-compareView'))),
@@ -1128,6 +1179,8 @@ class _BiblePageState extends State<BiblePage> {
                                                   'hebrew_original',
                                               isGreek: selectedTranslation2 ==
                                                   'greek_interlinear',
+                                              fontSizeMultiplier:
+                                                  _currentFontSizeMultiplier, // <<< ADICIONADO AQUI
                                               listViewKey: PageStorageKey<
                                                       String>(
                                                   '$selectedBook-$selectedChapter-$selectedTranslation2-compareView'))),
@@ -1471,6 +1524,31 @@ class _BiblePageState extends State<BiblePage> {
                   : theme.iconTheme.color,
               splashRadius: 20,
             ),
+          // --- NOVOS BOTÕES PARA TAMANHO DA FONTE ---
+          IconButton(
+            icon: Icon(Icons.text_decrease_outlined, size: 22),
+            tooltip: "Diminuir Fonte",
+            onPressed: _currentFontSizeMultiplier > MIN_FONT_MULTIPLIER
+                ? _decreaseFontSize
+                : null, // Desabilita se no mínimo
+            color: _currentFontSizeMultiplier > MIN_FONT_MULTIPLIER
+                ? theme.iconTheme.color
+                : theme.disabledColor,
+            splashRadius: 20,
+          ),
+          // Exibir o multiplicador atual (opcional, para feedback)
+          // Text("${(_currentFontSizeMultiplier * 100).toInt()}%", style: TextStyle(fontSize: 12, color: theme.textTheme.bodySmall?.color)),
+          IconButton(
+            icon: Icon(Icons.text_increase_outlined, size: 22),
+            tooltip: "Aumentar Fonte",
+            onPressed: _currentFontSizeMultiplier < MAX_FONT_MULTIPLIER
+                ? _increaseFontSize
+                : null, // Desabilita se no máximo
+            color: _currentFontSizeMultiplier < MAX_FONT_MULTIPLIER
+                ? theme.iconTheme.color
+                : theme.disabledColor,
+            splashRadius: 20,
+          ),
         ],
       ),
     );
@@ -1630,174 +1708,253 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Widget _buildSingleViewContent(
-      ThemeData theme,
-      List<Map<String, dynamic>> sections,
-      dynamic primaryTranslationVerseData,
-      bool isPrimaryTranslationHebrew,
-      bool isPrimaryTranslationGreek, // <<< NOVO
-      dynamic hebrewInterlinearChapterData,
-      dynamic greekInterlinearChapterData // <<< NOVO
-      ) {
+    ThemeData theme,
+    List<Map<String, dynamic>> sections, // Estrutura de seções do capítulo
+    dynamic
+        primaryTranslationVerseData, // Dados dos versos para a tradução principal
+    // Pode ser List<String> ou List<List<Map<String, String>>> (para capítulo inteiro)
+    bool
+        isPrimaryTranslationHebrew, // Flag: a tradução principal é hebraico interlinear?
+    bool
+        isPrimaryTranslationGreek, // Flag: a tradução principal é grego interlinear?
+    dynamic
+        hebrewInterlinearChapterData, // Dados do capítulo inteiro para hebraico interlinear complementar
+    // (List<List<Map<String, String>>>)
+    dynamic
+        greekInterlinearChapterData, // Dados do capítulo inteiro para grego interlinear complementar
+    // (List<List<Map<String, String>>>)
+    double fontSizeMultiplier, // Multiplicador para o tamanho da fonte
+  ) {
     return StoreConnector<AppState, _BibleContentViewModel>(
       converter: (store) =>
           _BibleContentViewModel.fromStore(store, selectedBook),
       builder: (context, contentViewModel) {
+        // A chave do ListView é importante para preservar o estado de rolagem
+        // e para forçar a reconstrução quando os dados relevantes mudam.
         final listViewKey = PageStorageKey<String>(
-            '$selectedBook-$selectedChapter-$selectedTranslation1-singleView-content-$_showHebrewInterlinear-$_showGreekInterlinear'); // <<< ADICIONADO AO KEY
+            '$selectedBook-$selectedChapter-$selectedTranslation1-singleView-content-$_showHebrewInterlinear-$_showGreekInterlinear-$fontSizeMultiplier');
+
         return ListView.builder(
           key: listViewKey,
           padding: EdgeInsets.only(
               left: 16.0,
               right: 16.0,
               bottom: 16.0,
-              top: _isFocusModeActive ? 8.0 : 0.0),
+              top: _isFocusModeActive
+                  ? 8.0
+                  : 0.0), // Padding superior menor em modo foco
+
+          // Determina o número de itens na lista:
+          // Se houver seções definidas, usa o número de seções.
+          // Senão, se houver dados de versos para a tradução primária, considera como 1 item principal (que renderizará todos os versos).
+          // Senão, 0 itens.
           itemCount: sections.isNotEmpty
               ? sections.length
               : (primaryTranslationVerseData != null &&
                       (primaryTranslationVerseData as List).isNotEmpty
                   ? 1
                   : 0),
-          itemBuilder: (context, sectionIndex) {
+
+          itemBuilder: (context, index) {
+            // 'index' aqui é o índice da seção ou 0 se não houver seções
+
+            // CASO 1: Renderizar por Seções
             if (sections.isNotEmpty) {
-              final section = sections[sectionIndex];
-              // ... (lógica de sectionId, isSectionRead sem alterações) ...
-              final String versesRange = (section['verses'] as List?)
+              final section = sections[index]; // Pega a seção atual
+              final List<int> verseNumbersInSection =
+                  (section['verses'] as List?)?.cast<int>() ?? [];
+              final String versesRangeStrInSection = (section['verses']
+                              as List?)
                           ?.cast<int>()
                           .isNotEmpty ??
                       false
                   ? ((section['verses'] as List).cast<int>().length == 1
                       ? (section['verses'] as List).cast<int>().first.toString()
                       : "${(section['verses'] as List).cast<int>().first}-${(section['verses'] as List).cast<int>().last}")
-                  : "all";
-              final String currentSectionId =
-                  "${selectedBook}_c${selectedChapter}_v$versesRange";
-              final bool isSectionRead = contentViewModel
-                  .readSectionsForCurrentBook
-                  .contains(currentSectionId);
+                  : "all_verses_in_section_${index}"; // Fallback para ID único se 'verses' estiver vazio
 
-              // <<< LÓGICA PARA DADOS INTERLINEARES DA SEÇÃO (HEBRAICO E GREGO) >>>
+              // Prepara dados interlineares complementares para ESTA SEÇÃO
               List<List<Map<String, String>>>? hebrewDataForThisSection;
               if (_showHebrewInterlinear &&
+                  !isPrimaryTranslationHebrew &&
                   hebrewInterlinearChapterData != null &&
                   hebrewInterlinearChapterData is List) {
                 hebrewDataForThisSection = [];
-                for (int verseNumInOriginalChapter
-                    in (section['verses'] as List?)?.cast<int>() ?? []) {
-                  if (verseNumInOriginalChapter > 0 &&
-                      verseNumInOriginalChapter <=
+                for (int verseNumInChapter in verseNumbersInSection) {
+                  if (verseNumInChapter > 0 &&
+                      verseNumInChapter <=
                           hebrewInterlinearChapterData.length) {
                     hebrewDataForThisSection.add(List<Map<String, String>>.from(
-                        hebrewInterlinearChapterData[
-                            verseNumInOriginalChapter - 1]));
+                        hebrewInterlinearChapterData[verseNumInChapter - 1]));
                   } else {
-                    hebrewDataForThisSection.add([]);
+                    hebrewDataForThisSection.add(
+                        []); // Verso não encontrado nos dados interlineares
                   }
                 }
               }
 
-              List<List<Map<String, String>>>?
-                  greekDataForThisSection; // <<< NOVO
+              List<List<Map<String, String>>>? greekDataForThisSection;
               if (_showGreekInterlinear &&
+                  !isPrimaryTranslationGreek &&
                   greekInterlinearChapterData != null &&
                   greekInterlinearChapterData is List) {
                 greekDataForThisSection = [];
-                for (int verseNumInOriginalChapter
-                    in (section['verses'] as List?)?.cast<int>() ?? []) {
-                  if (verseNumInOriginalChapter > 0 &&
-                      verseNumInOriginalChapter <=
-                          greekInterlinearChapterData.length) {
+                for (int verseNumInChapter in verseNumbersInSection) {
+                  if (verseNumInChapter > 0 &&
+                      verseNumInChapter <= greekInterlinearChapterData.length) {
                     greekDataForThisSection.add(List<Map<String, String>>.from(
-                        greekInterlinearChapterData[
-                            verseNumInOriginalChapter - 1]));
+                        greekInterlinearChapterData[verseNumInChapter - 1]));
                   } else {
                     greekDataForThisSection.add([]);
                   }
                 }
               }
-              // <<< FIM LÓGICA DADOS INTERLINEARES >>>
+
+              // Dados da tradução principal para ESTA SEÇÃO
+              dynamic primaryTranslationDataForSection;
+              if (isPrimaryTranslationHebrew || isPrimaryTranslationGreek) {
+                // Se a tradução principal for interlinear, primaryTranslationVerseData é List<List<Map<String,String>>> (capítulo inteiro)
+                // Precisamos extrair os versos desta seção.
+                var chapterData = primaryTranslationVerseData
+                    as List<List<Map<String, String>>>;
+                primaryTranslationDataForSection =
+                    <List<Map<String, String>>>[];
+                for (int verseNum in verseNumbersInSection) {
+                  if (verseNum > 0 && verseNum <= chapterData.length) {
+                    (primaryTranslationDataForSection
+                            as List<List<Map<String, String>>>)
+                        .add(chapterData[verseNum - 1]);
+                  } else {
+                    (primaryTranslationDataForSection
+                            as List<List<Map<String, String>>>)
+                        .add([]); // Verso não encontrado
+                  }
+                }
+              } else {
+                // Se for tradução normal (String), primaryTranslationVerseData é List<String> (capítulo inteiro)
+                var chapterData = primaryTranslationVerseData as List<String>;
+                primaryTranslationDataForSection = <String>[];
+                for (int verseNum in verseNumbersInSection) {
+                  if (verseNum > 0 && verseNum <= chapterData.length) {
+                    (primaryTranslationDataForSection as List<String>)
+                        .add(chapterData[verseNum - 1]);
+                  } else {
+                    (primaryTranslationDataForSection as List<String>)
+                        .add("[Texto do verso $verseNum não encontrado]");
+                  }
+                }
+              }
 
               return SectionItemWidget(
-                  key: ValueKey(
-                      '${_selectedBookSlug}_${selectedChapter}_${section['title']}_${versesRange}_${selectedTranslation1}_$isSectionRead${_showHebrewInterlinear ? '_hebInt' : ''}${_showGreekInterlinear ? '_grkInt' : ''}'), // <<< ADICIONADO AO KEY
-                  sectionTitle: section['title'] ?? 'Seção',
-                  verseNumbersInSection:
-                      (section['verses'] as List?)?.cast<int>() ?? [],
-                  allVerseDataInChapter: primaryTranslationVerseData,
-                  bookSlug: _selectedBookSlug!,
-                  bookAbbrev: selectedBook!,
-                  chapterNumber: selectedChapter!,
-                  versesRangeStr: versesRange,
-                  userHighlights: contentViewModel.userHighlights,
-                  userNotes: contentViewModel.userNotes,
-                  isHebrew: isPrimaryTranslationHebrew,
-                  isGreekInterlinear: isPrimaryTranslationGreek, // <<< NOVO
-                  isRead: isSectionRead,
-                  showHebrewInterlinear:
-                      _showHebrewInterlinear && !isPrimaryTranslationHebrew,
-                  showGreekInterlinear: _showGreekInterlinear &&
-                      !isPrimaryTranslationGreek, // <<< NOVO
-                  hebrewInterlinearSectionData: hebrewDataForThisSection,
-                  greekInterlinearSectionData:
-                      greekDataForThisSection // <<< NOVO
-                  );
-            } else if (primaryTranslationVerseData != null &&
+                key: ValueKey(
+                    '${_selectedBookSlug}_${selectedChapter}_section_${index}_${selectedTranslation1}_${_showHebrewInterlinear}_${_showGreekInterlinear}_$fontSizeMultiplier'),
+                sectionTitle: section['title'] ?? 'Seção Desconhecida',
+                verseNumbersInSection: verseNumbersInSection,
+                // ATENÇÃO: SectionItemWidget espera 'allVerseDataInChapter' para a tradução principal
+                // ser formatado como List<String> para normal ou List<List<Map>> para interlinear *SE*
+                // ele mesmo for filtrar os versos. Se passarmos já filtrado, ele precisa saber lidar.
+                // A implementação atual de SectionItemWidget espera os dados do *capítulo inteiro* e os números dos versos da seção.
+                allVerseDataInChapter:
+                    primaryTranslationVerseData, // Passa os dados do CAPÍTULO INTEIRO
+                bookSlug: _selectedBookSlug!,
+                bookAbbrev: selectedBook!,
+                chapterNumber: selectedChapter!,
+                versesRangeStr: versesRangeStrInSection,
+                userHighlights: contentViewModel.userHighlights,
+                userNotes: contentViewModel.userNotes,
+                isHebrew: isPrimaryTranslationHebrew,
+                isGreekInterlinear: isPrimaryTranslationGreek,
+                isRead: contentViewModel.readSectionsForCurrentBook.contains(
+                    "${selectedBook}_c${selectedChapter}_v$versesRangeStrInSection"),
+                showHebrewInterlinear:
+                    _showHebrewInterlinear && !isPrimaryTranslationHebrew,
+                showGreekInterlinear:
+                    _showGreekInterlinear && !isPrimaryTranslationGreek,
+                hebrewInterlinearSectionData: hebrewDataForThisSection,
+                greekInterlinearSectionData: greekDataForThisSection,
+                fontSizeMultiplier: fontSizeMultiplier,
+              );
+            }
+            // CASO 2: Renderizar todos os versos do capítulo de uma vez (sem estrutura de seções)
+            else if (primaryTranslationVerseData != null &&
                 (primaryTranslationVerseData as List).isNotEmpty) {
-              // Renderiza todos os versos do capítulo se não houver seções
-              final List listData = primaryTranslationVerseData;
+              final List verseListForChapter =
+                  primaryTranslationVerseData as List;
+
+              // Prepara os dados interlineares complementares para o capítulo inteiro (se aplicável)
+              List<List<Map<String, String>>>? fullHebrewInterlinearForChapter;
+              if (_showHebrewInterlinear &&
+                  !isPrimaryTranslationHebrew &&
+                  hebrewInterlinearChapterData != null &&
+                  hebrewInterlinearChapterData
+                      is List<List<Map<String, String>>>) {
+                fullHebrewInterlinearForChapter = hebrewInterlinearChapterData;
+              }
+
+              List<List<Map<String, String>>>? fullGreekInterlinearForChapter;
+              if (_showGreekInterlinear &&
+                  !isPrimaryTranslationGreek &&
+                  greekInterlinearChapterData != null &&
+                  greekInterlinearChapterData
+                      is List<List<Map<String, String>>>) {
+                fullGreekInterlinearForChapter = greekInterlinearChapterData;
+              }
+
               return Column(
+                  // Envolve os versos em uma Column
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children:
-                      List.generate(listData.length, (verseIndexInChapter) {
-                    final verseNumber = verseIndexInChapter + 1;
+                  children: List.generate(verseListForChapter.length,
+                      (verseIndexInChapter) {
+                    final verseNumber = verseIndexInChapter +
+                        1; // Os números dos versos são base 1
 
+                    // Dados da tradução principal para este verso específico
+                    final dynamic mainVerseDataItem =
+                        verseListForChapter[verseIndexInChapter];
+
+                    // Dados interlineares complementares para este verso específico
                     List<Map<String, String>>? hebrewVerseForInterlinear;
-                    if (_showHebrewInterlinear &&
-                        !isPrimaryTranslationHebrew &&
-                        hebrewInterlinearChapterData != null &&
-                        hebrewInterlinearChapterData is List &&
+                    if (fullHebrewInterlinearForChapter != null &&
                         verseIndexInChapter <
-                            hebrewInterlinearChapterData.length) {
+                            fullHebrewInterlinearForChapter.length) {
                       hebrewVerseForInterlinear =
-                          List<Map<String, String>>.from(
-                              hebrewInterlinearChapterData[
-                                  verseIndexInChapter]);
+                          fullHebrewInterlinearForChapter[verseIndexInChapter];
                     }
 
-                    // <<< DADOS PARA INTERLINEAR GREGO COMPLEMENTAR (nível do verso) >>>
                     List<Map<String, String>>? greekVerseForInterlinear;
-                    if (_showGreekInterlinear &&
-                        !isPrimaryTranslationGreek &&
-                        greekInterlinearChapterData != null &&
-                        greekInterlinearChapterData is List &&
+                    if (fullGreekInterlinearForChapter != null &&
                         verseIndexInChapter <
-                            greekInterlinearChapterData.length) {
-                      greekVerseForInterlinear = List<Map<String, String>>.from(
-                          greekInterlinearChapterData[verseIndexInChapter]);
+                            fullGreekInterlinearForChapter.length) {
+                      greekVerseForInterlinear =
+                          fullGreekInterlinearForChapter[verseIndexInChapter];
                     }
-                    // <<< FIM DADOS INTERLINEAR GREGO >>>
 
                     return BiblePageWidgets.buildVerseItem(
                         key: ValueKey<String>(
-                            '${selectedBook}_${selectedChapter}_${verseNumber}_$selectedTranslation1${_showHebrewInterlinear ? '_hebInt' : ''}${_showGreekInterlinear ? '_grkInt' : ''}'), // <<< ADICIONADO AO KEY
+                            '${selectedBook}_${selectedChapter}_verse_${verseNumber}_$selectedTranslation1${_showHebrewInterlinear ? '_hebInt' : ''}${_showGreekInterlinear ? '_grkInt' : ''}_$fontSizeMultiplier'),
                         verseNumber: verseNumber,
-                        verseData: listData[verseIndexInChapter],
+                        verseData:
+                            mainVerseDataItem, // Passa os dados do verso específico
                         selectedBook: selectedBook,
                         selectedChapter: selectedChapter,
                         context: context,
                         userHighlights: contentViewModel.userHighlights,
                         userNotes: contentViewModel.userNotes,
+                        fontSizeMultiplier: fontSizeMultiplier,
                         isHebrew: isPrimaryTranslationHebrew,
-                        isGreekInterlinear:
-                            isPrimaryTranslationGreek, // <<< NOVO
+                        isGreekInterlinear: isPrimaryTranslationGreek,
                         showHebrewInterlinear: _showHebrewInterlinear &&
                             !isPrimaryTranslationHebrew,
-                        showGreekInterlinear: _showGreekInterlinear &&
-                            !isPrimaryTranslationGreek, // <<< NOVO
-                        hebrewVerseData: hebrewVerseForInterlinear,
-                        greekVerseData: greekVerseForInterlinear // <<< NOVO
+                        showGreekInterlinear:
+                            _showGreekInterlinear && !isPrimaryTranslationGreek,
+                        hebrewVerseData:
+                            hebrewVerseForInterlinear, // Dados do verso
+                        greekVerseData:
+                            greekVerseForInterlinear // Dados do verso
                         );
                   }));
             }
+            // CASO 3: Nenhum dado para exibir
             return const SizedBox.shrink();
           },
         );
@@ -1807,50 +1964,67 @@ class _BiblePageState extends State<BiblePage> {
 
   Widget _buildComparisonColumn(
       BuildContext context,
-      List<Map<String, dynamic>> sections,
-      List verseColumnData,
+      List<Map<String, dynamic>> sections, // Estrutura de seções do capítulo
+      List
+          verseColumnData, // Dados dos versos para ESTA coluna (pode ser List<String> ou List<List<Map<String,String>>>)
       ScrollController scrollController,
-      String currentTranslation,
-      {bool isHebrew = false,
-      bool isGreek = false, // <<< NOVO para diferenciar no modo comparativo
+      String
+          currentTranslation, // Chave da tradução (ex: "nvi", "hebrew_original", "greek_interlinear")
+      {bool isHebrew = false, // Se esta coluna é a tradução hebraica original
+      bool isGreek = false, // Se esta coluna é a tradução grega interlinear
+      required double fontSizeMultiplier, // Multiplicador do tamanho da fonte
       required PageStorageKey listViewKey}) {
     final theme = Theme.of(context);
-    // ... (resto da lógica sem alterações significativas, apenas passa isGreek para buildVerseItem) ...
+
+    // Verifica se há dados para exibir
     if (verseColumnData.isEmpty &&
         sections.isEmpty &&
         currentTranslation.isNotEmpty) {
       return Center(
           child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text("Tradução '$currentTranslation' indisponível.",
+              child: Text(
+                  "Tradução '$currentTranslation' indisponível para este capítulo.",
                   style: TextStyle(
                       color: theme.textTheme.bodyMedium?.color, fontSize: 13),
                   textAlign: TextAlign.center)));
     }
+
+    // O StoreConnector aqui é para obter os dados de destaques, notas e progresso de leitura
+    // que são relevantes para qualquer visualização de versículo.
     return StoreConnector<AppState, _BibleContentViewModel>(
         converter: (store) =>
             _BibleContentViewModel.fromStore(store, selectedBook),
         builder: (context, contentViewModel) {
           return ListView.builder(
-            key: listViewKey,
-            controller: scrollController,
+            key: listViewKey, // Chave para preservar o estado de rolagem
+            controller:
+                scrollController, // Controlador para sincronizar a rolagem
             padding: EdgeInsets.only(
                 left: 12.0,
                 right: 12.0,
                 bottom: 16.0,
-                top: _isFocusModeActive ? 8.0 : 0.0),
+                top: _isFocusModeActive
+                    ? 8.0
+                    : 0.0), // Padding ajustado para modo foco
             itemCount: sections.isNotEmpty
-                ? sections.length
-                : (verseColumnData.isNotEmpty ? 1 : 0),
-            itemBuilder: (context, sectionIndex) {
+                ? sections
+                    .length // Se houver seções, o itemCount é o número de seções
+                : (verseColumnData.isNotEmpty
+                    ? 1
+                    : 0), // Senão, 1 item se houver dados de verso, ou 0
+            itemBuilder: (context, index) {
+              // 'index' aqui é o índice da seção ou 0 se não houver seções
               if (sections.isNotEmpty) {
-                // ... (renderização de seção no modo comparativo) ...
-                // Ao chamar BiblePageWidgets.buildVerseItem aqui, passe isGreek: isGreek
-                final section = sections[sectionIndex];
+                // --- RENDERIZA POR SEÇÃO ---
+                final section = sections[index]; // Pega a seção atual
                 final String sectionTitle = section['title'] ?? 'Seção';
-                final List<int> verseNumbers =
+                final List<int> verseNumbersInSection =
                     (section['verses'] as List?)?.cast<int>() ?? [];
-                final String versesRange = (section['verses'] as List?)
+
+                // Determina o ID da seção para rastrear o progresso de leitura
+                final String versesRangeStrForSection = (section['verses']
+                                as List?)
                             ?.cast<int>()
                             .isNotEmpty ??
                         false
@@ -1860,18 +2034,19 @@ class _BiblePageState extends State<BiblePage> {
                             .first
                             .toString()
                         : "${(section['verses'] as List).cast<int>().first}-${(section['verses'] as List).cast<int>().last}")
-                    : "all";
+                    : "all_verses_in_section"; // Fallback se 'verses' estiver vazio
                 final String currentSectionId =
-                    "${selectedBook}_c${selectedChapter}_v$versesRange";
+                    "${selectedBook}_c${selectedChapter}_v$versesRangeStrForSection";
                 final bool isSectionRead = contentViewModel
                     .readSectionsForCurrentBook
                     .contains(currentSectionId);
-                final String sectionKeyIdentifier =
-                    section['verses']?.join('-') ?? sectionTitle;
+
+                final String sectionDisplayKey = section['verses']?.join('-') ??
+                    sectionTitle; // Chave para o widget da seção
 
                 return Column(
                     key: ValueKey(
-                        'compare_section_${sectionTitle}_${currentTranslation}_$sectionKeyIdentifier${isSectionRead ? '_read' : '_unread'}'),
+                        'compare_col_section_${currentTranslation}_${sectionTitle}_$sectionDisplayKey${isSectionRead ? '_read' : '_unread'}'),
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
@@ -1879,13 +2054,19 @@ class _BiblePageState extends State<BiblePage> {
                               const EdgeInsets.only(top: 16.0, bottom: 4.0),
                           child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
                                     child: Text(sectionTitle,
                                         style: TextStyle(
-                                            color: theme.colorScheme.primary,
-                                            fontSize: 16,
+                                            color: isSectionRead
+                                                ? theme.primaryColor
+                                                : theme.colorScheme
+                                                    .primary, // Destaque se lido
+                                            fontSize: 16 *
+                                                fontSizeMultiplier, // Aplica multiplicador
                                             fontWeight: FontWeight.bold))),
+                                // Botão para marcar seção como lida/não lida
                                 IconButton(
                                     icon: Icon(
                                         isSectionRead
@@ -1895,7 +2076,8 @@ class _BiblePageState extends State<BiblePage> {
                                             ? theme.primaryColor
                                             : theme.iconTheme.color
                                                 ?.withOpacity(0.7),
-                                        size: 20),
+                                        size: 20 *
+                                            fontSizeMultiplier), // Aplica multiplicador
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     tooltip: isSectionRead
@@ -1911,46 +2093,62 @@ class _BiblePageState extends State<BiblePage> {
                                                   markAsRead: !isSectionRead));
                                     })
                               ])),
-                      ...verseNumbers.map((verseNumber) {
-                        final verseIndex = verseNumber - 1;
-                        dynamic verseDataItemForColumn;
-                        if (verseIndex >= 0 &&
-                            verseIndex < verseColumnData.length) {
-                          verseDataItemForColumn = verseColumnData[verseIndex];
+                      // Renderiza cada versículo dentro da seção
+                      ...verseNumbersInSection.map((verseNumber) {
+                        final verseIndexInChapterData =
+                            verseNumber - 1; // Ajusta para índice 0
+                        dynamic verseDataItemForThisColumn;
+
+                        // Pega os dados do versículo específico para esta coluna
+                        if (verseIndexInChapterData >= 0 &&
+                            verseIndexInChapterData < verseColumnData.length) {
+                          verseDataItemForThisColumn =
+                              verseColumnData[verseIndexInChapterData];
                         } else {
-                          verseDataItemForColumn = (isHebrew || isGreek)
+                          // Fallback se o dado do verso não estiver disponível (raro, mas seguro)
+                          verseDataItemForThisColumn = (isHebrew || isGreek)
                               ? []
-                              : "[Texto Indisponível]"; // Ajusta para interlinear
+                              : "[Texto Indisponível]";
                         }
+
                         return BiblePageWidgets.buildVerseItem(
                           key: ValueKey<String>(
-                              '${selectedBook}_${selectedChapter}_${verseNumber}_$currentTranslation'),
+                              'compare_col_${currentTranslation}_${selectedBook}_${selectedChapter}_$verseNumber'),
                           verseNumber: verseNumber,
-                          verseData: verseDataItemForColumn,
+                          verseData:
+                              verseDataItemForThisColumn, // Passa os dados do verso para esta coluna
                           selectedBook: selectedBook,
                           selectedChapter: selectedChapter,
                           context: context,
                           userHighlights: contentViewModel.userHighlights,
                           userNotes: contentViewModel.userNotes,
-                          isHebrew: isHebrew,
-                          isGreekInterlinear: isGreek, // <<< Passa isGreek
-                          // Não passamos showHebrew/GreekInterlinear ou dados complementares aqui
-                          // pois o modo comparativo mostra as traduções principais lado a lado.
+                          fontSizeMultiplier:
+                              fontSizeMultiplier, // Passa o multiplicador
+                          isHebrew:
+                              isHebrew, // True se esta coluna for hebraica
+                          isGreekInterlinear:
+                              isGreek, // True se esta coluna for grega interlinear
+                          // showHebrewInterlinear e showGreekInterlinear são false aqui,
+                          // pois estamos no modo de comparação, e o interlinear complementar não é mostrado.
+                          // hebrewVerseData e greekVerseData também são null.
                         );
                       }),
                     ]);
               } else if (verseColumnData.isNotEmpty) {
+                // --- RENDERIZA TODOS OS VERSOS DO CAPÍTULO (SE NÃO HOUVER SEÇÕES) ---
+                // Isso acontece se o arquivo de seções (blocos) não existir ou estiver vazio.
                 return Column(
                     key: ValueKey(
-                        'all_verses_column_${currentTranslation}_${selectedBook}_${selectedChapter}'),
+                        'compare_col_all_verses_${currentTranslation}_${selectedBook}_${selectedChapter}'),
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        List.generate(verseColumnData.length, (verseIndex) {
-                      final verseNumber = verseIndex + 1;
-                      final dynamic verseDataItem = verseColumnData[verseIndex];
+                    children: List.generate(verseColumnData.length,
+                        (verseIndexInChapter) {
+                      final verseNumber = verseIndexInChapter + 1;
+                      final dynamic verseDataItem =
+                          verseColumnData[verseIndexInChapter];
                       return BiblePageWidgets.buildVerseItem(
                           key: ValueKey<String>(
-                              '${selectedBook}_${selectedChapter}_${verseNumber}_$currentTranslation'),
+                              'compare_col_all_${currentTranslation}_${selectedBook}_${selectedChapter}_$verseNumber'),
                           verseNumber: verseNumber,
                           verseData: verseDataItem,
                           selectedBook: selectedBook,
@@ -1958,11 +2156,15 @@ class _BiblePageState extends State<BiblePage> {
                           context: context,
                           userHighlights: contentViewModel.userHighlights,
                           userNotes: contentViewModel.userNotes,
+                          fontSizeMultiplier:
+                              fontSizeMultiplier, // Passa o multiplicador
                           isHebrew: isHebrew,
-                          isGreekInterlinear: isGreek // <<< Passa isGreek
+                          isGreekInterlinear: isGreek
+                          // Novamente, sem interlineares complementares no modo de comparação
                           );
                     }));
               }
+              // Se não há seções nem dados de verso, retorna um widget vazio.
               return const SizedBox.shrink();
             },
           );
