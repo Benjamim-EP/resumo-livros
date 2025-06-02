@@ -1301,4 +1301,24 @@ class FirestoreService {
     final match = RegExp(r'^\d+').firstMatch(chapterName);
     return match != null ? int.tryParse(match.group(0)!) : null;
   }
+
+  // NOVA FUNÇÃO para buscar detalhes de um sermão específico
+  Future<Map<String, dynamic>?> getSermonDetailsFromFirestore(
+      String generatedSermonId) async {
+    try {
+      final docSnapshot =
+          await _db.collection('spurgeon_sermons').doc(generatedSermonId).get();
+      if (docSnapshot.exists) {
+        return docSnapshot.data();
+      } else {
+        print(
+            "FirestoreService: Sermão com ID Gerado '$generatedSermonId' não encontrado na coleção 'spurgeon_sermons'.");
+        return null;
+      }
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao buscar detalhes do sermão '$generatedSermonId': $e");
+      return null;
+    }
+  }
 }
