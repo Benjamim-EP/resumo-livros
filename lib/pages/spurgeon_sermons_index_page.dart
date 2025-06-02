@@ -1,20 +1,20 @@
 // lib/pages/spurgeon_sermons_index_page.dart
 import 'dart:convert';
-import 'dart:math'; // Para Random
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
-import 'package:resumo_dos_deuses_flutter/pages/sermon_detail_page.dart';
-// Importe a futura página de detalhes do sermão
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
+// Importe a SermonDetailPage quando estiver pronta
 // import 'sermon_detail_page.dart';
 
-// Modelo para informações de sermão do pré-carregamento
 class PreloadSermonItem {
-  final String title;
-  final String generatedId;
-  final String bookAbbrev; // Para saber de qual livro/capítulo ele veio
-  final String chapterNum;
+  final String title; // Este será o título buscável (do preload JSON)
+  final String generatedId; // ID do sermão (do preload JSON)
+  final String bookAbbrev; // Livro onde está listado no preload JSON
+  final String chapterNum; // Capítulo onde está listado no preload JSON
 
   PreloadSermonItem({
     required this.title,
@@ -33,19 +33,21 @@ class SpurgeonSermonsIndexPage extends StatefulWidget {
 }
 
 class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
-  // Armazena todos os sermões do preload_json de forma plana para facilitar aleatorização/filtragem
   List<PreloadSermonItem> _allPreloadedSermons = [];
   List<PreloadSermonItem> _displayedSermons = [];
   bool _isLoading = true;
   String? _error;
 
-  Map<String, dynamic>? _bibleBooksMap; // Para nomes e capítulos dos livros
+  Map<String, dynamic>? _bibleBooksMap;
   String? _selectedBookFilter;
   int? _selectedChapterFilter;
 
+  final TextEditingController _titleSearchController = TextEditingController();
+  String _titleSearchTerm = "";
+  Timer? _titleSearchDebounce;
+
   final Random _random = Random();
-  final int _displayCount =
-      20; // Quantos sermões mostrar por vez (para aleatórios ou filtrados)
+  final int _displayCount = 20;
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
 
@@ -54,34 +56,36 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     super.initState();
     _loadInitialData();
     _scrollController.addListener(_scrollListener);
+    _titleSearchController.addListener(_onTitleSearchChanged);
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    _titleSearchController.removeListener(_onTitleSearchChanged);
+    _titleSearchController.dispose();
+    _titleSearchDebounce?.cancel();
     super.dispose();
   }
 
   Future<void> _loadInitialData() async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
+    setState(() => _isLoading = true);
     try {
       _bibleBooksMap = await BiblePageHelper.loadBooksMap();
+      // <<< CARREGA APENAS O JSON DE PRÉ-CARREGAMENTO >>>
       final String preloadJsonString = await rootBundle
           .loadString('assets/sermons/preloading_spurgeon_sermons.json');
       final Map<String, dynamic> preloadData = json.decode(preloadJsonString);
 
       final List<PreloadSermonItem> allSermonsFlatList = [];
-      preloadData.forEach((bookAbbrev, chaptersMap) {
-        if (chaptersMap is Map) {
-          (chaptersMap as Map<String, dynamic>)
-              .forEach((chapterNum, chapterData) {
-            if (chapterData is Map) {
+      preloadData.forEach((bookAbbrev, chaptersMapOuter) {
+        if (chaptersMapOuter is Map) {
+          final chaptersMap = Map<String, dynamic>.from(chaptersMapOuter);
+          chaptersMap.forEach((chapterNum, chapterDataOuter) {
+            if (chapterDataOuter is Map) {
+              final chapterData = Map<String, dynamic>.from(chapterDataOuter);
               final sermoesListRaw =
                   chapterData['sermoes'] as List<dynamic>? ?? [];
               for (var sermonEntry in sermoesListRaw) {
@@ -89,7 +93,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                     sermonEntry['title'] != null &&
                     sermonEntry['id'] != null) {
                   allSermonsFlatList.add(PreloadSermonItem(
-                    title: sermonEntry['title'] as String,
+                    title: sermonEntry['title']
+                        as String, // Título do preload JSON
                     generatedId: sermonEntry['id'] as String,
                     bookAbbrev: bookAbbrev,
                     chapterNum: chapterNum,
@@ -109,122 +114,166 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
         });
       }
     } catch (e, s) {
-      print("Erro ao carregar dados dos sermões: $e");
-      print("Stack trace: $s");
-      if (mounted) {
+      print("Erro ao carregar dados dos sermões (preload): $e\n$s");
+      if (mounted)
         setState(() {
           _error = "Falha ao carregar índice de sermões.";
           _isLoading = false;
         });
-      }
     }
+  }
+
+  void _onTitleSearchChanged() {
+    if (_titleSearchDebounce?.isActive ?? false) _titleSearchDebounce!.cancel();
+    _titleSearchDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (mounted && _titleSearchController.text != _titleSearchTerm) {
+        setState(() {
+          _titleSearchTerm = _titleSearchController.text;
+          _applyFiltersAndDisplaySermons();
+        });
+      } else if (mounted &&
+          _titleSearchController.text.isEmpty &&
+          _titleSearchTerm.isNotEmpty) {
+        setState(() {
+          _titleSearchTerm = "";
+          _applyFiltersAndDisplaySermons();
+        });
+      }
+    });
   }
 
   void _scrollListener() {
     if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
+            _scrollController.position.maxScrollExtent - 300 &&
         !_isLoadingMore) {
-      // Se houver filtros aplicados, a paginação seria mais complexa
-      // Por ora, a paginação de "carregar mais" só funciona para a lista inicial (sem filtros)
-      if (_selectedBookFilter == null && _selectedChapterFilter == null) {
-        _loadMoreSermons();
-      }
+      _loadMoreSermons();
     }
   }
 
-  void _loadMoreSermons() {
-    if (!mounted || _allPreloadedSermons.isEmpty) return;
-    // Verifica se já mostrou todos os sermões disponíveis da lista _allPreloadedSermons
-    if (_displayedSermons.length >= _allPreloadedSermons.length &&
-        _selectedBookFilter == null &&
-        _selectedChapterFilter == null) {
-      print("Já mostrou todos os sermões disponíveis na lista aleatória.");
-      return;
+  String _normalizeTextForSearch(String text) {
+    if (text.isEmpty) return "";
+    return unorm
+        .nfd(text)
+        .replaceAll(RegExp(r'[\u0300-\u036f]'), '')
+        .toLowerCase();
+  }
+
+  // Função para verificar se o título do sermão corresponde à query (tokenizada)
+  bool _sermonMatchesTitleQuery(
+      PreloadSermonItem sermon, String normalizedQuery) {
+    if (normalizedQuery.isEmpty) return true;
+
+    // O campo 'title' em PreloadSermonItem já é o que queremos buscar
+    final normalizedTitleToSearch = _normalizeTextForSearch(sermon.title);
+
+    final queryKeywords =
+        normalizedQuery.split(' ').where((k) => k.isNotEmpty).toList();
+    if (queryKeywords.isEmpty) return true;
+
+    return queryKeywords
+        .every((keyword) => normalizedTitleToSearch.contains(keyword));
+  }
+
+  // Função que obtém a lista filtrada baseada em TODOS os filtros
+  List<PreloadSermonItem> _getSermonListBasedOnAllFilters() {
+    List<PreloadSermonItem> filteredList = List.from(_allPreloadedSermons);
+
+    // 1. Filtro por Título
+    final normalizedTitleQuery = _normalizeTextForSearch(_titleSearchTerm);
+    if (normalizedTitleQuery.isNotEmpty) {
+      filteredList = filteredList.where((sermon) {
+        return _sermonMatchesTitleQuery(sermon, normalizedTitleQuery);
+      }).toList();
     }
 
-    setState(() => _isLoadingMore = true);
+    // 2. Filtro por Livro
+    if (_selectedBookFilter != null) {
+      filteredList = filteredList.where((sermon) {
+        return sermon.bookAbbrev == _selectedBookFilter;
+      }).toList();
+    }
 
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) {
-        setState(() => _isLoadingMore = false);
-        return;
-      }
-
-      List<PreloadSermonItem> moreSermons = [];
-      if (_selectedBookFilter == null && _selectedChapterFilter == null) {
-        // Carrega mais aleatórios
-        List<PreloadSermonItem> candidates = List.from(_allPreloadedSermons);
-        candidates.shuffle(_random);
-        int count = 0;
-        for (var sermonCandidate in candidates) {
-          if (!_displayedSermons
-              .any((ds) => ds.generatedId == sermonCandidate.generatedId)) {
-            moreSermons.add(sermonCandidate);
-            count++;
-            if (count >= _displayCount) break;
-          }
-        }
-      } else {
-        // Se filtros estão aplicados, não implementamos "carregar mais" para filtrados ainda.
-        // A lista filtrada é exibida por completo.
-        // Se quisesse paginação para filtrados, seria preciso buscar mais itens
-        // da lista _allPreloadedSermons que correspondem ao filtro e não estão em _displayedSermons.
-      }
-
-      setState(() {
-        _displayedSermons.addAll(moreSermons);
-        _isLoadingMore = false;
-      });
-    });
+    // 3. Filtro por Capítulo (só se um livro também estiver selecionado)
+    if (_selectedBookFilter != null && _selectedChapterFilter != null) {
+      filteredList = filteredList.where((sermon) {
+        return sermon.chapterNum == _selectedChapterFilter.toString();
+      }).toList();
+    }
+    return filteredList;
   }
 
   void _applyFiltersAndDisplaySermons({bool isInitialLoad = false}) {
     if (!mounted) return;
 
-    List<PreloadSermonItem> sermonsToDisplay = [];
+    List<PreloadSermonItem> fullyFilteredList =
+        _getSermonListBasedOnAllFilters();
 
-    if (_selectedBookFilter == null && _selectedChapterFilter == null) {
-      // Nenhum filtro, mostra aleatórios
-      if (_allPreloadedSermons.isNotEmpty) {
-        List<PreloadSermonItem> tempList = List.from(_allPreloadedSermons);
-        tempList.shuffle(_random);
-        sermonsToDisplay = tempList.take(_displayCount).toList();
-      }
+    if (_titleSearchTerm.isEmpty &&
+        _selectedBookFilter == null &&
+        _selectedChapterFilter == null) {
+      List<PreloadSermonItem> allSermonsCopy = List.from(_allPreloadedSermons);
+      allSermonsCopy.shuffle(_random);
+      setState(() {
+        _displayedSermons = allSermonsCopy.take(_displayCount).toList();
+      });
     } else {
-      // Filtros aplicados
-      sermonsToDisplay = _allPreloadedSermons.where((sermonItem) {
-        bool bookMatch =
-            true; // Se _selectedBookFilter for null, considera match
-        if (_selectedBookFilter != null) {
-          bookMatch = sermonItem.bookAbbrev == _selectedBookFilter;
-        }
-
-        bool chapterMatch =
-            true; // Se _selectedChapterFilter for null, considera match
-        if (bookMatch && _selectedChapterFilter != null) {
-          chapterMatch =
-              sermonItem.chapterNum == _selectedChapterFilter.toString();
-        }
-        return bookMatch && chapterMatch;
-      }).toList();
-      // Poderia adicionar .take(_displayCount) aqui também se quiser paginar os resultados filtrados
+      setState(() {
+        _displayedSermons = fullyFilteredList.take(_displayCount).toList();
+      });
     }
 
-    setState(() {
-      _displayedSermons = sermonsToDisplay;
-      if (isInitialLoad) _isLoading = false;
+    if (_scrollController.hasClients && !isInitialLoad) {
+      // Evita scroll no carregamento inicial
+      _scrollController.jumpTo(0.0);
+    }
+
+    if (isInitialLoad) setState(() => _isLoading = false);
+  }
+
+  void _loadMoreSermons() {
+    if (!mounted || _allPreloadedSermons.isEmpty || _isLoadingMore) return;
+
+    List<PreloadSermonItem> sourceListForMore =
+        _getSermonListBasedOnAllFilters();
+
+    if (_displayedSermons.length >= sourceListForMore.length) {
+      return;
+    }
+
+    setState(() => _isLoadingMore = true);
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) {
+        setState(() => _isLoadingMore = false);
+        return;
+      }
+
+      final currentCount = _displayedSermons.length;
+      final List<PreloadSermonItem> nextBatch =
+          sourceListForMore.skip(currentCount).take(_displayCount).toList();
+
+      setState(() {
+        _displayedSermons.addAll(nextBatch);
+        _isLoadingMore = false;
+      });
     });
   }
 
   void _navigateToSermonDetail(String sermonGeneratedId, String sermonTitle) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SermonDetailPage(
-          sermonGeneratedId: sermonGeneratedId,
-          sermonTitle: sermonTitle,
-        ),
-      ),
+    // TODO: Implementar navegação para SermonDetailPage
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => SermonDetailPage(
+    //       sermonGeneratedId: sermonGeneratedId,
+    //       sermonTitle: sermonTitle, // Passa o título para o AppBar da DetailPage
+    //     ),
+    //   ),
+    // );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(
+              'Abrir Sermão: $sermonTitle (ID: $sermonGeneratedId) - Página de Detalhe não implementada.')),
     );
   }
 
@@ -234,8 +283,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Sermões de C.H. Spurgeon"),
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        foregroundColor: theme.appBarTheme.foregroundColor,
       ),
       body: Column(
         children: [
@@ -247,66 +294,94 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   Widget _buildFilterBar(ThemeData theme) {
+    // ... (O widget _buildFilterBar permanece o mesmo da resposta anterior)
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: theme.cardColor.withOpacity(0.1), // Fundo sutil
+        color: theme.cardColor.withOpacity(0.1),
         border:
             Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            flex: 3,
-            child: UtilsBiblePage.buildBookDropdown(
-              // Reutilizando o widget da BiblePage
-              selectedBook: _selectedBookFilter,
-              booksMap: _bibleBooksMap,
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedBookFilter = newValue;
-                  _selectedChapterFilter =
-                      null; // Reseta o capítulo ao mudar o livro
-                });
-              },
+      child: Column(
+        children: [
+          TextField(
+            controller: _titleSearchController,
+            style: TextStyle(
+                color: theme.textTheme.bodyLarge?.color, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: "Buscar por título do sermão...",
+              hintStyle: TextStyle(color: theme.hintColor, fontSize: 14),
+              prefixIcon:
+                  Icon(Icons.search, color: theme.iconTheme.color, size: 20),
+              suffixIcon: _titleSearchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear,
+                          color: theme.iconTheme.color, size: 20),
+                      onPressed: () {
+                        _titleSearchController.clear();
+                      },
+                    )
+                  : null,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: theme.dividerColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    BorderSide(color: theme.colorScheme.primary, width: 1.5),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: UtilsBiblePage.buildChapterDropdown(
-              // Reutilizando o widget da BiblePage
-              selectedChapter: _selectedChapterFilter,
-              booksMap: _bibleBooksMap,
-              selectedBook:
-                  _selectedBookFilter, // Passa o livro selecionado para habilitar/desabilitar
-              onChanged: (int? newValue) {
-                setState(() {
-                  _selectedChapterFilter = newValue;
-                });
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: "Aplicar Filtros",
-            onPressed: () => _applyFiltersAndDisplaySermons(),
-            color: theme.colorScheme.primary,
-            splashRadius: 20,
-          ),
-          IconButton(
-            icon: Icon(Icons.clear,
-                color: theme.iconTheme.color?.withOpacity(0.7)),
-            tooltip: "Limpar Filtros",
-            onPressed: () {
-              setState(() {
-                _selectedBookFilter = null;
-                _selectedChapterFilter = null;
-                _applyFiltersAndDisplaySermons();
-              });
-            },
-            splashRadius: 20,
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(
+                flex: 3,
+                child: UtilsBiblePage.buildBookDropdown(
+                  selectedBook: _selectedBookFilter,
+                  booksMap: _bibleBooksMap,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedBookFilter = newValue;
+                      _selectedChapterFilter = null;
+                      _applyFiltersAndDisplaySermons();
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: UtilsBiblePage.buildChapterDropdown(
+                  selectedChapter: _selectedChapterFilter,
+                  booksMap: _bibleBooksMap,
+                  selectedBook: _selectedBookFilter,
+                  onChanged: (int? newValue) {
+                    setState(() {
+                      _selectedChapterFilter = newValue;
+                      _applyFiltersAndDisplaySermons();
+                    });
+                  },
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.filter_list_off,
+                    color: theme.iconTheme.color?.withOpacity(0.7)),
+                tooltip: "Limpar Filtros de Livro/Cap.",
+                onPressed: () {
+                  setState(() {
+                    _selectedBookFilter = null;
+                    _selectedChapterFilter = null;
+                    _applyFiltersAndDisplaySermons();
+                  });
+                },
+                splashRadius: 20,
+              ),
+            ],
           ),
         ],
       ),
@@ -314,6 +389,9 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   Widget _buildSermonsList(ThemeData theme) {
+    // ... (O widget _buildSermonsList permanece o mesmo da resposta anterior,
+    //      lembrando de usar sermonItem.title para o título e
+    //      sermonItem.generatedId para a navegação)
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -327,21 +405,17 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
         ),
       );
     }
-    if (_displayedSermons.isEmpty &&
-        (_selectedBookFilter != null || _selectedChapterFilter != null)) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text("Nenhum sermão encontrado para os filtros aplicados.",
-              style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
-        ),
-      );
-    }
     if (_displayedSermons.isEmpty) {
+      String message = "Nenhum sermão para exibir no momento.";
+      if (_titleSearchTerm.isNotEmpty ||
+          _selectedBookFilter != null ||
+          _selectedChapterFilter != null) {
+        message = "Nenhum sermão encontrado para os filtros aplicados.";
+      }
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text("Carregando sermões ou nenhum para exibir...",
+          child: Text(message,
               style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
         ),
       );
@@ -356,21 +430,19 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
           return _isLoadingMore
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : const SizedBox
-                  .shrink(); // Se não está carregando mais, não mostra nada
+                  child: Center(child: CircularProgressIndicator()))
+              : const SizedBox.shrink();
         }
 
         final sermonItem = _displayedSermons[index];
-        // Como _displayedSermons agora é List<PreloadSermonItem>, acessamos os campos diretamente.
-        final String title = sermonItem.title;
+        final String title = sermonItem
+            .title; // O título já está no formato desejado (do preload JSON)
         final String generatedId = sermonItem.generatedId;
-        // Para exibir a referência do sermão no card, podemos usar sermonItem.bookAbbrev e sermonItem.chapterNum
+
         final String bookName = _bibleBooksMap?[sermonItem.bookAbbrev]
                 ?['nome'] ??
             sermonItem.bookAbbrev.toUpperCase();
-        final String referenceText = "$bookName ${sermonItem.chapterNum}";
+        final String referenceHint = "$bookName ${sermonItem.chapterNum}";
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
@@ -385,7 +457,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                     ?.copyWith(fontWeight: FontWeight.w500)),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4.0),
-              child: Text("Referência Principal (Índice): $referenceText",
+              child: Text("Indexado em: $referenceHint",
                   style: theme.textTheme.bodySmall?.copyWith(
                       color:
                           theme.textTheme.bodySmall?.color?.withOpacity(0.8))),

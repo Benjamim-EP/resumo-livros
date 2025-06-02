@@ -49,6 +49,7 @@ dependencies:
   cloud_functions: ^5.5.0
   percent_indicator: ^4.2.5
   share_plus: ^11.0.0
+  unorm_dart: ^0.3.0
 
 dev_dependencies:
   flutter_test:
