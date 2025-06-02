@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/library_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/user_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
@@ -119,9 +120,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       _buildTabNavigator(_userNavigatorKey, const UserPage()), // Índice 0
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()), // Índice 1
       _buildTabNavigator(
-          null,
-          const _UnderConstructionPlaceholder(
-              pageTitle: "Cânticos")), // Índice 2
+          null, const LibraryPage()), // <<< ALTERADO AQUI (Índice 2)
       _buildTabNavigator(
           null,
           const _UnderConstructionPlaceholder(
@@ -276,7 +275,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       case 1:
         return "Bíblia";
       case 2:
-        return "Cânticos";
+        return "Biblioteca";
       case 3:
         return "Chat IA";
       default:
@@ -427,8 +426,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
                         icon: Icon(Icons.book_outlined),
                         label: 'Bible'), // Índice 1
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.music_note_outlined),
-                        label: 'Cântico'), // Índice 2
+                        // <<< ALTERADO AQUI
+                        icon: Icon(Icons.local_library_outlined), // Novo ícone
+                        label: 'Biblioteca'), // Novo label - Índice 2
                     BottomNavigationBarItem(
                         icon: Icon(Icons.chat_bubble_outline),
                         label: 'Chat'), // Índice 3
