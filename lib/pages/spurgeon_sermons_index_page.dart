@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
+import 'package:resumo_dos_deuses_flutter/pages/sermon_detail_page.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 // Importe a SermonDetailPage quando estiver pronta
 // import 'sermon_detail_page.dart';
@@ -260,21 +261,17 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   void _navigateToSermonDetail(String sermonGeneratedId, String sermonTitle) {
-    // TODO: Implementar navegação para SermonDetailPage
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => SermonDetailPage(
-    //       sermonGeneratedId: sermonGeneratedId,
-    //       sermonTitle: sermonTitle, // Passa o título para o AppBar da DetailPage
-    //     ),
-    //   ),
-    // );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(
-              'Abrir Sermão: $sermonTitle (ID: $sermonGeneratedId) - Página de Detalhe não implementada.')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SermonDetailPage(
+          sermonGeneratedId: sermonGeneratedId,
+          sermonTitle:
+              sermonTitle, // Passa o título para o AppBar da DetailPage
+        ),
+      ),
     );
+    // print("Navegando para detalhes do sermão: ID $sermonGeneratedId, Título: $sermonTitle"); // Pode manter para debug
   }
 
   @override
