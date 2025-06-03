@@ -153,8 +153,7 @@ class _LibraryPageState extends State<LibraryPage> {
   List<Map<String, dynamic>> get libraryItems => [
         {
           'title': "Sermões de C.H. Spurgeon",
-          'description':
-              "Explore a vasta coleção de sermões do Príncipe dos Pregadores.",
+          'description': "3000+ de Sermôes",
           'icon': Icons.campaign_outlined,
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'onTap': () {
@@ -167,8 +166,7 @@ class _LibraryPageState extends State<LibraryPage> {
         },
         {
           'title': "Estudos Bíblicos Temáticos",
-          'description':
-              "Aprofunde-se em temas específicos da Bíblia com guias e referências.",
+          'description': "Temas da Bíblia com guias e referências.",
           'icon': Icons.menu_book_outlined,
           'coverImagePath':
               null, // Ou uma imagem genérica para estudos: 'assets/covers/study_cover.webp'

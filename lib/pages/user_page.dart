@@ -721,16 +721,48 @@ class _UserPageState extends State<UserPage> {
           builder: (context, notes) {
             if (notes.isEmpty) {
               return Center(
-                  child: Text("Nenhuma nota adicionada ainda.",
-                      style: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color
-                              ?.withOpacity(0.7),
-                          fontSize: 16)));
+                  child: Padding(
+                // Adiciona padding para a mensagem de "nenhuma nota"
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.speaker_notes_off_outlined,
+                        size: 60,
+                        color: theme.iconTheme.color?.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Nenhuma nota adicionada ainda.",
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color:
+                            theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Você pode adicionar notas aos versículos na tela da Bíblia.",
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ));
             }
+            // Ordenar as notas, por exemplo, pela referência (opcional, mas pode melhorar a consistência)
+            // Para uma ordenação mais robusta, seria ideal ter um timestamp associado a cada nota.
+            // Por agora, vamos manter a ordem que vem do Map, que pode não ser garantida.
+            // Se quiser ordenar por referência:
+            // final noteList = notes.entries.toList()
+            //   ..sort((a, b) => a.key.compareTo(b.key));
             final noteList = notes.entries.toList();
+
             return ListView.builder(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12.0, vertical: 8.0), // Padding ajustado
               itemCount: noteList.length,
               itemBuilder: (context, index) {
                 final entry = noteList[index];
@@ -738,50 +770,145 @@ class _UserPageState extends State<UserPage> {
                 final noteText = entry.value;
                 final parts = verseId.split('_');
                 String referenceText = verseId;
+                String bookNameOnly =
+                    parts.isNotEmpty ? parts[0].toUpperCase() : "Livro";
+                String chapterAndVerse = "Cap. ?, Ver. ?";
+
                 if (parts.length == 3 &&
                     _localBooksMap != null &&
                     _localBooksMap!.containsKey(parts[0])) {
                   final bookData = _localBooksMap![parts[0]];
-                  referenceText =
-                      "${bookData?['nome'] ?? parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+                  bookNameOnly = bookData?['nome'] ?? parts[0].toUpperCase();
+                  referenceText = "$bookNameOnly ${parts[1]}:${parts[2]}";
+                  chapterAndVerse = "Cap. ${parts[1]}, Ver. ${parts[2]}";
                 } else if (parts.length == 3) {
                   referenceText =
                       "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+                  chapterAndVerse = "Cap. ${parts[1]}, Ver. ${parts[2]}";
                 }
+
                 return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4.0),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(
+                      vertical: 6.0), // Espaçamento entre cards
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 10.0),
-                    leading: Icon(Icons.note_alt_outlined,
-                        color: theme.colorScheme.secondary, size: 28),
-                    title: Text(referenceText,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(noteText,
-                          style: const TextStyle(fontSize: 14, height: 1.4),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete_outline,
-                          color: theme.colorScheme.error.withOpacity(0.7),
-                          size: 22),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      tooltip: "Remover Nota",
-                      onPressed: () {
-                        if (mounted) {
-                          StoreProvider.of<AppState>(context, listen: false)
-                              .dispatch(DeleteNoteAction(verseId));
-                        }
-                      },
-                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                        color: theme.dividerColor.withOpacity(0.5),
+                        width: 0.5), // Borda sutil
+                  ),
+                  child: InkWell(
+                    // Para tornar o card todo clicável para navegação
                     onTap: () => _navigateToBibleVerseAndTab(verseId),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      referenceText, // Referência completa como título principal
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme
+                                            .primary, // Cor de destaque
+                                      ),
+                                    ),
+                                    // Text(
+                                    //   chapterAndVerse, // "Cap. X, Ver. Y" - opcional, se quiser separado
+                                    //   style: theme.textTheme.bodySmall?.copyWith(
+                                    //     color: theme.textTheme.bodySmall?.color?.withOpacity(0.7)
+                                    //   ),
+                                    // ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline,
+                                    color: theme.colorScheme.error
+                                        .withOpacity(0.7),
+                                    size: 22),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: "Remover Nota",
+                                visualDensity: VisualDensity
+                                    .compact, // Torna o ícone um pouco menor
+                                onPressed: () {
+                                  if (mounted) {
+                                    // Adicionar diálogo de confirmação
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext dialogContext) {
+                                        return AlertDialog(
+                                          title:
+                                              const Text("Confirmar Remoção"),
+                                          content: Text(
+                                              "Tem certeza que deseja remover esta nota para $referenceText?"),
+                                          actions: <Widget>[
+                                            TextButton(
+                                              child: const Text("Cancelar"),
+                                              onPressed: () {
+                                                Navigator.of(dialogContext)
+                                                    .pop();
+                                              },
+                                            ),
+                                            TextButton(
+                                              child: Text("Remover",
+                                                  style: TextStyle(
+                                                      color: theme
+                                                          .colorScheme.error)),
+                                              onPressed: () {
+                                                Navigator.of(dialogContext)
+                                                    .pop();
+                                                StoreProvider.of<AppState>(
+                                                        context,
+                                                        listen: false)
+                                                    .dispatch(DeleteNoteAction(
+                                                        verseId));
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          Divider(
+                              color: theme.dividerColor.withOpacity(0.3),
+                              height: 16),
+                          Text(
+                            noteText,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              height: 1.45, // Melhor espaçamento entre linhas
+                              fontSize: 14.5,
+                            ),
+                            maxLines: 4, // Aumenta um pouco o preview
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          // Você pode adicionar um "Ver mais" se a nota for muito longa
+                          // if (noteText.length > 150) // Exemplo de condição
+                          //   Align(
+                          //     alignment: Alignment.centerRight,
+                          //     child: TextButton(
+                          //       child: Text("Ver mais", style: TextStyle(color: theme.colorScheme.secondary)),
+                          //       onPressed: () => _navigateToBibleVerseAndTab(verseId),
+                          //     ),
+                          //   )
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
