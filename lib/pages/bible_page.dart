@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart';
@@ -764,35 +765,14 @@ class _BiblePageState extends State<BiblePage> {
 
   List<Widget> _buildAppBarActions(
       BuildContext context, ThemeData theme, _BiblePageViewModel viewModel) {
-    // ... (sem alterações)
-    if (_isSemanticSearchActive) {
+    Color defaultIconColor = theme.appBarTheme.actionsIconTheme?.color ??
+        theme.colorScheme.onPrimary;
+    Color activeSemanticSearchIconColor = theme.colorScheme.secondary;
+
+    if (_isFocusModeActive) {
       return [
         IconButton(
-          icon: Icon(Icons.search,
-              color: theme.appBarTheme.actionsIconTheme?.color),
-          tooltip: "Buscar com filtros",
-          onPressed: _applyFiltersToReduxAndSearch,
-        ),
-        IconButton(
-          icon: Icon(Icons.close,
-              color: theme.appBarTheme.actionsIconTheme?.color),
-          tooltip: "Fechar Busca",
-          onPressed: () {
-            if (mounted) {
-              setState(() {
-                _isSemanticSearchActive = false;
-                _showExtraOptions = false;
-              });
-            }
-          },
-        ),
-      ];
-    } else if (_isFocusModeActive) {
-      return [
-        IconButton(
-          icon: Icon(Icons.fullscreen_exit,
-              color: theme.appBarTheme.actionsIconTheme?.color ??
-                  theme.colorScheme.onPrimary),
+          icon: Icon(Icons.fullscreen_exit, color: defaultIconColor),
           tooltip: "Sair do Modo Foco",
           onPressed: () {
             if (mounted) {
@@ -803,67 +783,101 @@ class _BiblePageState extends State<BiblePage> {
           },
         ),
       ];
-    } else {
-      return [
-        // if (viewModel.pendingWritesCount > 0)
-        //   Padding(
-        //     padding: const EdgeInsets.only(right: 0.0),
-        //     child: Center(
-        //       child: Badge(
-        //         label: Text('${viewModel.pendingWritesCount}',
-        //             style: TextStyle(
-        //                 fontSize: 10, color: theme.colorScheme.onError)),
-        //         backgroundColor: theme.colorScheme.error,
-        //         padding: const EdgeInsets.symmetric(horizontal: 5),
-        //         child: IconButton(
-        //           icon: Icon(Icons.sync_problem_outlined,
-        //               color: theme.colorScheme.error, size: 24),
-        //           tooltip:
-        //               "Sincronizar Alterações (${viewModel.pendingWritesCount} pendentes)",
-        //           onPressed: () {
-        //             StoreProvider.of<AppState>(context, listen: false)
-        //                 .dispatch(ProcessPendingFirestoreWritesAction());
-        //             if (mounted) {
-        //               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        //                   content: Text(
-        //                       "Tentando sincronizar... Verifique o console.")));
-        //             }
-        //           },
-        //         ),
-        //       ),
-        //     ),
-        //   ),
-        IconButton(
-          icon: Icon(Icons.manage_search_outlined,
-              color: theme.appBarTheme.actionsIconTheme?.color),
-          tooltip: "Ir para referência",
-          onPressed: _showGoToDialog,
-        ),
-        IconButton(
-          icon: Icon(Icons.search_sharp,
-              color: theme.appBarTheme.actionsIconTheme?.color),
-          tooltip: "Busca Semântica",
-          onPressed: () {
-            if (mounted) {
-              setState(() {
-                _isSemanticSearchActive = true;
-                _showExtraOptions = false;
-              });
-            }
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.more_vert,
-              color: theme.appBarTheme.actionsIconTheme?.color),
-          tooltip: "Mais Opções",
-          onPressed: () {
-            setState(() {
-              _showExtraOptions = !_showExtraOptions;
-            });
-          },
-        ),
-      ];
     }
+
+    List<Widget> actions = [];
+
+    if (_isSemanticSearchActive) {
+      // Ações quando a busca semântica está ATIVA
+      actions.add(IconButton(
+        icon: Icon(Icons.search,
+            color: activeSemanticSearchIconColor,
+            size: 26), // Ícone de lupa para EXECUTAR a busca
+        tooltip: "Buscar",
+        onPressed:
+            _applyFiltersToReduxAndSearch, // Chama a função que aplica filtros e busca
+      ));
+      actions.add(IconButton(
+        icon: Icon(Icons.close, color: defaultIconColor, size: 26),
+        tooltip: "Fechar Busca",
+        onPressed: () {
+          if (mounted) {
+            setState(() {
+              _isSemanticSearchActive = false;
+              _semanticQueryController
+                  .clear(); // Limpa o texto da busca ao fechar
+              // Opcional: Limpar filtros e resultados do Redux se desejar
+              // StoreProvider.of<AppState>(context, listen: false).dispatch(ClearBibleSearchFiltersAction());
+              // StoreProvider.of<AppState>(context, listen: false).dispatch(SearchBibleSemanticSuccessAction([]));
+            });
+          }
+        },
+      ));
+    } else {
+      // Ações quando a busca semântica está INATIVA
+      if (viewModel.pendingWritesCount > 0) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(right: 0.0),
+          child: Center(
+            child: Badge(
+              label: Text('${viewModel.pendingWritesCount}',
+                  style: TextStyle(
+                      fontSize: 10, color: theme.colorScheme.onError)),
+              backgroundColor: theme.colorScheme.error,
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              child: IconButton(
+                icon: Icon(Icons.sync_problem_outlined,
+                    color: theme.colorScheme.error, size: 24),
+                tooltip:
+                    "Sincronizar Alterações (${viewModel.pendingWritesCount} pendentes)",
+                onPressed: () {
+                  StoreProvider.of<AppState>(context, listen: false)
+                      .dispatch(ProcessPendingFirestoreWritesAction());
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text(
+                            "Tentando sincronizar... Verifique o console.")));
+                  }
+                },
+              ),
+            ),
+          ),
+        ));
+      }
+      actions.add(IconButton(
+        icon: Icon(Icons.manage_search_outlined,
+            color: defaultIconColor, size: 26),
+        tooltip: "Ir para referência",
+        onPressed: _showGoToDialog,
+      ));
+      actions.add(IconButton(
+        icon: SvgPicture.asset(
+          'assets/icons/buscasemantica.svg',
+          colorFilter: ColorFilter.mode(defaultIconColor, BlendMode.srcIn),
+          width: 24, // Tamanho do SVG
+          height: 24,
+        ),
+        tooltip: "Busca Semântica",
+        onPressed: () {
+          if (mounted) {
+            setState(() {
+              _isSemanticSearchActive = true;
+              _showExtraOptions = false;
+            });
+          }
+        },
+      ));
+      actions.add(IconButton(
+        icon: Icon(Icons.more_vert, color: defaultIconColor, size: 26),
+        tooltip: "Mais Opções",
+        onPressed: () {
+          setState(() {
+            _showExtraOptions = !_showExtraOptions;
+          });
+        },
+      ));
+    }
+    return actions;
   }
 
   @override
@@ -873,8 +887,7 @@ class _BiblePageState extends State<BiblePage> {
     return StoreConnector<AppState, _BiblePageViewModel>(
       converter: (store) => _BiblePageViewModel.fromStore(store),
       onInit: (store) {
-        _store = store; // Garante que _store é inicializado
-        // Carrega dados iniciais se o booksMap já estiver pronto e a navegação inicial não ocorreu
+        _store = store;
         if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && !_hasProcessedInitialNavigation) {
@@ -883,16 +896,13 @@ class _BiblePageState extends State<BiblePage> {
             }
           });
         }
-        _loadUserDataIfNeeded(
-            context); // Carrega dados do usuário (progresso, etc.)
+        _loadUserDataIfNeeded(context);
 
-        // Sincroniza filtros locais com o estado Redux na inicialização
         final initialFilters = store.state.bibleSearchState.activeFilters;
         if (_filterSelectedTestament != initialFilters['testamento'] ||
             _filterSelectedBookAbbrev != initialFilters['livro_curto'] ||
             _filterSelectedContentType != initialFilters['tipo']) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            // Adia para após o build
             if (mounted) {
               setState(() {
                 _filterSelectedTestament =
@@ -906,7 +916,6 @@ class _BiblePageState extends State<BiblePage> {
         }
       },
       onDidChange: (previousViewModel, newViewModel) {
-        // Lida com mudanças no ViewModel, como navegação por intent
         if (mounted && booksMap != null) {
           if (!_hasProcessedInitialNavigation) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -918,7 +927,6 @@ class _BiblePageState extends State<BiblePage> {
                   previousViewModel?.initialBook ||
               newViewModel.initialBibleChapter !=
                   previousViewModel?.initialBibleChapter) {
-            // Se houver uma nova intent de localização (ex: vindo de um link ou outra página)
             if (newViewModel.initialBook != null &&
                 newViewModel.initialBibleChapter != null) {
               _processIntentOrInitialLoad(context, newViewModel);
@@ -927,7 +935,6 @@ class _BiblePageState extends State<BiblePage> {
         }
       },
       builder: (context, viewModel) {
-        // Widget de carregamento se os dados básicos não estiverem prontos
         if (booksMap == null || _bookVariationsMap.isEmpty) {
           return Scaffold(
               appBar: AppBar(title: const Text('Bíblia')),
@@ -935,9 +942,7 @@ class _BiblePageState extends State<BiblePage> {
                   child: CircularProgressIndicator(
                       color: theme.colorScheme.primary)));
         }
-        // Widget de carregamento se o livro/capítulo inicial ainda não foi definido
         if (selectedBook == null || selectedChapter == null) {
-          // Dispara o carregamento inicial se ainda não foi feito e o widget está montado
           if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted && !_hasProcessedInitialNavigation) {
@@ -954,69 +959,50 @@ class _BiblePageState extends State<BiblePage> {
         }
 
         // Determina o título da AppBar
-        String appBarTitle = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
-        if (!_isSemanticSearchActive) {
+        String appBarTitleText; // Removida inicialização aqui
+        if (_isSemanticSearchActive) {
+          appBarTitleText = "Busca na Bíblia";
+        } else {
+          appBarTitleText = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
           if (_isFocusModeActive) {
-            appBarTitle = booksMap![selectedBook]!['nome'] ?? 'Bíblia';
-            if (selectedChapter != null) appBarTitle += ' $selectedChapter';
+            // No modo foco, o título já inclui o capítulo se não for busca semântica
+            if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
           } else if (_isCompareModeActive) {
-            appBarTitle = 'Comparar Traduções';
+            appBarTitleText = 'Comparar Traduções';
+          }
+          // Se não for foco nem comparação, e não for busca semântica, o título já está correto
+          // (nome do livro), e o capítulo pode ser adicionado se desejado.
+          // Se a barra de opções extras não estiver visível, podemos adicionar o capítulo ao título.
+          else if (!_showExtraOptions && selectedChapter != null) {
+            appBarTitleText += ' $selectedChapter';
           }
         }
 
         return Scaffold(
           appBar: AppBar(
-            title: _isSemanticSearchActive
-                ? TextField(
-                    controller: _semanticQueryController,
-                    autofocus: true,
-                    style: TextStyle(
-                        color: theme.appBarTheme.foregroundColor ??
-                            theme.colorScheme.onPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Busca semântica na Bíblia...',
-                      hintStyle: TextStyle(
-                          color: (theme.appBarTheme.foregroundColor ??
-                                  theme.colorScheme.onPrimary)
-                              .withOpacity(0.7)),
-                      border: InputBorder.none,
-                    ),
-                    onSubmitted: (query) {
-                      _applyFiltersToReduxAndSearch();
-                    },
-                  )
-                : Text(appBarTitle),
-            leading: _isFocusModeActive || _isSemanticSearchActive
-                ? const SizedBox
-                    .shrink() // Remove o botão de voltar nesses modos
-                : null, // Mantém o botão de voltar padrão caso contrário
+            title: Text(appBarTitleText),
+            leading: _isFocusModeActive ? const SizedBox.shrink() : null,
             actions: _buildAppBarActions(context, theme, viewModel),
           ),
           body: PageStorage(
-            // Preserva o estado de rolagem
             bucket: _pageStorageBucket,
             child: Column(
               children: [
-                // Filtros para busca semântica (visível apenas se a busca estiver ativa e não em modo foco)
+                if (_isSemanticSearchActive && !_isFocusModeActive)
+                  _buildSemanticSearchTextField(theme),
                 if (_isSemanticSearchActive && !_isFocusModeActive)
                   _buildSemanticSearchFilterWidgets(theme),
-
-                // Barra de opções extras (traduções, interlinear, etc.)
                 if (_showExtraOptions &&
                     !_isSemanticSearchActive &&
                     !_isFocusModeActive)
                   _buildExtraOptionsBar(theme),
-
-                // Conteúdo principal (versículos/seções)
                 Expanded(
                   child: (selectedBook != null &&
                           selectedChapter != null &&
-                          _selectedBookSlug !=
-                              null && // Garante que o slug do livro foi carregado
-                          !_isSemanticSearchActive) // Não mostra se a busca semântica está ativa
+                          _selectedBookSlug != null &&
+                          !_isSemanticSearchActive)
                       ? FutureBuilder<Map<String, dynamic>>(
-                          key:
-                              _futureBuilderKey, // Chave para reconstruir quando necessário
+                          key: _futureBuilderKey,
                           future: BiblePageHelper.loadChapterDataComparison(
                               selectedBook!,
                               selectedChapter!,
@@ -1025,14 +1011,12 @@ class _BiblePageState extends State<BiblePage> {
                                   ? selectedTranslation2
                                   : null),
                           builder: (context, snapshot) {
-                            // Flags para determinar o tipo da tradução principal
                             bool isCurrentTranslation1PrimaryHebrew =
                                 selectedTranslation1 == 'hebrew_original';
                             bool isCurrentTranslation1PrimaryGreek =
                                 selectedTranslation1 == 'greek_interlinear';
 
                             return DelayedLoading(
-                              // Melhora a UX do carregamento
                               loading: snapshot.connectionState ==
                                   ConnectionState.waiting,
                               delay: const Duration(milliseconds: 200),
@@ -1040,7 +1024,6 @@ class _BiblePageState extends State<BiblePage> {
                                   child: CircularProgressIndicator(
                                       color: theme.colorScheme.primary)),
                               child: () {
-                                // Constrói o conteúdo quando os dados estão prontos ou erro
                                 if (snapshot.hasError ||
                                     !snapshot.hasData ||
                                     snapshot.data == null) {
@@ -1067,7 +1050,6 @@ class _BiblePageState extends State<BiblePage> {
                                         ? verseDataMap[selectedTranslation2!]
                                         : null;
 
-                                // Verifica se os dados da tradução primária estão faltando
                                 bool primaryDataMissing = false;
                                 if (isCurrentTranslation1PrimaryHebrew ||
                                     isCurrentTranslation1PrimaryGreek) {
@@ -1091,9 +1073,7 @@ class _BiblePageState extends State<BiblePage> {
                                                   ?.color)));
                                 }
 
-                                // Lógica para modo de visualização única ou comparativa
                                 if (!_isCompareModeActive) {
-                                  // Modo de visualização única
                                   dynamic hebrewDataForInterlinearView;
                                   if (_showHebrewInterlinear &&
                                       _currentChapterHebrewData != null &&
@@ -1124,10 +1104,9 @@ class _BiblePageState extends State<BiblePage> {
                                     isCurrentTranslation1PrimaryGreek,
                                     hebrewDataForInterlinearView,
                                     greekDataForInterlinearView,
-                                    _currentFontSizeMultiplier, // <<< PASSA O VALOR ATUAL
+                                    _currentFontSizeMultiplier,
                                   );
                                 } else {
-                                  // Modo de comparação
                                   if (comparisonTranslationVerseData == null ||
                                       (comparisonTranslationVerseData as List)
                                               .isEmpty &&
@@ -1159,7 +1138,7 @@ class _BiblePageState extends State<BiblePage> {
                                               isGreek:
                                                   isCurrentTranslation1PrimaryGreek,
                                               fontSizeMultiplier:
-                                                  _currentFontSizeMultiplier, // <<< ADICIONADO AQUI
+                                                  _currentFontSizeMultiplier,
                                               listViewKey: PageStorageKey<
                                                       String>(
                                                   '$selectedBook-$selectedChapter-$selectedTranslation1-compareView'))),
@@ -1180,7 +1159,7 @@ class _BiblePageState extends State<BiblePage> {
                                               isGreek: selectedTranslation2 ==
                                                   'greek_interlinear',
                                               fontSizeMultiplier:
-                                                  _currentFontSizeMultiplier, // <<< ADICIONADO AQUI
+                                                  _currentFontSizeMultiplier,
                                               listViewKey: PageStorageKey<
                                                       String>(
                                                   '$selectedBook-$selectedChapter-$selectedTranslation2-compareView'))),
@@ -1191,15 +1170,27 @@ class _BiblePageState extends State<BiblePage> {
                             );
                           },
                         )
-                      : (_isSemanticSearchActive &&
-                              !_isFocusModeActive) // Mensagem para busca semântica
+                      : (_isSemanticSearchActive && !_isFocusModeActive)
                           ? Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Text(
-                                  _semanticQueryController.text.isEmpty
-                                      ? "Digite sua busca e aplique filtros se desejar."
-                                      : "Pressione o botão de busca para ver os resultados.",
+                                  _semanticQueryController.text.isEmpty &&
+                                          (_store?.state.bibleSearchState
+                                                  .results.isEmpty ??
+                                              true)
+                                      ? "Digite sua busca acima e pressione o ícone de lupa para pesquisar."
+                                      : ((_store?.state.bibleSearchState
+                                                  .isLoading ??
+                                              false)
+                                          ? "Buscando..."
+                                          : ((_store?.state.bibleSearchState
+                                                          .results.isEmpty ??
+                                                      true) &&
+                                                  _semanticQueryController
+                                                      .text.isNotEmpty
+                                              ? "Nenhum resultado encontrado para '${_semanticQueryController.text}'."
+                                              : "Resultados da busca são exibidos em uma nova página (verifique se a navegação ocorreu). Se não, ajuste o fluxo.")),
                                   style: TextStyle(
                                       fontStyle: FontStyle.italic,
                                       color: theme.textTheme.bodyMedium?.color),
@@ -1207,11 +1198,8 @@ class _BiblePageState extends State<BiblePage> {
                                 ),
                               ),
                             )
-                          : const SizedBox
-                              .shrink(), // Para outros casos (ex: modo foco ou erro inicial)
+                          : const SizedBox.shrink(),
                 ),
-
-                // Navegação de capítulo (visível apenas se não estiver em modo foco, busca ou opções extras)
                 Visibility(
                     visible: !_isFocusModeActive &&
                         !_isSemanticSearchActive &&
@@ -1222,25 +1210,33 @@ class _BiblePageState extends State<BiblePage> {
                       child: Row(children: [
                         IconButton(
                             icon: Icon(Icons.chevron_left,
-                                color: theme.iconTheme.color, size: 32),
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.7),
+                                size: 32),
                             onPressed: _previousChapter,
                             tooltip: "Capítulo Anterior",
                             splashRadius: 24),
                         Expanded(
-                            flex: 3, // Dá mais espaço para o nome do livro
+                            flex: 3,
                             child: UtilsBiblePage.buildBookDropdown(
+                                context: context,
                                 selectedBook: selectedBook,
                                 booksMap: booksMap,
                                 onChanged: (value) {
                                   if (mounted && value != null)
                                     _navigateToChapter(value, 1);
-                                })),
+                                },
+                                iconColor: theme.colorScheme.onSurface
+                                    .withOpacity(0.7),
+                                textColor: theme.colorScheme.onSurface,
+                                backgroundColor:
+                                    theme.cardColor.withOpacity(0.15))),
                         const SizedBox(width: 8),
-                        if (selectedBook !=
-                            null) // Só mostra o dropdown de capítulo se um livro estiver selecionado
+                        if (selectedBook != null)
                           Expanded(
-                              flex: 2, // Menos espaço para o número do capítulo
+                              flex: 2,
                               child: UtilsBiblePage.buildChapterDropdown(
+                                  context: context,
                                   selectedChapter: selectedChapter,
                                   booksMap: booksMap,
                                   selectedBook: selectedBook,
@@ -1250,10 +1246,17 @@ class _BiblePageState extends State<BiblePage> {
                                         selectedBook != null) {
                                       _navigateToChapter(selectedBook!, value);
                                     }
-                                  })),
+                                  },
+                                  iconColor: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                  textColor: theme.colorScheme.onSurface,
+                                  backgroundColor:
+                                      theme.cardColor.withOpacity(0.15))),
                         IconButton(
                             icon: Icon(Icons.chevron_right,
-                                color: theme.iconTheme.color, size: 32),
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.7),
+                                size: 32),
                             onPressed: _nextChapter,
                             tooltip: "Próximo Capítulo",
                             splashRadius: 24),
@@ -1550,6 +1553,86 @@ class _BiblePageState extends State<BiblePage> {
             splashRadius: 20,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSemanticSearchTextField(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: 16.0, vertical: 10.0), // Aumentado padding vertical
+      child: TextField(
+        controller: _semanticQueryController,
+        autofocus: _isSemanticSearchActive,
+        style: TextStyle(
+            color: theme.textTheme.bodyLarge?.color ?? Colors.white,
+            fontSize: 15), // Fonte um pouco maior
+        decoration: InputDecoration(
+          hintText: 'Busca semântica na Bíblia...',
+          hintStyle: TextStyle(
+              color: theme.hintColor.withOpacity(0.8),
+              fontSize: 15), // Hint com mais contraste
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(
+                left: 14.0,
+                right: 10.0,
+                top: 10.0,
+                bottom: 10.0), // Ajuste fino do padding do ícone
+            child: SvgPicture.asset(
+              'assets/icons/buscasemantica.svg',
+              colorFilter: ColorFilter.mode(
+                  theme.iconTheme.color?.withOpacity(0.7) ?? theme.hintColor,
+                  BlendMode.srcIn),
+              width: 20,
+              height: 20,
+            ),
+          ),
+          suffixIcon: _semanticQueryController.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear,
+                      color: theme.iconTheme.color?.withOpacity(0.7), size: 22),
+                  tooltip: "Limpar busca",
+                  onPressed: () {
+                    _semanticQueryController.clear();
+                    // Opcional: se quiser que a lista de resultados limpe imediatamente
+                    // StoreProvider.of<AppState>(context, listen: false).dispatch(SearchBibleSemanticSuccessAction([]));
+                  },
+                )
+              : null,
+          isDense: true, // Torna o campo um pouco mais compacto verticalmente
+          contentPadding: const EdgeInsets.symmetric(
+              vertical: 14, horizontal: 10), // Padding interno
+          filled: true,
+          fillColor: theme.inputDecorationTheme.fillColor ??
+              theme.cardColor.withOpacity(0.08), // Cor de fundo sutil
+          border: OutlineInputBorder(
+            // Borda padrão
+            borderRadius: BorderRadius.circular(25.0),
+            borderSide: BorderSide(
+                color: theme.dividerColor.withOpacity(0.5), width: 1.0),
+          ),
+          enabledBorder: OutlineInputBorder(
+            // Borda quando não focado
+            borderRadius: BorderRadius.circular(25.0),
+            borderSide: BorderSide(
+                color: theme.dividerColor.withOpacity(0.4), width: 1.0),
+          ),
+          focusedBorder: OutlineInputBorder(
+            // Borda quando focado
+            borderRadius: BorderRadius.circular(25.0),
+            borderSide:
+                BorderSide(color: theme.colorScheme.primary, width: 1.8),
+          ),
+        ),
+        onChanged: (query) {
+          // Você pode adicionar um debounce aqui se quiser busca "enquanto digita"
+          // Mas atualmente a busca é acionada por onSubmitted ou pelo botão na AppBar
+        },
+        onSubmitted: (query) {
+          _applyFiltersToReduxAndSearch();
+        },
+        textInputAction:
+            TextInputAction.search, // Para o botão de "buscar" no teclado
       ),
     );
   }
