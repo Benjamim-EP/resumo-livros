@@ -945,7 +945,7 @@ class _UserPageState extends State<UserPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Flexible(
+                            const Flexible(
                               // Usar Flexible para permitir que a Row interna encolha/expanda
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -954,9 +954,8 @@ class _UserPageState extends State<UserPage> {
                                       width: 70,
                                       height: 70,
                                       child: ProfilePicture()), // Tamanho menor
-                                  const SizedBox(
-                                      width: 12), // Espaçamento menor
-                                  const Expanded(child: UserInfo()),
+                                  SizedBox(width: 12), // Espaçamento menor
+                                  Expanded(child: UserInfo()),
                                 ],
                               ),
                             ),

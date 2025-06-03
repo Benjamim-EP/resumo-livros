@@ -89,13 +89,13 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
         // Navigator.pushReplacementNamed(context, '/mainAppScreen'); // REMOVIDO
         // Se SignUpPage estiver sobre LoginPage, um pop pode ser suficiente.
         // Mas é mais seguro deixar o AuthCheck fazer o trabalho após o estado do Firebase Auth mudar.
-        if (mounted) {
-          Navigator.of(context).popUntil((route) => route
-              .isFirst); // Volta para a primeira rota (que deve ser o AuthCheck ou o que o envolve)
-          // Ou, se você sabe que AuthCheck é a raiz, pode fazer:
-          // Navigator.of(context).pushNamedAndRemoveUntil('/authCheckRouteName', (route) => false);
-          // Mas geralmente o stream do AuthCheck já cuidará disso.
-        }
+        // if (mounted) {
+        //   Navigator.of(context).popUntil((route) => route
+        //       .isFirst); // Volta para a primeira rota (que deve ser o AuthCheck ou o que o envolve)
+        //   // Ou, se você sabe que AuthCheck é a raiz, pode fazer:
+        //   // Navigator.of(context).pushNamedAndRemoveUntil('/authCheckRouteName', (route) => false);
+        //   // Mas geralmente o stream do AuthCheck já cuidará disso.
+        // }
       }
     } on FirebaseAuthException {
       setState(() {

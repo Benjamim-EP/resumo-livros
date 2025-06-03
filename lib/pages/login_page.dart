@@ -51,8 +51,8 @@ class _LoginPageState extends State<LoginPage> {
         print(
             "LoginPage: Login com email bem-sucedido para: ${user.email}. Navegando para MainAppScreen.");
         // NAVEGAÇÃO DIRETA APÓS SUCESSO
-        navigatorKey.currentState
-            ?.pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
+        // navigatorKey.currentState
+        //     ?.pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
       } else {
         // Erro já tratado no catch ou dentro de signInWithEmail
       }
@@ -97,8 +97,8 @@ class _LoginPageState extends State<LoginPage> {
       print(
           "LoginPage: Login com Google bem-sucedido para: ${user.email}. Navegando para MainAppScreen.");
       // NAVEGAÇÃO DIRETA APÓS SUCESSO
-      navigatorKey.currentState
-          ?.pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
+      // navigatorKey.currentState
+      //     ?.pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
     } else {
       print("LoginPage: Login com Google falhou ou foi cancelado.");
       // signInWithGoogle já deve ter mostrado um SnackBar em caso de erro de autenticação.

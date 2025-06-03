@@ -30,20 +30,22 @@ class MyApp extends StatelessWidget {
     return StoreProvider(
       store: store,
       child: StoreConnector<AppState, ThemeData>(
-        // Conecta ao ThemeData ativo
         converter: (store) => store.state.themeState.activeThemeData,
         builder: (context, activeTheme) {
-          // `activeTheme` é o ThemeData do estado
           return MaterialApp(
-            navigatorKey: navigatorKey,
+            navigatorKey:
+                navigatorKey, // Mantém para navegação global se QUALQUER parte do app precisar
             debugShowCheckedModeBanner: false,
-            theme: activeTheme, // Aplica o tema ativo do Redux
+            theme: activeTheme,
+            // AuthCheck é o único ponto de entrada visual inicial.
+            // Ele decidirá internamente se mostra StartScreen, LoginPage ou MainAppScreen.
             home: const AuthCheck(),
-            onGenerateRoute: NavigationService.generateRoute,
-            routes: {
-              '/mainAppScreen': (context) => const MainAppScreen(),
-              '/queryResults': (context) => const QueryResultsPage(),
-            },
+            // onGenerateRoute e routes podem ser removidos daqui se AuthCheck
+            // e MainAppScreen gerenciarem sua própria navegação interna aninhada.
+            // Se você ainda precisa de rotas nomeadas globais acessíveis de qualquer lugar,
+            // elas podem permanecer, mas a lógica de AuthCheck precisa ser robusta.
+            // Para simplificar o problema atual, vamos remover temporariamente para focar no AuthCheck.
+            // onGenerateRoute: NavigationService.generateRoute, // Pode ser re-adicionado depois
           );
         },
       ),
