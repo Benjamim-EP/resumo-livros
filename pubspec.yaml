@@ -91,6 +91,7 @@ flutter:
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json
 
     - assets/achievements/
+    - assets/covers/
 
     - assets/hinos/hinos.json
 
