@@ -69,20 +69,28 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   }
 
   String get _commentaryDocId {
-    final range =
-        widget.versesRangeStr.isNotEmpty ? widget.versesRangeStr : "all";
-    return "${widget.bookSlug}_c${widget.chapterNumber}_v$range";
+    final range = widget.versesRangeStr.isNotEmpty
+        ? widget.versesRangeStr
+        : "all_verses_in_section"; // Fallback se range for vazio
+    // ***** ALTERAÇÃO AQUI *****
+    // Usar bookAbbrev em vez de bookSlug para corresponder ao ID do Firestore
+    return "${widget.bookAbbrev}_c${widget.chapterNumber}_v$range";
+    // Exemplo: "1co_c10_v1-5"
   }
 
   Future<void> _showCommentary(BuildContext context) async {
     if (!mounted) return;
     setState(() => _isLoadingCommentary = true);
 
+    print(
+        "Tentando carregar comentário para Doc ID: $_commentaryDocId"); // Log para debug
+
     final commentaryData =
         await _firestoreService.getSectionCommentary(_commentaryDocId);
+    // ... resto da função _showCommentary permanece igual
+    // ... (verificação de null, extração de commentaryItems, chamada do Modal)
     String bookFullName = widget.bookAbbrev.toUpperCase();
     try {
-      // Tentar obter o nome completo do livro (opcional, mas melhora a UI do modal)
       final booksMap = await BiblePageHelper.loadBooksMap();
       if (booksMap.containsKey(widget.bookAbbrev)) {
         bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
@@ -98,15 +106,26 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
           (commentaryData != null && commentaryData['commentary'] is List)
               ? List<Map<String, dynamic>>.from(commentaryData['commentary'])
               : const [];
+
+      if (commentaryItems.isEmpty && commentaryData == null) {
+        print(
+            "Nenhum dado de comentário encontrado para $_commentaryDocId ou documento não existe.");
+      } else if (commentaryItems.isEmpty && commentaryData != null) {
+        print(
+            "Documento $_commentaryDocId encontrado, mas o array 'commentary' está vazio ou não existe.");
+      }
+
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent, // O modal interno define a cor
         builder: (_) => SectionCommentaryModal(
-          sectionTitle: widget.sectionTitle,
+          sectionTitle: commentaryData?['title'] ??
+              widget.sectionTitle, // Usa o título do Firestore se disponível
           commentaryItems: commentaryItems,
           bookAbbrev: widget.bookAbbrev,
-          bookSlug: widget.bookSlug,
+          bookSlug: widget
+              .bookSlug, // bookSlug ainda pode ser útil para outras coisas no modal
           bookName: bookFullName,
           chapterNumber: widget.chapterNumber,
           versesRangeStr: widget.versesRangeStr,
