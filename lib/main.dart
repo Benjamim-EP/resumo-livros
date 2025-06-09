@@ -45,7 +45,8 @@ class MyApp extends StatelessWidget {
             // Se você ainda precisa de rotas nomeadas globais acessíveis de qualquer lugar,
             // elas podem permanecer, mas a lógica de AuthCheck precisa ser robusta.
             // Para simplificar o problema atual, vamos remover temporariamente para focar no AuthCheck.
-            // onGenerateRoute: NavigationService.generateRoute, // Pode ser re-adicionado depois
+            onGenerateRoute: NavigationService
+                .generateRoute, // Pode ser re-adicionado depois
           );
         },
       ),

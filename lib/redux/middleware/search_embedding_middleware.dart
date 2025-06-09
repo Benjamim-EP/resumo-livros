@@ -22,6 +22,14 @@ void Function(Store<AppState>, SearchByQueryAction, NextDispatcher)
         PineconeService pineconeService, FirestoreService firestoreService) {
   return (Store<AppState> store, SearchByQueryAction action,
       NextDispatcher next) async {
+    if (store.state.userState.isGuestUser) {
+      // NOVO CHECK
+      print(
+          'SearchEmbeddingMiddleware: Convidado tentou pesquisar. Ação bloqueada.');
+      // Opcional: despachar uma ação de falha específica ou deixar a UI lidar
+      // store.dispatch(SearchFailureAction('Login necessário para pesquisar.'));
+      return; // Impede a execução da busca
+    }
     next(action);
     try {
       final embedding = await openAIService.generateEmbedding(action.query);

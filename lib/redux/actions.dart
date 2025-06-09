@@ -570,3 +570,8 @@ class UpdateUserCoinsAction {
   final int newCoinAmount;
   UpdateUserCoinsAction(this.newCoinAmount);
 }
+
+// Novas ações para modo convidado
+class UserEnteredGuestModeAction {}
+
+class UserExitedGuestModeAction {} // Ou use UserLoggedOutAction se fizer sentido

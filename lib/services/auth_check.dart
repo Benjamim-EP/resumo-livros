@@ -3,14 +3,13 @@ import 'dart:async'; // Para StreamSubscription
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// A LoginPage será retornada diretamente pelo build, então pode não precisar ser navegada globalmente
-import 'package:resumo_dos_deuses_flutter/pages/login_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/login_page.dart'; // Importa LoginPage
+import 'package:resumo_dos_deuses_flutter/pages/start_screen_page.dart'; // **** NOVO: Importa StartScreenPage ****
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/components/bottomNavigationBar/bottomNavigationBar.dart'; // MainAppScreen
-// Removida a importação da StartScreenPage
 
 class AuthCheck extends StatefulWidget {
   const AuthCheck({super.key});
@@ -51,28 +50,34 @@ class _AuthCheckState extends State<AuthCheck> {
         _currentUser = user;
         _initialAuthEventReceived = true;
         if (user != null && !_processingUser) {
-          _processUser(
-              user, store); // _processUser agora lida com _processingUser
+          _processUser(user, store);
         } else if (user == null) {
-          _processingUser = false;
-          store.dispatch(UserLoggedOutAction());
+          _processingUser =
+              false; // Garante que o processing é resetado se o user for nulo
+          if (store.state.userState.isLoggedIn ||
+              store.state.userState.isGuestUser) {
+            // Só desloga se não for convidado
+            store.dispatch(UserLoggedOutAction()); // Limpa estado de login
+          }
         }
       });
     }, onError: (error) {
       print("AuthCheck authStateChanges LISTENER: Erro no stream: $error");
-      if (mounted)
+      if (mounted) {
         setState(() {
           _currentUser = null;
           _initialAuthEventReceived = true;
           _processingUser = false;
         });
+      }
     }, onDone: () {
       print(
           "AuthCheck authStateChanges LISTENER: Stream de autenticação finalizado.");
       if (mounted && !_initialAuthEventReceived) {
         setState(() {
           _initialAuthEventReceived = true;
-          _currentUser = null;
+          _currentUser =
+              null; // Garante que _currentUser seja nulo se o stream terminar sem evento
           _processingUser = false;
         });
       }
@@ -93,16 +98,24 @@ class _AuthCheckState extends State<AuthCheck> {
       return;
     }
 
+    // Verifica se já estamos processando este usuário para evitar múltiplas execuções
+    if (_processingUser && store.state.userState.userId == user.uid) {
+      print(
+          "AuthCheck: _processUser - Já processando usuário ${user.uid}. Abortando nova execução.");
+      return;
+    }
+
     if (mounted) setState(() => _processingUser = true);
     print(
         "AuthCheck: _processUser - Iniciando para usuário ${user.uid}. _processingUser = true.");
 
+    // Se o usuário Redux for diferente ou não estiver logado, despacha UserLoggedInAction
     if (store.state.userState.userId != user.uid ||
         !store.state.userState.isLoggedIn) {
       store.dispatch(UserLoggedInAction(
         userId: user.uid,
         email: user.email ?? '',
-        nome: user.displayName ?? '',
+        nome: user.displayName ?? '', // Nome inicial do Firebase Auth
       ));
     }
 
@@ -113,6 +126,7 @@ class _AuthCheckState extends State<AuthCheck> {
 
       if (!mounted) {
         print("AuthCheck: _processUser - Desmontado após get do Firestore.");
+        _processingUser = false; // Resetar flag
         return;
       }
 
@@ -126,14 +140,12 @@ class _AuthCheckState extends State<AuthCheck> {
 
         final Map<String, dynamic> newUserFirestoreData = {
           'userId': user.uid,
-          'nome': initialName,
+          'nome':
+              initialName, // Pode ser atualizado por UserDetailsLoadedAction
           'email': initialEmail,
           'photoURL': initialPhotoURL,
           'dataCadastro': FieldValue.serverTimestamp(),
-          'Dias': 0,
-          'Livros': 0,
-          'Tópicos': 0,
-          'selos': 10,
+          'Dias': 0, 'Livros': 0, 'Tópicos': 0, 'selos': 10,
           'descrição': "Bem-vindo(a) ao Septima!",
           'topicSaves': {},
           'userCoins': 100,
@@ -205,12 +217,25 @@ class _AuthCheckState extends State<AuthCheck> {
           migratedData['subscriptionStatus'] = 'inactive';
           needsMigrationUpdateInUsersDoc = true;
         }
+        // Adicione aqui a verificação para 'nome' e 'email' se eles podem estar ausentes
+        if (migratedData['nome'] == null ||
+            (migratedData['nome'] as String).isEmpty) {
+          migratedData['nome'] = user.displayName ?? 'Usuário Septima';
+          needsMigrationUpdateInUsersDoc = true;
+        }
+        if (migratedData['email'] == null ||
+            (migratedData['email'] as String).isEmpty) {
+          migratedData['email'] =
+              user.email ?? 'email.desconhecido@example.com';
+          needsMigrationUpdateInUsersDoc = true;
+        }
 
         if (needsMigrationUpdateInUsersDoc) {
           await userDocRef.update(migratedData);
           print("AuthCheck: Dados de migração aplicados a /users/${user.uid}.");
         }
-        store.dispatch(UserDetailsLoadedAction(migratedData));
+        store.dispatch(UserDetailsLoadedAction(
+            migratedData)); // Despacha os dados (possivelmente migrados)
 
         final WriteBatch migrationBatch = FirebaseFirestore.instance.batch();
         bool needsMigrationBatchCommit = false;
@@ -265,6 +290,7 @@ class _AuthCheckState extends State<AuthCheck> {
       if (!mounted) {
         print(
             "AuthCheck: _processUser - Desmontado antes de despachar LoadAdLimitDataAction.");
+        _processingUser = false; // Resetar flag
         return;
       }
       store.dispatch(LoadAdLimitDataAction());
@@ -294,6 +320,14 @@ class _AuthCheckState extends State<AuthCheck> {
         _setupAuthListener(store);
       },
       builder: (context, store) {
+        // 1. Se o usuário está explicitamente no modo convidado, mostra MainAppScreen
+        if (store.state.userState.isGuestUser) {
+          print(
+              "AuthCheck builder: Usuário é CONVIDADO. Mostrando MainAppScreen.");
+          return const MainAppScreen();
+        }
+
+        // 2. Se o evento inicial do Firebase Auth ainda não foi recebido, mostra um loader
         if (!_initialAuthEventReceived) {
           print(
               "AuthCheck builder: Aguardando primeiro evento do authStateChanges. Mostrando loader.");
@@ -304,14 +338,18 @@ class _AuthCheckState extends State<AuthCheck> {
                       key: ValueKey("AuthCheckInitialEventLoader"))));
         }
 
+        // 3. Se não há usuário Firebase (_currentUser é nulo) E NÃO está no modo convidado (já checado acima)
+        //    Então, o usuário não está logado e não é convidado. Mostra StartScreenPage.
         if (_currentUser == null) {
-          print("AuthCheck builder: Usuário NULO. Mostrando LoginPage.");
-          return const LoginPage(); // <<< ALTERADO: Vai para LoginPage em vez de StartScreenPage
+          print(
+              "AuthCheck builder: Usuário Firebase NULO (e não é convidado). Mostrando StartScreenPage.");
+          return const StartScreenPage(); // <--- MUDANÇA PRINCIPAL PARA OPÇÃO 1
         }
 
+        // 4. Se há um usuário Firebase, mas ainda estamos processando seus dados (criando no Firestore, etc.)
         if (_processingUser) {
           print(
-              "AuthCheck builder: Usuário NÃO NULO (${_currentUser!.uid}), mas _processingUser é TRUE. Mostrando loader de processamento.");
+              "AuthCheck builder: Usuário Firebase NÃO NULO (${_currentUser!.uid}), mas _processingUser é TRUE. Mostrando loader de processamento.");
           return const Scaffold(
               key: ValueKey("AuthCheckProcessingUserUI"),
               body: Center(
@@ -319,6 +357,7 @@ class _AuthCheckState extends State<AuthCheck> {
                       key: ValueKey("AuthCheckProcessingLoader"))));
         }
 
+        // 5. Se o usuário Firebase existe, foi processado, e o estado Redux reflete que está logado.
         if (store.state.userState.userId == _currentUser!.uid &&
             store.state.userState.isLoggedIn) {
           print(
@@ -326,8 +365,10 @@ class _AuthCheckState extends State<AuthCheck> {
           return const MainAppScreen();
         }
 
+        // 6. Situação de fallback ou sincronização pendente entre Firebase Auth e estado Redux.
+        //    Isso pode acontecer brevemente enquanto o _processUser atualiza o Redux.
         print(
-            "AuthCheck builder: Fallback/Carregamento. User Firebase: ${_currentUser?.uid}, Redux User: ${store.state.userState.userId}. Mostrando loader.");
+            "AuthCheck builder: Fallback/Carregamento. User Firebase: ${_currentUser?.uid}, Redux User: ${store.state.userState.userId}, Redux LoggedIn: ${store.state.userState.isLoggedIn}. Mostrando loader.");
         return const Scaffold(
           key: ValueKey("AuthCheckFallbackOrSyncing"),
           body: Center(child: CircularProgressIndicator()),

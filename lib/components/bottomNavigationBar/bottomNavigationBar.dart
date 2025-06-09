@@ -5,14 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/library_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart'; // Para rotas de navegação
 import 'package:resumo_dos_deuses_flutter/pages/user_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
+import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart'; // Para rotas de navegação
+import 'package:resumo_dos_deuses_flutter/pages/author_page.dart'; // Para rotas de navegação
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
-// Removido: import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Não usado diretamente aqui
+import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart'; // Para SubscriptionStatusUpdatedAction
 import 'package:resumo_dos_deuses_flutter/redux/middleware/ad_middleware.dart'; // Para MAX_COINS_LIMIT
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
@@ -20,7 +19,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart'; // <<< IMPORTANTE PARA ProcessPendingBibleProgressAction
+import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
 
 // ViewModel para o StoreConnector das moedas
 class _UserCoinsViewModel {
@@ -39,6 +38,8 @@ class _UserCoinsViewModel {
         if (endDateTimestamp != null) {
           premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
         } else {
+          // Se endDate for nulo mas status é 'active', pode ser vitalício ou erro nos dados.
+          // Assumindo premium para este caso.
           premiumStatus = true;
         }
       }
@@ -63,11 +64,12 @@ class _UserCoinsViewModel {
 
 class _UnderConstructionPlaceholder extends StatelessWidget {
   final String pageTitle;
-  const _UnderConstructionPlaceholder({required this.pageTitle});
+  const _UnderConstructionPlaceholder({super.key, required this.pageTitle});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Removido o AppBar daqui, pois MainAppScreen já tem um
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -100,36 +102,65 @@ class MainAppScreen extends StatefulWidget {
 }
 
 class _MainAppScreenState extends State<MainAppScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // Padrão para UserPage
 
   final GlobalKey<NavigatorState> _userNavigatorKey =
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _bibleNavigatorKey =
       GlobalKey<NavigatorState>();
+  // LibraryPage e Chat não precisam de GlobalKey se não tiverem navegação aninhada profunda
 
   late final List<Widget> _pages;
   ads.BannerAd? _bannerAd;
   StreamSubscription? _userDocSubscription;
-  bool _isPremiumFromState = false;
+  bool _isPremiumFromState = false; // Usado para controlar a exibição do banner
 
   @override
   void initState() {
     super.initState();
-    _setupUserListener();
+    _setupUserListener(); // Configura o listener do Firestore
+
     _pages = [
       _buildTabNavigator(_userNavigatorKey, const UserPage()), // Índice 0
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()), // Índice 1
-      _buildTabNavigator(
-          null, const LibraryPage()), // <<< ALTERADO AQUI (Índice 2)
-      _buildTabNavigator(
-          null,
-          const _UnderConstructionPlaceholder(
-              pageTitle: "Chat IA")), // Índice 3
+      const LibraryPage(), // Índice 2 (Não precisa de _buildTabNavigator se não tiver rotas aninhadas)
+      const _UnderConstructionPlaceholder(pageTitle: "Chat IA"), // Índice 3
     ];
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final initialViewModel = _UserCoinsViewModel.fromStore(
-            StoreProvider.of<AppState>(context, listen: false));
+        final storeInstance =
+            StoreProvider.of<AppState>(context, listen: false);
+        final initialTargetIndex =
+            storeInstance.state.userState.targetBottomNavIndex;
+        final isGuest = storeInstance.state.userState.isGuestUser;
+
+        int newInitialIndex = 0; // Padrão para UserPage (índice 0)
+
+        if (isGuest && initialTargetIndex != null) {
+          newInitialIndex = _calculateActualIndexFromTarget(initialTargetIndex);
+          print(
+              "MainAppScreen initState (Guest): Target index $initialTargetIndex, newInitialIndex $newInitialIndex");
+        } else if (!isGuest && initialTargetIndex != null) {
+          newInitialIndex = _calculateActualIndexFromTarget(initialTargetIndex);
+          print(
+              "MainAppScreen initState (Non-Guest): Target index $initialTargetIndex, newInitialIndex $newInitialIndex");
+        }
+        // Se não for convidado e não houver target, permanece 0 (UserPage)
+
+        if (newInitialIndex != _selectedIndex) {
+          setState(() {
+            _selectedIndex = newInitialIndex;
+          });
+        }
+
+        // Limpa o alvo APÓS usá-lo para a configuração inicial
+        if (initialTargetIndex != null) {
+          storeInstance.dispatch(ClearTargetBottomNavAction());
+        }
+
+        // Lógica original do ad premium
+        final initialViewModel = _UserCoinsViewModel.fromStore(storeInstance);
         _updatePremiumUI(initialViewModel.isPremium);
       }
     });
@@ -146,10 +177,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final userId = user.uid;
-      // Obtém a instância global do store diretamente, se ela for exportada de store.dart
-      // ou passa o store do context para cá se necessário.
-      // Assumindo que 'store' é a instância global de redux/store.dart
-      final storeInstance = store;
+      final storeInstance = store; // Usando a instância global do store
       _userDocSubscription?.cancel();
       _userDocSubscription = FirebaseFirestore.instance
           .collection('users')
@@ -162,6 +190,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
               userData['subscriptionEndDate'] as Timestamp?;
           final DateTime? endDateDateTime = endDateTimestamp?.toDate();
 
+          // Atualiza o estado Redux com os dados do usuário e da assinatura
           storeInstance.dispatch(SubscriptionStatusUpdatedAction(
             status: userData['subscriptionStatus'] ?? 'inactive',
             endDate: endDateDateTime,
@@ -170,6 +199,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
             priceId: userData['activePriceId'] as String?,
           ));
           storeInstance.dispatch(UserDetailsLoadedAction(userData));
+
+          // Atualiza a UI relacionada ao status premium
           final currentViewModel = _UserCoinsViewModel.fromStore(storeInstance);
           _updatePremiumUI(currentViewModel.isPremium);
         }
@@ -221,7 +252,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   Widget _buildTabNavigator(
       GlobalKey<NavigatorState>? navigatorKey, Widget child) {
     if (navigatorKey == null) {
-      return child;
+      return child; // Para abas sem navegação aninhada
     }
     return Navigator(
       key: navigatorKey,
@@ -236,7 +267,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
         } else if (settings.name == '/queryResults') {
           builder = (_) => const QueryResultsPage();
         }
-        builder ??= (_) => child;
+        // Adicione outras rotas específicas da aba aqui, se necessário
+        builder ??= (_) => child; // Rota padrão para a aba
         return MaterialPageRoute(builder: builder, settings: settings);
       },
     );
@@ -249,9 +281,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
       case 1:
         return _bibleNavigatorKey;
       case 2:
-        return null;
+        return null; // LibraryPage não tem NavigatorKey neste exemplo
       case 3:
-        return null;
+        return null; // Chat não tem NavigatorKey
       default:
         return _userNavigatorKey;
     }
@@ -262,10 +294,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
     if (currentKey == null ||
         currentKey.currentState == null ||
         !currentKey.currentState!.canPop()) {
-      return true;
+      return true; // Permite fechar o app se não puder popar na aba atual
     }
     currentKey.currentState!.pop();
-    return false;
+    return false; // Não fecha o app, apenas popa a rota na aba
   }
 
   String _getAppBarTitle(int index) {
@@ -283,36 +315,39 @@ class _MainAppScreenState extends State<MainAppScreen> {
     }
   }
 
+  // Função auxiliar para calcular o índice real a partir do targetBottomNavIndex
+  int _calculateActualIndexFromTarget(int targetIndexFromAction) {
+    // Lógica ATUALIZADA para o novo fluxo de abas:
+    // User (0), Bible (1), Library (2), Chat (3)
+    if (targetIndexFromAction >= 0 && targetIndexFromAction < _pages.length) {
+      return targetIndexFromAction;
+    }
+    return 0; // Fallback para a primeira aba (UserPage)
+  }
+
   @override
   Widget build(BuildContext context) {
+    final storeInstance = StoreProvider.of<AppState>(context, listen: false);
+
     return StoreConnector<AppState, _MainAppScreenViewModel>(
       converter: (store) => _MainAppScreenViewModel.fromStore(store),
       onDidChange: (previousViewModel, newViewModel) {
         if (!mounted) return;
-        _updatePremiumUI(newViewModel.isPremium);
+        _updatePremiumUI(newViewModel.isPremium); // Atualiza UI do banner
 
+        // Reage a mudanças no targetBottomNavIndex (para navegação programática entre abas)
         if (newViewModel.targetBottomNavIndex != null) {
-          int oldTargetIndex = newViewModel.targetBottomNavIndex!;
-          int? newSelectedActualIndex;
+          int targetIndex = newViewModel.targetBottomNavIndex!;
+          int actualNewIndex = _calculateActualIndexFromTarget(targetIndex);
 
-          if (oldTargetIndex == 0) {
-            newSelectedActualIndex = 0;
-          } else if (oldTargetIndex == 1) {
-            print(
-                "Redirecionamento da antiga aba Explore para Usuário (índice 0).");
-            newSelectedActualIndex = 0;
-          } else if (oldTargetIndex > 1) {
-            newSelectedActualIndex = oldTargetIndex - 1;
-          }
-
-          if (newSelectedActualIndex != null &&
-              newSelectedActualIndex != _selectedIndex) {
+          if (actualNewIndex != _selectedIndex) {
             setState(() {
-              _selectedIndex = newSelectedActualIndex!;
+              _selectedIndex = actualNewIndex;
             });
+            print(
+                "MainAppScreen onDidChange: Mudando para aba $actualNewIndex devido a targetBottomNavIndex.");
           }
-          StoreProvider.of<AppState>(context, listen: false)
-              .dispatch(ClearTargetBottomNavAction());
+          storeInstance.dispatch(ClearTargetBottomNavAction());
         }
       },
       builder: (context, mainScreenViewModel) {
@@ -325,7 +360,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
                 StoreConnector<AppState, _UserCoinsViewModel>(
                   converter: (store) => _UserCoinsViewModel.fromStore(store),
                   builder: (context, coinsViewModel) {
-                    if (coinsViewModel.isPremium) {
+                    // Não mostra moedas para convidados ou premium
+                    if (storeInstance.state.userState.isGuestUser ||
+                        coinsViewModel.isPremium) {
                       return const SizedBox.shrink();
                     }
                     return Padding(
@@ -347,8 +384,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                                   color: Colors.greenAccent, size: 24),
                               tooltip: 'Ganhar Moedas',
                               onPressed: () {
-                                StoreProvider.of<AppState>(context,
-                                        listen: false)
+                                storeInstance
                                     .dispatch(RequestRewardedAdAction());
                               },
                             )
@@ -383,39 +419,36 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   currentIndex: _selectedIndex,
                   onTap: (index) {
                     if (mounted) {
-                      int previousIndex =
-                          _selectedIndex; // Guarda o índice anterior
+                      // Se o usuário for convidado e tentar ir para a aba "User" (índice 0)
+                      if (storeInstance.state.userState.isGuestUser &&
+                          index == 0) {
+                        showLoginRequiredDialog(context,
+                            featureName: "seu perfil");
+                        return; // Não muda de aba
+                      }
 
+                      int previousIndex = _selectedIndex;
                       setState(() {
-                        _selectedIndex = index; // Atualiza para o novo índice
+                        _selectedIndex = index;
                       });
 
-                      // Verifica se o usuário estava na BiblePage (índice 1) e mudou para OUTRA aba
                       if (previousIndex == 1 && index != 1) {
-                        // Usa o context daqui que é válido ou a instância global do store
-                        final currentStore =
-                            StoreProvider.of<AppState>(context, listen: false);
-                        final userState = currentStore.state.userState;
-
+                        // Saindo da BiblePage
+                        final userState = storeInstance.state.userState;
                         if (userState.userId != null) {
+                          // Só processa se for usuário logado
                           final pendingToAdd = userState.pendingSectionsToAdd;
                           final pendingToRemove =
                               userState.pendingSectionsToRemove;
                           if (pendingToAdd.isNotEmpty ||
                               pendingToRemove.isNotEmpty) {
-                            print(
-                                "BottomNav onTap: Saindo da BiblePage com pendências. Disparando ProcessPendingBibleProgressAction.");
-                            currentStore
+                            storeInstance
                                 .dispatch(ProcessPendingBibleProgressAction());
-                          } else {
-                            print(
-                                "BottomNav onTap: Saindo da BiblePage sem pendências de progresso bíblico.");
                           }
                         }
                       }
-                      // Limpa qualquer alvo de navegação pendente do bottom nav
-                      StoreProvider.of<AppState>(context, listen: false)
-                          .dispatch(ClearTargetBottomNavAction());
+                      // Limpa qualquer alvo de navegação pendente do bottom nav, pois o usuário clicou.
+                      // storeInstance.dispatch(ClearTargetBottomNavAction()); // Opcional aqui, já que onDidChange também limpa
                     }
                   },
                   items: const [
@@ -426,9 +459,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
                         icon: Icon(Icons.book_outlined),
                         label: 'Bible'), // Índice 1
                     BottomNavigationBarItem(
-                        // <<< ALTERADO AQUI
-                        icon: Icon(Icons.local_library_outlined), // Novo ícone
-                        label: 'Biblioteca'), // Novo label - Índice 2
+                        icon: Icon(Icons.local_library_outlined),
+                        label: 'Biblioteca'), // Índice 2
                     BottomNavigationBarItem(
                         icon: Icon(Icons.chat_bubble_outline),
                         label: 'Chat'), // Índice 3
@@ -487,4 +519,38 @@ class _MainAppScreenViewModel {
   @override
   int get hashCode =>
       userDetails.hashCode ^ targetBottomNavIndex.hashCode ^ isPremium.hashCode;
+}
+
+// Função auxiliar para mostrar diálogo de login
+void showLoginRequiredDialog(BuildContext context,
+    {String featureName = "esta funcionalidade"}) {
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: Theme.of(dialogContext).dialogBackgroundColor,
+      title: const Text("Login Necessário"),
+      content: Text(
+          "Para acessar $featureName, por favor, faça login ou crie uma conta."),
+      actions: [
+        TextButton(
+          child: const Text("Cancelar"),
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        TextButton(
+          child: const Text("Login / Cadastrar"),
+          onPressed: () {
+            Navigator.of(dialogContext).pop();
+            final store = StoreProvider.of<AppState>(context, listen: false);
+            if (store.state.userState.isGuestUser) {
+              store.dispatch(UserExitedGuestModeAction());
+            }
+            // A navegação para /login deve fazer com que o AuthCheck redirecione para LoginPage.
+            // Se a StartScreenPage estiver na pilha abaixo de MainAppScreen, pode ser necessário popUntil.
+            Navigator.of(context, rootNavigator: true)
+                .pushNamedAndRemoveUntil('/login', (route) => false);
+          },
+        ),
+      ],
+    ),
+  );
 }

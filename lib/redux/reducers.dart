@@ -232,6 +232,8 @@ class UserState {
   final DateTime? firstAdIn6HourWindowTimestamp;
   final int adsWatchedIn6HourWindow;
 
+  final bool isGuestUser; // NOVO
+
   UserState({
     this.userId,
     this.email,
@@ -274,6 +276,7 @@ class UserState {
     this.pendingSectionsToRemove = const {},
     this.firstAdIn6HourWindowTimestamp,
     this.adsWatchedIn6HourWindow = 0,
+    this.isGuestUser = false,
   });
 
   UserState copyWith({
@@ -325,6 +328,7 @@ class UserState {
     DateTime? firstAdIn6HourWindowTimestamp,
     bool clearFirstAdIn6HourWindowTimestamp = false,
     int? adsWatchedIn6HourWindow,
+    bool? isGuestUser, // NOVO
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -400,6 +404,7 @@ class UserState {
               this.firstAdIn6HourWindowTimestamp),
       adsWatchedIn6HourWindow:
           adsWatchedIn6HourWindow ?? this.adsWatchedIn6HourWindow,
+      isGuestUser: isGuestUser ?? this.isGuestUser,
     );
   }
 }
@@ -412,12 +417,24 @@ UserState userReducer(UserState state, dynamic action) {
       nome: action
           .nome, // Nome inicial, pode ser atualizado por UserDetailsLoadedAction
       isLoggedIn: true,
+      isGuestUser: false,
       // Não reseta moedas ou outros dados aqui, UserDetailsLoadedAction ou
       // uma ação de carregamento de dados do userBibleProgress cuidará disso.
     );
   } else if (action is UserLoggedOutAction) {
     // Retorna ao estado inicial completo, limpando todos os dados do usuário.
     return UserState();
+  } else if (action is UserExitedGuestModeAction) {
+    // Similar a UserLoggedOutAction, mas pode ter lógica específica
+    return state.copyWith(isGuestUser: false);
+  } else if (action is UserEnteredGuestModeAction) {
+    return state.copyWith(
+      isLoggedIn: false, // Convidado não está "logado" no sentido Firebase
+      userId: null, // Sem ID de usuário
+      email: null,
+      nome: "Convidado",
+      isGuestUser: true,
+    );
   } else if (action is UpdateUserUidAction) {
     // Usado pelo AuthCheck se o UID inicial for nulo
     return state.copyWith(userId: action.uid);

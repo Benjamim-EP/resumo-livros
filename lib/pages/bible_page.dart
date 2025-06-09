@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:resumo_dos_deuses_flutter/components/login_required.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart';
@@ -732,6 +733,12 @@ class _BiblePageState extends State<BiblePage> {
   void _applyFiltersToReduxAndSearch() {
     // ... (sem alterações)
     if (!mounted || _store == null) return;
+    if (_store!.state.userState.isGuestUser) {
+      // NOVO CHECK
+      showLoginRequiredDialog(context,
+          featureName: "a busca avançada na Bíblia");
+      return;
+    }
     _store!.dispatch(
         SetBibleSearchFilterAction('testamento', _filterSelectedTestament));
     _store!.dispatch(
@@ -859,7 +866,11 @@ class _BiblePageState extends State<BiblePage> {
         ),
         tooltip: "Busca Semântica",
         onPressed: () {
-          if (mounted) {
+          final store = StoreProvider.of<AppState>(context, listen: false);
+          if (store.state.userState.isGuestUser) {
+            showLoginRequiredDialog(context,
+                featureName: "a busca avançada na Bíblia");
+          } else {
             setState(() {
               _isSemanticSearchActive = true;
               _showExtraOptions = false;
