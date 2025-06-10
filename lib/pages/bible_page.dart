@@ -1807,153 +1807,253 @@ class _BiblePageState extends State<BiblePage> {
     );
   }
 
+  Widget _buildFilterChipButton({
+    required BuildContext context,
+    required String label, // O que está selecionado ou o placeholder
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool isActive = false, // Para indicar se um filtro está ativo
+  }) {
+    final theme = Theme.of(context);
+    return ActionChip(
+      avatar: Icon(
+        icon,
+        size: 16,
+        color: isActive
+            ? theme.colorScheme
+                .onPrimaryContainer // Cor do ícone quando filtro está ativo
+            : theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: isActive
+              ? theme.colorScheme
+                  .onPrimaryContainer // Cor do texto quando filtro está ativo
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      onPressed: onPressed,
+      backgroundColor: isActive
+          ? theme.colorScheme.primaryContainer
+              .withOpacity(0.8) // Cor de fundo quando ativo
+          : theme.inputDecorationTheme.fillColor ??
+              theme.cardColor.withOpacity(0.5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isActive
+              ? theme.colorScheme.primaryContainer
+              : theme.dividerColor.withOpacity(0.3),
+          width: 0.8,
+        ),
+      ),
+      elevation: isActive ? 1 : 0,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    );
+  }
+
   Widget _buildSemanticSearchFilterWidgets(ThemeData theme) {
-    // Lista de testamentos disponíveis para o dropdown
+    // Lista de testamentos disponíveis
     List<String> testamentosDisponiveis = ["Antigo", "Novo"];
 
-    // Monta os itens do DropdownButton para os livros
-    List<DropdownMenuItem<String>> bookItems = [
+    // Monta os itens do Dropdown para os livros (para o BottomSheet)
+    List<DropdownMenuItem<String>> bookDropdownItems = [
       DropdownMenuItem<String>(
-          value: null, // Representa "Todos Livros"
-          child: Text("Todos Livros",
-              style: TextStyle(fontSize: 12, color: theme.hintColor))),
+          value: null,
+          child: Text("Todos os Livros",
+              style: TextStyle(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)))),
     ];
     if (booksMap != null && booksMap!.isNotEmpty) {
-      // Ordena os livros pelo nome para exibição no dropdown
       List<MapEntry<String, dynamic>> sortedBooks = booksMap!.entries.toList()
         ..sort((a, b) =>
             (a.value['nome'] as String).compareTo(b.value['nome'] as String));
       for (var entry in sortedBooks) {
-        bookItems.add(DropdownMenuItem<String>(
-          value: entry.key, // A abreviação do livro como valor
-          child: Text(
-              entry.value['nome'] as String, // Nome completo para exibição
-              style: TextStyle(
-                  fontSize: 12, color: theme.textTheme.bodyLarge?.color)),
+        bookDropdownItems.add(DropdownMenuItem<String>(
+          value: entry.key,
+          child: Text(entry.value['nome'] as String,
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
         ));
       }
     }
 
-    // Monta os itens do DropdownButton para os tipos de conteúdo
-    List<DropdownMenuItem<String>> typeItems = [
+    // Monta os itens do Dropdown para os tipos de conteúdo (para o BottomSheet)
+    List<DropdownMenuItem<String>> typeDropdownItems = [
       DropdownMenuItem<String>(
-          value: null, // Representa "Todos Tipos"
-          child: Text("Todos Tipos",
-              style: TextStyle(fontSize: 12, color: theme.hintColor))),
+          value: null,
+          child: Text("Todos os Tipos",
+              style: TextStyle(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)))),
     ];
     for (var tipoMap in _tiposDeConteudoDisponiveisParaFiltro) {
-      typeItems.add(DropdownMenuItem<String>(
-        value: tipoMap['value'], // O valor da chave 'value' do mapa
-        child: Text(
-            tipoMap['display']!, // O valor da chave 'display' para o texto
-            style: TextStyle(
-                fontSize: 12, color: theme.textTheme.bodyLarge?.color)),
+      typeDropdownItems.add(DropdownMenuItem<String>(
+        value: tipoMap['value'],
+        child: Text(tipoMap['display']!,
+            style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
       ));
     }
 
+    // Função para mostrar o BottomSheet de seleção
+    Future<T?> _showFilterSelectionSheet<T>({
+      required BuildContext context, // O contexto do builder da BiblePage
+      required String title,
+      required List<DropdownMenuItem<T>> items,
+      required T? currentValue,
+      required ValueChanged<T?> onChanged,
+    }) {
+      return showModalBottomSheet<T>(
+        context: context, // Usa o contexto passado
+        backgroundColor: theme.dialogBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (BuildContext modalContext) {
+          // modalContext é o contexto do BottomSheet
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(color: theme.colorScheme.onSurface),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<T>(
+                  value: currentValue,
+                  items: items,
+                  onChanged: (T? newValue) {
+                    onChanged(newValue);
+                    Navigator.pop(
+                        modalContext); // Fecha o BottomSheet após a seleção
+                  },
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: theme.inputDecorationTheme.fillColor ??
+                        theme.cardColor.withOpacity(0.1),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10), // Ajustado
+                  ),
+                  dropdownColor: theme.dialogBackgroundColor,
+                  style: TextStyle(
+                      color: theme.textTheme.bodyLarge?.color, fontSize: 14),
+                  iconEnabledColor: theme.iconTheme.color,
+                  isExpanded: true, // Garante que o dropdown ocupe a largura
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
-          color: theme.cardColor.withOpacity(0.05), // Um fundo sutil
+          color: theme.scaffoldBackgroundColor,
           border: Border(
-              bottom: BorderSide(color: theme.dividerColor, width: 0.5))),
+              bottom: BorderSide(
+                  color: theme.dividerColor.withOpacity(0.3), width: 0.5))),
       child: SingleChildScrollView(
-        // Permite rolagem horizontal se os filtros não couberem
         scrollDirection: Axis.horizontal,
         child: Row(
           children: <Widget>[
-            // Dropdown para Testamento
-            SizedBox(
-                width: 125, // Largura fixa para o dropdown de testamento
-                child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: Text("Testamento",
+            _buildFilterChipButton(
+              context: context, // Passa o contexto da BiblePage
+              icon: Icons.menu_book_outlined,
+              label: _filterSelectedTestament ?? "Testamento",
+              isActive: _filterSelectedTestament != null,
+              onPressed: () {
+                _showFilterSelectionSheet<String>(
+                  context: context, // Passa o contexto da BiblePage
+                  title: "Selecionar Testamento",
+                  items: [
+                    DropdownMenuItem<String>(
+                        value: null,
+                        child: Text("Todos os Testamentos",
                             style: TextStyle(
-                                fontSize: 12, color: theme.hintColor)),
-                        value: _filterSelectedTestament,
-                        items: [
-                          DropdownMenuItem<String>(
-                              value: null, // Opção para limpar/selecionar todos
-                              child: Text(
-                                  "Todos Test.", // Abreviação para "Todos Testamentos"
-                                  style: TextStyle(
-                                      fontSize: 12, color: theme.hintColor))),
-                          ...testamentosDisponiveis.map(
-                              (String value) => // Mapeia a lista de testamentos
-                                  DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value,
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: theme.textTheme.bodyLarge
-                                                  ?.color))))
-                        ],
-                        onChanged: (String? newValue) {
-                          setState(() => _filterSelectedTestament = newValue);
-                          // A busca real com filtros é feita ao pressionar o botão "Buscar" ou "Aplicar Filtros"
-                          // Opcionalmente, poderia chamar _store.dispatch(SetBibleSearchFilterAction) aqui
-                          // se quisesse que o filtro fosse aplicado no Redux imediatamente.
-                        },
-                        style: TextStyle(
-                            color: theme.textTheme.bodyLarge?.color,
-                            fontSize: 12),
-                        dropdownColor: theme.dialogBackgroundColor,
-                        iconEnabledColor: theme.iconTheme.color))),
-            const SizedBox(width: 6),
-
-            // Dropdown para Livro
-            SizedBox(
-                width: 140, // Largura fixa para o dropdown de livro
-                child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: Text("Livro",
-                            style: TextStyle(
-                                fontSize: 12, color: theme.hintColor)),
-                        value: _filterSelectedBookAbbrev,
-                        items: bookItems, // Itens de livro montados acima
-                        onChanged: (String? newValue) {
-                          setState(() => _filterSelectedBookAbbrev = newValue);
-                        },
-                        style: TextStyle(
-                            color: theme.textTheme.bodyLarge?.color,
-                            fontSize: 12),
-                        dropdownColor: theme.dialogBackgroundColor,
-                        iconEnabledColor: theme.iconTheme.color))),
-            const SizedBox(width: 6),
-
-            // Dropdown para Tipo de Conteúdo
-            SizedBox(
-                width: 155, // Largura para o dropdown de tipo
-                child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: Text("Tipo",
-                            style: TextStyle(
-                                fontSize: 12, color: theme.hintColor)),
-                        value: _filterSelectedContentType,
-                        items: typeItems, // Itens de tipo montados acima
-                        onChanged: (String? newValue) {
-                          setState(() => _filterSelectedContentType = newValue);
-                        },
-                        style: TextStyle(
-                            color: theme.textTheme.bodyLarge?.color,
-                            fontSize: 12),
-                        dropdownColor: theme.dialogBackgroundColor,
-                        iconEnabledColor: theme.iconTheme.color))),
-            const SizedBox(width: 10),
-
-            // Botão para limpar filtros
-            IconButton(
-                icon: Icon(Icons.clear_all,
-                    size: 20, color: theme.iconTheme.color?.withOpacity(0.7)),
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.7)))),
+                    ...testamentosDisponiveis.map((String value) =>
+                        DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value,
+                                style: TextStyle(
+                                    color: theme.textTheme.bodyLarge?.color)))),
+                  ],
+                  currentValue: _filterSelectedTestament,
+                  onChanged: (String? newValue) {
+                    setState(() => _filterSelectedTestament = newValue);
+                  },
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            _buildFilterChipButton(
+              context: context, // Passa o contexto da BiblePage
+              icon: Icons.auto_stories_outlined,
+              label: _filterSelectedBookAbbrev != null
+                  ? (booksMap?[_filterSelectedBookAbbrev]?['nome'] ?? "Livro")
+                  : "Livro",
+              isActive: _filterSelectedBookAbbrev != null,
+              onPressed: () {
+                _showFilterSelectionSheet<String>(
+                  context: context, // Passa o contexto da BiblePage
+                  title: "Selecionar Livro",
+                  items: bookDropdownItems,
+                  currentValue: _filterSelectedBookAbbrev,
+                  onChanged: (String? newValue) {
+                    setState(() => _filterSelectedBookAbbrev = newValue);
+                  },
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            _buildFilterChipButton(
+              context: context, // Passa o contexto da BiblePage
+              icon: Icons.category_outlined,
+              label: _filterSelectedContentType != null
+                  ? (_tiposDeConteudoDisponiveisParaFiltro.firstWhere(
+                      (t) => t['value'] == _filterSelectedContentType,
+                      orElse: () => {'display': "Tipo"})['display']!)
+                  : "Tipo",
+              isActive: _filterSelectedContentType != null,
+              onPressed: () {
+                _showFilterSelectionSheet<String>(
+                  context: context, // Passa o contexto da BiblePage
+                  title: "Selecionar Tipo de Conteúdo",
+                  items: typeDropdownItems,
+                  currentValue: _filterSelectedContentType,
+                  onChanged: (String? newValue) {
+                    setState(() => _filterSelectedContentType = newValue);
+                  },
+                );
+              },
+            ),
+            if (_filterSelectedTestament != null ||
+                _filterSelectedBookAbbrev != null ||
+                _filterSelectedContentType != null) ...[
+              const SizedBox(width: 12),
+              IconButton(
+                icon: Icon(Icons.clear_all_rounded,
+                    size: 22, color: theme.colorScheme.error.withOpacity(0.8)),
                 tooltip: "Limpar Filtros",
-                onPressed:
-                    _clearFiltersInReduxAndResetLocal, // Chama a função de limpar
-                padding: EdgeInsets.zero, // Remove padding extra
-                constraints:
-                    const BoxConstraints()), // Garante que o botão não seja muito grande
+                onPressed: () {
+                  _clearFiltersInReduxAndResetLocal();
+                },
+                splashRadius: 20,
+                visualDensity: VisualDensity.compact,
+              ),
+            ]
           ],
         ),
       ),
