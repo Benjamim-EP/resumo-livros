@@ -270,7 +270,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
 
   Widget _buildFilterBar(ThemeData theme) {
     Color svgIconColor = _isSemanticSearchForSermonsActive
-        ? theme.colorScheme.secondary // Cor quando ativo
+        ? Color.fromARGB(255, 255, 224, 87) // Cor quando ativo
         : theme.iconTheme.color?.withOpacity(0.7) ??
             theme.hintColor; // Cor quando inativo
 

@@ -31,6 +31,8 @@ class AppTheme {
       'Inter'; // Exemplo de fonte primária para corpo de texto
   static const String fontSecondary = 'Poppins'; // Exemplo de fonte secundária
 
+  static const svgtheme = Color.fromARGB(255, 185, 166, 80);
+
   // --- TEMA VERDE (ORIGINAL) ---
   static ThemeData get greenTheme {
     return ThemeData(
@@ -38,7 +40,8 @@ class AppTheme {
       fontFamily: fontPrimary, // Fonte padrão para o tema verde
       scaffoldBackgroundColor: greenThemeBackground,
       primaryColor: greenThemePrimary,
-      hintColor: greenThemeSecondary, // Cor de destaque secundária
+      hintColor:
+          const Color.fromARGB(255, 51, 51, 49), // Cor de destaque secundária
       colorScheme: const ColorScheme.dark(
         primary: greenThemePrimary,
         secondary: greenThemeSecondary,
