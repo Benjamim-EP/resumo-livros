@@ -121,7 +121,7 @@ class _UserPageState extends State<UserPage> {
   }
 
   void _navigateToBibleVerseAndTab(String verseId) {
-    // ... (sem alterações) ...
+    print("Navegando para o versículo: $verseId");
     final parts = verseId.split('_');
     if (parts.length == 3) {
       final bookAbbrev = parts[0];

@@ -1,5 +1,6 @@
 // lib/redux/middleware/user_middleware.dart
 import 'package:redux/redux.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
@@ -348,9 +349,6 @@ void Function(Store<AppState>, RecordReadingHistoryAction, NextDispatcher)
     _handleRecordReadingHistory(FirestoreService firestoreService) {
   return (Store<AppState> store, RecordReadingHistoryAction action,
       NextDispatcher next) async {
-    // Ação original pode ser passada se houver um reducer, mas a atualização principal virá de UpdateLastReadLocationAction
-    // next(action);
-
     final userId = store.state.userState.userId;
     if (userId == null) {
       print("UserMiddleware (RecordHistory): Usuário não logado.");
@@ -358,30 +356,58 @@ void Function(Store<AppState>, RecordReadingHistoryAction, NextDispatcher)
     }
 
     try {
-      // 1. Adiciona à subcoleção de histórico (users/{userId}/reading_history)
-      //    Esta parte é opcional se você decidir que o lastRead no userBibleProgress é suficiente.
-      String bookNameForHistory =
-          await firestoreService.getBookNameFromAbbrev(action.bookAbbrev) ??
-              action.bookAbbrev.toUpperCase();
-      await firestoreService.addReadingHistoryEntry(
-          userId, action.bookAbbrev, action.chapter, bookNameForHistory);
-      print(
-          "UserMiddleware (RecordHistory): Entrada de histórico detalhado adicionada.");
+      // Obtenha o nome do livro do estado local (booksMap) da BiblePage que foi passado via ação,
+      // ou, se você decidiu que não precisa mais do nome completo no histórico do Firestore, remova-o.
+      // A BiblePage agora tenta pegar o nome do seu 'booksMap' (que é o _localBooksMap).
+      // Se você adicionou 'bookName' à RecordReadingHistoryAction:
+      // String bookNameForHistory = action.bookName;
 
-      // 2. Atualiza o último local lido na coleção `userBibleProgress`
-      //    Esta chamada irá criar/atualizar userBibleProgress/{userId} com os campos lastRead...
+      // Se você quer que o nome do livro venha do UserState.booksMap (se ele existir lá globalmente)
+      // ou se você decidir que o histórico só precisa da abreviação:
+      String bookNameForHistoryInFirestore;
+      final localBooksMapFromState = store
+              .state.metadataState.bibleSectionCounts[
+          'livros_mapa_local_nao_existe_aqui']; // Exemplo de onde poderia estar, ou use o da ação.
+      // O ideal é que a UI (BiblePage) que tem o _localBooksMap
+      // já forneça o nome correto na ação.
+
+      // ASSUMINDO QUE A BIBLEPAGE JÁ CARREGOU O bookName CORRETO e o middleware não precisa buscá-lo.
+      // A ação foi simplificada para não carregar mais o nome do livro aqui.
+      // O FirestoreService.addReadingHistoryEntry agora precisa lidar com o nome do livro
+      // ou a estrutura do histórico precisa ser simplificada.
+
+      // Para o FirestoreService.addReadingHistoryEntry, ele precisará do nome.
+      // Vamos assumir que o nome do livro é importante para o histórico.
+      // A BiblePage DEVE carregar o nome do seu mapa local e passá-lo.
+      // Se a ação RecordReadingHistoryAction não tiver bookName, você precisará adicioná-lo
+      // e fazer a BiblePage preenchê-lo.
+
+      // Cenário onde a Ação RecordReadingHistoryAction TEM o bookName:
+      // await firestoreService.addReadingHistoryEntry(
+      //     userId, action.bookAbbrev, action.chapter, action.bookName);
+
+      // Cenário onde a Ação NÃO TEM bookName e você quer buscar do abbrev_map via helper.
+      // Isso significa que o helper precisa estar acessível ou o mapa precisa ser carregado aqui.
+      // Vamos simplificar e assumir que o nome não é mais armazenado no histórico ou que a ação o fornece.
+      // Para o log do console, vamos usar a abreviação.
+      final Map<String, dynamic>? booksMapFromHelper =
+          await BiblePageHelper.loadBooksMap();
+      String bookNameToUseForHistory = booksMapFromHelper?[action.bookAbbrev]
+              ?['nome'] ??
+          action.bookAbbrev.toUpperCase();
+
+      await firestoreService.addReadingHistoryEntry(userId, action.bookAbbrev,
+          action.chapter, bookNameToUseForHistory); // Passa o nome
+      print(
+          "UserMiddleware (RecordHistory): Entrada de histórico detalhado adicionada para $bookNameToUseForHistory ${action.chapter}.");
+
       await firestoreService.updateLastReadLocation(
           userId, action.bookAbbrev, action.chapter);
       print(
           "UserMiddleware (RecordHistory): Última leitura atualizada em userBibleProgress.");
 
-      // 3. Despacha a ação para atualizar o UserState com a última leitura geral
-      //    Isso garante que UserState.lastReadBookAbbrev e UserState.lastReadChapter sejam atualizados.
       store.dispatch(
           UpdateLastReadLocationAction(action.bookAbbrev, action.chapter));
-
-      // 4. Opcional: Se a UI que exibe o histórico detalhado estiver visível, pode recarregá-la.
-      // store.dispatch(LoadReadingHistoryAction());
     } catch (e) {
       print(
           'UserMiddleware (RecordHistory): Erro ao salvar histórico/última leitura: $e');

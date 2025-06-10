@@ -117,6 +117,21 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
     super.dispose();
   }
 
+  void _navigateToBibleVerseAndTab(String verseId) {
+    print("Navegando para o versículo: $verseId");
+    final parts = verseId.split('_');
+    if (parts.length == 3) {
+      final bookAbbrev = parts[0];
+      final chapter = int.tryParse(parts[1]);
+      if (chapter != null && context.mounted) {
+        final store = StoreProvider.of<AppState>(context, listen: false);
+        store.dispatch(SetInitialBibleLocationAction(bookAbbrev, chapter));
+        // Assumindo que o índice da aba Bíblia é 1, não 2
+        store.dispatch(RequestBottomNavChangeAction(1));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -272,30 +287,12 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                                   displayContent
                                       .isNotEmpty), // Ajusta para acomodar o título do comentário
                           onTap: () {
-                            // ... (lógica de navegação mantida) ...
-                            final bookAbbrev =
-                                metadata['livro_curto'] as String?;
-                            final chapterStr = metadata['capitulo']?.toString();
-                            int? chapterInt;
-                            if (chapterStr != null) {
-                              chapterInt = int.tryParse(chapterStr);
-                            }
+                            final livro = metadata['livro_curto'];
+                            final capitulo = metadata['capitulo'];
 
-                            if (bookAbbrev != null && chapterInt != null) {
-                              StoreProvider.of<AppState>(context, listen: false)
-                                  .dispatch(SetInitialBibleLocationAction(
-                                      bookAbbrev, chapterInt));
-                              StoreProvider.of<AppState>(context, listen: false)
-                                  .dispatch(RequestBottomNavChangeAction(
-                                      1)); // Assumindo que Bíblia é índice 1
-                              Navigator.popUntil(context,
-                                  ModalRoute.withName('/mainAppScreen'));
-                            } else {
-                              print(
-                                  "Erro: metadados insuficientes para navegação - Livro: $bookAbbrev, Capítulo: $chapterStr");
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text(
-                                      'Não foi possível navegar para esta referência.')));
+                            if (livro != null && capitulo != null) {
+                              final verseId = '${livro}_${capitulo}_1';
+                              _navigateToBibleVerseAndTab(verseId);
                             }
                           },
                         ),

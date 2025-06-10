@@ -470,15 +470,19 @@ class DeleteNoteAction {
 class SetInitialBibleLocationAction {
   final String? bookAbbrev;
   final int? chapter;
-  // final int? verse; // Adicionar se precisar rolar para o verso específico
+  // REMOVIDO: final String? sectionIdToScrollTo;
 
-  SetInitialBibleLocationAction(this.bookAbbrev, this.chapter);
+  SetInitialBibleLocationAction(this.bookAbbrev,
+      this.chapter /* REMOVIDO: , {this.sectionIdToScrollTo} */);
 }
 
 class RecordReadingHistoryAction {
   final String bookAbbrev;
   final int chapter;
-  RecordReadingHistoryAction(this.bookAbbrev, this.chapter);
+  // final String bookName; // Adicione se o middleware for usar
+
+  RecordReadingHistoryAction(
+      this.bookAbbrev, this.chapter /*, {required this.bookName}*/);
 }
 
 class LoadReadingHistoryAction {}

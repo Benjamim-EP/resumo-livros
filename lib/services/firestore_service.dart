@@ -662,23 +662,13 @@ class FirestoreService {
   /// Busca o nome completo de um livro a partir de sua abreviação.
   /// Otimizado para usar o mapa local `abbrev_map.json` se possível.
   Future<String?> getBookNameFromAbbrev(String abbrev) async {
-    // Tenta carregar o mapa localmente se ainda não carregado (poderia ser injetado)
-    // Map<String, dynamic>? localBooksMap;
-    // try { localBooksMap = await BiblePageHelper.loadBooksMap(); } catch(e) {}
-
-    // if (localBooksMap != null && localBooksMap.containsKey(abbrev)) {
-    //   return localBooksMap[abbrev]?['nome'] as String?;
-    // }
-
-    // Fallback: Busca no Firestore (menos eficiente se chamado muitas vezes)
-    try {
-      final bookData = await getBookDataByAbbrev(abbrev);
-      return bookData?['titulo'] as String?;
-    } catch (e) {
-      print(
-          "FirestoreService: Erro ao buscar nome do livro (Firestore) para $abbrev: $e");
-      return null;
-    }
+    // Esta função agora se torna menos útil se todos os dados de mapeamento de livros
+    // estão em JSONs locais. Considere remover ou apenas retornar a abreviação.
+    // Se BiblePage._localBooksMap é a fonte da verdade, esta função pode não ser necessária.
+    print(
+        "FirestoreService.getBookNameFromAbbrev chamada para $abbrev - CONSIDERAR REMOÇÃO SE NÃO USADA MAIS PELO FIRESTORE");
+    // return abbrev.toUpperCase(); // Opção simples para evitar erro de Firestore
+    return null; // Ou retornar null e tratar na chamada
   }
 
   // --- Topic Methods ---

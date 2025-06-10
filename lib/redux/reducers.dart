@@ -200,6 +200,7 @@ class UserState {
 
   final String? initialBibleBook;
   final int? initialBibleChapter;
+  final String? initialBibleSectionIdToScrollTo; // NOVO
 
   final List<Map<String, dynamic>>
       readingHistory; // Histórico geral de leitura da Bíblia
@@ -277,6 +278,7 @@ class UserState {
     this.firstAdIn6HourWindowTimestamp,
     this.adsWatchedIn6HourWindow = 0,
     this.isGuestUser = false,
+    this.initialBibleSectionIdToScrollTo, // NOVO
   });
 
   UserState copyWith({
@@ -329,6 +331,7 @@ class UserState {
     bool clearFirstAdIn6HourWindowTimestamp = false,
     int? adsWatchedIn6HourWindow,
     bool? isGuestUser, // NOVO
+    String? initialBibleSectionIdToScrollTo, // NOVO
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -405,6 +408,10 @@ class UserState {
       adsWatchedIn6HourWindow:
           adsWatchedIn6HourWindow ?? this.adsWatchedIn6HourWindow,
       isGuestUser: isGuestUser ?? this.isGuestUser,
+      initialBibleSectionIdToScrollTo: clearInitialBibleLocation
+          ? null
+          : (initialBibleSectionIdToScrollTo ??
+              this.initialBibleSectionIdToScrollTo), // NOVO
     );
   }
 }
@@ -697,9 +704,12 @@ UserState userReducer(UserState state, dynamic action) {
   } else if (action is ReadingHistoryLoadedAction) {
     return state.copyWith(readingHistory: action.history);
   } else if (action is SetInitialBibleLocationAction) {
+    print(
+        "userReducer: Recebendo SetInitialBibleLocationAction - book: ${action.bookAbbrev}, chapter: ${action.chapter}");
     return state.copyWith(
         initialBibleBook: action.bookAbbrev,
         initialBibleChapter: action.chapter,
+        // REMOVIDO: initialBibleSectionIdToScrollTo: action.sectionIdToScrollTo,
         clearInitialBibleLocation:
             action.bookAbbrev == null && action.chapter == null);
   } else if (action is RequestBottomNavChangeAction) {
@@ -784,6 +794,12 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(rotaAtual: []);
   } else if (action is UserRoutesLoadedAction) {
     return state.copyWith(userRoutes: action.routes);
+  } else if (action is SetInitialBibleLocationAction) {
+    return state.copyWith(
+        initialBibleBook: action.bookAbbrev,
+        initialBibleChapter: action.chapter,
+        clearInitialBibleLocation:
+            action.bookAbbrev == null && action.chapter == null);
   }
 
   return state;

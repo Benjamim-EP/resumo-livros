@@ -337,7 +337,7 @@ class BiblePageWidgets {
   }
 
   static Widget buildVerseItem({
-    required ValueKey<String> key,
+    required Key key,
     required int verseNumber,
     required dynamic
         verseData, // Se interlinear, é List<Map<String,String>> (palavras do verso)
