@@ -23,6 +23,16 @@ except Exception as e_generic_import:
     print(f"ERRO CRÍTICO INESPERADO ao importar 'bible_search_service': {e_generic_import}")
     bible_search_service = None
 
+try:
+    import sermons_service # NOVO
+    print("Módulo 'sermons_service' importado com sucesso.")
+except ImportError as e_import_sermon:
+    print(f"ERRO CRÍTICO: Falha ao importar 'sermons_service': {e_import_sermon}")
+    sermons_service = None
+except Exception as e_generic_import_sermon:
+    print(f"ERRO CRÍTICO INESPERADO ao importar 'sermons_service': {e_generic_import_sermon}")
+    sermons_service = None
+
 
 # --- Inicialização Explícita do Firebase Admin ---
 if not firebase_admin._apps:
@@ -386,3 +396,54 @@ def semantic_bible_search(request: https_fn.CallableRequest) -> dict:
     except Exception as e: # Captura outras exceções de perform_semantic_search ou _run_async_handler_wrapper
         print(f"Erro inesperado em semantic_bible_search (main.py) ao chamar o serviço: {e}"); traceback.print_exc()
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar a busca semântica: {str(e)}")
+    
+
+# --- NOVA CLOUD FUNCTION PARA BUSCA SEMÂNTICA DE SERMÕES ---
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"], # Reutiliza as mesmas secrets
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512, # Pode precisar de mais memória se o processamento for intenso
+    timeout_sec=60 # Aumentar o timeout se a busca e o agrupamento demorarem
+)
+def semantic_sermon_search(request: https_fn.CallableRequest) -> dict:
+    print("Handler síncrono semantic_sermon_search chamado.")
+    user_query = request.data.get("query")
+    # Você pode adicionar filtros específicos para sermões se necessário no futuro
+    # filters = request.data.get("filters") 
+    top_k_sermons = request.data.get("topKSermons", 5)
+    top_k_paragraphs_per_query = request.data.get("topKParagraphs", 30) # Quantos parágrafos buscar inicialmente
+
+    print(f"Query de sermão recebida: '{user_query}', TopKSermons: {top_k_sermons}, TopKParagraphs: {top_k_paragraphs_per_query}")
+
+    if sermons_service is None:
+        print("ERRO FATAL: Módulo sermons_service não foi importado corretamente.")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de busca de sermões indisponível).")
+
+    if not user_query or not isinstance(user_query, str):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'query' (string) é obrigatório.")
+    
+    # Validação dos top_k
+    if not isinstance(top_k_sermons, int) or top_k_sermons <= 0: top_k_sermons = 5
+    if not isinstance(top_k_paragraphs_per_query, int) or top_k_paragraphs_per_query <= 0: top_k_paragraphs_per_query = 30
+
+
+    try:
+        print("Tentando chamar sermons_service.perform_sermon_semantic_search...")
+        search_results = _run_async_handler_wrapper(
+            sermons_service.perform_sermon_semantic_search(
+                user_query, 
+                top_k_paragraphs=top_k_paragraphs_per_query, 
+                top_k_sermons=top_k_sermons
+            )
+        )
+        print(f"Retorno de perform_sermon_semantic_search: {len(search_results) if isinstance(search_results, list) else 'N/A'} sermões agrupados.")
+        return {"sermons": search_results if isinstance(search_results, list) else []}
+    except ValueError as ve:
+        print(f"Erro de valor (ValueError) na busca de sermões: {ve}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message=str(ve))
+    except ConnectionError as ce:
+        print(f"Erro de conexão (ConnectionError) na busca de sermões: {ce}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAVAILABLE, message=f"Serviço externo indisponível durante a busca de sermões: {ce}")
+    except Exception as e:
+        print(f"Erro inesperado em semantic_sermon_search (main.py): {e}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar a busca de sermões: {str(e)}")
