@@ -26,12 +26,14 @@ class AppTheme {
       Color(0xB3FFFFFF); // White com opacidade
 
   // Nomes das Famílias de Fontes (para consistência)
-  static const String fontLogo = 'ASTRO867';
+  static const String fontLogo =
+      'ASTRO867'; // Pode ser usado para o nome do app ou grandes destaques
   static const String fontPrimary =
-      'Inter'; // Exemplo de fonte primária para corpo de texto
-  static const String fontSecondary = 'Poppins'; // Exemplo de fonte secundária
+      'Inter'; // Fonte principal para corpo de texto e UI geral
+  static const String fontSecondary =
+      'Poppins'; // Fonte secundária para alguns títulos ou ênfases
 
-  static const svgtheme = Color.fromARGB(255, 185, 166, 80);
+  // static const svgtheme = Color.fromARGB(255, 185, 166, 80); // Removido se não usado globalmente ou movido para onde é específico
 
   // --- TEMA VERDE (ORIGINAL) ---
   static ThemeData get greenTheme {
@@ -41,35 +43,32 @@ class AppTheme {
       scaffoldBackgroundColor: greenThemeBackground,
       primaryColor: greenThemePrimary,
       hintColor:
-          const Color.fromARGB(255, 51, 51, 49), // Cor de destaque secundária
+          const Color.fromARGB(255, 51, 51, 49), // Ajustado no seu código
       colorScheme: const ColorScheme.dark(
         primary: greenThemePrimary,
         secondary: greenThemeSecondary,
         surface: greenThemeSecondary,
         error: Colors.redAccent,
-        onPrimary:
-            greenThemeBackground, // Texto sobre a cor primária (verde claro)
+        onPrimary: greenThemeBackground,
         onSecondary: greenThemeTextPrimary,
         onSurface: greenThemeTextPrimary,
         onError: greenThemeTextPrimary,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: greenThemeBackground,
-        foregroundColor:
-            greenThemeTextPrimary, // Cor do título e ícone de leading (voltar)
+        foregroundColor: greenThemeTextPrimary,
         elevation: 0,
         titleTextStyle: TextStyle(
-            fontFamily: fontPrimary,
+            fontFamily: fontPrimary, // Consistente com o tema
             fontSize: 20,
             color: greenThemeTextPrimary,
             fontWeight: FontWeight.w600),
         actionsIconTheme: IconThemeData(
-          // ADICIONE/AJUSTE ISTO
-          color:
-              greenThemeTextPrimary, // Ou uma cor de destaque como greenThemePrimary
+          color: greenThemeTextPrimary,
         ),
       ),
       textTheme: const TextTheme(
+        // Usando fontPrimary para consistência
         displayLarge: TextStyle(
             fontFamily: fontPrimary,
             fontSize: 28,
@@ -102,7 +101,7 @@ class AppTheme {
             fontFamily: fontPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: greenThemeBackground), // Para botões
+            color: greenThemeBackground),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -123,8 +122,11 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: greenThemeSecondary.withOpacity(0.5),
-        hintStyle: TextStyle(color: greenThemeTextSecondary.withOpacity(0.7)),
-        labelStyle: const TextStyle(color: greenThemeTextSecondary),
+        hintStyle: TextStyle(
+            color: greenThemeTextSecondary.withOpacity(0.7),
+            fontFamily: fontPrimary),
+        labelStyle: const TextStyle(
+            color: greenThemeTextSecondary, fontFamily: fontPrimary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
@@ -145,15 +147,22 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: greenThemeBackground, // Ou um pouco mais escuro
+        backgroundColor: greenThemeBackground,
         selectedItemColor: greenThemePrimary,
         unselectedItemColor: greenThemeTextSecondary,
         type: BottomNavigationBarType.fixed,
+        selectedLabelStyle:
+            TextStyle(fontFamily: fontPrimary), // Adicionado fontFamily
+        unselectedLabelStyle:
+            TextStyle(fontFamily: fontPrimary), // Adicionado fontFamily
       ),
       tabBarTheme: const TabBarTheme(
         labelColor: greenThemePrimary,
         unselectedLabelColor: greenThemeTextSecondary,
         indicatorColor: greenThemePrimary,
+        labelStyle: TextStyle(fontFamily: fontPrimary), // Adicionado fontFamily
+        unselectedLabelStyle:
+            TextStyle(fontFamily: fontPrimary), // Adicionado fontFamily
       ),
       dividerColor: greenThemeTextSecondary.withOpacity(0.3),
       dialogBackgroundColor: greenThemeSecondary,
@@ -164,10 +173,10 @@ class AppTheme {
   static ThemeData get septimaDarkTheme {
     return ThemeData(
       brightness: Brightness.dark,
-      fontFamily: fontLogo, // Fonte principal da logo
+      fontFamily: fontPrimary, // <<< MUDANÇA AQUI: Fonte padrão para Inter
       scaffoldBackgroundColor: septimaGraphiteDarkBg,
       primaryColor: septimaCoralIntense,
-      hintColor: septimaCoralDark, // Para destaques secundários
+      hintColor: septimaCoralDark,
       colorScheme: ColorScheme.dark(
         primary: septimaCoralIntense,
         secondary: septimaCoralDark,
@@ -183,42 +192,48 @@ class AppTheme {
         foregroundColor: septimaWhite,
         elevation: 0,
         titleTextStyle: TextStyle(
-            fontFamily: fontLogo,
+            // Pode manter fontLogo para o título da AppBar se for um elemento de marca
+            fontFamily:
+                fontLogo, // Mantido fontLogo aqui para o título da AppBar
             fontSize: 22,
             color: septimaWhite,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight.normal), // fontWeight normal para ASTRO867
+        actionsIconTheme:
+            IconThemeData(color: septimaWhite), // Garante contraste
       ),
       textTheme: TextTheme(
+        // Ajustando para usar fontPrimary e fontSecondary
         displayLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 34,
             color: septimaSalmonLight,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight
+                .normal), // Pode manter fontLogo para displays grandes
         displayMedium: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 28,
             color: septimaSalmonLight,
             fontWeight: FontWeight.normal),
         displaySmall: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontSecondary,
             fontSize: 24,
             color: septimaSalmonLight,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight.w600), // Usando Poppins
         headlineMedium: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontSecondary,
             fontSize: 22,
             color: septimaWhite,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight.w600), // Usando Poppins
         headlineSmall: const TextStyle(
             fontFamily: fontSecondary,
             fontSize: 20,
             color: septimaWhite,
-            fontWeight: FontWeight.w600), // Usando Poppins para subtítulos
+            fontWeight: FontWeight.w500), // Usando Poppins
         titleLarge: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontPrimary,
             fontSize: 18,
             color: septimaWhite,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight.w600), // Usando Inter
         bodyLarge: TextStyle(
             fontFamily: fontPrimary,
             fontSize: 16,
@@ -230,19 +245,19 @@ class AppTheme {
             color: septimaGreyText,
             height: 1.4),
         labelLarge: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontPrimary,
             fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: septimaWhite), // Para botões
+            fontWeight: FontWeight.w600,
+            color: septimaWhite), // Para botões, com Inter
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: septimaCoralIntense,
           foregroundColor: septimaWhite,
           textStyle: const TextStyle(
-              fontFamily: fontLogo,
+              fontFamily: fontPrimary,
               fontSize: 16,
-              fontWeight: FontWeight.normal),
+              fontWeight: FontWeight.w600), // Usando Inter
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
@@ -254,6 +269,7 @@ class AppTheme {
             fontFamily: fontPrimary, fontWeight: FontWeight.w500),
       )),
       inputDecorationTheme: InputDecorationTheme(
+        // Herda fontFamily de ThemeData (Inter)
         filled: true,
         fillColor: septimaGraphiteSurface.withOpacity(0.7),
         hintStyle: TextStyle(color: septimaGreyText.withOpacity(0.7)),
@@ -303,9 +319,8 @@ class AppTheme {
   static ThemeData get septimaLightTheme {
     return ThemeData(
       brightness: Brightness.light,
-      fontFamily: fontLogo,
-      scaffoldBackgroundColor: Colors
-          .grey.shade50, // Um branco levemente acinzentado para não cansar
+      fontFamily: fontPrimary, // <<< MUDANÇA AQUI: Fonte padrão para Inter
+      scaffoldBackgroundColor: Colors.grey.shade50,
       primaryColor: septimaCoralIntense,
       hintColor: septimaSalmonLight,
       colorScheme: ColorScheme.light(
@@ -319,16 +334,20 @@ class AppTheme {
         onError: septimaWhite,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: septimaCoralDark, // AppBar com cor da marca
+        backgroundColor: septimaCoralDark,
         foregroundColor: septimaWhite,
         elevation: 1,
         titleTextStyle: TextStyle(
-            fontFamily: fontLogo,
+            // Pode manter fontLogo para o título da AppBar
+            fontFamily: fontLogo, // Mantido fontLogo aqui
             fontSize: 22,
             color: septimaWhite,
             fontWeight: FontWeight.normal),
+        actionsIconTheme:
+            IconThemeData(color: septimaWhite), // Garante contraste
       ),
       textTheme: TextTheme(
+        // Ajustando para usar fontPrimary e fontSecondary
         displayLarge: const TextStyle(
             fontFamily: fontLogo,
             fontSize: 34,
@@ -340,25 +359,25 @@ class AppTheme {
             color: septimaBordoDark,
             fontWeight: FontWeight.normal),
         displaySmall: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontSecondary,
             fontSize: 24,
             color: septimaBordoDark,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight.w600), // Usando Poppins
         headlineMedium: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontSecondary,
             fontSize: 22,
             color: septimaGraphiteDarkBg,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight.w600), // Usando Poppins
         headlineSmall: const TextStyle(
             fontFamily: fontSecondary,
             fontSize: 20,
             color: septimaGraphiteDarkBg,
-            fontWeight: FontWeight.w600),
+            fontWeight: FontWeight.w500), // Usando Poppins
         titleLarge: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontPrimary,
             fontSize: 18,
             color: septimaGraphiteDarkBg,
-            fontWeight: FontWeight.normal),
+            fontWeight: FontWeight.w600), // Usando Inter
         bodyLarge: TextStyle(
             fontFamily: fontPrimary,
             fontSize: 16,
@@ -370,19 +389,19 @@ class AppTheme {
             color: septimaGraphiteDarkBg.withOpacity(0.70),
             height: 1.4),
         labelLarge: const TextStyle(
-            fontFamily: fontLogo,
+            fontFamily: fontPrimary,
             fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: septimaWhite), // Para botões
+            fontWeight: FontWeight.w600,
+            color: septimaWhite), // Para botões, com Inter
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: septimaCoralIntense,
           foregroundColor: septimaWhite,
           textStyle: const TextStyle(
-              fontFamily: fontLogo,
+              fontFamily: fontPrimary,
               fontSize: 16,
-              fontWeight: FontWeight.normal),
+              fontWeight: FontWeight.w600), // Usando Inter
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
@@ -394,6 +413,7 @@ class AppTheme {
             fontFamily: fontPrimary, fontWeight: FontWeight.w500),
       )),
       inputDecorationTheme: InputDecorationTheme(
+        // Herda fontFamily de ThemeData (Inter)
         filled: true,
         fillColor: Colors.grey.shade200,
         hintStyle: TextStyle(color: Colors.grey.shade500),
