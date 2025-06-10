@@ -52,13 +52,19 @@ class AppTheme {
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: greenThemeBackground,
-        foregroundColor: greenThemeTextPrimary,
+        foregroundColor:
+            greenThemeTextPrimary, // Cor do título e ícone de leading (voltar)
         elevation: 0,
         titleTextStyle: TextStyle(
             fontFamily: fontPrimary,
             fontSize: 20,
             color: greenThemeTextPrimary,
             fontWeight: FontWeight.w600),
+        actionsIconTheme: IconThemeData(
+          // ADICIONE/AJUSTE ISTO
+          color:
+              greenThemeTextPrimary, // Ou uma cor de destaque como greenThemePrimary
+        ),
       ),
       textTheme: const TextTheme(
         displayLarge: TextStyle(
