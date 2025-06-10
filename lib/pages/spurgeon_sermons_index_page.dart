@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart'; // Para os Dropdowns
 import 'package:resumo_dos_deuses_flutter/pages/sermon_detail_page.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/sermon_search_actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/reducers/sermon_search_reducer.dart';
@@ -16,7 +16,7 @@ import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 class PreloadSermonItem {
   final String title;
-  final String generatedId; // Este é o ID base do sermão (ex: sermon_1000)
+  final String generatedId;
   final String bookAbbrev;
   final String chapterNum;
 
@@ -42,13 +42,11 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   List<PreloadSermonItem> _displayedSermonsFromPreload = [];
   bool _isLoadingPreload = true;
   String? _errorPreload;
-  Map<String, dynamic>?
-      _bibleBooksMap; // Para nomes de livros nos filtros locais
-  String? _selectedBookFilterLocal; // Filtro de livro para lista pré-carregada
-  int?
-      _selectedChapterFilterLocal; // Filtro de capítulo para lista pré-carregada
+  Map<String, dynamic>? _bibleBooksMap;
+  String? _selectedBookFilterLocal;
+  int? _selectedChapterFilterLocal;
   final TextEditingController _localTitleSearchController =
-      TextEditingController(); // Para busca local por título
+      TextEditingController();
   String _localTitleSearchTerm = "";
   Timer? _localTitleSearchDebounce;
   final Random _random = Random();
@@ -59,6 +57,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   // Estado para a busca semântica
   final TextEditingController _semanticSermonSearchController =
       TextEditingController();
+  bool _isSemanticSearchModeActive = false; // NOVO: Controla o modo de busca
 
   @override
   void initState() {
@@ -79,7 +78,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     super.dispose();
   }
 
-  // --- MÉTODOS PARA A LISTA PRÉ-CARREGADA E FILTROS LOCAIS ---
   Future<void> _loadInitialPreloadedData() async {
     if (!mounted) return;
     setState(() => _isLoadingPreload = true);
@@ -134,6 +132,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   void _onLocalTitleSearchChanged() {
+    if (_isSemanticSearchModeActive)
+      return; // Não aplica filtro local se busca semântica estiver ativa
     if (_localTitleSearchDebounce?.isActive ?? false)
       _localTitleSearchDebounce!.cancel();
     _localTitleSearchDebounce = Timer(const Duration(milliseconds: 500), () {
@@ -155,7 +155,9 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   void _scrollListenerForPreload() {
-    if (_preloadScrollController.position.pixels >=
+    // Só carrega mais se não estivermos em modo de busca semântica e houver mais itens pré-carregados
+    if (!_isSemanticSearchModeActive &&
+        _preloadScrollController.position.pixels >=
             _preloadScrollController.position.maxScrollExtent - 300 &&
         !_isLoadingMorePreload) {
       _loadMorePreloadedSermons();
@@ -214,7 +216,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     if (_localTitleSearchTerm.isEmpty &&
         _selectedBookFilterLocal == null &&
         _selectedChapterFilterLocal == null) {
-      // Se nenhum filtro local está ativo, mostra aleatoriamente
       List<PreloadSermonItem> allSermonsCopy = List.from(_allPreloadedSermons);
       allSermonsCopy.shuffle(_random);
       setState(() => _displayedSermonsFromPreload =
@@ -266,137 +267,191 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     );
   }
 
-  // --- MÉTODOS PARA BUSCA SEMÂNTICA ---
   void _performSemanticSermonSearch() {
     final query = _semanticSermonSearchController.text.trim();
     if (query.isNotEmpty) {
-      _localTitleSearchController.clear(); // Limpa a busca local
-      setState(() {
-        _localTitleSearchTerm = "";
-        _selectedBookFilterLocal = null;
-        _selectedChapterFilterLocal = null;
-      });
+      // Não precisa limpar os filtros locais aqui, pois _isSemanticSearchModeActive controlará a exibição
       StoreProvider.of<AppState>(context, listen: false).dispatch(
-        SearchSermonsAction(query: query), // Usa os topK padrão da action
+        SearchSermonsAction(query: query),
       );
     } else {
-      // Se a query semântica estiver vazia, limpa os resultados semânticos
+      // Se a query semântica estiver vazia, mas o modo semântico ainda estiver ativo,
+      // limpa os resultados semânticos. A UI mostrará "nenhum resultado" para a busca semântica.
       StoreProvider.of<AppState>(context, listen: false)
           .dispatch(ClearSermonSearchResultsAction());
-      // E reaplica os filtros locais para mostrar a lista pré-carregada
-      _applyLocalFiltersAndDisplayPreloadedSermons();
     }
   }
 
-  // --- WIDGETS DE CONSTRUÇÃO ---
+  void _toggleSemanticSearchMode() {
+    setState(() {
+      _isSemanticSearchModeActive = !_isSemanticSearchModeActive;
+      if (!_isSemanticSearchModeActive) {
+        // Se estiver saindo do modo semântico, limpa a query semântica e os resultados
+        _semanticSermonSearchController.clear();
+        StoreProvider.of<AppState>(context, listen: false)
+            .dispatch(ClearSermonSearchResultsAction());
+        // E reaplica os filtros locais para garantir que a lista pré-carregada seja exibida corretamente
+        _applyLocalFiltersAndDisplayPreloadedSermons();
+      } else {
+        // Se estiver entrando no modo semântico, pode limpar a busca local por título, se desejar
+        // _localTitleSearchController.clear();
+        // _localTitleSearchTerm = "";
+        // _applyLocalFiltersAndDisplayPreloadedSermons(); // Para atualizar a lista de fundo, se visível
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final store = StoreProvider.of<AppState>(
+        context); // Para despachar ClearSermonSearchResultsAction
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Sermões de C.H. Spurgeon"),
+        title: Text(_isSemanticSearchModeActive
+            ? "Busca Inteligente de Sermões"
+            : "Sermões de C.H. Spurgeon"),
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
       ),
       body: Column(
         children: [
-          // Barra de Busca Semântica
+          // Barra de Busca Principal (Semântica ou Local por Título)
           Padding(
             padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 8.0),
-            child: TextField(
-              controller: _semanticSermonSearchController,
-              style: TextStyle(
-                  color: theme.textTheme.bodyLarge?.color, fontSize: 14.5),
-              decoration: InputDecoration(
-                hintText: "Busca inteligente por sermões...",
-                hintStyle: TextStyle(
-                    color: theme.hintColor.withOpacity(0.8), fontSize: 14),
-                prefixIcon: Padding(
-                  // Adiciona padding ao redor do SVG
-                  padding: const EdgeInsets.all(10.0),
-                  child: SvgPicture.asset(
+            child: Row(
+              children: [
+                // Botão para alternar modo de busca
+                IconButton(
+                  icon: SvgPicture.asset(
                     'assets/icons/buscasemantica.svg',
                     colorFilter: ColorFilter.mode(
-                        theme.iconTheme.color?.withOpacity(0.7) ??
-                            theme.hintColor,
+                        _isSemanticSearchModeActive
+                            ? theme.colorScheme.primary
+                            : (theme.iconTheme.color?.withOpacity(0.7) ??
+                                theme.hintColor),
                         BlendMode.srcIn),
-                    width: 18,
-                    height: 18,
+                    width: 24,
+                    height: 24,
+                  ),
+                  tooltip: _isSemanticSearchModeActive
+                      ? "Alternar para Busca por Título/Filtros"
+                      : "Alternar para Busca Inteligente",
+                  onPressed: _toggleSemanticSearchMode,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _isSemanticSearchModeActive
+                        ? _semanticSermonSearchController
+                        : _localTitleSearchController,
+                    style: TextStyle(
+                        color: theme.textTheme.bodyLarge?.color,
+                        fontSize: 14.5),
+                    decoration: InputDecoration(
+                      hintText: _isSemanticSearchModeActive
+                          ? "Busca inteligente nos sermões..."
+                          : "Buscar por título na lista...",
+                      hintStyle: TextStyle(
+                          color: theme.hintColor.withOpacity(0.8),
+                          fontSize: 14),
+                      // O prefixIcon foi removido para dar espaço ao botão de toggle
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.search_rounded,
+                            color: theme.iconTheme.color?.withOpacity(0.9),
+                            size: 24),
+                        tooltip: "Buscar",
+                        onPressed: _isSemanticSearchModeActive
+                            ? _performSemanticSermonSearch
+                            : () =>
+                                _applyLocalFiltersAndDisplayPreloadedSermons(), // Para busca local, apenas aplica os filtros
+                      ),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      filled: true,
+                      fillColor: theme.inputDecorationTheme.fillColor ??
+                          theme.cardColor.withOpacity(0.5),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25.0),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25.0),
+                        borderSide: BorderSide(
+                            color: theme.dividerColor.withOpacity(0.3),
+                            width: 0.8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25.0),
+                        borderSide: BorderSide(
+                            color: theme.colorScheme.primary, width: 1.5),
+                      ),
+                    ),
+                    onSubmitted: (_) => _isSemanticSearchModeActive
+                        ? _performSemanticSermonSearch()
+                        : _applyLocalFiltersAndDisplayPreloadedSermons(),
+                    textInputAction: TextInputAction.search,
                   ),
                 ),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.search_rounded,
-                      color: theme.iconTheme.color?.withOpacity(0.9), size: 24),
-                  tooltip: "Buscar Sermões",
-                  onPressed: _performSemanticSermonSearch,
-                ),
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                filled: true,
-                fillColor: theme.inputDecorationTheme.fillColor ??
-                    theme.cardColor.withOpacity(0.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide(
-                      color: theme.dividerColor.withOpacity(0.3), width: 0.8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide:
-                      BorderSide(color: theme.colorScheme.primary, width: 1.5),
-                ),
-              ),
-              onSubmitted: (_) => _performSemanticSermonSearch(),
-              textInputAction: TextInputAction.search,
+              ],
             ),
           ),
 
-          // Barra de Filtros para a lista pré-carregada (opcional)
-          // Se você decidir mostrar sempre, descomente a linha abaixo.
-          // Caso contrário, ela só será relevante se não houver busca semântica ativa.
-          // _buildFilterBarForPreloaded(theme),
+          // Barra de Filtros para a lista pré-carregada (visível apenas se não estiver em modo semântico)
+          if (!_isSemanticSearchModeActive) _buildFilterBarForPreload(theme),
 
           Expanded(
             child: StoreConnector<AppState, SermonSearchState>(
-              converter: (store) => store.state.sermonSearchState,
+              converter: (s) => store.state.sermonSearchState,
               builder: (context, sermonSearchState) {
-                if (sermonSearchState.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (sermonSearchState.error != null) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text("Erro na busca: ${sermonSearchState.error}",
-                          style: TextStyle(color: theme.colorScheme.error)),
-                    ),
-                  );
-                }
-
-                // Prioriza resultados da busca semântica se houver uma query ativa para ela
-                if (sermonSearchState.currentSermonQuery.isNotEmpty) {
-                  if (sermonSearchState.sermonResults.isNotEmpty) {
-                    return _buildSemanticSearchResultsList(
-                        theme, sermonSearchState.sermonResults);
-                  } else {
-                    // Query semântica foi feita, mas não retornou nada
+                if (_isSemanticSearchModeActive) {
+                  if (sermonSearchState.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (sermonSearchState.error != null) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Text("Nenhum sermão encontrado para sua busca.",
-                            style: theme.textTheme.bodyMedium),
+                        child: Text("Erro na busca: ${sermonSearchState.error}",
+                            style: TextStyle(color: theme.colorScheme.error)),
                       ),
                     );
                   }
+                  if (sermonSearchState.currentSermonQuery.isNotEmpty &&
+                      sermonSearchState.sermonResults.isNotEmpty) {
+                    return _buildSemanticSearchResultsList(
+                        theme, sermonSearchState.sermonResults);
+                  }
+                  if (sermonSearchState.currentSermonQuery.isNotEmpty &&
+                      sermonSearchState.sermonResults.isEmpty &&
+                      !sermonSearchState.isLoading) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                            "Nenhum sermão encontrado para sua busca inteligente.",
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.textTheme.bodySmall?.color
+                                    ?.withOpacity(0.7))),
+                      ),
+                    );
+                  }
+                  // Se a busca semântica está ativa mas sem query, mostra uma mensagem
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text("Digite algo para a busca inteligente.",
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.7))),
+                    ),
+                  );
+                } else {
+                  // Modo de lista pré-carregada
+                  return _buildPreloadedSermonsList(theme);
                 }
-
-                // Fallback: Mostrar a lista pré-carregada/filtrada por título local
-                return _buildPreloadedSermonsList(theme);
               },
             ),
           ),
@@ -405,103 +460,74 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     );
   }
 
-  // Barra de filtro para a lista pré-carregada (se decidir mantê-la visível)
   Widget _buildFilterBarForPreload(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      padding:
+          const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0), // Ajustado padding
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor, // Ou uma cor de destaque sutil
+        color: theme.scaffoldBackgroundColor,
         border: Border(
             bottom: BorderSide(
                 color: theme.dividerColor.withOpacity(0.2), width: 1)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _localTitleSearchController,
-            style: TextStyle(
-                color: theme.textTheme.bodyLarge?.color, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: "Filtrar por título (lista atual)...",
-              hintStyle: TextStyle(
-                  color: theme.hintColor.withOpacity(0.7), fontSize: 13),
-              prefixIcon: Icon(Icons.title,
-                  color: theme.iconTheme.color?.withOpacity(0.6), size: 18),
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-              filled: true,
-              fillColor:
+      child: Row(
+        // Mudado para Row para melhor layout em uma linha
+        children: <Widget>[
+          Expanded(
+            flex: 2, // Mais espaço para o livro
+            child: UtilsBiblePage.buildBookDropdown(
+              context: context,
+              selectedBook: _selectedBookFilterLocal,
+              booksMap: _bibleBooksMap,
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedBookFilterLocal = newValue;
+                  _selectedChapterFilterLocal = null;
+                  _applyLocalFiltersAndDisplayPreloadedSermons();
+                });
+              },
+              backgroundColor:
                   (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
                       .withOpacity(0.4),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                  borderSide: BorderSide.none),
+              textColor: theme.textTheme.bodySmall?.color,
+              iconColor: theme.iconTheme.color?.withOpacity(0.6),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: <Widget>[
-              Expanded(
-                flex: 3,
-                child: UtilsBiblePage.buildBookDropdown(
-                  context: context,
-                  selectedBook: _selectedBookFilterLocal,
-                  booksMap: _bibleBooksMap,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedBookFilterLocal = newValue;
-                      _selectedChapterFilterLocal =
-                          null; // Reseta capítulo ao mudar livro
-                      _applyLocalFiltersAndDisplayPreloadedSermons();
-                    });
-                  },
-                  backgroundColor:
-                      (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
-                          .withOpacity(0.4),
-                  textColor: theme.textTheme.bodySmall?.color,
-                  iconColor: theme.iconTheme.color?.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: UtilsBiblePage.buildChapterDropdown(
-                  context: context,
-                  selectedChapter: _selectedChapterFilterLocal,
-                  booksMap: _bibleBooksMap,
-                  selectedBook: _selectedBookFilterLocal,
-                  onChanged: (int? newValue) {
-                    setState(() {
-                      _selectedChapterFilterLocal = newValue;
-                      _applyLocalFiltersAndDisplayPreloadedSermons();
-                    });
-                  },
-                  backgroundColor:
-                      (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
-                          .withOpacity(0.4),
-                  textColor: theme.textTheme.bodySmall?.color,
-                  iconColor: theme.iconTheme.color?.withOpacity(0.6),
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.filter_list_off_outlined,
-                    color: theme.iconTheme.color?.withOpacity(0.6), size: 20),
-                tooltip: "Limpar Filtros Locais",
-                onPressed: () {
-                  _localTitleSearchController
-                      .clear(); // Limpa o texto da busca local
-                  setState(() {
-                    _localTitleSearchTerm = "";
-                    _selectedBookFilterLocal = null;
-                    _selectedChapterFilterLocal = null;
-                    _applyLocalFiltersAndDisplayPreloadedSermons();
-                  });
-                },
-                splashRadius: 20,
-              ),
-            ],
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 1, // Menos espaço para o capítulo
+            child: UtilsBiblePage.buildChapterDropdown(
+              context: context,
+              selectedChapter: _selectedChapterFilterLocal,
+              booksMap: _bibleBooksMap,
+              selectedBook: _selectedBookFilterLocal,
+              onChanged: (int? newValue) {
+                setState(() {
+                  _selectedChapterFilterLocal = newValue;
+                  _applyLocalFiltersAndDisplayPreloadedSermons();
+                });
+              },
+              backgroundColor:
+                  (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
+                      .withOpacity(0.4),
+              textColor: theme.textTheme.bodySmall?.color,
+              iconColor: theme.iconTheme.color?.withOpacity(0.6),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.filter_list_off_outlined,
+                color: theme.iconTheme.color?.withOpacity(0.6), size: 22),
+            tooltip: "Limpar Filtros Livro/Cap.",
+            onPressed: () {
+              _localTitleSearchController.clear();
+              setState(() {
+                _localTitleSearchTerm = "";
+                _selectedBookFilterLocal = null;
+                _selectedChapterFilterLocal = null;
+                _applyLocalFiltersAndDisplayPreloadedSermons();
+              });
+            },
+            splashRadius: 20,
           ),
         ],
       ),
@@ -523,11 +549,11 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
       );
     }
     if (_displayedSermonsFromPreload.isEmpty) {
-      String message = "Nenhum sermão para exibir no momento.";
+      String message = "Nenhum sermão para exibir.";
       if (_localTitleSearchTerm.isNotEmpty ||
           _selectedBookFilterLocal != null ||
           _selectedChapterFilterLocal != null) {
-        message = "Nenhum sermão encontrado para os filtros locais aplicados.";
+        message = "Nenhum sermão encontrado para os filtros aplicados.";
       }
       return Center(
         child: Padding(
@@ -571,8 +597,10 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             title: Text(title,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w500, fontSize: 15)),
+                style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    color: theme.textTheme.bodyLarge?.color)),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4.0),
               child: Text("Indexado em: $referenceHint",
@@ -605,7 +633,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
         final String preacher = sermonData['preacher'] ?? 'C.H. Spurgeon';
         final List<dynamic> relevantParagraphs =
             sermonData['relevant_paragraphs'] ?? [];
-        // final double relevanceScore = (sermonData['relevance_score'] as num?)?.toDouble() ?? 0.0;
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
@@ -649,12 +676,13 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                 if (relevantParagraphs.isNotEmpty) ...[
                   Text(
                     "Trechos Relevantes:",
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w500, fontSize: 13),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        color: theme.textTheme.bodyLarge?.color),
                   ),
                   const SizedBox(height: 5),
                   ...relevantParagraphs.take(2).map<Widget>((paragraph) {
-                    // Mostrar apenas os 2 primeiros trechos
                     final String textPreview =
                         (paragraph['text_preview'] as String?) ??
                             "Trecho indisponível.";
