@@ -1,17 +1,39 @@
 // lib/pages/biblie_page/section_commentary_modal.dart
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 
+// ViewModel para o StoreConnector
+class _CommentaryModalViewModel {
+  final List<Map<String, dynamic>> userCommentHighlights;
+  // Não precisamos mais do sectionId aqui se o filtro for feito no StoreConnector
+  // ou se passarmos a lista já filtrada.
+  // Para simplificar, vamos assumir que o StoreConnector no build fará o filtro.
+
+  _CommentaryModalViewModel({
+    required this.userCommentHighlights,
+  });
+
+  static _CommentaryModalViewModel fromStore(Store<AppState> store) {
+    return _CommentaryModalViewModel(
+      userCommentHighlights: store.state.userState.userCommentHighlights,
+    );
+  }
+}
+
 class SectionCommentaryModal extends StatefulWidget {
   final String sectionTitle;
-  final List<Map<String, dynamic>> commentaryItems;
+  final List<Map<String, dynamic>>
+      commentaryItems; // Cada item é um mapa com 'original' e 'traducao'
   final String bookAbbrev;
-  final String bookSlug;
+  final String bookSlug; // Usado para construir o sectionId para destaques
   final String bookName;
   final int chapterNumber;
-  final String versesRangeStr;
+  final String
+      versesRangeStr; // Usado para construir o sectionId para destaques
 
   const SectionCommentaryModal({
     super.key,
@@ -29,265 +51,349 @@ class SectionCommentaryModal extends StatefulWidget {
 }
 
 class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
-  late List<bool> _showOriginalFlags;
-  // Controladores para os TextFields
-  final List<TextEditingController> _traducaoControllers = [];
-  final List<TextEditingController> _originalControllers = [];
+  bool _showOriginalText =
+      false; // Controla se o texto original (inglês) é exibido
 
-  @override
-  void initState() {
-    super.initState();
-    _showOriginalFlags =
-        List.generate(widget.commentaryItems.length, (_) => false);
-    // Inicializar os controladores
-    for (var item in widget.commentaryItems) {
-      _traducaoControllers
-          .add(TextEditingController(text: item['traducao'] ?? ""));
-      _originalControllers
-          .add(TextEditingController(text: item['original'] ?? ""));
-    }
+  // Helper getter para construir o ID da seção atual, usado para filtrar e salvar destaques
+  String get currentSectionIdForHighlights {
+    return "${widget.bookSlug}_c${widget.chapterNumber}_v${widget.versesRangeStr}";
   }
 
-  @override
-  void dispose() {
-    for (var controller in _traducaoControllers) {
-      controller.dispose();
+  String _getCombinedCommentaryText() {
+    if (widget.commentaryItems.isEmpty) {
+      return "Nenhum comentário disponível para esta seção.";
     }
-    for (var controller in _originalControllers) {
-      controller.dispose();
-    }
-    super.dispose();
+
+    return widget.commentaryItems
+        .map((item) {
+          final String textToShow = _showOriginalText
+              ? (item['original'] as String? ?? "")
+                  .trim() // Mostra original se _showOriginalText for true
+              : (item['traducao'] as String? ??
+                      item['original'] as String? ??
+                      "")
+                  .trim(); // Prioriza tradução
+
+          return textToShow;
+        })
+        .where((text) => text.isNotEmpty)
+        .join("\n\n\n"); // Usar um separador mais distinto se necessário
   }
 
   void _markSelectedCommentSnippet(
-    BuildContext modalContext,
+    BuildContext
+        passedContext, // Contexto vindo do builder do StoreConnector ou do contextMenuBuilder
     String fullCommentText,
     TextSelection selection,
   ) {
     if (selection.isCollapsed) {
-      ScaffoldMessenger.of(modalContext).showSnackBar(
-        const SnackBar(
-            content: Text("Nenhum texto selecionado."),
-            duration: Duration(seconds: 2)),
-      );
+      // Tenta usar o ScaffoldMessenger do contexto mais próximo que tem um Scaffold
+      final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
+      if (scaffoldMessenger != null && mounted) {
+        // Verifica se o widget ainda está montado
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+              content: Text("Nenhum texto selecionado."),
+              duration: Duration(seconds: 2)),
+        );
+      } else {
+        print(
+            "WARN: Não foi possível mostrar SnackBar (nenhum texto selecionado) - ScaffoldMessenger não encontrado ou widget desmontado.");
+      }
       return;
     }
     final selectedSnippet =
         fullCommentText.substring(selection.start, selection.end);
 
-    final store = StoreProvider.of<AppState>(modalContext, listen: false);
+    // Usa o StoreProvider com o contexto que tem acesso ao Store
+    // O 'context' do build do StoreConnector é uma boa escolha
+    final store = StoreProvider.of<AppState>(passedContext, listen: false);
 
     final highlightData = {
-      'selectedSnippet': selectedSnippet, // O trecho específico
-      'fullCommentText': fullCommentText, // O comentário completo para contexto
+      'selectedSnippet': selectedSnippet,
+      'fullCommentText': fullCommentText,
       'bookAbbrev': widget.bookAbbrev,
       'bookName': widget.bookName,
       'chapterNumber': widget.chapterNumber,
-      'sectionId':
-          "${widget.bookSlug}_c${widget.chapterNumber}_v${widget.versesRangeStr}",
+      'sectionId': currentSectionIdForHighlights,
       'sectionTitle': widget.sectionTitle,
       'verseReferenceText':
           "${widget.bookName} ${widget.chapterNumber} (Seção: ${widget.sectionTitle})",
-      // 'timestamp' será adicionado pelo FirestoreService/middleware
+      'language': _showOriginalText ? 'en' : 'pt', // Idioma do texto destacado
     };
+
     store.dispatch(AddCommentHighlightAction(highlightData));
-    ScaffoldMessenger.of(modalContext).showSnackBar(
-      const SnackBar(
-          content: Text("Trecho do comentário marcado!"),
-          duration: Duration(seconds: 2)),
-    );
+
+    final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
+    if (scaffoldMessenger != null && mounted) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+            content: Text("Trecho do comentário marcado!"),
+            duration: Duration(seconds: 2)),
+      );
+    } else {
+      print(
+          "WARN: Não foi possível mostrar SnackBar (trecho marcado) - ScaffoldMessenger não encontrado ou widget desmontado.");
+    }
   }
 
-  Widget _buildCommentTextField({
-    required TextEditingController controller,
-    required String fullCommentText,
-    required BuildContext modalContext,
-  }) {
-    return TextField(
-      controller: controller,
-      readOnly: true,
-      showCursor: true, // Pode ser true para indicar que é selecionável
-      maxLines: null, // Permite múltiplas linhas
-      style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
-      decoration: const InputDecoration(
-        border: InputBorder.none, // Remove a borda padrão do TextField
-        isDense: true,
-        contentPadding: EdgeInsets.zero,
-      ),
-      contextMenuBuilder:
-          (BuildContext context, EditableTextState editableTextState) {
-        final List<ContextMenuButtonItem> buttonItems =
-            editableTextState.contextMenuButtonItems;
-        // Adiciona o botão personalizado
-        buttonItems.insert(
-          0, // Insere no início do menu
-          ContextMenuButtonItem(
-            label: 'Marcar Trecho',
-            onPressed: () {
-              ContextMenuController.removeAny(); // Fecha o menu de contexto
-              _markSelectedCommentSnippet(
-                modalContext, // Passa o contexto do modal principal
-                controller.text,
-                editableTextState.textEditingValue.selection,
-              );
-            },
+  List<TextSpan> _buildTextSpansWithHighlights(
+      String fullText,
+      List<Map<String, dynamic>>
+          allUserHighlights, // Todos os destaques do usuário
+      String currentSectionId, // ID da seção atual para filtrar
+      ThemeData theme) {
+    if (fullText.isEmpty) return [const TextSpan(text: "")];
+
+    // 1. Filtra os destaques para esta seção e idioma
+    List<Map<String, dynamic>> relevantHighlightsForSectionAndLang =
+        allUserHighlights.where((h) {
+      final String? hSectionId = h['sectionId'] as String?;
+      final String? hLang = h['language'] as String?;
+      bool langMatch = _showOriginalText
+          ? (hLang == 'en')
+          : (hLang == 'pt' || hLang == null); // Se lang for null, assume pt
+      return hSectionId == currentSectionId && langMatch;
+    }).toList();
+
+    if (relevantHighlightsForSectionAndLang.isEmpty) {
+      return [TextSpan(text: fullText)]; // Sem destaques para mostrar
+    }
+
+    // 2. Encontra todas as ocorrências dos snippets destacados
+    List<Map<String, dynamic>> occurrences = [];
+    for (var highlight in relevantHighlightsForSectionAndLang) {
+      final String snippet = highlight['selectedSnippet'] as String;
+      if (snippet.isEmpty) continue;
+
+      int startIndex = 0;
+      while (startIndex < fullText.length) {
+        final int pos = fullText.indexOf(snippet, startIndex);
+        if (pos == -1) break;
+        occurrences.add({
+          'start': pos,
+          'end': pos + snippet.length,
+          'text': snippet, // O texto do snippet para o TextSpan
+          // Adicionar o ID do highlight se precisar deletar/modificar um destaque específico no futuro
+          'highlightId': highlight['id'] as String? ?? ''
+        });
+        startIndex = pos +
+            snippet.length; // Evita sobreposições infinitas do mesmo snippet
+      }
+    }
+
+    if (occurrences.isEmpty) return [TextSpan(text: fullText)];
+
+    // 3. Ordenar ocorrências pela posição inicial e depois pelo final (para lidar com aninhamento, o mais longo primeiro)
+    occurrences.sort((a, b) {
+      int startCompare = (a['start'] as int).compareTo(b['start'] as int);
+      if (startCompare != 0) return startCompare;
+      return (b['end'] as int)
+          .compareTo(a['end'] as int); // Destaque mais longo primeiro
+    });
+
+    // 4. Resolver sobreposições (simples: o primeiro na lista ordenada vence se houver sobreposição)
+    List<Map<String, dynamic>> finalHighlightsToRender = [];
+    int lastProcessedEnd = -1;
+    for (var occ in occurrences) {
+      if ((occ['start'] as int) >= lastProcessedEnd) {
+        finalHighlightsToRender.add(occ);
+        lastProcessedEnd = occ['end'] as int;
+      }
+    }
+
+    // 5. Construir TextSpans
+    List<TextSpan> spans = [];
+    int currentTextPosition = 0;
+    for (var highlightSpanData in finalHighlightsToRender) {
+      final int start = highlightSpanData['start'];
+      final int end = highlightSpanData['end'];
+      final String snippetText = highlightSpanData['text'];
+
+      if (start > currentTextPosition) {
+        spans.add(
+            TextSpan(text: fullText.substring(currentTextPosition, start)));
+      }
+      spans.add(
+        TextSpan(
+          text: snippetText,
+          style: TextStyle(
+            backgroundColor: theme.colorScheme.primary.withOpacity(0.35),
+            color: theme.colorScheme
+                .onPrimaryContainer, // Ajuste se necessário para contraste
           ),
-        );
-        return AdaptiveTextSelectionToolbar.buttonItems(
-          anchors: editableTextState.contextMenuAnchors,
-          buttonItems: buttonItems,
-        );
-      },
-    );
+          // Aqui você poderia adicionar um LongPressGestureRecognizer se quisesse
+          // permitir que o usuário interagisse com um trecho já destacado (ex: para remover o destaque)
+          // recognizer: LongPressGestureRecognizer()..onLongPress = () {
+          //   print("Destaque '${highlightSpanData['highlightId']}' pressionado longamente!");
+          //   // Implementar lógica para remover/editar destaque
+          // },
+        ),
+      );
+      currentTextPosition = end;
+    }
+
+    if (currentTextPosition < fullText.length) {
+      spans.add(TextSpan(text: fullText.substring(currentTextPosition)));
+    }
+
+    return spans.isEmpty ? [const TextSpan(text: "")] : spans;
   }
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (_, controller) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  widget.sectionTitle,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const Divider(height: 1, color: Colors.grey),
-              Expanded(
-                child: widget.commentaryItems.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "Nenhum comentário disponível para esta seção.",
-                          style: TextStyle(color: Colors.white70),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : ListView.builder(
-                        controller:
-                            controller, // Use o controller do DraggableScrollableSheet
-                        padding: const EdgeInsets.all(16.0),
-                        itemCount: widget.commentaryItems.length,
-                        itemBuilder: (context, index) {
-                          final item = widget.commentaryItems[index];
-                          final hasOriginal = item['original'] != null &&
-                              (item['original'] as String).isNotEmpty;
-                          final hasTraducao = item['traducao'] != null &&
-                              (item['traducao'] as String).isNotEmpty;
-                          final bool showCommentaryTitle = index == 0;
+    final theme = Theme.of(context);
+    // Não chame _getCombinedCommentaryText aqui ainda, pois o StoreConnector precisa ser construído primeiro
+    // para que o viewModel.userCommentHighlights esteja disponível para _buildTextSpansWithHighlights.
 
-                          return Padding(
-                            padding: EdgeInsets.only(
-                                bottom:
-                                    index < widget.commentaryItems.length - 1
-                                        ? 16.0
-                                        : 0.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (showCommentaryTitle && hasTraducao) ...[
-                                  const Text(
-                                    "Comentário:",
-                                    style: TextStyle(
-                                      color: Color(0xFFCDE7BE),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                ],
-                                if (hasTraducao) ...[
-                                  _buildCommentTextField(
-                                    controller: _traducaoControllers[index],
-                                    fullCommentText:
-                                        _traducaoControllers[index].text,
-                                    modalContext:
-                                        context, // Passa o contexto do builder do modal
-                                  ),
-                                  const SizedBox(height: 10),
-                                ],
-                                if (hasOriginal) ...[
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _showOriginalFlags[index] =
-                                            !_showOriginalFlags[index];
-                                      });
-                                    },
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          _showOriginalFlags[index]
-                                              ? "Ocultar Original"
-                                              : "Ver Original",
-                                          style: const TextStyle(
-                                            color: Colors.amber,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        Icon(
-                                          _showOriginalFlags[index]
-                                              ? Icons.arrow_drop_up
-                                              : Icons.arrow_drop_down,
-                                          color: Colors.amber,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (_showOriginalFlags[index]) ...[
-                                    const SizedBox(height: 8),
-                                    const Text(
-                                      "Original:",
-                                      style: TextStyle(
-                                        color: Colors.amber,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    _buildCommentTextField(
-                                      controller: _originalControllers[index],
-                                      fullCommentText:
-                                          _originalControllers[index].text,
-                                      modalContext:
-                                          context, // Passa o contexto do builder do modal
-                                    ),
-                                  ],
-                                ],
-                                if (!hasTraducao && !hasOriginal)
-                                  const Text(
-                                    "Conteúdo do comentário não disponível.",
-                                    style: TextStyle(
-                                        color: Colors.white70,
-                                        fontStyle: FontStyle.italic),
-                                  ),
-                              ],
+    return StoreConnector<AppState, _CommentaryModalViewModel>(
+        converter: (store) => _CommentaryModalViewModel.fromStore(
+            store), // Passa todos os destaques
+        builder: (context, viewModel) {
+          // viewModel agora é _CommentaryModalViewModel
+
+          // Chame _getCombinedCommentaryText DENTRO do builder, após ter acesso ao viewModel se necessário
+          // (embora esta função não use o viewModel diretamente, é bom manter a lógica de dados junta).
+          final String combinedText = _getCombinedCommentaryText();
+
+          return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.4,
+            maxChildSize: 0.9,
+            expand: false,
+            builder: (_, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment
+                            .center, // Alinhado ao centro verticalmente
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.sectionTitle,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: theme.colorScheme.onBackground,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.left,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          );
-                        },
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.translate_rounded, // Ícone mais sugestivo
+                              size: 24, // Tamanho um pouco maior
+                              color: _showOriginalText
+                                  ? theme.colorScheme.primary
+                                  : theme.iconTheme.color?.withOpacity(0.8),
+                            ),
+                            tooltip: _showOriginalText
+                                ? "Ver Tradução (PT)"
+                                : "Ver Original (EN)",
+                            onPressed: () {
+                              setState(() {
+                                _showOriginalText = !_showOriginalText;
+                              });
+                            },
+                            splashRadius: 22,
+                            padding: const EdgeInsets.all(
+                                10), // Padding para área de toque
+                          )
+                        ],
                       ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+                    ),
+                    Divider(
+                        height: 1,
+                        color: theme.dividerColor
+                            .withOpacity(0.3)), // Divisor mais sutil
+
+                    Expanded(
+                      child: widget.commentaryItems.isEmpty
+                          ? Center(
+                              child: Text(
+                                "Nenhum comentário disponível para esta seção.",
+                                style: TextStyle(
+                                    color: theme.textTheme.bodyMedium?.color
+                                        ?.withOpacity(0.7)),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  16.0, 12.0, 16.0, 16.0), // Ajuste de padding
+                              child: SingleChildScrollView(
+                                controller: scrollController,
+                                child: SelectableText.rich(
+                                  TextSpan(
+                                      children: _buildTextSpansWithHighlights(
+                                          combinedText,
+                                          viewModel
+                                              .userCommentHighlights, // Destaques do usuário (todos)
+                                          currentSectionIdForHighlights, // ID da seção atual
+                                          theme),
+                                      // Estilo base para o texto não destacado
+                                      style:
+                                          theme.textTheme.bodyLarge?.copyWith(
+                                        color: theme.colorScheme.onBackground,
+                                        height:
+                                            1.65, // Aumentado para melhor legibilidade
+                                        fontSize: 15.5, // Ajuste fino
+                                      )),
+                                  textAlign: TextAlign.justify,
+                                  contextMenuBuilder: (BuildContext menuContext,
+                                      EditableTextState editableTextState) {
+                                    final List<ContextMenuButtonItem>
+                                        buttonItems = editableTextState
+                                            .contextMenuButtonItems;
+                                    final currentTextSelection =
+                                        editableTextState
+                                            .textEditingValue.selection;
+
+                                    if (!currentTextSelection.isCollapsed) {
+                                      buttonItems.insert(
+                                        0,
+                                        ContextMenuButtonItem(
+                                          label: 'Marcar Trecho',
+                                          onPressed: () {
+                                            ContextMenuController.removeAny();
+                                            _markSelectedCommentSnippet(
+                                              context, // Usa o context do builder do StoreConnector (que tem acesso ao Store)
+                                              combinedText,
+                                              currentTextSelection,
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }
+                                    // Você pode adicionar mais botões aqui, como "Copiar", "Pesquisar", etc.
+                                    // buttonItems.add(ContextMenuButtonItem(label: "Copiar", onPressed: (){...}));
+
+                                    return AdaptiveTextSelectionToolbar
+                                        .buttonItems(
+                                      anchors:
+                                          editableTextState.contextMenuAnchors,
+                                      buttonItems: buttonItems,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        });
   }
 }
