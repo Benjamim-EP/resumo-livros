@@ -4,7 +4,9 @@ import 'package:resumo_dos_deuses_flutter/redux/middleware/bible_progress_middle
 import 'package:resumo_dos_deuses_flutter/redux/middleware/firestore_sync_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/metadata_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/middleware/payment_middleware.dart';
+import 'package:resumo_dos_deuses_flutter/redux/middleware/sermon_search_middleware.dart';
 import 'package:resumo_dos_deuses_flutter/redux/reducers/metadata_reducer.dart';
+import 'package:resumo_dos_deuses_flutter/redux/reducers/sermon_search_reducer.dart';
 import 'package:resumo_dos_deuses_flutter/redux/reducers/subscription_reducer.dart';
 import 'reducers.dart'; // Seu arquivo de reducers principal
 
@@ -29,20 +31,23 @@ class AppState {
   final ThemeState themeState;
   final BibleSearchState
       bibleSearchState; // NOVO: Estado para a busca semântica bíblica
+  final SermonSearchState sermonSearchState; // NOVO ESTADO
 
   final MetadataState metadataState;
   final SubscriptionState subscriptionState;
 
-  AppState(
-      {required this.booksState,
-      required this.userState,
-      required this.authorState,
-      required this.topicState,
-      required this.chatState,
-      required this.themeState,
-      required this.bibleSearchState, // NOVO
-      required this.metadataState,
-      required this.subscriptionState});
+  AppState({
+    required this.booksState,
+    required this.userState,
+    required this.authorState,
+    required this.topicState,
+    required this.chatState,
+    required this.themeState,
+    required this.bibleSearchState, // NOVO
+    required this.metadataState,
+    required this.subscriptionState,
+    required this.sermonSearchState,
+  });
 
   // O método copyWith é útil para testes ou cenários de atualização mais complexos,
   // mas geralmente os reducers individuais cuidam da imutabilidade.
@@ -66,6 +71,7 @@ class AppState {
       metadataState:
           metadataState ?? metadataState, // Mantém o estado de metadados atual
       subscriptionState: subscriptionState ?? this.subscriptionState,
+      sermonSearchState: sermonSearchState ?? this.sermonSearchState,
     );
   }
 }
@@ -83,6 +89,7 @@ AppState appReducer(AppState state, dynamic action) {
         bibleSearchReducer(state.bibleSearchState, action), // NOVO
     metadataState: metadataReducer(state.metadataState, action),
     subscriptionState: subscriptionReducer(state.subscriptionState, action),
+    sermonSearchState: sermonSearchReducer(state.sermonSearchState, action),
   );
 }
 
@@ -102,6 +109,8 @@ final Store<AppState> store = Store<AppState>(
     metadataState: MetadataState(),
     userState: UserState(pendingFirestoreWrites: []),
     subscriptionState: SubscriptionState.initial(),
+    sermonSearchState:
+        SermonSearchState(), // NOVO: Estado inicial para busca de sermões
   ),
   middleware: [
     // Combina todos os middlewares dos arquivos separados
@@ -120,6 +129,7 @@ final Store<AppState> store = Store<AppState>(
     ...createBibleProgressMiddleware(),
     ...createMetadataMiddleware(),
     ...createFirestoreSyncMiddleware(), // NOVO
+    ...createSermonSearchMiddleware(),
   ],
 );
 
