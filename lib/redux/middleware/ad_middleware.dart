@@ -1,9 +1,9 @@
 // lib/redux/middleware/ad_middleware.dart
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
 import 'package:redux/redux.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:resumo_dos_deuses_flutter/services/AdHelperStartIo.dart';
 import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
 import 'package:resumo_dos_deuses_flutter/main.dart';
@@ -23,20 +23,15 @@ const String _prefsAdsWatchedIn6HourWindowKey =
     'adsWatchedIn6HourWindow'; //NOVO
 
 List<Middleware<AppState>> createAdMiddleware() {
-  final adHelper = AdHelper();
+  final adHelper = AdHelperStartIo(); // <<< MUDANÇA
   final firestoreService = FirestoreService();
-
-  adHelper.loadRewardedAd(onUserEarnedReward: (RewardItem reward) {
-    print(
-        "AdHelper (init load): Recompensa inicial. ${reward.amount} ${reward.type}");
-  });
 
   return [
     TypedMiddleware<AppState, RequestRewardedAdAction>(
             _handleRequestRewardedAd(adHelper, firestoreService))
         .call,
     TypedMiddleware<AppState, LoadAdLimitDataAction>(_handleLoadAdLimitData)
-        .call, // NOVO
+        .call,
   ];
 }
 
@@ -91,29 +86,30 @@ Future<void> _saveAdWindowStatsToPrefs(DateTime? timestamp, int count) async {
 
 void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
     _handleRequestRewardedAd(
-        AdHelper adHelper, FirestoreService firestoreService) {
+        AdHelperStartIo adHelper, FirestoreService firestoreService) {
   return (Store<AppState> store, RequestRewardedAdAction action,
       NextDispatcher next) async {
     next(action);
 
     final BuildContext? currentContext = navigatorKey.currentContext;
-    final userState = store.state.userState; // Mais fácil de acessar
+    final userState = store.state.userState;
     final userId = userState.userId;
     final userCoins = userState.userCoins;
     final lastAdTime = userState.lastRewardedAdWatchTime;
     final adsToday = userState.rewardedAdsWatchedToday;
 
-    // NOVOS DADOS DO ESTADO
+    // Dados da janela de 6 horas
     final firstAdIn6HourWindow = userState.firstAdIn6HourWindowTimestamp;
     final adsWatchedIn6HourWindow = userState.adsWatchedIn6HourWindow;
 
     if (userId == null) {
-      print("AdMiddleware: Usuário não logado.");
+      print(
+          "AdMiddleware (Start.io): Usuário não logado. Ação de recompensa cancelada.");
       return;
     }
 
     if (userCoins >= MAX_COINS_LIMIT) {
-      print("AdMiddleware: Limite máximo de moedas atingido.");
+      print("AdMiddleware (Start.io): Limite máximo de moedas atingido.");
       if (currentContext != null && currentContext.mounted) {
         ScaffoldMessenger.of(currentContext).showSnackBar(
           const SnackBar(
@@ -126,36 +122,36 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
     final now = DateTime.now();
     String blockReason = "";
 
-    // Verificação de limite diário
+    // 1. Verificação de limite diário (do dia anterior)
     if (lastAdTime != null &&
         now.year == lastAdTime.year &&
         now.month == lastAdTime.month &&
         now.day == lastAdTime.day &&
         adsToday >= MAX_ADS_PER_DAY) {
-      blockReason = "Você atingiu o limite de anúncios por hoje.";
+      blockReason = "Você atingiu o limite de anúncios por hoje. Volte amanhã!";
     }
-    // Verificação de cooldown individual
+    // 2. Verificação de cooldown individual
     else if (lastAdTime != null &&
         now.difference(lastAdTime) < ADS_COOLDOWN_DURATION) {
       final remainingTime = ADS_COOLDOWN_DURATION - now.difference(lastAdTime);
       blockReason =
-          "Aguarde ${remainingTime.inMinutes + 1} minutos para assistir outro anúncio.";
+          "Aguarde ${remainingTime.inSeconds + 1} segundos para assistir outro anúncio.";
     }
-    // Verificação do limite da janela de 6 horas (NOVO)
+    // 3. Verificação do limite da janela de 6 horas
     else if (firstAdIn6HourWindow != null &&
         now.difference(firstAdIn6HourWindow) <= SIX_HOUR_WINDOW_DURATION) {
-      // Estamos dentro de uma janela de 6 horas ativa
       if (adsWatchedIn6HourWindow >= MAX_ADS_PER_SIX_HOUR_WINDOW) {
         final windowEndTime =
             firstAdIn6HourWindow.add(SIX_HOUR_WINDOW_DURATION);
         final remainingWindowTime = windowEndTime.difference(now);
         blockReason =
-            "Limite de $MAX_ADS_PER_SIX_HOUR_WINDOW anúncios a cada ${SIX_HOUR_WINDOW_DURATION.inHours}h atingido. Tente novamente em ${remainingWindowTime.inHours}h ${remainingWindowTime.inMinutes.remainder(60)}min.";
+            "Limite de anúncios atingido. Tente novamente em ${remainingWindowTime.inHours}h ${remainingWindowTime.inMinutes.remainder(60)}min.";
       }
     }
 
     if (blockReason.isNotEmpty) {
-      print("AdMiddleware: Não pode assistir anúncio. Razão: $blockReason");
+      print(
+          "AdMiddleware (Start.io): Não pode assistir anúncio. Razão: $blockReason");
       if (currentContext != null && currentContext.mounted) {
         ScaffoldMessenger.of(currentContext).showSnackBar(
           SnackBar(content: Text(blockReason)),
@@ -164,100 +160,110 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
       return;
     }
 
-    adHelper.showRewardedAd(onUserEarnedReward: (RewardItem reward) async {
-      print(
-          "AdMiddleware: Recompensa ganha! Amount: ${reward.amount}, Type: ${reward.type}");
+    // Se passou por todas as verificações, mostra o anúncio do Start.io
+    adHelper.showRewardedAd(
+      // O callback a ser executado QUANDO o Start.io confirmar a recompensa
+      onUserEarnedReward: () async {
+        print("AdMiddleware (Start.io): Callback onUserEarnedReward acionado!");
 
-      int coinsAwarded = COINS_PER_REWARDED_AD;
-      int currentCoins =
-          store.state.userState.userCoins; // Pega o valor mais recente
-      int coinsThatCanBeAdded = MAX_COINS_LIMIT - currentCoins;
+        // --- LÓGICA DE CONCESSÃO DE RECOMPENSA (idêntica à anterior) ---
+        int coinsAwarded = COINS_PER_REWARDED_AD;
+        // Pega o valor mais recente das moedas do estado Redux para evitar race conditions
+        int currentCoinsInState = store.state.userState.userCoins;
+        int coinsThatCanBeAdded = MAX_COINS_LIMIT - currentCoinsInState;
 
-      if (coinsThatCanBeAdded <= 0) {
-        print("AdMiddleware: Usuário já no limite de moedas.");
-        if (currentContext != null && currentContext.mounted) {
-          ScaffoldMessenger.of(currentContext).showSnackBar(
-            const SnackBar(content: Text('Você já está no limite de moedas!')),
-          );
+        if (coinsThatCanBeAdded <= 0) {
+          print(
+              "AdMiddleware (Start.io): Usuário já no limite de moedas no momento da recompensa.");
+          if (currentContext != null && currentContext.mounted) {
+            ScaffoldMessenger.of(currentContext).showSnackBar(
+              const SnackBar(
+                  content: Text('Você já está no limite de moedas!')),
+            );
+          }
+          return; // Sai sem conceder recompensa
         }
-        return;
-      }
 
-      int finalCoinsToAdd = (coinsAwarded > coinsThatCanBeAdded)
-          ? coinsThatCanBeAdded
-          : coinsAwarded;
-      int newTotalCoins = currentCoins + finalCoinsToAdd;
-      DateTime adWatchedTime = DateTime.now();
+        // Garante que não ultrapassará o limite
+        int finalCoinsToAdd = (coinsAwarded > coinsThatCanBeAdded)
+            ? coinsThatCanBeAdded
+            : coinsAwarded;
 
-      store.dispatch(RewardedAdWatchedAction(finalCoinsToAdd, adWatchedTime));
+        DateTime adWatchedTime = DateTime.now();
 
-      // ATUALIZAR STATS DA JANELA DE 6 HORAS (NOVO)
-      DateTime? newFirstAdInWindowTimestamp;
-      int newAdsWatchedInWindow;
+        // Despacha a ação para atualizar o estado do Redux otimisticamente
+        store.dispatch(RewardedAdWatchedAction(finalCoinsToAdd, adWatchedTime));
 
-      final currentFirstAdInWindow =
-          store.state.userState.firstAdIn6HourWindowTimestamp;
-      final currentAdsInWindow = store.state.userState.adsWatchedIn6HourWindow;
+        // Atualiza os stats da janela de 6 horas no Redux e no SharedPreferences
+        DateTime? newFirstAdInWindowTimestamp;
+        int newAdsWatchedInWindow;
+        final currentFirstAdInWindow =
+            store.state.userState.firstAdIn6HourWindowTimestamp;
+        final currentAdsInWindow =
+            store.state.userState.adsWatchedIn6HourWindow;
 
-      if (currentFirstAdInWindow == null ||
-          adWatchedTime.difference(currentFirstAdInWindow) >
-              SIX_HOUR_WINDOW_DURATION) {
-        // Começa uma nova janela
-        newFirstAdInWindowTimestamp = adWatchedTime;
-        newAdsWatchedInWindow = 1;
-      } else {
-        // Continua na janela existente
-        newFirstAdInWindowTimestamp = currentFirstAdInWindow;
-        newAdsWatchedInWindow = currentAdsInWindow + 1;
-      }
-
-      store.dispatch(UpdateAdWindowStatsAction(
-          firstAdTimestamp: newFirstAdInWindowTimestamp,
-          adsInWindowCount: newAdsWatchedInWindow));
-      // Salva no SharedPreferences
-      await _saveAdWindowStatsToPrefs(
-          newFirstAdInWindowTimestamp, newAdsWatchedInWindow);
-
-      try {
-        // O reducer de RewardedAdWatchedAction já deve ter atualizado adsToday
-        int adsWatchedTodayForFirestore =
-            store.state.userState.rewardedAdsWatchedToday;
-
-        await firestoreService.updateUserCoinsAndAdStats(
-          userId, // Sabemos que não é nulo aqui
-          newTotalCoins,
-          adWatchedTime,
-          adsWatchedTodayForFirestore,
-        );
-        print(
-            "AdMiddleware: Moedas e estatísticas de anúncio (diário) atualizadas no Firestore.");
-        if (currentContext != null && currentContext.mounted) {
-          ScaffoldMessenger.of(currentContext).showSnackBar(
-            SnackBar(content: Text('Você ganhou $finalCoinsToAdd moedas!')),
-          );
+        if (currentFirstAdInWindow == null ||
+            adWatchedTime.difference(currentFirstAdInWindow) >
+                SIX_HOUR_WINDOW_DURATION) {
+          // Começa uma nova janela
+          newFirstAdInWindowTimestamp = adWatchedTime;
+          newAdsWatchedInWindow = 1;
+        } else {
+          // Continua na janela existente
+          newFirstAdInWindowTimestamp = currentFirstAdInWindow;
+          newAdsWatchedInWindow = currentAdsInWindow + 1;
         }
-      } catch (e) {
-        print(
-            "AdMiddleware: Erro ao atualizar moedas/stats (diário) no Firestore: $e");
+
+        store.dispatch(UpdateAdWindowStatsAction(
+            firstAdTimestamp: newFirstAdInWindowTimestamp,
+            adsInWindowCount: newAdsWatchedInWindow));
+
+        await _saveAdWindowStatsToPrefs(
+            newFirstAdInWindowTimestamp, newAdsWatchedInWindow);
+
+        // Tenta salvar no Firestore
+        try {
+          int newTotalCoins = currentCoinsInState + finalCoinsToAdd;
+          int adsWatchedTodayForFirestore =
+              store.state.userState.rewardedAdsWatchedToday;
+
+          await firestoreService.updateUserCoinsAndAdStats(
+            userId,
+            newTotalCoins,
+            adWatchedTime,
+            adsWatchedTodayForFirestore,
+          );
+          print(
+              "AdMiddleware (Start.io): Moedas e estatísticas de anúncio atualizadas no Firestore.");
+          if (currentContext != null && currentContext.mounted) {
+            ScaffoldMessenger.of(currentContext).showSnackBar(
+              SnackBar(content: Text('Você ganhou $finalCoinsToAdd moedas!')),
+            );
+          }
+        } catch (e) {
+          print(
+              "AdMiddleware (Start.io): Erro ao atualizar moedas/stats no Firestore: $e");
+          if (currentContext != null && currentContext.mounted) {
+            ScaffoldMessenger.of(currentContext).showSnackBar(
+              const SnackBar(
+                  content: Text(
+                      'Erro ao salvar sua recompensa. Tente novamente mais tarde.')),
+            );
+          }
+          // Considerar reverter o estado do Redux se a escrita no Firestore falhar
+        }
+      },
+      // O callback a ser executado se o anúncio não puder ser mostrado
+      onAdFailedToShow: () {
+        print("AdMiddleware (Start.io): Callback onAdFailedToShow acionado.");
         if (currentContext != null && currentContext.mounted) {
           ScaffoldMessenger.of(currentContext).showSnackBar(
             const SnackBar(
                 content: Text(
-                    'Erro ao salvar sua recompensa. Tente novamente mais tarde.')),
+                    'Não foi possível carregar o anúncio. Tente mais tarde.')),
           );
         }
-        // Considerar reverter a atualização otimista da janela de 6h se a do Firestore falhar?
-        // Por ora, mantemos simples. A janela de 6h é local.
-      }
-    }, onAdFailedToShow: () {
-      print("AdMiddleware: Falha ao mostrar o anúncio.");
-      if (currentContext != null && currentContext.mounted) {
-        ScaffoldMessenger.of(currentContext).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Não foi possível carregar o anúncio. Tente mais tarde.')),
-        );
-      }
-    });
+      },
+    );
   };
 }

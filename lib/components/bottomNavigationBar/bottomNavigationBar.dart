@@ -2,7 +2,6 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/library_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart'; // Para rotas de navegação
@@ -111,7 +110,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
   // LibraryPage e Chat não precisam de GlobalKey se não tiverem navegação aninhada profunda
 
   late final List<Widget> _pages;
-  ads.BannerAd? _bannerAd;
   StreamSubscription? _userDocSubscription;
   bool _isPremiumFromState = false; // Usado para controlar a exibição do banner
 
@@ -169,7 +167,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   @override
   void dispose() {
     _userDocSubscription?.cancel();
-    _bannerAd?.dispose();
+
     super.dispose();
   }
 
@@ -213,40 +211,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
     if (isNowPremium != _isPremiumFromState) {
       setState(() {
         _isPremiumFromState = isNowPremium;
-        if (!_isPremiumFromState) {
-          _initBannerAd();
-        } else {
-          _disposeBannerAd();
-        }
       });
     }
-  }
-
-  void _disposeBannerAd() {
-    _bannerAd?.dispose();
-    _bannerAd = null;
-  }
-
-  void _initBannerAd() {
-    if (_bannerAd != null || !mounted || _isPremiumFromState) return;
-    _bannerAd = ads.BannerAd(
-      adUnitId: AdHelper.bannerAdUnitId,
-      size: ads.AdSize.banner,
-      request: const ads.AdRequest(),
-      listener: ads.BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() => _bannerAd = ad as ads.BannerAd);
-        },
-        onAdFailedToLoad: (ad, err) {
-          ad.dispose();
-          if (mounted) setState(() => _bannerAd = null);
-        },
-      ),
-    )..load();
   }
 
   Widget _buildTabNavigator(
@@ -408,12 +374,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
             bottomNavigationBar: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (!_isPremiumFromState && _bannerAd != null)
-                  SizedBox(
-                    width: _bannerAd!.size.width.toDouble(),
-                    height: _bannerAd!.size.height.toDouble(),
-                    child: ads.AdWidget(ad: _bannerAd!),
-                  ),
                 BottomNavigationBar(
                   type: BottomNavigationBarType.fixed,
                   currentIndex: _selectedIndex,
