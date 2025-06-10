@@ -318,24 +318,24 @@ class _UserPageState extends State<UserPage> {
         return StoreConnector<AppState, _UserProgressViewModel>(
           converter: (store) => _UserProgressViewModel.fromStore(store),
           onInit: (store) {
-            // ... (lógica de onInit como antes) ...
+            if (store.state.metadataState.bibleSectionCounts.isEmpty &&
+                !store.state.metadataState.isLoadingSectionCounts) {
+              store.dispatch(LoadBibleSectionCountsAction());
+            }
             if (store.state.userState.allBooksProgress.isEmpty &&
                 store.state.userState.userId != null &&
                 !store.state.userState.isLoadingAllBibleProgress) {
               store.dispatch(LoadAllBibleProgressAction());
             }
-            if (store.state.metadataState.bibleSectionCounts.isEmpty &&
-                !store.state.metadataState.isLoadingSectionCounts) {
-              store.dispatch(LoadBibleSectionCountsAction());
-            }
           },
           builder: (context, vm) {
-            // ... (lógica de carregamento, erro, e dados gerais como antes) ...
+            final theme = Theme.of(context); // Pega o tema aqui
+
             if (vm.isLoadingCounts || vm.isLoadingUserProgress) {
               return Center(
                   child: CircularProgressIndicator(
                       color: theme.colorScheme.primary,
-                      key: const ValueKey("progress_tab_loader")));
+                      key: const ValueKey("progress_tab_loader_userpage")));
             }
             if (vm.countsError != null) {
               return Center(
@@ -345,33 +345,65 @@ class _UserPageState extends State<UserPage> {
                 textAlign: TextAlign.center,
               ));
             }
-            // ... (resto da lógica de vm.userProgressError e vm.bibleSectionCounts.isEmpty) ...
+            if (vm.userProgressError != null) {
+              return Center(
+                  child: Text(
+                "Erro ao carregar seu progresso: ${vm.userProgressError}",
+                style: TextStyle(color: theme.colorScheme.error),
+                textAlign: TextAlign.center,
+              ));
+            }
+            if (vm.bibleSectionCounts.isEmpty &&
+                vm.userId != null &&
+                !vm.isLoadingCounts) {
+              return Center(
+                  child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                      "Não foi possível carregar os dados de progresso da Bíblia.",
+                      style: theme.textTheme.bodyMedium),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                      onPressed: () =>
+                          store.dispatch(LoadBibleSectionCountsAction()),
+                      child: Text("Tentar Novamente"))
+                ],
+              ));
+            }
 
             // Cálculo do progresso (como antes)
             int totalSectionsInBible =
-                vm.bibleSectionCounts['total_secoes_biblia'] as int? ??
-                    1; // Evita divisão por zero
+                (vm.bibleSectionCounts['total_secoes_biblia'] as int? ?? 1)
+                    .clamp(1, 1000000);
             int totalSectionsInAT =
-                vm.bibleSectionCounts['total_secoes_antigo_testamento']
-                        as int? ??
-                    1;
+                (vm.bibleSectionCounts['total_secoes_antigo_testamento']
+                            as int? ??
+                        1)
+                    .clamp(1, 1000000);
             int totalSectionsInNT =
-                vm.bibleSectionCounts['total_secoes_novo_testamento'] as int? ??
-                    1;
+                (vm.bibleSectionCounts['total_secoes_novo_testamento']
+                            as int? ??
+                        1)
+                    .clamp(1, 1000000);
+
             int totalReadSectionsBible = 0;
             int totalReadSectionsAT = 0;
             int totalReadSectionsNT = 0;
             final booksMetadataFromCounts =
                 vm.bibleSectionCounts['livros'] as Map<String, dynamic>? ?? {};
+
             vm.allBooksProgress.forEach((bookAbbrev, progressData) {
               totalReadSectionsBible += progressData.readSections.length;
               final String? testament =
                   booksMetadataFromCounts[bookAbbrev]?['testamento'] as String?;
-              if (testament == "Antigo")
+              if (testament == "Antigo") {
                 totalReadSectionsAT += progressData.readSections.length;
-              else if (testament == "Novo")
+              } else if (testament == "Novo") {
                 totalReadSectionsNT += progressData.readSections.length;
+              }
             });
+
             double overallProgress =
                 (totalReadSectionsBible / totalSectionsInBible).clamp(0.0, 1.0);
             double atProgress =
@@ -379,7 +411,6 @@ class _UserPageState extends State<UserPage> {
             double ntProgress =
                 (totalReadSectionsNT / totalSectionsInNT).clamp(0.0, 1.0);
 
-            // Montar a lista de widgets de progresso por livro (como antes)
             List<Widget> bookProgressWidgets = [];
             if (_localBooksMap != null && vm.bibleSectionCounts.isNotEmpty) {
               for (String bookAbbrev in CANONICAL_BOOK_ORDER) {
@@ -392,7 +423,8 @@ class _UserPageState extends State<UserPage> {
 
                 final bookProgressData = vm.allBooksProgress[bookAbbrev];
                 int totalSectionsInThisBook =
-                    bookMetaFromCounts['total_secoes_livro'] as int? ?? 1;
+                    (bookMetaFromCounts['total_secoes_livro'] as int? ?? 1)
+                        .clamp(1, 1000000);
                 int readSectionsInThisBook =
                     bookProgressData?.readSections.length ?? 0;
                 double bookProgressPercent =
@@ -403,7 +435,7 @@ class _UserPageState extends State<UserPage> {
 
                 bookProgressWidgets.add(Padding(
                   padding: const EdgeInsets.symmetric(
-                      vertical: 4.0, horizontal: 4.0), // Padding menor
+                      vertical: 6.0), // Aumentar padding vertical
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -411,23 +443,30 @@ class _UserPageState extends State<UserPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                              child: Text(bookFullName,
-                                  style: theme.textTheme.bodyMedium
-                                      ?.copyWith(fontSize: 14))), // Fonte menor
+                            child: Text(bookFullName,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                    // Usar titleSmall ou bodyLarge
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.9))),
+                          ),
                           Text(
                               "${(bookProgressPercent * 100).toStringAsFixed(0)}% ($readSectionsInThisBook/$totalSectionsInThisBook)",
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(fontSize: 11)),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7))),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       LinearPercentIndicator(
                         percent: bookProgressPercent,
-                        lineHeight: 8.0, // Barra mais fina
-                        barRadius: const Radius.circular(4),
+                        lineHeight: 10.0, // Um pouco mais espesso
+                        barRadius: const Radius.circular(5),
                         backgroundColor:
-                            theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                            theme.colorScheme.surfaceVariant.withOpacity(0.4),
                         progressColor: theme.colorScheme.primary,
+                        animation: true,
+                        animationDuration: 600,
                       ),
                     ],
                   ),
@@ -437,80 +476,169 @@ class _UserPageState extends State<UserPage> {
 
             if (vm.allBooksProgress.isEmpty &&
                 vm.userId != null &&
-                !vm.isLoadingUserProgress) {
-              // Mensagem se nenhum progresso foi feito
-              return SingleChildScrollView(/* ... como antes ... */);
+                !vm.isLoadingUserProgress &&
+                vm.bibleSectionCounts.isNotEmpty) {
+              return Center(
+                  child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.menu_book_outlined,
+                        size: 60,
+                        color: theme.colorScheme.primary.withOpacity(0.7)),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Comece sua jornada de leitura!",
+                      style: theme.textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Seu progresso na leitura da Bíblia aparecerá aqui assim que você marcar seções como lidas.",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.chrome_reader_mode_outlined),
+                      label: const Text("Ir para a Bíblia"),
+                      onPressed: () {
+                        final store =
+                            StoreProvider.of<AppState>(context, listen: false);
+                        store.dispatch(RequestBottomNavChangeAction(
+                            1)); // Navega para a aba da Bíblia (índice 1)
+                      },
+                    )
+                  ],
+                ),
+              ));
             }
 
-            // UI principal da aba Progresso
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment
+                    .stretch, // Faz os filhos ocuparem a largura
                 children: [
-                  Text("Progresso Geral da Bíblia",
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(color: theme.colorScheme.primary)),
-                  const SizedBox(height: 16), // Espaçamento reduzido
-                  CircularPercentIndicator(
-                    radius: 75.0, // Raio menor
-                    lineWidth: 10.0, // Linha mais fina
-                    percent: overallProgress,
-                    center: Text(
-                      "${(overallProgress * 100).toStringAsFixed(1)}%",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20.0,
-                          color:
-                              theme.textTheme.titleLarge?.color), // Fonte menor
-                    ),
-                    footer: Padding(
-                      padding: const EdgeInsets.only(
-                          top: 8.0), // Espaçamento reduzido
-                      child: Text(
-                        "Você leu $totalReadSectionsBible de $totalSectionsInBible seções!",
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(fontSize: 13), // Fonte menor
-                        textAlign: TextAlign.center,
+                  // Card para Progresso Geral
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    color: theme.cardColor
+                        .withOpacity(0.8), // Levemente transparente
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            "Progresso Geral da Bíblia",
+                            style: theme.textTheme.titleLarge?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w600),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          CircularPercentIndicator(
+                            radius: 80.0, // Aumentado
+                            lineWidth: 12.0, // Aumentado
+                            percent: overallProgress,
+                            center: Text(
+                              "${(overallProgress * 100).toStringAsFixed(1)}%",
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary),
+                            ),
+                            footer: Padding(
+                              padding: const EdgeInsets.only(top: 12.0),
+                              child: Text(
+                                "Você leu $totalReadSectionsBible de $totalSectionsInBible seções!",
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.8)),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            circularStrokeCap: CircularStrokeCap.round,
+                            progressColor: theme.colorScheme.primary,
+                            backgroundColor: theme.colorScheme.surfaceVariant
+                                .withOpacity(0.5),
+                            animation: true,
+                            animationDuration: 1000,
+                          ),
+                        ],
                       ),
                     ),
-                    circularStrokeCap: CircularStrokeCap.round,
-                    progressColor: theme.colorScheme.primary,
-                    backgroundColor:
-                        theme.colorScheme.surfaceVariant.withOpacity(0.5),
                   ),
-                  const SizedBox(height: 20), // Espaçamento reduzido
-                  _buildTestamentProgress("Antigo Testamento", atProgress,
-                      totalReadSectionsAT, totalSectionsInAT, theme),
-                  const SizedBox(height: 10), // Espaçamento reduzido
-                  _buildTestamentProgress("Novo Testamento", ntProgress,
-                      totalReadSectionsNT, totalSectionsInNT, theme),
-                  const SizedBox(height: 20), // Espaçamento reduzido
+                  const SizedBox(height: 20),
 
+                  // Cards para Testamentos
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTestamentProgressCard(
+                            "Antigo Testamento",
+                            atProgress,
+                            totalReadSectionsAT,
+                            totalSectionsInAT,
+                            theme,
+                            Colors.orange.shade700 // Cor específica para AT
+                            ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildTestamentProgressCard(
+                            "Novo Testamento",
+                            ntProgress,
+                            totalReadSectionsNT,
+                            totalSectionsInNT,
+                            theme,
+                            Colors.teal.shade600 // Cor específica para NT
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ExpansionTile para Progresso Detalhado
                   Theme(
-                    // Remove divisores padrão do ExpansionTile
                     data: theme.copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       key: const PageStorageKey<String>(
-                          'book_progress_expansion_tile'),
+                          'book_progress_expansion_tile_userpage'),
                       tilePadding: const EdgeInsets.symmetric(
-                          horizontal: 0), // Ajusta padding do título
+                          horizontal: 8.0, vertical: 4.0), // Padding ajustado
+                      backgroundColor: theme.cardColor
+                          .withOpacity(0.5), // Fundo sutil quando expandido
+                      collapsedBackgroundColor:
+                          theme.cardColor.withOpacity(0.3),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)), // Bordas
+                      collapsedShape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                       title: Text(
                         "Progresso Detalhado por Livro",
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontSize: 18), // Fonte menor
+                        style: theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface),
                       ),
+                      subtitle: Text("Toque para ver o progresso em cada livro",
+                          style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.6))),
                       trailing: Icon(
                         _showAllBookProgress
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        color: theme.iconTheme.color,
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 28,
                       ),
                       onExpansionChanged: (bool expanded) {
                         if (mounted) {
-                          setState(() {
-                            _showAllBookProgress = expanded;
-                          });
+                          setState(() => _showAllBookProgress = expanded);
                         }
                       },
                       initiallyExpanded: _showAllBookProgress,
@@ -519,8 +647,7 @@ class _UserPageState extends State<UserPage> {
                             vm.userId != null &&
                             !vm.isLoadingUserProgress)
                           const Padding(
-                            padding:
-                                EdgeInsets.all(16.0), // Padding para a mensagem
+                            padding: EdgeInsets.all(20.0),
                             child: Text(
                               "Seu progresso por livro aparecerá aqui.",
                               style: TextStyle(fontStyle: FontStyle.italic),
@@ -528,24 +655,21 @@ class _UserPageState extends State<UserPage> {
                             ),
                           )
                         else
-                          // Envolve a Column com os livros em um Container com altura limitada se expandido
-                          // e scrollable, se necessário, ou apenas deixa a Column expandir naturalmente.
-                          // Para uma lista potencialmente longa, um ListView dentro de um SizedBox seria melhor aqui.
-                          // Mas para manter a simplicidade do ExpansionTile, uma Column é mais direta.
                           Padding(
+                            // Padding para a lista de livros
                             padding: const EdgeInsets.only(
-                                top: 8.0, left: 8.0, right: 8.0, bottom: 16.0),
+                                top: 0, left: 16.0, right: 16.0, bottom: 16.0),
                             child: Column(children: bookProgressWidgets),
                           ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             );
           },
         );
-
       // ... (cases para 'Destaques', 'Notas', 'Histórico', 'Diário' como antes) ...
       // A lógica interna deles não precisa mudar para esta refatoração de layout do perfil/progresso.
       case 'Destaques':
@@ -988,6 +1112,65 @@ class _UserPageState extends State<UserPage> {
             child: Text('Aba não implementada: $_selectedTab',
                 style: TextStyle(color: theme.textTheme.bodyMedium?.color)));
     }
+  }
+
+  // NOVO WIDGET HELPER para Card de Testamento
+  Widget _buildTestamentProgressCard(
+      String title,
+      double progress,
+      int readSections,
+      int totalSections,
+      ThemeData theme,
+      Color progressColor) {
+    String sectionsText = "Nenhum progresso";
+    if (totalSections > 0 || readSections > 0) {
+      sectionsText =
+          "$readSections / ${totalSections > 0 ? totalSections : readSections} seções";
+    }
+
+    return Card(
+      elevation: 1.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: theme.cardColor.withOpacity(0.7),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // Para o card se ajustar ao conteúdo
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.95),
+                  fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            LinearPercentIndicator(
+              percent: progress,
+              lineHeight: 12.0, // Um pouco mais espesso
+              barRadius: const Radius.circular(6),
+              backgroundColor: progressColor.withOpacity(0.25),
+              progressColor: progressColor,
+              center: Text(
+                "${(progress * 100).toStringAsFixed(0)}%",
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onPrimary
+                        .withOpacity(0.9) // Cor do texto sobre a barra
+                    ),
+              ),
+              animation: true,
+            ),
+            const SizedBox(height: 6),
+            Text(sectionsText,
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                    fontSize: 11.5)),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
