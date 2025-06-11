@@ -1,21 +1,21 @@
 // lib/pages/user_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
-import 'package:resumo_dos_deuses_flutter/pages/user_page/user_diary_page.dart';
+import 'package:septima_biblia/pages/user_page/user_diary_page.dart';
 import '../components/avatar/profile_picture.dart';
 import '../components/user/user_info.dart';
 import '../components/tabs/tabs.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:redux/redux.dart'; // Para Store
 import 'package:intl/intl.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/metadata_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para BibleBookProgressData
+import 'package:septima_biblia/redux/actions/metadata_actions.dart';
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/reducers.dart'; // Para BibleBookProgressData
 import 'package:percent_indicator/percent_indicator.dart';
-import 'package:resumo_dos_deuses_flutter/consts/bible_constants.dart'; // Para CANONICAL_BOOK_ORDER
+import 'package:septima_biblia/consts/bible_constants.dart'; // Para CANONICAL_BOOK_ORDER
 
 enum HighlightType { verses, comments }
 

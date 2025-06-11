@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/pages/user_page/add_diary_dialog.dart';
-import 'package:resumo_dos_deuses_flutter/pages/user_page/diary_list.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/pages/user_page/add_diary_dialog.dart';
+import 'package:septima_biblia/pages/user_page/diary_list.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 class UserDiaryPage extends StatelessWidget {
   const UserDiaryPage({super.key});

@@ -1,8 +1,8 @@
 // lib/redux/middleware/sermon_search_middleware.dart
 import 'package:redux/redux.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/sermon_search_actions.dart'; // Suas ações de busca de sermões
-import 'package:resumo_dos_deuses_flutter/redux/store.dart'; // Para AppState
+import 'package:septima_biblia/redux/actions/sermon_search_actions.dart'; // Suas ações de busca de sermões
+import 'package:septima_biblia/redux/store.dart'; // Para AppState
 // Não é necessário importar FirestoreService ou OpenAIService aqui, pois a Cloud Function faz o trabalho pesado.
 
 List<Middleware<AppState>> createSermonSearchMiddleware() {

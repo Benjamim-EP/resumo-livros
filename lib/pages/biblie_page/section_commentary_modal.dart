@@ -3,8 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 // ViewModel para o StoreConnector
 class _CommentaryModalViewModel {

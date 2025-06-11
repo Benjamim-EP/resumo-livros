@@ -2,8 +2,8 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/metadata_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/actions/metadata_actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 List<Middleware<AppState>> createMetadataMiddleware() {
   void _handleLoadBibleSectionCounts(Store<AppState> store,

@@ -2,9 +2,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para AppThemeOption
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
 
 class UserSettingsPage extends StatefulWidget {
   const UserSettingsPage({super.key});

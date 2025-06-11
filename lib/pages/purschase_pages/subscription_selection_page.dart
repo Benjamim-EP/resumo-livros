@@ -1,10 +1,10 @@
 // lib/pages/purschase_pages/subscription_selection_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/redux/actions/payment_actions.dart';
 // Remova a importação de consts.dart se os IDs de produto vierem de outro lugar ou direto aqui
-// import 'package:resumo_dos_deuses_flutter/consts.dart';
+// import 'package:septima_biblia/consts.dart';
 
 class SubscriptionSelectionPage extends StatelessWidget {
   const SubscriptionSelectionPage({super.key});

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/save_topic_dialog.dart';
-import 'package:resumo_dos_deuses_flutter/pages/widgets_chapter_view/similar_topic_view.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/pages/book_details_page.dart';
+import 'package:septima_biblia/pages/widgets_chapter_view/save_topic_dialog.dart';
+import 'package:septima_biblia/pages/widgets_chapter_view/similar_topic_view.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 class TopicContentView extends StatelessWidget {
   final String topicId;

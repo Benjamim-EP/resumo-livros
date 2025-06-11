@@ -1,7 +1,7 @@
 // Dentro do seu arquivo de reducers ou em um novo arquivo para SubscriptionState
 import 'package:cloud_firestore/cloud_firestore.dart'; // Para Timestamp
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/actions/payment_actions.dart';
 
 enum SubscriptionStatus {
   unknown, // Estado inicial ou erro ao carregar

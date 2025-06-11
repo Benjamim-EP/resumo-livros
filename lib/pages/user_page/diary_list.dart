@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/pages/user_page/bible_reference_highlighter.dart';
+import 'package:septima_biblia/pages/user_page/bible_reference_highlighter.dart';
 
 class DiaryList extends StatelessWidget {
   final List<Map<String, dynamic>> userDiaries;

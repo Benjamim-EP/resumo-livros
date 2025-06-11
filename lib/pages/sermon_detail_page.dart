@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart'; // Assumindo que esta importação está correta
+import 'package:septima_biblia/services/interstitial_manager.dart'; // Assumindo que esta importação está correta
 import 'package:share_plus/share_plus.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Importe o helper da Bíblia
+import 'package:septima_biblia/services/firestore_service.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart'; // Importe o helper da Bíblia
 
 // Modelo de dados para o sermão
 class Sermon {

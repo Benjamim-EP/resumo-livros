@@ -1,11 +1,11 @@
 // redux/reducers.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/metadata_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
-import 'package:resumo_dos_deuses_flutter/design/theme.dart'; // Importar seus temas
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
+import 'package:septima_biblia/redux/actions/metadata_actions.dart';
+import 'package:septima_biblia/redux/actions/payment_actions.dart';
+import 'package:septima_biblia/design/theme.dart'; // Importar seus temas
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'actions.dart';

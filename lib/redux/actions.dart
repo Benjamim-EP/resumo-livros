@@ -1,6 +1,6 @@
 // redux/actions.dart
 // Define as ações para carregar livros e alterar a página
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart';
+import 'package:septima_biblia/redux/reducers.dart';
 
 class LoadBooksAction {
   final int page;

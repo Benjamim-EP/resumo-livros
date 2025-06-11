@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // Importar GoogleSignIn
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-// Removido: import 'package:resumo_dos_deuses_flutter/redux/actions.dart'; // Se UpdateUserUidAction não for mais usada aqui
-// Removido: import 'package:resumo_dos_deuses_flutter/redux/store.dart';   // Se store.dispatch não for mais usado aqui
+// Removido: import 'package:septima_biblia/redux/actions.dart'; // Se UpdateUserUidAction não for mais usada aqui
+// Removido: import 'package:septima_biblia/redux/store.dart';   // Se store.dispatch não for mais usado aqui
 
 Future<User?> signInWithGoogle(BuildContext context) async {
   if (Firebase.apps.isEmpty) {

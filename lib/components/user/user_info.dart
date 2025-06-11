@@ -1,7 +1,7 @@
 // lib/components/user/user_info.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 class UserInfo extends StatelessWidget {
   const UserInfo({super.key});

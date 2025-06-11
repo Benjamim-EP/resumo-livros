@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -96,7 +96,8 @@ class QueryResultsPage extends StatelessWidget {
                                 styleSheet: MarkdownStyleSheet(
                                   p: const TextStyle(
                                     fontSize: 14,
-                                    color: Colors.white70, // 🔥 Melhor contraste
+                                    color:
+                                        Colors.white70, // 🔥 Melhor contraste
                                   ),
                                 ),
                               ),
@@ -150,9 +151,15 @@ class ShimmerLoadingCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Container(height: 14, width: 100, color: Colors.white),
                     const SizedBox(height: 12),
-                    Container(height: 14, width: double.infinity, color: Colors.white),
+                    Container(
+                        height: 14,
+                        width: double.infinity,
+                        color: Colors.white),
                     const SizedBox(height: 6),
-                    Container(height: 14, width: double.infinity, color: Colors.white),
+                    Container(
+                        height: 14,
+                        width: double.infinity,
+                        color: Colors.white),
                   ],
                 ),
               ),

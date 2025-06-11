@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/services/user_service.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/services/user_service.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 final UserService _userService = UserService();
 

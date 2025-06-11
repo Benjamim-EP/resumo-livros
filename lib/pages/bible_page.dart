@@ -4,25 +4,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:resumo_dos_deuses_flutter/components/login_required.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_filter_bar.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_item_widget.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/study_hub_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/components/login_required.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_search_filter_bar.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart';
+import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
+import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
+import 'package:septima_biblia/pages/biblie_page/utils.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter/foundation.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 // ignore: unused_import
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart'
+import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart'
     show StringExtension;
-import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _BiblePageViewModel {

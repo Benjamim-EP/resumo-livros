@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // Removido: import 'package:flutter_redux/flutter_redux.dart'; // Não é usado diretamente aqui
-// Removido: import 'package:resumo_dos_deuses_flutter/redux/store.dart';   // Não é usado diretamente aqui
-// Removido: import 'package:resumo_dos_deuses_flutter/redux/actions.dart';// Não é usado diretamente aqui
+// Removido: import 'package:septima_biblia/redux/store.dart';   // Não é usado diretamente aqui
+// Removido: import 'package:septima_biblia/redux/actions.dart';// Não é usado diretamente aqui
 import 'package:flutter_svg/svg.dart';
-import 'package:resumo_dos_deuses_flutter/main.dart'; // IMPORTAR PARA ACESSAR navigatorKey
+import 'package:septima_biblia/main.dart'; // IMPORTAR PARA ACESSAR navigatorKey
 import '../services/sign_in_google.dart';
 import '../services/sign_email.dart';
 

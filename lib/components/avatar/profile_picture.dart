@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'avatar_user.dart';
 // REMOVIDO: import 'package:flutter_redux/flutter_redux.dart';
-// REMOVIDO: import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+// REMOVIDO: import 'package:septima_biblia/redux/store.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Para obter o usuário atual
 
 class ProfilePicture extends StatelessWidget {

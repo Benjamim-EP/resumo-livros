@@ -2,11 +2,11 @@
 import 'dart:convert'; // Para SharedPreferences
 import 'package:redux/redux.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Para Timestamp
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart'; // Para UpdateLastReadLocationAction
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para BibleBookProgressData
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/actions.dart'; // Para UpdateLastReadLocationAction
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
+import 'package:septima_biblia/redux/reducers.dart'; // Para BibleBookProgressData
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _pendingBibleToAddKey = 'pendingBibleSectionsToAdd';

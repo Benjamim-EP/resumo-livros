@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/utils.dart'; // Para os Dropdowns
-import 'package:resumo_dos_deuses_flutter/pages/sermon_detail_page.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/sermon_search_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers/sermon_search_reducer.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/pages/biblie_page/utils.dart'; // Para os Dropdowns
+import 'package:septima_biblia/pages/sermon_detail_page.dart';
+import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
+import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 class PreloadSermonItem {

@@ -1,9 +1,9 @@
 // lib/redux/middleware/firestore_sync_middleware.dart
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
 
 List<Middleware<AppState>> createFirestoreSyncMiddleware() {
   final firestoreService = FirestoreService();

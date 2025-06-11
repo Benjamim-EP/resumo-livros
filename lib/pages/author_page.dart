@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/components/buttons/button_selection.dart';
-import 'package:resumo_dos_deuses_flutter/components/author/author_cover_informations.dart';
-import 'package:resumo_dos_deuses_flutter/components/author/author_description_data.dart';
-import 'package:resumo_dos_deuses_flutter/components/loadingauthorspage.dart';
-import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/components/buttons/button_selection.dart';
+import 'package:septima_biblia/components/author/author_cover_informations.dart';
+import 'package:septima_biblia/components/author/author_description_data.dart';
+import 'package:septima_biblia/components/loadingauthorspage.dart';
+import 'package:septima_biblia/pages/book_details_page.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 
 class AuthorPage extends StatefulWidget {

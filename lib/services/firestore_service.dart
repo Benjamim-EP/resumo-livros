@@ -2,7 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para formatar datas
+import 'package:septima_biblia/redux/reducers.dart'; // Para formatar datas
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;

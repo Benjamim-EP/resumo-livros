@@ -2,11 +2,11 @@
 import 'package:flutter/material.dart'; // NOVO: Para ScaffoldMessenger
 import 'package:redux/redux.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/main.dart'; // NOVO: Para navigatorKey
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart'; // NOVO: Para RewardedAdWatchedAction
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart'; // NOVO
+import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/main.dart'; // NOVO: Para navigatorKey
+import 'package:septima_biblia/redux/actions.dart'; // NOVO: Para RewardedAdWatchedAction
+import 'package:septima_biblia/services/firestore_service.dart'; // NOVO
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 

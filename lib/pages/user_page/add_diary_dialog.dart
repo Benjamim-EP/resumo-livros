@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 void showAddDiaryDialog(BuildContext context) {
   final TextEditingController titleController = TextEditingController();
@@ -12,7 +12,8 @@ void showAddDiaryDialog(BuildContext context) {
     builder: (context) {
       return AlertDialog(
         backgroundColor: const Color(0xFF2C2F33),
-        title: const Text("Adicionar Nota", style: TextStyle(color: Colors.white)),
+        title:
+            const Text("Adicionar Nota", style: TextStyle(color: Colors.white)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

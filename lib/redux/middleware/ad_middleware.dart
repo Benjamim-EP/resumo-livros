@@ -1,12 +1,12 @@
 // lib/redux/middleware/ad_middleware.dart
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/services/AdHelperStartIo.dart';
-import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
-import 'package:resumo_dos_deuses_flutter/main.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/AdHelperStartIo.dart';
+import 'package:septima_biblia/services/ad_helper.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
+import 'package:septima_biblia/main.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // NOVO
 
 const int COINS_PER_REWARDED_AD = 10;

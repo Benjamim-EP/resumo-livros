@@ -1,4 +1,4 @@
-# resumo_dos_deuses_flutter
+# septima_biblia
 
 A new Flutter project.
 

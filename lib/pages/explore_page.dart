@@ -1,12 +1,12 @@
 // import 'package:flutter/material.dart';
-// import 'package:resumo_dos_deuses_flutter/components/loadingbooks.dart';
-// import 'package:resumo_dos_deuses_flutter/components/search_bar.dart';
-// import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
-// import 'package:resumo_dos_deuses_flutter/pages/explore_page/SermonsSection.dart';
-// import 'package:resumo_dos_deuses_flutter/pages/purschase_pages/subscription_selection_page.dart';
-// import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
-// import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-// import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+// import 'package:septima_biblia/components/loadingbooks.dart';
+// import 'package:septima_biblia/components/search_bar.dart';
+// import 'package:septima_biblia/pages/book_details_page.dart';
+// import 'package:septima_biblia/pages/explore_page/SermonsSection.dart';
+// import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
+// import 'package:septima_biblia/pages/topic_content_view.dart';
+// import 'package:septima_biblia/redux/actions.dart';
+// import 'package:septima_biblia/redux/store.dart';
 // import '../components/explore_itens.dart';
 // import '../components/authors_section.dart'; // Novo componente para autores
 // import 'package:flutter_redux/flutter_redux.dart';

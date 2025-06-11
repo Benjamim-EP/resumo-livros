@@ -1,9 +1,9 @@
 // lib/redux/middleware/theme_middleware.dart
 import 'package:redux/redux.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para AppThemeOption
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
+import 'package:septima_biblia/redux/store.dart';
 
 const String _themePreferenceKey = 'app_theme_preference';
 

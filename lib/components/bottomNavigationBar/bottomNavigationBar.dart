@@ -2,24 +2,24 @@
 
 import 'package:flutter/foundation.dart'; // Para mapEquals em _MainAppScreenViewModel
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/pages/bible_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/library_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/user_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/author_page.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
+import 'package:septima_biblia/pages/bible_page.dart';
+import 'package:septima_biblia/pages/library_page.dart';
+import 'package:septima_biblia/pages/query_results_page.dart';
+import 'package:septima_biblia/pages/user_page.dart';
+import 'package:septima_biblia/pages/book_details_page.dart';
+import 'package:septima_biblia/pages/author_page.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware/ad_middleware.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/services/ad_helper.dart';
+import 'package:septima_biblia/redux/actions/payment_actions.dart';
+import 'package:septima_biblia/redux/middleware/ad_middleware.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/ad_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para AppThemeOption
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
 
 // ViewModel para o StoreConnector das moedas (como antes)
 class _UserCoinsViewModel {

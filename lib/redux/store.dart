@@ -1,13 +1,13 @@
 // redux/store.dart
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware/bible_progress_middleware.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware/firestore_sync_middleware.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware/metadata_middleware.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware/payment_middleware.dart';
-import 'package:resumo_dos_deuses_flutter/redux/middleware/sermon_search_middleware.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers/metadata_reducer.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers/sermon_search_reducer.dart';
-import 'package:resumo_dos_deuses_flutter/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/middleware/bible_progress_middleware.dart';
+import 'package:septima_biblia/redux/middleware/firestore_sync_middleware.dart';
+import 'package:septima_biblia/redux/middleware/metadata_middleware.dart';
+import 'package:septima_biblia/redux/middleware/payment_middleware.dart';
+import 'package:septima_biblia/redux/middleware/sermon_search_middleware.dart';
+import 'package:septima_biblia/redux/reducers/metadata_reducer.dart';
+import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'reducers.dart'; // Seu arquivo de reducers principal
 
 import 'middleware/book_middleware.dart';

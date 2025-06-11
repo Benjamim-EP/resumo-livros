@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "225819514315-bp72flen1p0775dmtcr7gsevnnfct83a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.resumolivros.app",
+            "certificate_hash": "b8147d79fa77bd869ca460be67b501eceb2e7cf8"
+          }
+        },
+        {
           "client_id": "225819514315-v331uqtsnnqs50bvo7kanp97c09bev3m.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -21,6 +29,42 @@
             "certificate_hash": "e40de3aaaf29a8c8bc684a0ef6c42ba20d4dbb17"
           }
         },
+        {
+          "client_id": "225819514315-k4dvdejbplugoc530d9d6e01rkmet4i1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcuHVPneHpt5LWM3u2ZtpUimfHrQsNAlk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "225819514315-k4dvdejbplugoc530d9d6e01rkmet4i1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "225819514315-gvem7jh47k9fcihtq3m309qt4mb39b8h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.resumoDosDeusesFlutter"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225819514315:android:a0fc22335384582e23d24e",
+        "android_client_info": {
+          "package_name": "com.septima.septimabiblia"
+        }
+      },
+      "oauth_client": [
         {
           "client_id": "225819514315-k4dvdejbplugoc530d9d6e01rkmet4i1.apps.googleusercontent.com",
           "client_type": 3

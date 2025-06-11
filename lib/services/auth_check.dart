@@ -3,13 +3,13 @@ import 'dart:async'; // Para StreamSubscription
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:resumo_dos_deuses_flutter/pages/login_page.dart'; // Importa LoginPage
-import 'package:resumo_dos_deuses_flutter/pages/start_screen_page.dart'; // **** NOVO: Importa StartScreenPage ****
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/pages/login_page.dart'; // Importa LoginPage
+import 'package:septima_biblia/pages/start_screen_page.dart'; // **** NOVO: Importa StartScreenPage ****
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/components/bottomNavigationBar/bottomNavigationBar.dart'; // MainAppScreen
+import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart'; // MainAppScreen
 
 class AuthCheck extends StatefulWidget {
   const AuthCheck({super.key});

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/pages/book_details_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/topic_content_view.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/pages/book_details_page.dart';
+import 'package:septima_biblia/pages/topic_content_view.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 
 class SimilarTopicsView extends StatefulWidget {

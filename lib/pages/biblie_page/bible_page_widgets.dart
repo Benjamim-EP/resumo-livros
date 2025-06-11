@@ -1,12 +1,12 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/saveVerseDialog.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/highlight_color_picker_modal.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/note_editor_modal.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/pages/biblie_page/saveVerseDialog.dart';
+import 'package:septima_biblia/pages/biblie_page/highlight_color_picker_modal.dart';
+import 'package:septima_biblia/pages/biblie_page/note_editor_modal.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 
 class BiblePageWidgets {
   static Widget buildTranslationButton({

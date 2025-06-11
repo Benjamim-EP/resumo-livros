@@ -1,5 +1,5 @@
 // lib/redux/reducers/sermon_search_reducer.dart
-import 'package:resumo_dos_deuses_flutter/redux/actions/sermon_search_actions.dart';
+import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
 
 class SermonSearchState {
   final bool isLoading;

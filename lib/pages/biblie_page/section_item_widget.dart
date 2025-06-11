@@ -1,12 +1,12 @@
 // lib/pages/biblie_page/section_item_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_commentary_modal.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para BiblePageHelper.loadBooksMap() se necessário para nome
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
+import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart'; // Para BiblePageHelper.loadBooksMap() se necessário para nome
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;

@@ -1,10 +1,10 @@
 // lib/redux/middleware/user_middleware.dart
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
-// import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Descomente se for usar para nomes de livros, etc.
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
+// import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart'; // Descomente se for usar para nomes de livros, etc.
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();

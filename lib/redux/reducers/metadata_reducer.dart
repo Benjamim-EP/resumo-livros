@@ -1,6 +1,6 @@
 // lib/redux/reducers/metadata_reducer.dart
-import 'package:resumo_dos_deuses_flutter/redux/actions/metadata_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart'; // Para MetadataState
+import 'package:septima_biblia/redux/actions/metadata_actions.dart';
+import 'package:septima_biblia/redux/store.dart'; // Para MetadataState
 
 MetadataState metadataReducer(MetadataState state, dynamic action) {
   if (action is LoadBibleSectionCountsAction) {

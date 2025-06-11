@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/palavras_do_fim_dos_tempos_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/profecias_de_sua_vinda_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/eventos_vida_de_jesus_page.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_routes/palavras_do_fim_dos_tempos_page.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_routes/profecias_de_sua_vinda_page.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_routes/eventos_vida_de_jesus_page.dart';
 
 class BibleRoutesWidget extends StatefulWidget {
   final VoidCallback onBack;

@@ -1,15 +1,15 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/components/bottomNavigationBar/bottomNavigationBar.dart';
-// Removido: import 'package:resumo_dos_deuses_flutter/design/theme.dart'; // Será obtido do Redux
-import 'package:resumo_dos_deuses_flutter/pages/query_results_page.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.dart';
-import 'package:resumo_dos_deuses_flutter/services/auth_check.dart';
+import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart';
+// Removido: import 'package:septima_biblia/design/theme.dart'; // Será obtido do Redux
+import 'package:septima_biblia/pages/query_results_page.dart';
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/services/auth_check.dart';
 import './services/navigation_service.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import './app_initialization.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart'; // Para LoadSavedThemeAction
+import 'package:septima_biblia/redux/actions.dart'; // Para LoadSavedThemeAction
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

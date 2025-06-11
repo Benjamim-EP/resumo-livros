@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "resumo_dos_deuses_flutter" "\0"
+            VALUE "FileDescription", "septima_biblia" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "resumo_dos_deuses_flutter" "\0"
+            VALUE "InternalName", "septima_biblia" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "resumo_dos_deuses_flutter.exe" "\0"
-            VALUE "ProductName", "resumo_dos_deuses_flutter" "\0"
+            VALUE "OriginalFilename", "septima_biblia.exe" "\0"
+            VALUE "ProductName", "septima_biblia" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

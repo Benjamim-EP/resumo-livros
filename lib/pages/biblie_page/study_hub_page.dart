@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 
 // Importe as páginas de visualização específicas para cada tipo de estudo/curso
 // Exemplo:
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/profecias_de_sua_vinda_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/palavras_do_fim_dos_tempos_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_routes/eventos_vida_de_jesus_page.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_routes/profecias_de_sua_vinda_page.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_routes/palavras_do_fim_dos_tempos_page.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_routes/eventos_vida_de_jesus_page.dart';
 // Se você tiver um visualizador genérico para os JSONs de curso/outros estudos:
 // import 'generic_study_viewer_page.dart';
 

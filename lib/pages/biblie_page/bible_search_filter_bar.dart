@@ -1,6 +1,6 @@
 // lib/pages/biblie_page/bible_search_filter_bar.dart
 import 'package:flutter/material.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Para carregar booksMap se necessário aqui
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart'; // Para carregar booksMap se necessário aqui
 
 // Defina os tipos de callback que o widget pai precisará fornecer
 typedef OnFilterChanged = void Function({

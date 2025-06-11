@@ -6,7 +6,7 @@
     <uses-permission android:name="com.android.vending.BILLING" />
     
     <application
-        android:label="resumo_dos_deuses_flutter"
+        android:label="Septima Bíblia"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"

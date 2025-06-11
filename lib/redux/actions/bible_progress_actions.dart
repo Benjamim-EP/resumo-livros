@@ -1,6 +1,6 @@
 // lib/redux/actions/bible_progress_actions.dart
 import 'package:cloud_firestore/cloud_firestore.dart'; // Para Timestamp
-import 'package:resumo_dos_deuses_flutter/redux/reducers.dart'; // Para BibleBookProgressData
+import 'package:septima_biblia/redux/reducers.dart'; // Para BibleBookProgressData
 
 // Carrega o progresso de um livro específico (ex: ao abrir o livro na BiblePage)
 class LoadBibleBookProgressAction {

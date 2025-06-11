@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart'; // Alterado aqui
 import 'package:redux/redux.dart';
-import 'package:resumo_dos_deuses_flutter/main.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions/payment_actions.dart';
-import 'package:resumo_dos_deuses_flutter/redux/store.dart';
+import 'package:septima_biblia/main.dart';
+import 'package:septima_biblia/redux/actions/payment_actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 
 List<Middleware<AppState>> createPaymentMiddleware() {
   final InAppPurchase iapConnection =

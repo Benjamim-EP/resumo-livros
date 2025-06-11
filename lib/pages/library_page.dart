@@ -1,9 +1,9 @@
 // lib/pages/library_page.dart
 import 'package:flutter/material.dart';
 // Importe suas páginas de destino
-import 'package:resumo_dos_deuses_flutter/pages/spurgeon_sermons_index_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/study_hub_page.dart';
-import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart'; // Reutilizando para Estudos Temáticos
+import 'package:septima_biblia/pages/spurgeon_sermons_index_page.dart';
+import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart'; // Reutilizando para Estudos Temáticos
 
 class ResourceCard extends StatelessWidget {
   final String title;

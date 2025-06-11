@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 // import 'package:google_mobile_ads/google_mobile_ads.dart'; // REMOVIDO
-import 'package:resumo_dos_deuses_flutter/consts.dart';
+import 'package:septima_biblia/consts.dart';
 import 'firebase_options.dart';
 // import 'package:startapp_sdk/startapp.dart'; // Adicione se for chamar StartAppSdk().setTestAdsEnabled(true) aqui
 

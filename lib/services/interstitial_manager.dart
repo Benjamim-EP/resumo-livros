@@ -1,6 +1,6 @@
 // lib/services/interstitial_manager.dart
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:resumo_dos_deuses_flutter/services/AdHelperStartIo.dart'; // Seu helper
+import 'package:septima_biblia/services/AdHelperStartIo.dart'; // Seu helper
 
 class InterstitialManager {
   static const _lastInterstitialShownKey = 'last_interstitial_shown_timestamp';
