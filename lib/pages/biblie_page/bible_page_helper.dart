@@ -1,6 +1,7 @@
 // lib/pages/biblie_page/bible_page_helper.dart
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 class BiblePageHelper {
   static Map<String, dynamic>?
@@ -13,6 +14,75 @@ class BiblePageHelper {
         .loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
     return json.decode(data);
   }
+
+  static final Map<String, String> _bookNameToAbbrevMap = {
+    'gênesis': 'gn', 'genesis': 'gn',
+    'êxodo': 'ex', 'exodo': 'ex',
+    'levítico': 'lv', 'levitico': 'lv',
+    'números': 'nm', 'numeros': 'nm',
+    'deuteronômio': 'dt', 'deuteronomio': 'dt',
+    'josué': 'js', 'josue': 'js',
+    'juízes': 'jz', 'juizes': 'jz',
+    'rute': 'rt',
+    '1 samuel': '1sm', '1º samuel': '1sm',
+    '2 samuel': '2sm', '2º samuel': '2sm',
+    '1 reis': '1rs', '1º reis': '1rs',
+    '2 reis': '2rs', '2º reis': '2rs',
+    '1 crônicas': '1cr', '1 cronicas': '1cr', '1º crônicas': '1cr',
+    '2 crônicas': '2cr', '2 cronicas': '2cr', '2º crônicas': '2cr',
+    'esdras': 'ed',
+    'neemias': 'ne',
+    'ester': 'et',
+    'jó': 'job', 'jo': 'job', // Cuidado com "jo" para João
+    'salmos': 'sl',
+    'provérbios': 'pv', 'proverbios': 'pv',
+    'eclesiastes': 'ec',
+    'cantares': 'ct', 'cânticos': 'ct',
+    'isaías': 'is', 'isaias': 'is',
+    'jeremias': 'jr',
+    'lamentações': 'lm', 'lamentacoes': 'lm',
+    'ezequiel': 'ez',
+    'daniel': 'dn',
+    'oseias': 'os', 'oséias': 'os',
+    'joel': 'jl',
+    'amós': 'am', 'amos': 'am',
+    'obadias': 'ob',
+    'jonas': 'jn',
+    'miqueias': 'mq', 'miquéias': 'mq',
+    'naum': 'na',
+    'habacuque': 'hc',
+    'sofonias': 'sf',
+    'ageu': 'ag',
+    'zacarias': 'zc',
+    'malaquias': 'ml',
+    'mateus': 'mt',
+    'marcos': 'mc',
+    'lucas': 'lc',
+    'joão': 'jo', // Distinto de Jó
+    'atos': 'at',
+    'romanos': 'rm',
+    '1 coríntios': '1co', '1 corintios': '1co', '1º coríntios': '1co',
+    '2 coríntios': '2co', '2 corintios': '2co', '2º coríntios': '2co',
+    'gálatas': 'gl', 'galatas': 'gl',
+    'efésios': 'ef', 'efesios': 'ef',
+    'filipenses': 'fp',
+    'colossenses': 'cl',
+    '1 tessalonicenses': '1ts', '1º tessalonicenses': '1ts',
+    '2 tessalonicenses': '2ts', '2º tessalonicenses': '2ts',
+    '1 timóteo': '1tm', '1 timoteo': '1tm', '1º timóteo': '1tm',
+    '2 timóteo': '2tm', '2 timoteo': '2tm', '2º timóteo': '2tm',
+    'tito': 'tt',
+    'filemom': 'fm',
+    'hebreus': 'hb',
+    'tiago': 'tg',
+    '1 pedro': '1pe', '1º pedro': '1pe',
+    '2 pedro': '2pe', '2º pedro': '2pe',
+    '1 joão': '1jo', '1º joão': '1jo',
+    '2 joão': '2jo', '2º joão': '2jo',
+    '3 joão': '3jo', '3º joão': '3jo',
+    'judas': 'jd',
+    'apocalipse': 'ap'
+  };
 
   // Método assíncrono para carregar e cachear o léxico Hebraico
   static Future<Map<String, dynamic>?>
@@ -51,6 +121,114 @@ class BiblePageHelper {
       }
     }
     return _greekStrongsLexicon;
+  }
+
+  static String? _getAbbrevFromPortugueseName(String bookName) {
+    String normalizedName = unorm
+        .nfd(bookName.toLowerCase().trim())
+        .replaceAll(RegExp(r'[\u0300-\u036f]'), ''); // Remove acentos
+    return _bookNameToAbbrevMap[normalizedName];
+  }
+
+  static Future<List<String>> loadVersesFromReference(
+    String reference, // Ex: "Lc 9:42" ou "Gn 1:1-3"
+    String translation, // Ex: "nvi"
+  ) async {
+    if (reference.isEmpty) return ["Referência inválida."];
+
+    // Regex para capturar: Nome do Livro, Capítulo, Versículo Inicial, (Opcional) Versículo Final
+    // Exemplo: "Lucas 9:42" ou "Gênesis 1:1-3" ou "1 Coríntios 13:4"
+    final RegExp regex = RegExp(
+      r"^\s*([1-3]?\s*[A-Za-zÀ-ÖØ-öø-ÿ]+)\s*(\d+)\s*[:\.]\s*(\d+)(?:\s*-\s*(\d+))?\s*$",
+      caseSensitive: false,
+    );
+
+    final Match? match = regex.firstMatch(reference.trim());
+
+    if (match == null) {
+      print(
+          "BiblePageHelper: Formato de referência não reconhecido: '$reference'");
+      return ["Formato de referência inválido: $reference"];
+    }
+
+    String bookNamePart = match.group(1)!.trim();
+    String chapterStr = match.group(2)!;
+    String startVerseStr = match.group(3)!;
+    String? endVerseStr = match.group(4); // Pode ser nulo
+
+    String? bookAbbrev = _getAbbrevFromPortugueseName(bookNamePart);
+
+    if (bookAbbrev == null) {
+      // Tentar encontrar abreviação diretamente se já for uma (caso comum)
+      // Isso pode ser mais robusto se o _bookNameToAbbrevMap for carregado do seu abbrev_map.json
+      final Map<String, dynamic> booksMap =
+          await loadBooksMap(); // Carrega o mapa de abreviações
+      booksMap.forEach((abbrev, data) {
+        if (data is Map && data['nome'] != null) {
+          String nameFromMap = unorm
+              .nfd((data['nome'] as String).toLowerCase().trim())
+              .replaceAll(RegExp(r'[\u0300-\u036f]'), '');
+          if (nameFromMap ==
+              unorm
+                  .nfd(bookNamePart.toLowerCase().trim())
+                  .replaceAll(RegExp(r'[\u0300-\u036f]'), '')) {
+            bookAbbrev = abbrev;
+          }
+        }
+        // Se a parte do livro já for uma abreviação conhecida
+        if (bookAbbrev == null &&
+            abbrev.toLowerCase() == bookNamePart.toLowerCase()) {
+          bookAbbrev = abbrev;
+        }
+      });
+
+      if (bookAbbrev == null) {
+        print(
+            "BiblePageHelper: Abreviação não encontrada para o livro: '$bookNamePart' na referência '$reference'");
+        return ["Livro não reconhecido: $bookNamePart"];
+      }
+    }
+
+    final int? chapter = int.tryParse(chapterStr);
+    final int? startVerse = int.tryParse(startVerseStr);
+    final int? endVerse =
+        endVerseStr != null ? int.tryParse(endVerseStr) : startVerse;
+
+    if (chapter == null || startVerse == null || endVerse == null) {
+      print(
+          "BiblePageHelper: Capítulo ou versículo(s) inválido(s) na referência: '$reference'");
+      return ["Capítulo/versículo(s) inválido(s) na referência: $reference"];
+    }
+
+    if (endVerse < startVerse) {
+      print(
+          "BiblePageHelper: Versículo final menor que o inicial na referência: '$reference'");
+      return ["Intervalo de versículos inválido: $reference"];
+    }
+
+    try {
+      final String verseDataPath =
+          'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
+      print("BiblePageHelper: Carregando versículos de: $verseDataPath");
+      final String verseDataString = await rootBundle.loadString(verseDataPath);
+      final List<dynamic> allVersesInChapter = json.decode(verseDataString);
+
+      List<String> resultVerses = [];
+      for (int i = startVerse; i <= endVerse; i++) {
+        if (i > 0 && i <= allVersesInChapter.length) {
+          resultVerses.add("${i} ${allVersesInChapter[i - 1].toString()}");
+        } else {
+          resultVerses.add("$i [Texto do verso não encontrado]");
+        }
+      }
+      if (resultVerses.isEmpty)
+        return ["Versículos não encontrados para: $reference"];
+      return resultVerses;
+    } catch (e) {
+      print(
+          'BiblePageHelper: Erro ao carregar versículos para "$reference" ($translation): $e');
+      return ["Erro ao carregar versículos para: $reference"];
+    }
   }
 
   // Getter síncrono para o léxico grego cacheado

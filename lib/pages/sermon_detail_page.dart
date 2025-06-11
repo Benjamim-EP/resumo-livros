@@ -1,28 +1,29 @@
 // lib/pages/sermon_detail_page.dart
-import 'dart:convert'; // Necessário se você for parsear JSON internamente (não é o caso aqui)
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Para rootBundle, mas não usaremos para carregar sermão aqui
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart';
-import 'package:share_plus/share_plus.dart'; // Para funcionalidade de compartilhar
-import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart'; // Importa o serviço
+import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart'; // Assumindo que esta importação está correta
+import 'package:share_plus/share_plus.dart';
+import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart'; // Importe o helper da Bíblia
 
-// Modelo de dados para o sermão (conforme definido anteriormente)
+// Modelo de dados para o sermão
 class Sermon {
   final String? generatedSermonId;
   final String? idOriginalProblematico;
   final String titleOriginal;
   final String translatedTitle;
   final String? mainScripturePassageOriginal;
-  final String? mainScripturePassageAbbreviated;
+  final String? mainScripturePassageAbbreviated; // Ex: "Lc 9:42" ou "Gn 1:1-3"
   final Map<String, dynamic>? sermonDetails;
-  final String? mainVerseQuoted;
+  final String?
+      mainVerseQuoted; // O texto original em inglês (ou mal formatado)
   final List<String> paragraphsOriginal;
   final List<String> paragraphsPt;
   final List<String>? embeddedScripturesOriginal;
   final List<String>? embeddedScripturesAbbreviated;
-  // Adicione o campo preacher se ele estiver no nível raiz e não apenas em sermon_details
-  final String? preacher; // Exemplo, ajuste conforme sua estrutura no Firestore
+  final String? preacher;
 
   Sermon({
     this.generatedSermonId,
@@ -37,21 +38,20 @@ class Sermon {
     required this.paragraphsPt,
     this.embeddedScripturesOriginal,
     this.embeddedScripturesAbbreviated,
-    this.preacher, // Exemplo
+    this.preacher,
   });
 
   factory Sermon.fromJson(Map<String, dynamic> json, String generatedId) {
-    // Adicionado generatedId
     return Sermon(
-      generatedSermonId: generatedId, // Usa o ID passado
+      generatedSermonId: generatedId,
       idOriginalProblematico: json['id_original_problematico'] as String?,
       titleOriginal: json['title_original'] as String? ??
           json['title'] as String? ??
           'Título Original Indisponível',
       translatedTitle:
           json['translated_title'] as String? ?? 'Título Indisponível',
-      mainScripturePassageOriginal: json['main_scripture_passage_original']
-          as String?, // Corrigido de 'main_scripture_passage'
+      mainScripturePassageOriginal:
+          json['main_scripture_passage_original'] as String?,
       mainScripturePassageAbbreviated:
           json['main_scripture_passage_abbreviated'] as String?,
       sermonDetails: json['sermon_details'] != null
@@ -71,8 +71,7 @@ class Sermon {
           (json['embedded_scriptures_abbreviated'] as List<dynamic>?)
               ?.cast<String>(),
       preacher: json['preacher'] as String? ??
-          json['sermon_details']?['preacher']
-              as String?, // Prioriza campo raiz, depois details
+          json['sermon_details']?['preacher'] as String?,
     );
   }
 
@@ -87,7 +86,7 @@ class Sermon {
 
 class SermonDetailPage extends StatefulWidget {
   final String sermonGeneratedId;
-  final String sermonTitle; // Título para exibir no AppBar enquanto carrega
+  final String sermonTitle;
 
   const SermonDetailPage({
     super.key,
@@ -105,8 +104,12 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   String? _error;
   double _currentFontSize = 16.0;
 
+  // NOVO: Estados para os versículos carregados
+  List<String>? _loadedMainScriptureVerses;
+  bool _isLoadingMainScripture = false;
+
   static const double MIN_FONT_SIZE = 12.0;
-  static const double MAX_FONT_SIZE = 28.0; // Aumentado o máximo
+  static const double MAX_FONT_SIZE = 28.0;
   static const double FONT_STEP = 1.0;
 
   final FirestoreService _firestoreService = FirestoreService();
@@ -119,8 +122,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
 
   @override
   void dispose() {
-    interstitialManager.tryShowInterstitial(
-        fromScreen: "SermonDetailPage"); // Chamar aqui
+    // interstitialManager.tryShowInterstitial(fromScreen: "SermonDetailPage"); // Descomente se interstitialManager estiver definido globalmente
     super.dispose();
   }
 
@@ -129,19 +131,25 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _isLoadingMainScripture = false;
+      _loadedMainScriptureVerses = null;
     });
 
     try {
       final sermonMap = await _firestoreService
           .getSermonDetailsFromFirestore(widget.sermonGeneratedId);
-
       if (mounted) {
         if (sermonMap != null) {
+          final sermonData =
+              Sermon.fromJson(sermonMap, widget.sermonGeneratedId);
           setState(() {
-            _sermonDataFromFirestore =
-                Sermon.fromJson(sermonMap, widget.sermonGeneratedId);
+            _sermonDataFromFirestore = sermonData;
             _isLoading = false;
           });
+          if (sermonData.mainScripturePassageAbbreviated != null &&
+              sermonData.mainScripturePassageAbbreviated!.isNotEmpty) {
+            _loadMainScripture(sermonData.mainScripturePassageAbbreviated!);
+          }
         } else {
           setState(() {
             _error = "Sermão não encontrado (ID: ${widget.sermonGeneratedId}).";
@@ -156,6 +164,32 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         setState(() {
           _error = "Falha ao carregar o sermão. Verifique sua conexão.";
           _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMainScripture(String reference) async {
+    if (!mounted) return;
+    setState(() => _isLoadingMainScripture = true);
+    try {
+      // Assumindo tradução "nvi" como padrão
+      final verses =
+          await BiblePageHelper.loadVersesFromReference(reference, "nvi");
+      if (mounted) {
+        setState(() {
+          _loadedMainScriptureVerses = verses;
+          _isLoadingMainScripture = false;
+        });
+      }
+    } catch (e) {
+      print("Erro ao carregar escritura principal do sermão ($reference): $e");
+      if (mounted) {
+        setState(() {
+          _loadedMainScriptureVerses = [
+            "Erro ao carregar versículos para: $reference"
+          ];
+          _isLoadingMainScripture = false;
         });
       }
     }
@@ -185,8 +219,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       final String shareText =
           "Confira este sermão de ${sermon.preacher ?? 'C.H. Spurgeon'}: ${sermon.translatedTitle}\n"
           "Referência Principal: ${sermon.mainScripturePassageAbbreviated ?? 'N/A'}\n"
-          // Adicione um link para o app ou para o sermão online, se aplicável
-          "\nLeia no app Septima!";
+          "\nLeia no app Septima!"; // Adapte o link/mensagem do app
       Share.share(shareText, subject: "Sermão: ${sermon.translatedTitle}");
     }
   }
@@ -256,8 +289,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     }
 
     final sermon = _sermonDataFromFirestore!;
-    final details = sermon
-        .sermonDetails; // Ex: {'number_text': '(No. 1)', 'preacher': 'REV. C.H. SPURGEON', ...}
+    final details = sermon.sermonDetails;
     final preacherName =
         sermon.preacher ?? details?['preacher'] as String? ?? 'C.H. Spurgeon';
 
@@ -266,13 +298,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título (opcional, já que está no AppBar)
-          // Text(
-          //   sermon.translatedTitle,
-          //   style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: _currentFontSize * 1.3),
-          // ),
-          // const SizedBox(height: 8),
-
+          // Detalhes do sermão (Número, Pregador, Info de Entrega)
           if (details != null) ...[
             if (details['number_text'] != null &&
                 (details['number_text'] as String).isNotEmpty)
@@ -285,7 +311,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                       fontSize: _currentFontSize * 0.8),
                 ),
               ),
-            // O nome do pregador agora pode vir do campo 'preacher' no nível raiz ou de 'sermon_details'
             if (preacherName.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2.0),
@@ -306,24 +331,78 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
             const SizedBox(height: 12),
           ],
 
+          // Passagem Principal (Referência)
           if (sermon.mainScripturePassageAbbreviated != null &&
               sermon.mainScripturePassageAbbreviated!.isNotEmpty) ...[
             Text(
               "Passagem Principal: ${sermon.mainScripturePassageAbbreviated}",
               style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.secondary, // Destaque
+                  color: theme.colorScheme.secondary,
                   fontWeight: FontWeight.bold,
                   fontSize: _currentFontSize * 0.9),
             ),
             const SizedBox(height: 4),
           ],
 
-          if (sermon.mainVerseQuoted != null &&
-              sermon.mainVerseQuoted!.isNotEmpty) ...[
+          // Exibição dos Versículos Carregados Localmente
+          if (_isLoadingMainScripture)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Center(
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: theme.colorScheme.secondary)),
+            )
+          else if (_loadedMainScriptureVerses != null &&
+              _loadedMainScriptureVerses!.isNotEmpty)
             Card(
               elevation: 0,
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withOpacity(0.7), // Cor sutil de fundo
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _loadedMainScriptureVerses!.map((verseText) {
+                    // Para destacar o número do versículo
+                    final parts =
+                        verseText.split(RegExp(r'\s+')); // Divide por espaço
+                    String verseNumDisplay = "";
+                    String textDisplay = verseText;
+                    if (parts.isNotEmpty && int.tryParse(parts.first) != null) {
+                      verseNumDisplay = "${parts.first} ";
+                      textDisplay = parts.sublist(1).join(" ");
+                    }
+
+                    return Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: RichText(
+                          text: TextSpan(
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                height:
+                                    1.45, // Ajustado para melhor legibilidade
+                                fontSize: _currentFontSize * 0.95),
+                            children: <TextSpan>[
+                              TextSpan(
+                                  text: verseNumDisplay,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              TextSpan(text: textDisplay),
+                            ],
+                          ),
+                        ));
+                  }).toList(),
+                ),
+              ),
+            )
+          else if (sermon.mainVerseQuoted != null &&
+              sermon.mainVerseQuoted!.isNotEmpty)
+            // Fallback para o mainVerseQuoted original (se não conseguiu carregar ou não havia referência)
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
               margin: const EdgeInsets.symmetric(vertical: 8.0),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
@@ -334,33 +413,27 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                   style: theme.textTheme.bodyMedium?.copyWith(
                       fontStyle: FontStyle.italic,
                       height: 1.4,
-                      fontSize: _currentFontSize *
-                          0.95 // Um pouco menor que o texto principal
-                      ),
+                      fontSize: _currentFontSize * 0.95),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-          ],
+          const SizedBox(height: 16),
 
+          // Título "Sermão:"
           Text(
-            "Sermão:", // Ou deixe vazio se o título no AppBar for suficiente
+            "Sermão:",
             style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 decoration: TextDecoration.underline,
-                fontSize: _currentFontSize * 1.1 // Um pouco maior
-                ),
+                fontSize: _currentFontSize * 1.1),
           ),
           const SizedBox(height: 8),
 
-          // Usando MarkdownBody para renderizar cada parágrafo
-          // O MarkdownBody já é scrollable se seu conteúdo exceder, mas está dentro de um SingleChildScrollView
+          // Parágrafos do Sermão (Markdown)
           Column(
-            // Usando Column para evitar problemas de scroll aninhado se MarkdownBody tivesse seu próprio scroll
             crossAxisAlignment: CrossAxisAlignment.start,
             children: sermon.paragraphsToDisplay.map((paragraph) {
-              final spacedParagraph =
-                  "$paragraph\n"; // Adiciona espaço extra entre parágrafos Markdown
+              final spacedParagraph = "$paragraph\n";
               return MarkdownBody(
                 data: spacedParagraph,
                 selectable: true,
@@ -369,8 +442,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                     fontSize: _currentFontSize,
                     height: 1.5,
                   ),
-                  // Customizar outros estilos do Markdown se necessário
-                  // Ex: strong, em, blockquote, etc.
                   blockquoteDecoration: BoxDecoration(
                     color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
                     border: Border(
@@ -383,6 +454,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
             }).toList(),
           ),
 
+          // Outras Referências Citadas
           if (sermon.embeddedScripturesAbbreviated != null &&
               sermon.embeddedScripturesAbbreviated!.isNotEmpty) ...[
             const SizedBox(height: 24),
