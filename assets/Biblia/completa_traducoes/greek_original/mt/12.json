@@ -1,0 +1,4632 @@
+[
+  [
+    {
+      "text": "Ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἐκείνῳ",
+      "strong": "G1565",
+      "morph": "Pronome Demonstrativo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "καιρῷ",
+      "strong": "G2540",
+      "morph": "Substantivo Dativo Singular Masculino"
+    },
+    {
+      "text": "ἐπορεύθη",
+      "strong": "G4198",
+      "morph": "Verbo Aoristo Passivo Indicativo 3S"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "Ἰησοῦς",
+      "strong": "G2424",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "σάββασιν",
+      "strong": "G4521",
+      "morph": "Substantivo Dativo Plural Neutro"
+    },
+    {
+      "text": "διὰ",
+      "strong": "G1223",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῶν",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "σπορίμων",
+      "strong": "G4702",
+      "morph": "Substantivo Genitivo Plural Neutro"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μαθηταὶ",
+      "strong": "G3101",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἤρξαντο",
+      "strong": "G756",
+      "morph": "Verbo Aoristo Médio Indicativo 3P"
+    },
+    {
+      "text": "στάχυας",
+      "strong": "G4719",
+      "morph": "Substantivo Acusativo Plural Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐσθίειν",
+      "strong": "G2068",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    },
+    {
+      "text": "ἐπείνασαν",
+      "strong": "G3983",
+      "morph": "Verbo Aoristo Indicativo Ativo 3P"
+    },
+    {
+      "text": "τίλλειν",
+      "strong": "G5088",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    }
+  ],
+  [
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "Φαρισαῖοι",
+      "strong": "G5330",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἰδόντες",
+      "strong": "G3708",
+      "morph": "Particípio Aoristo Ativo Nominativo Plural Masculino"
+    },
+    {
+      "text": "εἶπαν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3P"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "Ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "μαθηταί",
+      "strong": "G3101",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "σου",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "ποιοῦσιν",
+      "strong": "G4160",
+      "morph": "Verbo Presente Indicativo Ativo 3P"
+    },
+    {
+      "text": "ὃ",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Nominativo Singular Neutro"
+    },
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἔξεστιν",
+      "strong": "G1832",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "ποιεῖν",
+      "strong": "G4160",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "σαββάτῳ",
+      "strong": "G4521",
+      "morph": "Substantivo Dativo Singular Neutro"
+    }
+  ],
+  [
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "εἶπεν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "αὐτοῖς",
+      "strong": "G0846",
+      "morph": "Pronome Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "Οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἀνέγνωτε",
+      "strong": "G314",
+      "morph": "Verbo Aoristo Indicativo Ativo 2P"
+    },
+    {
+      "text": "τί",
+      "strong": "G5101",
+      "morph": "Pronome Interrogativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἐποίησεν",
+      "strong": "G4160",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "Δαυὶδ",
+      "strong": "G1138",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ὅτε",
+      "strong": "G3753",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἐπείνασεν",
+      "strong": "G3983",
+      "morph": "Verbo Aoristo Ativo Indicativo 3S"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "μετʼ",
+      "strong": "G3326",
+      "morph": "Preposição"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    }
+  ],
+  [
+    {
+      "text": "πῶς",
+      "strong": "G4459",
+      "morph": "Advérbio Interrogativo"
+    },
+    {
+      "text": "εἰσῆλθεν",
+      "strong": "G1525",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τὸν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Masculino"
+    },
+    {
+      "text": "οἶκον",
+      "strong": "G3624",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "θεοῦ",
+      "strong": "G2316",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοὺς",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Plural Masculino"
+    },
+    {
+      "text": "ἄρτους",
+      "strong": "G0740",
+      "morph": "Substantivo Acusativo Plural Masculino"
+    },
+    {
+      "text": "τῆς",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Feminino"
+    },
+    {
+      "text": "προθέσεως",
+      "strong": "G4286",
+      "morph": "Substantivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "ἔφαγον",
+      "strong": "G5315",
+      "morph": "Verbo Aoristo Indicativo Ativo 3P"
+    },
+    {
+      "text": "ὃ",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Nominativo Singular Neutro"
+    },
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἦν",
+      "strong": "G1510",
+      "morph": "Verbo Imperfeito Indicativo Ativo 3S"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "φαγεῖν",
+      "strong": "G5315",
+      "morph": "Verbo Aoristo Infinitivo Ativo"
+    },
+    {
+      "text": "οὐδὲ",
+      "strong": "G3761",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "μετʼ",
+      "strong": "G3326",
+      "morph": "Preposição"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μὴ",
+      "strong": "G3361",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "ἱερεῦσιν",
+      "strong": "G2409",
+      "morph": "Substantivo Dativo Plural Masculino"
+    },
+    {
+      "text": "ἐξὸν",
+      "strong": "G1832",
+      "morph": "Verbo Presente Particípio Nominativo Singular Neutro"
+    },
+    {
+      "text": "μόνοις",
+      "strong": "G3441",
+      "morph": "Adjetivo Dativo Plural Masculino/Neutro"
+    }
+  ],
+  [
+    {
+      "text": "ἢ",
+      "strong": "G2228",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἀνέγνωτε",
+      "strong": "G314",
+      "morph": "Verbo Aoristo Indicativo Ativo 2P"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "νόμῳ",
+      "strong": "G3551",
+      "morph": "Substantivo Dativo Singular Masculino"
+    },
+    {
+      "text": "ὅτι",
+      "strong": "G3754",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "σάββασιν",
+      "strong": "G4521",
+      "morph": "Substantivo Dativo Plural Neutro"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἱερεῖς",
+      "strong": "G2409",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἱερῷ",
+      "strong": "G2411",
+      "morph": "Substantivo Dativo Singular Neutro"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "σάββατον",
+      "strong": "G4521",
+      "morph": "Substantivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "εἰσιν",
+      "strong": "G1526",
+      "morph": "Verbo Presente Indicativo Ativo 3P"
+    },
+    {
+      "text": "βεβηλοῦσιν",
+      "strong": "G953",
+      "morph": "Verbo Presente Indicativo Ativo 3P"
+    },
+    {
+      "text": "ἀναίτιοί",
+      "strong": "G423",
+      "morph": "Adjetivo Nominativo Plural Masculino"
+    }
+  ],
+  [
+    {
+      "text": "λέγω",
+      "strong": "G3004",
+      "morph": "Verbo Presente Indicativo Ativo 1S"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ὑμῖν",
+      "strong": "G5213",
+      "morph": "Pronome Pessoal Dativo Plural"
+    },
+    {
+      "text": "ὅτι",
+      "strong": "G3754",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἱεροῦ",
+      "strong": "G2411",
+      "morph": "Substantivo Genitivo Singular Neutro"
+    },
+    {
+      "text": "ἐστιν",
+      "strong": "G1510",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "ὧδε",
+      "strong": "G5602",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "μεῖζόν",
+      "strong": "G3173",
+      "morph": "Adjetivo Comparativo Nominativo/Acusativo Singular Neutro"
+    }
+  ],
+  [
+    {
+      "text": "εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τί",
+      "strong": "G5101",
+      "morph": "Pronome Interrogativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἐστιν",
+      "strong": "G1510",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "Ἔλεος",
+      "strong": "G1656",
+      "morph": "Substantivo Nominativo Singular Neutro"
+    },
+    {
+      "text": "θέλω",
+      "strong": "G2309",
+      "morph": "Verbo Presente Indicativo Ativo 1S"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οὐ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "θυσίαν",
+      "strong": "G2378",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἂν",
+      "strong": "G0302",
+      "morph": "Partícula"
+    },
+    {
+      "text": "κατεδικάσατε",
+      "strong": "G2632",
+      "morph": "Verbo Aoristo Indicativo Ativo 2P"
+    },
+    {
+      "text": "τοὺς",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Plural Masculino"
+    },
+    {
+      "text": "ἐγνώκειτε",
+      "strong": "G1097",
+      "morph": "Verbo Plusquamperfeito Indicativo Ativo 2P"
+    },
+    {
+      "text": "ἀναιτίους",
+      "strong": "G423",
+      "morph": "Adjetivo Acusativo Plural Masculino"
+    }
+  ],
+  [
+    {
+      "text": "κύριος",
+      "strong": "G2962",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "γάρ",
+      "strong": "G1063",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐστιν",
+      "strong": "G1510",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "σαββάτου",
+      "strong": "G4521",
+      "morph": "Substantivo Genitivo Singular Neutro"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "υἱὸς",
+      "strong": "G5207",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἀνθρώπου",
+      "strong": "G0444",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    }
+  ],
+  [
+    {
+      "text": "Καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐκεῖθεν",
+      "strong": "G1564",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἦλθεν",
+      "strong": "G2064",
+      "morph": "Verbo Aoristo Ativo Indicativo 3S"
+    },
+    {
+      "text": "εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "συναγωγὴν",
+      "strong": "G4864",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "αὐτῶν",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "μεταβὰς",
+      "strong": "G3327",
+      "morph": "Verbo Aoristo Particípio Ativo Nominativo Singular Masculino"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "ἄνθρωπος",
+      "strong": "G444",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "χεῖρα",
+      "strong": "G5495",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "ἔχων",
+      "strong": "G2192",
+      "morph": "Particípio Presente Ativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ξηράν",
+      "strong": "G3584",
+      "morph": "Adjetivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐπηρώτησαν",
+      "strong": "G1905",
+      "morph": "Verbo Aoristo Ativo Indicativo 3 Plural"
+    },
+    {
+      "text": "αὐτὸν",
+      "strong": "G846",
+      "morph": "Pronome Pessoal Acusativo Singular Masculino"
+    },
+    {
+      "text": "λέγοντες",
+      "strong": "G3004",
+      "morph": "Particípio Presente Ativo Nominativo Plural Masculino"
+    },
+    {
+      "text": "Εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção Condicional"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "σάββασιν",
+      "strong": "G4521",
+      "morph": "Substantivo Dativo Plural Neutro"
+    },
+    {
+      "text": "θεραπεύειν",
+      "strong": "G2323",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    },
+    {
+      "text": "ἵνα",
+      "strong": "G2443",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "κατηγορήσωσιν",
+      "strong": "G2723",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3 Plural"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἔξεστι",
+      "strong": "G1832",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "εἶπεν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "αὐτοῖς",
+      "strong": "G0846",
+      "morph": "Pronome Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "Τίς",
+      "strong": "G5101",
+      "morph": "Pronome Interrogativo Nominativo Singular Masculino/Feminino"
+    },
+    {
+      "text": "ἔσται",
+      "strong": "G2071",
+      "morph": "Verbo Futuro Indicativo Médio 3S"
+    },
+    {
+      "text": "ἐξ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ὑμῶν",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Plural"
+    },
+    {
+      "text": "ἄνθρωπος",
+      "strong": "G444",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ὃς",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἕξει",
+      "strong": "G2192",
+      "morph": "Verbo Futuro Indicativo Ativo 3S"
+    },
+    {
+      "text": "ἕν",
+      "strong": "G1520",
+      "morph": "Adjetivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐὰν",
+      "strong": "G1437",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοῦτο",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "σάββασιν",
+      "strong": "G4521",
+      "morph": "Substantivo Dativo Plural Neutro"
+    },
+    {
+      "text": "εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "βόθυνον",
+      "strong": "G966",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "οὐχὶ",
+      "strong": "G3780",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "αὐτὸ",
+      "strong": "G0846",
+      "morph": "Pronome Acusativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐγερεῖ",
+      "strong": "G1453",
+      "morph": "Verbo Futuro Indicativo Ativo 3S"
+    },
+    {
+      "text": "πρόβατον",
+      "strong": "G4263",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἐμπέσῃ",
+      "strong": "G1706",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "κρατήσει",
+      "strong": "G2902",
+      "morph": "Verbo Futuro Indicativo Ativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "πόσῳ",
+      "strong": "G4214",
+      "morph": "Adjetivo Interrogativo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "οὖν",
+      "strong": "G3767",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἄνθρωπος",
+      "strong": "G444",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ὥστε",
+      "strong": "G5620",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἔξεστιν",
+      "strong": "G1832",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "σάββασιν",
+      "strong": "G4521",
+      "morph": "Substantivo Dativo Plural Neutro"
+    },
+    {
+      "text": "καλῶς",
+      "strong": "G2573",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ποιεῖν",
+      "strong": "G4160",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    },
+    {
+      "text": "διαφέρει",
+      "strong": "G1308",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "προβάτου",
+      "strong": "G4263",
+      "morph": "Substantivo Genitivo Singular Neutro"
+    }
+  ],
+  [
+    {
+      "text": "τότε",
+      "strong": "G5119",
+      "morph": "Advérbio de Tempo"
+    },
+    {
+      "text": "λέγει",
+      "strong": "G3004",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἀνθρώπῳ",
+      "strong": "G444",
+      "morph": "Substantivo Dativo Singular Masculino"
+    },
+    {
+      "text": "σου",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "χεῖρα",
+      "strong": "G5495",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐξέτεινεν",
+      "strong": "G1614",
+      "morph": "Verbo Aoristo Indicativo Ativo 3 Singular"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἀπεκατεστάθη",
+      "strong": "G600",
+      "morph": "Verbo Aoristo Indicativo Passivo 3S"
+    },
+    {
+      "text": "ὑγιὴς",
+      "strong": "G5198",
+      "morph": "Adjetivo Nominativo Singular Masculino/Feminino"
+    },
+    {
+      "text": "ὡς",
+      "strong": "G5613",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "ἄλλη",
+      "strong": "G243",
+      "morph": "Adjetivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "Ἔκτεινόν",
+      "strong": "G1614",
+      "morph": "Verbo Aoristo Imperativo Ativo 2S"
+    }
+  ],
+  [
+    {
+      "text": "ἐξελθόντες",
+      "strong": "G1831",
+      "morph": "Particípio Aoristo Ativo Nominativo Plural Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "Φαρισαῖοι",
+      "strong": "G5330",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "συμβούλιον",
+      "strong": "G4824",
+      "morph": "Substantivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἔλαβον",
+      "strong": "G2983",
+      "morph": "Verbo Aoristo Indicativo Ativo 3P"
+    },
+    {
+      "text": "κατʼ",
+      "strong": "G2596",
+      "morph": "Preposição"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ὅπως",
+      "strong": "G3704",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "αὐτὸν",
+      "strong": "G846",
+      "morph": "Pronome Pessoal Acusativo Singular Masculino"
+    },
+    {
+      "text": "ἀπολέσωσιν",
+      "strong": "G622",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3 Plural"
+    }
+  ],
+  [
+    {
+      "text": "Ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "Ἰησοῦς",
+      "strong": "G2424",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "γνοὺς",
+      "strong": "G1097",
+      "morph": "Particípio Aoristo Ativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἀνεχώρησεν",
+      "strong": "G0402",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "ἐκεῖθεν",
+      "strong": "G1564",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἠκολούθησαν",
+      "strong": "G0190",
+      "morph": "Verbo Aoristo Indicativo Ativo 3P"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "πολλοί",
+      "strong": "G4183",
+      "morph": "Adjetivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐθεράπευσεν",
+      "strong": "G2323",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "αὐτοὺς",
+      "strong": "G846",
+      "morph": "Pronome Pessoal Acusativo Plural Masculino"
+    },
+    {
+      "text": "πάντας",
+      "strong": "G3956",
+      "morph": "Adjetivo Acusativo Plural Masculino"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐπετίμησεν",
+      "strong": "G2008",
+      "morph": "Verbo Aoristo Ativo Indicativo 3S"
+    },
+    {
+      "text": "αὐτοῖς",
+      "strong": "G0846",
+      "morph": "Pronome Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "ἵνα",
+      "strong": "G2443",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μὴ",
+      "strong": "G3361",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "φανερὸν",
+      "strong": "G5318",
+      "morph": "Adjetivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "αὐτὸν",
+      "strong": "G846",
+      "morph": "Pronome Pessoal Acusativo Singular Masculino"
+    },
+    {
+      "text": "ποιήσωσιν",
+      "strong": "G4160",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3P"
+    }
+  ],
+  [
+    {
+      "text": "ἵνα",
+      "strong": "G2443",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "πληρωθῇ",
+      "strong": "G4137",
+      "morph": "Verbo Aoristo Passivo Subjuntivo 3S"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ῥηθὲν",
+      "strong": "G4483",
+      "morph": "Particípio Aoristo Passivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "διὰ",
+      "strong": "G1223",
+      "morph": "Preposição"
+    },
+    {
+      "text": "Ἠσαΐου",
+      "strong": "G2268",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "προφήτου",
+      "strong": "G4396",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "λέγοντος",
+      "strong": "G3004",
+      "morph": "Particípio Presente Ativo Genitivo Singular Masculino"
+    }
+  ],
+  [
+    {
+      "text": "Ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "παῖς",
+      "strong": "G3816",
+      "morph": "Substantivo Nominativo Singular Masculino/Feminino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "ὃν",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Acusativo Singular Masculino"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἀγαπητός",
+      "strong": "G27",
+      "morph": "Adjetivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ὃν",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Acusativo Singular Masculino"
+    },
+    {
+      "text": "εὐδόκησεν",
+      "strong": "G2106",
+      "morph": "Verbo Aoristo Ativo Indicativo 3S"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "ψυχή",
+      "strong": "G5590",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "θήσω",
+      "strong": "G5087",
+      "morph": "Verbo Futuro Indicativo Ativo 1S"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "πνεῦμά",
+      "strong": "G4151",
+      "morph": "Substantivo Nominativo Singular Neutro"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "ἐπʼ",
+      "strong": "G1909",
+      "morph": "Preposição"
+    },
+    {
+      "text": "αὐτόν",
+      "strong": "G0846",
+      "morph": "Pronome Pessoal Acusativo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "κρίσιν",
+      "strong": "G2920",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "ἔθνεσιν",
+      "strong": "G1484",
+      "morph": "Substantivo Dativo Plural Neutro"
+    },
+    {
+      "text": "ᾑρέτισα",
+      "strong": "G138",
+      "morph": "Verbo Aoristo Indicativo Médio/Passivo 1S"
+    },
+    {
+      "text": "ἀπαγγελεῖ",
+      "strong": "G518",
+      "morph": "Verbo Futuro Indicativo Ativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "οὐδὲ",
+      "strong": "G3761",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οὐδὲ",
+      "strong": "G3761",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἀκούσει",
+      "strong": "G191",
+      "morph": "Verbo Futuro Ativo Indicativo 3S"
+    },
+    {
+      "text": "τις",
+      "strong": "G5100",
+      "morph": "Pronome Indefinido Nominativo Singular Masculino/Feminino"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ταῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Feminino"
+    },
+    {
+      "text": "πλατείαις",
+      "strong": "G4113",
+      "morph": "Adjetivo Dativo Plural Feminino"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "φωνὴν",
+      "strong": "G5456",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἐρίσει",
+      "strong": "G2052",
+      "morph": "Verbo Futuro Indicativo Médio 3S"
+    },
+    {
+      "text": "κραυγάσει",
+      "strong": "G2896",
+      "morph": "Verbo Futuro Indicativo Ativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "κάλαμον",
+      "strong": "G2563",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "οὐ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οὐ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἕως",
+      "strong": "G2193",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἂν",
+      "strong": "G0302",
+      "morph": "Partícula"
+    },
+    {
+      "text": "ἐκβάλῃ",
+      "strong": "G1544",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "κρίσιν",
+      "strong": "G2920",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "συντετριμμένον",
+      "strong": "G4937",
+      "morph": "Verbo Perfeito Particípio Médio/Passivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "κατεάξει",
+      "strong": "G2608",
+      "morph": "Verbo Futuro Indicativo Ativo 3S"
+    },
+    {
+      "text": "λίνον",
+      "strong": "G3041",
+      "morph": "Substantivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "τυφόμενον",
+      "strong": "G5187",
+      "morph": "Verbo Presente Particípio Médio/Passivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "σβέσει",
+      "strong": "G4570",
+      "morph": "Verbo Futuro Indicativo Ativo 3S"
+    },
+    {
+      "text": "νῖκος",
+      "strong": "G3529",
+      "morph": "Substantivo Nominativo Singular Neutro"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ὀνόματι",
+      "strong": "G3686",
+      "morph": "Substantivo Dativo Singular Neutro"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἔθνη",
+      "strong": "G1484",
+      "morph": "Substantivo Nominativo/Acusativo/Vocativo Plural Neutro"
+    },
+    {
+      "text": "ἐλπιοῦσιν",
+      "strong": "G1679",
+      "morph": "Verbo Futuro Indicativo Ativo 3P"
+    }
+  ],
+  [
+    {
+      "text": "Τότε",
+      "strong": "G5119",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "προσηνέχθη",
+      "strong": "G4374",
+      "morph": "Verbo Aoristo Indicativo Passivo 3S"
+    },
+    {
+      "text": "δαιμονιζόμενος",
+      "strong": "G1139",
+      "morph": "Verbo Presente Particípio Médio/Passivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "τυφλὸς",
+      "strong": "G5185",
+      "morph": "Adjetivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "κωφός",
+      "strong": "G2974",
+      "morph": "Adjetivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐθεράπευσεν",
+      "strong": "G2323",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "αὐτόν",
+      "strong": "G0846",
+      "morph": "Pronome Pessoal Acusativo Singular Masculino"
+    },
+    {
+      "text": "ὥστε",
+      "strong": "G5620",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τὸν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Masculino"
+    },
+    {
+      "text": "κωφὸν",
+      "strong": "G2974",
+      "morph": "Adjetivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "λαλεῖν",
+      "strong": "G2980",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "βλέπειν",
+      "strong": "G0991",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐξίσταντο",
+      "strong": "G1839",
+      "morph": "Verbo Imperfeito Médio/Passivo Indicativo 3P"
+    },
+    {
+      "text": "πάντες",
+      "strong": "G3956",
+      "morph": "Adjetivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ὄχλοι",
+      "strong": "G3793",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἔλεγον",
+      "strong": "G3004",
+      "morph": "Verbo Imperfeito Indicativo Ativo 3P"
+    },
+    {
+      "text": "Μήτι",
+      "strong": "G3385",
+      "morph": "Partícula Interrogativa"
+    },
+    {
+      "text": "οὗτός",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἐστιν",
+      "strong": "G1510",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "υἱὸς",
+      "strong": "G5207",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "Δαυίδ",
+      "strong": "G1138",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    }
+  ],
+  [
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "Φαρισαῖοι",
+      "strong": "G5330",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἀκούσαντες",
+      "strong": "G0191",
+      "morph": "Particípio Aoristo Ativo Nominativo Plural Masculino"
+    },
+    {
+      "text": "εἶπον",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 1S"
+    },
+    {
+      "text": "Οὗτος",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἐκβάλλει",
+      "strong": "G1544",
+      "morph": "Verbo Presente Ativo Indicativo 3S"
+    },
+    {
+      "text": "τὰ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "δαιμόνια",
+      "strong": "G1140",
+      "morph": "Substantivo Acusativo Plural Neutro"
+    },
+    {
+      "text": "εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μὴ",
+      "strong": "G3361",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "Βεελζεβοὺλ",
+      "strong": "G954",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἄρχοντι",
+      "strong": "G758",
+      "morph": "Substantivo Dativo Singular Masculino"
+    },
+    {
+      "text": "τῶν",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "δαιμονίων",
+      "strong": "G1140",
+      "morph": "Substantivo Genitivo Plural Neutro"
+    }
+  ],
+  [
+    {
+      "text": "εἰδὼς",
+      "strong": "G1492",
+      "morph": "Particípio Perfeito Ativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τὰς",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Plural Feminino"
+    },
+    {
+      "text": "ἐνθυμήσεις",
+      "strong": "G1761",
+      "morph": "Substantivo Nominativo Plural Feminino"
+    },
+    {
+      "text": "αὐτῶν",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "εἶπεν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "αὐτοῖς",
+      "strong": "G0846",
+      "morph": "Pronome Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "Πᾶσα",
+      "strong": "G3956",
+      "morph": "Adjetivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "βασιλεία",
+      "strong": "G0932",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "καθʼ",
+      "strong": "G2596",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἑαυτῆς",
+      "strong": "G1438",
+      "morph": "Pronome Reflexivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "ἐρημοῦται",
+      "strong": "G2048",
+      "morph": "Verbo Presente Passivo/Médio Indicativo 3S"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "πᾶσα",
+      "strong": "G3956",
+      "morph": "Adjetivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "πόλις",
+      "strong": "G4172",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "ἢ",
+      "strong": "G2228",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οἰκία",
+      "strong": "G3614",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "καθʼ",
+      "strong": "G2596",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἑαυτῆς",
+      "strong": "G1438",
+      "morph": "Pronome Reflexivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "οὐ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "σταθήσεται",
+      "strong": "G2476",
+      "morph": "Verbo Futuro Passivo Indicativo 3S"
+    },
+    {
+      "text": "μερισθεῖσα",
+      "strong": "G3307",
+      "morph": "Particípio Aoristo Passivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μερισθεῖσα",
+      "strong": "G3307",
+      "morph": "Particípio Aoristo Passivo Nominativo Singular Feminino"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "Σατανᾶς",
+      "strong": "G4567",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "τὸν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Masculino"
+    },
+    {
+      "text": "Σατανᾶν",
+      "strong": "G4567",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "ἐκβάλλει",
+      "strong": "G1544",
+      "morph": "Verbo Presente Ativo Indicativo 3S"
+    },
+    {
+      "text": "ἐφʼ",
+      "strong": "G1909",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἑαυτὸν",
+      "strong": "G1438",
+      "morph": "Pronome Reflexivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "ἐμερίσθη",
+      "strong": "G3307",
+      "morph": "Verbo Aoristo Indicativo Passivo 3S"
+    },
+    {
+      "text": "πῶς",
+      "strong": "G4459",
+      "morph": "Advérbio Interrogativo"
+    },
+    {
+      "text": "οὖν",
+      "strong": "G3767",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "σταθήσεται",
+      "strong": "G2476",
+      "morph": "Verbo Futuro Passivo Indicativo 3S"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "βασιλεία",
+      "strong": "G0932",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐγὼ",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Nominativo Singular Primeira Pessoa"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "Βεελζεβοὺλ",
+      "strong": "G954",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἐκβάλλω",
+      "strong": "G1544",
+      "morph": "Verbo Presente Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "τὰ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "δαιμόνια",
+      "strong": "G1140",
+      "morph": "Substantivo Acusativo Plural Neutro"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "υἱοὶ",
+      "strong": "G5207",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ὑμῶν",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Plural"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τίνι",
+      "strong": "G5101",
+      "morph": "Pronome Interrogativo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἐκβάλλουσιν",
+      "strong": "G1544",
+      "morph": "Verbo Presente Indicativo Ativo 3P"
+    },
+    {
+      "text": "διὰ",
+      "strong": "G1223",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοῦτο",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "αὐτοὶ",
+      "strong": "G0846",
+      "morph": "Pronome Nominativo Plural 3P"
+    },
+    {
+      "text": "κριταὶ",
+      "strong": "G2919",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἔσονται",
+      "strong": "G1510",
+      "morph": "Verbo Futuro Indicativo Médio/Passivo 3P"
+    },
+    {
+      "text": "ὑμῶν",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Plural"
+    }
+  ],
+  [
+    {
+      "text": "εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "πνεύματι",
+      "strong": "G4151",
+      "morph": "Substantivo Dativo Singular Neutro"
+    },
+    {
+      "text": "θεοῦ",
+      "strong": "G2316",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ἐγὼ",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Nominativo Singular Primeira Pessoa"
+    },
+    {
+      "text": "ἐκβάλλω",
+      "strong": "G1544",
+      "morph": "Verbo Presente Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "τὰ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "δαιμόνια",
+      "strong": "G1140",
+      "morph": "Substantivo Acusativo Plural Neutro"
+    },
+    {
+      "text": "ἄρα",
+      "strong": "G686",
+      "morph": "Partícula"
+    },
+    {
+      "text": "ἔφθασεν",
+      "strong": "G5348",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "ἐφʼ",
+      "strong": "G1909",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ὑμᾶς",
+      "strong": "G5209",
+      "morph": "Pronome Acusativo Plural 2P"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "βασιλεία",
+      "strong": "G0932",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "θεοῦ",
+      "strong": "G2316",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    }
+  ],
+  [
+    {
+      "text": "ἢ",
+      "strong": "G2228",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "πῶς",
+      "strong": "G4459",
+      "morph": "Advérbio Interrogativo"
+    },
+    {
+      "text": "δύναταί",
+      "strong": "G1410",
+      "morph": "Verbo Presente Indicativo Médio/Passivo 3S"
+    },
+    {
+      "text": "τις",
+      "strong": "G5100",
+      "morph": "Pronome Indefinido Nominativo Singular Masculino/Feminino"
+    },
+    {
+      "text": "εἰσελθεῖν",
+      "strong": "G1525",
+      "morph": "Verbo Aoristo Infinitivo Ativo"
+    },
+    {
+      "text": "εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "οἰκίαν",
+      "strong": "G3614",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἰσχυροῦ",
+      "strong": "G2478",
+      "morph": "Adjetivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τὰ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "σκεύη",
+      "strong": "G4632",
+      "morph": "Substantivo Nominativo/Acusativo/Vocativo Plural Neutro"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἐὰν",
+      "strong": "G1437",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μὴ",
+      "strong": "G3361",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "πρῶτον",
+      "strong": "G4412",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "δήσῃ",
+      "strong": "G1210",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "τὸν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τότε",
+      "strong": "G5119",
+      "morph": "Advérbio de Tempo"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "οἰκίαν",
+      "strong": "G3614",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "διαρπάσει",
+      "strong": "G1285",
+      "morph": "Verbo Futuro Ativo Indicativo 3S"
+    },
+    {
+      "text": "ἁρπάσαι",
+      "strong": "G0726",
+      "morph": "Verbo Aoristo Infinitivo Ativo"
+    },
+    {
+      "text": "ἰσχυρόν",
+      "strong": "G2478",
+      "morph": "Adjetivo Nominativo Singular Neutro"
+    }
+  ],
+  [
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "μὴ",
+      "strong": "G3361",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ὢν",
+      "strong": "G5607",
+      "morph": "Particípio Presente Ativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "μετʼ",
+      "strong": "G3326",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἐμοῦ",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "κατʼ",
+      "strong": "G2596",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἐμοῦ",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "ἐστιν",
+      "strong": "G1510",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "μὴ",
+      "strong": "G3361",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "συνάγων",
+      "strong": "G4863",
+      "morph": "Particípio Presente Ativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "μετʼ",
+      "strong": "G3326",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἐμοῦ",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "σκορπίζει",
+      "strong": "G4687",
+      "morph": "Verbo Presente Ativo Indicativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "διὰ",
+      "strong": "G1223",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοῦτο",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "λέγω",
+      "strong": "G3004",
+      "morph": "Verbo Presente Indicativo Ativo 1S"
+    },
+    {
+      "text": "ὑμῖν",
+      "strong": "G5213",
+      "morph": "Pronome Pessoal Dativo Plural"
+    },
+    {
+      "text": "πᾶσα",
+      "strong": "G3956",
+      "morph": "Adjetivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "ἁμαρτία",
+      "strong": "G266",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "βλασφημία",
+      "strong": "G988",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "ἀφεθήσεται",
+      "strong": "G863",
+      "morph": "Verbo Futuro Passivo Indicativo 3S"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "ἀνθρώποις",
+      "strong": "G444",
+      "morph": "Substantivo Dativo Plural Masculino"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "πνεύματος",
+      "strong": "G4151",
+      "morph": "Substantivo Genitivo Singular Neutro"
+    },
+    {
+      "text": "βλασφημία",
+      "strong": "G988",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἀφεθήσεται",
+      "strong": "G863",
+      "morph": "Verbo Futuro Passivo Indicativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ὃς",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἐὰν",
+      "strong": "G1437",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "εἴπῃ",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "λόγον",
+      "strong": "G3056",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "κατὰ",
+      "strong": "G2596",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "υἱοῦ",
+      "strong": "G5207",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἀνθρώπου",
+      "strong": "G0444",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ἀφεθήσεται",
+      "strong": "G863",
+      "morph": "Verbo Futuro Passivo Indicativo 3S"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ὃς",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "δʼ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἂν",
+      "strong": "G0302",
+      "morph": "Partícula"
+    },
+    {
+      "text": "εἴπῃ",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "κατὰ",
+      "strong": "G2596",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "πνεύματος",
+      "strong": "G4151",
+      "morph": "Substantivo Genitivo Singular Neutro"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἁγίου",
+      "strong": "G40",
+      "morph": "Adjetivo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "οὐκ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "ἀφεθήσεται",
+      "strong": "G863",
+      "morph": "Verbo Futuro Passivo Indicativo 3S"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "οὔτε",
+      "strong": "G3777",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τούτῳ",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "αἰῶνι",
+      "strong": "G165",
+      "morph": "Substantivo Dativo Singular Masculino"
+    },
+    {
+      "text": "οὔτε",
+      "strong": "G3777",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "μέλλοντι",
+      "strong": "G3195",
+      "morph": "Particípio Presente Ativo Dativo Singular Masculino/Neutro"
+    }
+  ],
+  [
+    {
+      "text": "Ἢ",
+      "strong": "G2228",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ποιήσατε",
+      "strong": "G4160",
+      "morph": "Verbo Aoristo Imperativo Ativo 2P"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "δένδρον",
+      "strong": "G1186",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "καλὸν",
+      "strong": "G2570",
+      "morph": "Adjetivo Nominativo Singular Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τὸν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Masculino"
+    },
+    {
+      "text": "καρπὸν",
+      "strong": "G2590",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "καλόν",
+      "strong": "G2570",
+      "morph": "Adjetivo Nominativo Singular Neutro"
+    },
+    {
+      "text": "ἢ",
+      "strong": "G2228",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ποιήσατε",
+      "strong": "G4160",
+      "morph": "Verbo Aoristo Imperativo Ativo 2P"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "δένδρον",
+      "strong": "G1186",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "σαπρὸν",
+      "strong": "G4550",
+      "morph": "Adjetivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τὸν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Masculino"
+    },
+    {
+      "text": "καρπὸν",
+      "strong": "G2590",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "σαπρόν",
+      "strong": "G4550",
+      "morph": "Adjetivo Nominativo Singular Neutro"
+    },
+    {
+      "text": "ἐκ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "γὰρ",
+      "strong": "G1063",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "καρποῦ",
+      "strong": "G2590",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "δένδρον",
+      "strong": "G1186",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "γινώσκεται",
+      "strong": "G1097",
+      "morph": "Verbo Presente Indicativo Passivo/Médio 3S"
+    }
+  ],
+  [
+    {
+      "text": "ἐχιδνῶν",
+      "strong": "G2191",
+      "morph": "Substantivo Genitivo Plural Feminino"
+    },
+    {
+      "text": "πῶς",
+      "strong": "G4459",
+      "morph": "Advérbio Interrogativo"
+    },
+    {
+      "text": "δύνασθε",
+      "strong": "G1410",
+      "morph": "Verbo Presente Indicativo Médio/Passivo 2P"
+    },
+    {
+      "text": "ἀγαθὰ",
+      "strong": "G0018",
+      "morph": "Adjetivo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "λαλεῖν",
+      "strong": "G2980",
+      "morph": "Verbo Presente Infinitivo Ativo"
+    },
+    {
+      "text": "πονηροὶ",
+      "strong": "G4190",
+      "morph": "Adjetivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ὄντες",
+      "strong": "G5607",
+      "morph": "Verbo Presente Particípio Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἐκ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "γὰρ",
+      "strong": "G1063",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "περισσεύματος",
+      "strong": "G4052",
+      "morph": "Substantivo Genitivo Singular Neutro"
+    },
+    {
+      "text": "τῆς",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Feminino"
+    },
+    {
+      "text": "καρδίας",
+      "strong": "G2588",
+      "morph": "Substantivo Acusativo Plural Feminino"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "στόμα",
+      "strong": "G4750",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "λαλεῖ",
+      "strong": "G2980",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "γεννήματα",
+      "strong": "G1081",
+      "morph": "Substantivo Nominativo/Vocativo/Acusativo Plural Neutro"
+    }
+  ],
+  [
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἀγαθὸς",
+      "strong": "G18",
+      "morph": "Adjetivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἄνθρωπος",
+      "strong": "G444",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἐκ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἀγαθοῦ",
+      "strong": "G18",
+      "morph": "Adjetivo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "θησαυροῦ",
+      "strong": "G2344",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ἐκβάλλει",
+      "strong": "G1544",
+      "morph": "Verbo Presente Ativo Indicativo 3S"
+    },
+    {
+      "text": "ἀγαθά",
+      "strong": "G18",
+      "morph": "Adjetivo Nominativo/Acusativo/Vocativo Plural Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "πονηρὸς",
+      "strong": "G4190",
+      "morph": "Adjetivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἄνθρωπος",
+      "strong": "G444",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἐκ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "πονηροῦ",
+      "strong": "G4190",
+      "morph": "Adjetivo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "θησαυροῦ",
+      "strong": "G2344",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ἐκβάλλει",
+      "strong": "G1544",
+      "morph": "Verbo Presente Ativo Indicativo 3S"
+    },
+    {
+      "text": "πονηρά",
+      "strong": "G4190",
+      "morph": "Adjetivo Nominativo/Vocativo Singular Feminino ou Nominativo/Acusativo Plural Neutro"
+    }
+  ],
+  [
+    {
+      "text": "λέγω",
+      "strong": "G3004",
+      "morph": "Verbo Presente Indicativo Ativo 1S"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ὑμῖν",
+      "strong": "G5213",
+      "morph": "Pronome Pessoal Dativo Plural"
+    },
+    {
+      "text": "ὅτι",
+      "strong": "G3754",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "πᾶν",
+      "strong": "G3956",
+      "morph": "Adjetivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ῥῆμα",
+      "strong": "G4487",
+      "morph": "Substantivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "ὃ",
+      "strong": "G3739",
+      "morph": "Pronome Relativo Nominativo Singular Neutro"
+    },
+    {
+      "text": "λαλήσουσιν",
+      "strong": "G2980",
+      "morph": "Verbo Futuro Ativo Indicativo 3 Plural"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἄνθρωποι",
+      "strong": "G0444",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "περὶ",
+      "strong": "G4012",
+      "morph": "Preposição"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "λόγον",
+      "strong": "G3056",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἡμέρᾳ",
+      "strong": "G2250",
+      "morph": "Substantivo Dativo Singular Feminino"
+    },
+    {
+      "text": "κρίσεως",
+      "strong": "G2920",
+      "morph": "Substantivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "ἀργὸν",
+      "strong": "G0692",
+      "morph": "Adjetivo Nominativo Singular Neutro"
+    },
+    {
+      "text": "ἀποδώσουσιν",
+      "strong": "G0591",
+      "morph": "Verbo Futuro Indicativo Ativo 3P"
+    }
+  ],
+  [
+    {
+      "text": "ἐκ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "γὰρ",
+      "strong": "G1063",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τῶν",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "λόγων",
+      "strong": "G3056",
+      "morph": "Substantivo Genitivo Plural Masculino"
+    },
+    {
+      "text": "σου",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐκ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῶν",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "λόγων",
+      "strong": "G3056",
+      "morph": "Substantivo Genitivo Plural Masculino"
+    },
+    {
+      "text": "σου",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "δικαιωθήσῃ",
+      "strong": "G1344",
+      "morph": "Verbo Futuro Passivo Indicativo 2S"
+    },
+    {
+      "text": "καταδικασθήσῃ",
+      "strong": "G2632",
+      "morph": "Verbo Futuro Passivo Indicativo 2S"
+    }
+  ],
+  [
+    {
+      "text": "Τότε",
+      "strong": "G5119",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἀπεκρίθησαν",
+      "strong": "G0662",
+      "morph": "Verbo Aoristo Indicativo Passivo 3P"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "τινες",
+      "strong": "G5100",
+      "morph": "Pronome Indefinido Nominativo Plural Masculino/Feminino"
+    },
+    {
+      "text": "τῶν",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "γραμματέων",
+      "strong": "G1122",
+      "morph": "Substantivo Genitivo Plural Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "Φαρισαίων",
+      "strong": "G5330",
+      "morph": "Substantivo Genitivo Plural Masculino"
+    },
+    {
+      "text": "λέγοντες",
+      "strong": "G3004",
+      "morph": "Particípio Presente Ativo Nominativo Plural Masculino"
+    },
+    {
+      "text": "Διδάσκαλε",
+      "strong": "G1320",
+      "morph": "Substantivo Vocativo Singular Masculino"
+    },
+    {
+      "text": "θέλομεν",
+      "strong": "G2309",
+      "morph": "Verbo Presente Indicativo Ativo 1P"
+    },
+    {
+      "text": "ἀπὸ",
+      "strong": "G575",
+      "morph": "Preposição"
+    },
+    {
+      "text": "σοῦ",
+      "strong": "G4771",
+      "morph": "Pronome Genitivo Singular"
+    },
+    {
+      "text": "σημεῖον",
+      "strong": "G4592",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἰδεῖν",
+      "strong": "G1492",
+      "morph": "Verbo Aoristo Infinitivo Ativo"
+    }
+  ],
+  [
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἀποκριθεὶς",
+      "strong": "G611",
+      "morph": "Particípio Aoristo Passivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "εἶπεν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "αὐτοῖς",
+      "strong": "G0846",
+      "morph": "Pronome Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "πονηρὰ",
+      "strong": "G4190",
+      "morph": "Adjetivo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "σημεῖον",
+      "strong": "G4592",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "σημεῖον",
+      "strong": "G4592",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "οὐ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "δοθήσεται",
+      "strong": "G1325",
+      "morph": "Verbo Futuro Indicativo Passivo 3S"
+    },
+    {
+      "text": "αὐτῇ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Feminino"
+    },
+    {
+      "text": "εἰ",
+      "strong": "G1487",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μὴ",
+      "strong": "G3361",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "σημεῖον",
+      "strong": "G4592",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "Ἰωνᾶ",
+      "strong": "G2495",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "προφήτου",
+      "strong": "G4396",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "Γενεὰ",
+      "strong": "G1074",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μοιχαλὶς",
+      "strong": "G3428",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "ἐπιζητεῖ",
+      "strong": "G1934",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "ὥσπερ",
+      "strong": "G5618",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "γὰρ",
+      "strong": "G1063",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἦν",
+      "strong": "G1510",
+      "morph": "Verbo Imperfeito Indicativo Ativo 3S"
+    },
+    {
+      "text": "Ἰωνᾶς",
+      "strong": "G2495",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῇ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Feminino"
+    },
+    {
+      "text": "κοιλίᾳ",
+      "strong": "G2836",
+      "morph": "Substantivo Dativo Singular Feminino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "τρεῖς",
+      "strong": "G5140",
+      "morph": "Numeral Nominativo/Acusativo Plural Masculino/Feminino"
+    },
+    {
+      "text": "ἡμέρας",
+      "strong": "G2250",
+      "morph": "Substantivo Acusativo Plural Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τρεῖς",
+      "strong": "G5140",
+      "morph": "Numeral Nominativo/Acusativo Plural Masculino/Feminino"
+    },
+    {
+      "text": "νύκτας",
+      "strong": "G3577",
+      "morph": "Substantivo Acusativo Plural Feminino"
+    },
+    {
+      "text": "οὕτως",
+      "strong": "G3779",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἔσται",
+      "strong": "G2071",
+      "morph": "Verbo Futuro Indicativo Médio 3S"
+    },
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "υἱὸς",
+      "strong": "G5207",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἀνθρώπου",
+      "strong": "G0444",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῇ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Feminino"
+    },
+    {
+      "text": "καρδίᾳ",
+      "strong": "G2588",
+      "morph": "Substantivo Dativo Singular Feminino"
+    },
+    {
+      "text": "τῆς",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Feminino"
+    },
+    {
+      "text": "γῆς",
+      "strong": "G1093",
+      "morph": "Substantivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "τρεῖς",
+      "strong": "G5140",
+      "morph": "Numeral Nominativo/Acusativo Plural Masculino/Feminino"
+    },
+    {
+      "text": "ἡμέρας",
+      "strong": "G2250",
+      "morph": "Substantivo Acusativo Plural Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τρεῖς",
+      "strong": "G5140",
+      "morph": "Numeral Nominativo/Acusativo Plural Masculino/Feminino"
+    },
+    {
+      "text": "νύκτας",
+      "strong": "G3577",
+      "morph": "Substantivo Acusativo Plural Feminino"
+    },
+    {
+      "text": "κήτους",
+      "strong": "G2785",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    }
+  ],
+  [
+    {
+      "text": "ἄνδρες",
+      "strong": "G0435",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "Νινευῖται",
+      "strong": "G3536",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἀναστήσονται",
+      "strong": "G0450",
+      "morph": "Verbo Futuro Médio Indicativo 3P"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῇ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Feminino"
+    },
+    {
+      "text": "κρίσει",
+      "strong": "G2920",
+      "morph": "Substantivo Dativo Singular Feminino"
+    },
+    {
+      "text": "μετὰ",
+      "strong": "G3326",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῆς",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Feminino"
+    },
+    {
+      "text": "γενεᾶς",
+      "strong": "G1074",
+      "morph": "Substantivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "ταύτης",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Genitivo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "κατακρινοῦσιν",
+      "strong": "G2632",
+      "morph": "Verbo Futuro Ativo Indicativo 3P"
+    },
+    {
+      "text": "αὐτήν",
+      "strong": "G0846",
+      "morph": "Pronome Pessoal Acusativo Singular Feminino"
+    },
+    {
+      "text": "ὅτι",
+      "strong": "G3754",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μετενόησαν",
+      "strong": "G3340",
+      "morph": "Verbo Aoristo Indicativo Ativo 3P"
+    },
+    {
+      "text": "εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "κήρυγμα",
+      "strong": "G2782",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "Ἰωνᾶ",
+      "strong": "G2495",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "πλεῖον",
+      "strong": "G4119",
+      "morph": "Adjetivo Comparativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "Ἰωνᾶ",
+      "strong": "G2495",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ὧδε",
+      "strong": "G5602",
+      "morph": "Advérbio"
+    }
+  ],
+  [
+    {
+      "text": "βασίλισσα",
+      "strong": "G0938",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "νότου",
+      "strong": "G3575",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ἐγερθήσεται",
+      "strong": "G1453",
+      "morph": "Verbo Futuro Passivo Indicativo 3S"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῇ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Feminino"
+    },
+    {
+      "text": "κρίσει",
+      "strong": "G2920",
+      "morph": "Substantivo Dativo Singular Feminino"
+    },
+    {
+      "text": "μετὰ",
+      "strong": "G3326",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῆς",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Feminino"
+    },
+    {
+      "text": "γενεᾶς",
+      "strong": "G1074",
+      "morph": "Substantivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "ταύτης",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Genitivo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "κατακρινεῖ",
+      "strong": "G2632",
+      "morph": "Verbo Futuro Ativo Indicativo 3S"
+    },
+    {
+      "text": "αὐτήν",
+      "strong": "G0846",
+      "morph": "Pronome Pessoal Acusativo Singular Feminino"
+    },
+    {
+      "text": "ὅτι",
+      "strong": "G3754",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἦλθεν",
+      "strong": "G2064",
+      "morph": "Verbo Aoristo Ativo Indicativo 3S"
+    },
+    {
+      "text": "ἐκ",
+      "strong": "G1537",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τῶν",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "περάτων",
+      "strong": "G4009",
+      "morph": "Substantivo Genitivo Plural Neutro"
+    },
+    {
+      "text": "τῆς",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Feminino"
+    },
+    {
+      "text": "γῆς",
+      "strong": "G1093",
+      "morph": "Substantivo Genitivo Singular Feminino"
+    },
+    {
+      "text": "ἀκοῦσαι",
+      "strong": "G191",
+      "morph": "Verbo Aoristo Infinitivo Ativo"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "σοφίαν",
+      "strong": "G4678",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "Σολομῶνος",
+      "strong": "G4672",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "πλεῖον",
+      "strong": "G4119",
+      "morph": "Adjetivo Comparativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "Σολομῶνος",
+      "strong": "G4672",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ὧδε",
+      "strong": "G5602",
+      "morph": "Advérbio"
+    }
+  ],
+  [
+    {
+      "text": "Ὅταν",
+      "strong": "G3752",
+      "morph": "Conjunção Indefinida"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἀκάθαρτον",
+      "strong": "G169",
+      "morph": "Adjetivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "πνεῦμα",
+      "strong": "G4151",
+      "morph": "Substantivo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἐξέλθῃ",
+      "strong": "G1831",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "ἀπὸ",
+      "strong": "G575",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἀνθρώπου",
+      "strong": "G0444",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "διέρχεται",
+      "strong": "G1330",
+      "morph": "Verbo Presente Médio/Passivo Indicativo 3S"
+    },
+    {
+      "text": "διʼ",
+      "strong": "G1223",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἀνύδρων",
+      "strong": "G461",
+      "morph": "Adjetivo Genitivo Plural Masculino/Neutro"
+    },
+    {
+      "text": "τόπων",
+      "strong": "G5117",
+      "morph": "Substantivo Genitivo Plural Masculino"
+    },
+    {
+      "text": "ζητοῦν",
+      "strong": "G2212",
+      "morph": "Particípio Presente Ativo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἀνάπαυσιν",
+      "strong": "G372",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οὐχ",
+      "strong": "G3756",
+      "morph": "Advérbio Negativo"
+    },
+    {
+      "text": "εὑρίσκει",
+      "strong": "G2147",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    }
+  ],
+  [
+    {
+      "text": "τότε",
+      "strong": "G5119",
+      "morph": "Advérbio de Tempo"
+    },
+    {
+      "text": "λέγει",
+      "strong": "G3004",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "Εἰς",
+      "strong": "G1519",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τὸν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Masculino"
+    },
+    {
+      "text": "οἶκόν",
+      "strong": "G3624",
+      "morph": "Substantivo Acusativo Singular Masculino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "ὅθεν",
+      "strong": "G3739",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἐξῆλθον",
+      "strong": "G1831",
+      "morph": "Verbo Aoristo Indicativo Ativo 3P"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐλθὸν",
+      "strong": "G2064",
+      "morph": "Verbo Aoristo Ativo Particípio Nominativo/Acusativo/Vocativo Singular Neutro"
+    },
+    {
+      "text": "εὑρίσκει",
+      "strong": "G2147",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "σεσαρωμένον",
+      "strong": "G4563",
+      "morph": "Verbo Perfeito Passivo Particípio Acusativo Singular Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "κεκοσμημένον",
+      "strong": "G2889",
+      "morph": "Verbo Perfeito Passivo Particípio Acusativo Singular Neutro"
+    },
+    {
+      "text": "ἐπιστρέψω",
+      "strong": "G1994",
+      "morph": "Verbo Futuro Indicativo Ativo 1S"
+    },
+    {
+      "text": "σχολάζοντα",
+      "strong": "G4980",
+      "morph": "Particípio Presente Ativo Acusativo Plural Neutro/Masculino"
+    }
+  ],
+  [
+    {
+      "text": "τότε",
+      "strong": "G5119",
+      "morph": "Advérbio de Tempo"
+    },
+    {
+      "text": "πορεύεται",
+      "strong": "G4198",
+      "morph": "Verbo Presente Indicativo Médio/Passivo 3S"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "παραλαμβάνει",
+      "strong": "G3880",
+      "morph": "Verbo Presente Ativo Indicativo 3S"
+    },
+    {
+      "text": "μεθʼ",
+      "strong": "G3326",
+      "morph": "Preposição"
+    },
+    {
+      "text": "ἑαυτοῦ",
+      "strong": "G1438",
+      "morph": "Pronome Reflexivo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἑπτὰ",
+      "strong": "G2033",
+      "morph": "Numeral Indeclinável"
+    },
+    {
+      "text": "ἕτερα",
+      "strong": "G2087",
+      "morph": "Adjetivo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "πνεύματα",
+      "strong": "G4151",
+      "morph": "Substantivo Nominativo/Vocativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "πονηρότερα",
+      "strong": "G4190",
+      "morph": "Adjetivo Comparativo Nominativo/Acusativo/Vocativo Plural Neutro"
+    },
+    {
+      "text": "ἑαυτοῦ",
+      "strong": "G1438",
+      "morph": "Pronome Reflexivo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "εἰσελθόντα",
+      "strong": "G1525",
+      "morph": "Verbo Aoristo Ativo Particípio Acusativo Plural Neutro/Masculino"
+    },
+    {
+      "text": "κατοικεῖ",
+      "strong": "G2730",
+      "morph": "Verbo Presente Ativo Indicativo 3S"
+    },
+    {
+      "text": "ἐκεῖ",
+      "strong": "G1563",
+      "morph": "Advérbio de Lugar"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "γίνεται",
+      "strong": "G1096",
+      "morph": "Verbo Presente Médio/Passivo Indicativo 3S"
+    },
+    {
+      "text": "τὰ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Plural Neutro"
+    },
+    {
+      "text": "ἔσχατα",
+      "strong": "G2078",
+      "morph": "Adjetivo Nominativo/Acusativo/Vocativo Plural Neutro"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἀνθρώπου",
+      "strong": "G0444",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "ἐκείνου",
+      "strong": "G1565",
+      "morph": "Pronome Demonstrativo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "χείρονα",
+      "strong": "G5501",
+      "morph": "Adjetivo Comparativo Nominativo/Acusativo/Vocativo Plural Neutro"
+    },
+    {
+      "text": "τῶν",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Plural Masculino/Feminino/Neutro"
+    },
+    {
+      "text": "πρώτων",
+      "strong": "G4413",
+      "morph": "Adjetivo Genitivo Plural Masculino/Neutro"
+    },
+    {
+      "text": "οὕτως",
+      "strong": "G3779",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἔσται",
+      "strong": "G2071",
+      "morph": "Verbo Futuro Indicativo Médio 3S"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τῇ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Feminino"
+    },
+    {
+      "text": "γενεᾷ",
+      "strong": "G1074",
+      "morph": "Substantivo Dativo Singular Feminino"
+    },
+    {
+      "text": "ταύτῃ",
+      "strong": "G3778",
+      "morph": "Pronome Demonstrativo Dativo Singular Feminino"
+    },
+    {
+      "text": "τῇ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Feminino"
+    },
+    {
+      "text": "πονηρᾷ",
+      "strong": "G4190",
+      "morph": "Adjetivo Dativo Singular Feminino"
+    }
+  ],
+  [
+    {
+      "text": "Ἔτι",
+      "strong": "G2089",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "λαλοῦντος",
+      "strong": "G2980",
+      "morph": "Particípio Presente Ativo Genitivo Singular Masculino"
+    },
+    {
+      "text": "τοῖς",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Plural Masculino/Neutro"
+    },
+    {
+      "text": "ὄχλοις",
+      "strong": "G3793",
+      "morph": "Substantivo Dativo Plural Masculino"
+    },
+    {
+      "text": "ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μήτηρ",
+      "strong": "G3384",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἀδελφοὶ",
+      "strong": "G0080",
+      "morph": "Substantivo Nominativo Plural Masculino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "εἱστήκεισαν",
+      "strong": "G2476",
+      "morph": "Verbo Plusquamperfeito Ativo Indicativo 3P"
+    },
+    {
+      "text": "ἔξω",
+      "strong": "G1854",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ζητοῦντες",
+      "strong": "G2212",
+      "morph": "Particípio Presente Ativo Nominativo Plural Masculino"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "λαλῆσαι",
+      "strong": "G2980",
+      "morph": "Verbo Aoristo Infinitivo Ativo"
+    }
+  ],
+  [
+    {
+      "text": "εἶπεν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "δέ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τις",
+      "strong": "G5100",
+      "morph": "Pronome Indefinido Nominativo Singular Masculino/Feminino"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "Ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μήτηρ",
+      "strong": "G3384",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "σου",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἀδελφοί",
+      "strong": "G80",
+      "morph": "Substantivo Vocativo Plural Masculino"
+    },
+    {
+      "text": "σου",
+      "strong": "G4771",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "ἔξω",
+      "strong": "G1854",
+      "morph": "Advérbio"
+    },
+    {
+      "text": "ἑστήκασιν",
+      "strong": "G2476",
+      "morph": "Verbo Perfeito Ativo Indicativo 3P"
+    },
+    {
+      "text": "σοι",
+      "strong": "G4671",
+      "morph": "Pronome Dativo Singular"
+    },
+    {
+      "text": "λαλῆσαι",
+      "strong": "G2980",
+      "morph": "Verbo Aoristo Infinitivo Ativo"
+    },
+    {
+      "text": "ζητοῦντές",
+      "strong": "G2212",
+      "morph": "Particípio Presente Ativo Nominativo Plural Masculino"
+    }
+  ],
+  [
+    {
+      "text": "ὁ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Masculino"
+    },
+    {
+      "text": "δὲ",
+      "strong": "G1161",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἀποκριθεὶς",
+      "strong": "G611",
+      "morph": "Particípio Aoristo Passivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "εἶπεν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "τῷ",
+      "strong": "G3588",
+      "morph": "Artigo Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "αὐτῷ",
+      "strong": "G846",
+      "morph": "Pronome Dativo Singular Masculino/Neutro"
+    },
+    {
+      "text": "Τίς",
+      "strong": "G5101",
+      "morph": "Pronome Interrogativo Nominativo Singular Masculino/Feminino"
+    },
+    {
+      "text": "ἐστιν",
+      "strong": "G1510",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μήτηρ",
+      "strong": "G3384",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "τίνες",
+      "strong": "G5101",
+      "morph": "Pronome Interrogativo Nominativo Plural Masculino/Feminino"
+    },
+    {
+      "text": "εἰσὶν",
+      "strong": "G1526",
+      "morph": "Verbo Presente Indicativo Ativo 3P"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἀδελφοί",
+      "strong": "G80",
+      "morph": "Substantivo Vocativo Plural Masculino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "λέγοντι",
+      "strong": "G3004",
+      "morph": "Verbo Presente Indicativo Ativo 3P"
+    }
+  ],
+  [
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἐκτείνας",
+      "strong": "G1614",
+      "morph": "Particípio Aoristo Ativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "τὴν",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Singular Feminino"
+    },
+    {
+      "text": "χεῖρα",
+      "strong": "G5495",
+      "morph": "Substantivo Acusativo Singular Feminino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἐπὶ",
+      "strong": "G1909",
+      "morph": "Preposição"
+    },
+    {
+      "text": "τοὺς",
+      "strong": "G3588",
+      "morph": "Artigo Acusativo Plural Masculino"
+    },
+    {
+      "text": "μαθητὰς",
+      "strong": "G3101",
+      "morph": "Substantivo Acusativo Plural Masculino"
+    },
+    {
+      "text": "αὐτοῦ",
+      "strong": "G846",
+      "morph": "Pronome Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "εἶπεν",
+      "strong": "G2036",
+      "morph": "Verbo Aoristo Indicativo Ativo 3S"
+    },
+    {
+      "text": "Ἰδοὺ",
+      "strong": "G2400",
+      "morph": "Interjeição"
+    },
+    {
+      "text": "ἡ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μήτηρ",
+      "strong": "G3384",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "οἱ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo Plural Masculino"
+    },
+    {
+      "text": "ἀδελφοί",
+      "strong": "G80",
+      "morph": "Substantivo Vocativo Plural Masculino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    }
+  ],
+  [
+    {
+      "text": "ὅστις",
+      "strong": "G3748",
+      "morph": "Pronome Relativo Nominativo Singular Masculino"
+    },
+    {
+      "text": "γὰρ",
+      "strong": "G1063",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἂν",
+      "strong": "G0302",
+      "morph": "Partícula"
+    },
+    {
+      "text": "ποιήσῃ",
+      "strong": "G4160",
+      "morph": "Verbo Aoristo Subjuntivo Ativo 3S"
+    },
+    {
+      "text": "τὸ",
+      "strong": "G3588",
+      "morph": "Artigo Nominativo/Acusativo Singular Neutro"
+    },
+    {
+      "text": "θέλημα",
+      "strong": "G2307",
+      "morph": "Substantivo Acusativo Singular Neutro"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "πατρός",
+      "strong": "G3962",
+      "morph": "Substantivo Genitivo Singular Masculino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "τοῦ",
+      "strong": "G3588",
+      "morph": "Artigo Genitivo Singular Masculino/Neutro"
+    },
+    {
+      "text": "ἐν",
+      "strong": "G1722",
+      "morph": "Preposição"
+    },
+    {
+      "text": "οὐρανοῖς",
+      "strong": "G3772",
+      "morph": "Substantivo Dativo Plural Masculino"
+    },
+    {
+      "text": "αὐτός",
+      "strong": "G846",
+      "morph": "Pronome Pessoal Nominativo Singular Masculino"
+    },
+    {
+      "text": "μου",
+      "strong": "G1473",
+      "morph": "Pronome Pessoal Genitivo Singular"
+    },
+    {
+      "text": "ἀδελφὸς",
+      "strong": "G80",
+      "morph": "Substantivo Nominativo Singular Masculino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "ἀδελφὴ",
+      "strong": "G79",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "καὶ",
+      "strong": "G2532",
+      "morph": "Conjunção"
+    },
+    {
+      "text": "μήτηρ",
+      "strong": "G3384",
+      "morph": "Substantivo Nominativo Singular Feminino"
+    },
+    {
+      "text": "ἐστίν",
+      "strong": "G2076",
+      "morph": "Verbo Presente Indicativo Ativo 3S"
+    }
+  ]
+]

@@ -53,6 +53,7 @@ dependencies:
   in_app_purchase: ^3.2.3
   in_app_purchase_android: ^0.4.0
   startapp_sdk: ^1.0.1
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -95,9 +96,6 @@ flutter:
     - assets/covers/
 
     - assets/hinos/hinos.json
-
-    - assets/images/authors/C_S_Lewis.webp
-    - assets/temp_book.jpg
 
     - assets/Biblia/completa_traducoes/abbrev_map.json
     - assets/Biblia/book_variations_map_search.json
@@ -361,7 +359,32 @@ flutter:
     - assets/Biblia/completa_traducoes/hebrew_original/ml/
 
     - assets/Biblia/completa_traducoes/greek_original/1co/
-    - assets/Biblia/completa_traducoes/greek_original/1jn/
+    - assets/Biblia/completa_traducoes/greek_original/1jo/
+    - assets/Biblia/completa_traducoes/greek_original/1pe/
+    - assets/Biblia/completa_traducoes/greek_original/1tm/
+    - assets/Biblia/completa_traducoes/greek_original/1ts/
+    - assets/Biblia/completa_traducoes/greek_original/2co/
+    - assets/Biblia/completa_traducoes/greek_original/2jo/
+    - assets/Biblia/completa_traducoes/greek_original/2pe/
+    - assets/Biblia/completa_traducoes/greek_original/2tm/
+    - assets/Biblia/completa_traducoes/greek_original/2ts/
+    - assets/Biblia/completa_traducoes/greek_original/3jo/
+    - assets/Biblia/completa_traducoes/greek_original/ap/
+    - assets/Biblia/completa_traducoes/greek_original/at/
+    - assets/Biblia/completa_traducoes/greek_original/cl/
+    - assets/Biblia/completa_traducoes/greek_original/ef/
+    - assets/Biblia/completa_traducoes/greek_original/fm/
+    - assets/Biblia/completa_traducoes/greek_original/fp/
+    - assets/Biblia/completa_traducoes/greek_original/gl/
+    - assets/Biblia/completa_traducoes/greek_original/hb/
+    - assets/Biblia/completa_traducoes/greek_original/jo/
+    - assets/Biblia/completa_traducoes/greek_original/jd/
+    - assets/Biblia/completa_traducoes/greek_original/lc/
+    - assets/Biblia/completa_traducoes/greek_original/mc/
+    - assets/Biblia/completa_traducoes/greek_original/mt/
+    - assets/Biblia/completa_traducoes/greek_original/rm/
+    - assets/Biblia/completa_traducoes/greek_original/tg/
+    - assets/Biblia/completa_traducoes/greek_original/tt/
 
     # Blocos
     - assets/Biblia/blocos/gn/
@@ -471,3 +494,20 @@ flutter:
           
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+flutter_launcher_icons:
+  android: "launcher_icon" # Nome do ícone para Android
+  image_path: "assets/icon/icon.png" # Caminho para sua imagem principal
+  min_sdk_android: 21 # Opcional: defina a SDK mínima do Android
+  # remove_alpha_ios: true # Se sua imagem tem alfa e você quer removê-lo para iOS
+  # web:
+  #   generate: true
+  #   image_path: "path/to/image.png"
+  #   background_color: "#hexcode"
+  #   theme_color: "#hexcode"
+  # windows:
+  #   generate: true
+  #   image_path: "path/to/image.png"
+  #   icon_size: 48 # Altura e largura do ícone
+  # macos:
+  #   generate: true

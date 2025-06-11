@@ -899,36 +899,6 @@ class _BiblePageState extends State<BiblePage> {
         },
       ));
     } else {
-      // Ações quando a busca semântica está INATIVA
-      // if (viewModel.pendingWritesCount > 0) {
-      //   actions.add(Padding(
-      //     padding: const EdgeInsets.only(right: 0.0),
-      //     child: Center(
-      //       child: Badge(
-      //         label: Text('${viewModel.pendingWritesCount}',
-      //             style: TextStyle(
-      //                 fontSize: 10, color: theme.colorScheme.onError)),
-      //         backgroundColor: theme.colorScheme.error,
-      //         padding: const EdgeInsets.symmetric(horizontal: 5),
-      //         child: IconButton(
-      //           icon: Icon(Icons.sync_problem_outlined,
-      //               color: theme.colorScheme.error, size: 24),
-      //           tooltip:
-      //               "Sincronizar Alterações (${viewModel.pendingWritesCount} pendentes)",
-      //           onPressed: () {
-      //             StoreProvider.of<AppState>(context, listen: false)
-      //                 .dispatch(ProcessPendingFirestoreWritesAction());
-      //             if (mounted) {
-      //               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      //                   content: Text(
-      //                       "Tentando sincronizar... Verifique o console.")));
-      //             }
-      //           },
-      //         ),
-      //       ),
-      //     ),
-      //   ));
-      // }
       actions.add(IconButton(
         icon: Icon(Icons.manage_search_outlined,
             color: defaultIconColor, size: 26),
