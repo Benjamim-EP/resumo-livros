@@ -6,8 +6,6 @@ import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/user_page.dart';
-import 'package:septima_biblia/pages/book_details_page.dart';
-import 'package:septima_biblia/pages/author_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
@@ -213,13 +211,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       key: navigatorKey,
       onGenerateRoute: (settings) {
         WidgetBuilder? builder;
-        if (settings.name == '/bookDetails') {
-          final bookId = settings.arguments as String?;
-          if (bookId != null) builder = (_) => BookDetailsPage(bookId: bookId);
-        } else if (settings.name == '/authorPage') {
-          final authorId = settings.arguments as String?;
-          if (authorId != null) builder = (_) => AuthorPage(authorId: authorId);
-        } else if (settings.name == '/queryResults') {
+        if (settings.name == '/queryResults') {
           builder = (_) => const QueryResultsPage();
         }
         builder ??= (_) => child;

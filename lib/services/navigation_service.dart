@@ -1,12 +1,10 @@
 // lib/services/navigation_service.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart';
-import 'package:septima_biblia/pages/author_page.dart';
 import 'package:septima_biblia/pages/login_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/start_screen_page.dart';
 import 'package:septima_biblia/pages/signup_page.dart';
-import 'package:septima_biblia/pages/book_details_page.dart';
 // REMOVIDO: import 'package:septima_biblia/pages/splashViews/finalform_view.dart';
 // REMOVIDO: import 'package:septima_biblia/pages/tribe_selection_page.dart';
 import 'package:septima_biblia/pages/user_settings_page.dart';
@@ -20,23 +18,7 @@ class NavigationService {
         return MaterialPageRoute(builder: (_) => const SignUpEmailPage());
       case '/mainAppScreen':
         return MaterialPageRoute(builder: (_) => const MainAppScreen());
-      case '/bookDetails':
-        final bookId = settings.arguments as String;
-        return MaterialPageRoute(
-          builder: (_) => BookDetailsPage(bookId: bookId),
-        );
-      case '/authorPage':
-        final authorId = settings.arguments as String?;
-        if (authorId == null) {
-          return MaterialPageRoute(
-            builder: (_) => const Scaffold(
-              body: Center(child: Text('ID do autor não fornecido')),
-            ),
-          );
-        }
-        return MaterialPageRoute(
-          builder: (_) => AuthorPage(authorId: authorId),
-        );
+
       case '/startScreen':
         return MaterialPageRoute(builder: (_) => const StartScreenPage());
       case '/queryResults':
