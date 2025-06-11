@@ -1,4 +1,5 @@
 // lib/services/AdHelperStartIo.dart
+import 'dart:async'; // Para Completer
 import 'package:flutter/material.dart';
 import 'package:startapp_sdk/startapp.dart';
 
@@ -7,184 +8,251 @@ typedef OnUserEarnedRewardCallback = void Function();
 class AdHelperStartIo {
   final StartAppSdk _sdk = StartAppSdk();
 
-  // Para Anúncios Recompensados
-  StartAppRewardedVideoAd? _rewardedAd;
-  bool _isLoadingRewarded = false;
-  OnUserEarnedRewardCallback?
-      _onUserEarnedRewardCallbackForRewarded; // Renomeado para clareza
-  VoidCallback? _onRewardedAdFailedToShowCallback; // Renomeado
+  StartAppRewardedVideoAd? _rewardedAdInstance;
+  bool _isRewardedAdLoading = false;
+  StartAppInterstitialAd? _interstitialAdInstance;
+  bool _isInterstitialAdLoading = false;
 
-  // --- NOVO: Para Anúncios Intersticiais ---
-  StartAppInterstitialAd? _interstitialAd;
-  bool _isLoadingInterstitial = false;
+  // Callbacks que serão definidos pelo middleware ao chamar showRewardedAd
+  // Estes são passados para o showRewardedAd e usados quando um anúncio específico é exibido
+  OnUserEarnedRewardCallback? _currentOnUserEarnedRewardCallback;
+  VoidCallback? _currentOnRewardedAdFailedToShowCallback;
+  VoidCallback?
+      _currentOnRewardedAdHiddenCallback; // Para recarregar após fechar
+
+  // Completer para sinalizar quando o carregamento do anúncio termina (sucesso ou falha)
+  Completer<StartAppRewardedVideoAd?>? _rewardedAdLoadCompleter;
 
   AdHelperStartIo() {
-    _sdk.setTestAdsEnabled(true); // Lembre-se de remover para produção!
+    _sdk.setTestAdsEnabled(true);
     print("Start.io Helper: Test Ads Enabled.");
-
-    _loadRewardedVideo();
-    _loadInterstitialAd(); // Carrega um intersticial na inicialização
+    // Inicia um pré-carregamento, mas não bloqueia.
+    // O showRewardedAd tentará carregar se necessário.
+    ensureRewardedVideoIsLoaded();
   }
 
-  // --- Lógica para Anúncios Recompensados (como antes, mas com nomes de callback mais claros) ---
-  void _loadRewardedVideo() {
-    if (_isLoadingRewarded) {
-      print('Start.io Helper: Carregamento de RECOMPENSADO já em andamento.');
-      return;
+  // Carrega um anúncio recompensado se não houver um pronto ou carregando.
+  // Retorna um Future que completa quando o anúncio está carregado ou falha.
+  Future<StartAppRewardedVideoAd?> _loadRewardedVideoAdInternal() async {
+    if (_rewardedAdInstance != null) {
+      print('Start.io Helper: RECOMPENSADO já carregado.');
+      return _rewardedAdInstance;
     }
-    _isLoadingRewarded = true;
-    print('Start.io Helper: Carregando um novo anúncio RECOMPENSADO...');
+    if (_isRewardedAdLoading && _rewardedAdLoadCompleter != null) {
+      print(
+          'Start.io Helper: RECOMPENSADO carregamento já em andamento, aguardando completer existente.');
+      return _rewardedAdLoadCompleter!.future;
+    }
+
+    _isRewardedAdLoading = true;
+    _rewardedAdLoadCompleter = Completer<StartAppRewardedVideoAd?>();
+    print(
+        'Start.io Helper: Carregando um novo anúncio RECOMPENSADO (interno)...');
 
     _sdk.loadRewardedVideoAd(
       onAdHidden: () {
-        print('Start.io Helper: RECOMPENSADO onAdHidden - Anúncio fechado.');
-        _rewardedAd?.dispose();
-        _rewardedAd = null;
-        _loadRewardedVideo();
+        print(
+            'Start.io Helper: RECOMPENSADO onAdHidden (interno) - Anúncio fechado.');
+        _rewardedAdInstance?.dispose();
+        _rewardedAdInstance = null;
+        _currentOnRewardedAdHiddenCallback
+            ?.call(); // Chama o callback de hidden se existir
+        ensureRewardedVideoIsLoaded(); // Tenta carregar o próximo
       },
       onVideoCompleted: () {
         print(
-            'Start.io Helper: RECOMPENSADO onVideoCompleted - Concedendo recompensa...');
-        _onUserEarnedRewardCallbackForRewarded?.call();
+            'Start.io Helper: RECOMPENSADO onVideoCompleted (interno) - Concedendo recompensa...');
+        _currentOnUserEarnedRewardCallback
+            ?.call(); // Chama o callback de recompensa
       },
       onAdNotDisplayed: () {
         print(
-            'Start.io Helper: RECOMPENSADO onAdNotDisplayed - Anúncio não foi exibido.');
-        _rewardedAd?.dispose();
-        _rewardedAd = null;
-        _onRewardedAdFailedToShowCallback?.call();
-        _loadRewardedVideo();
+            'Start.io Helper: RECOMPENSADO onAdNotDisplayed (interno) - Anúncio não foi exibido.');
+        _rewardedAdInstance?.dispose();
+        _rewardedAdInstance = null;
+        _currentOnRewardedAdFailedToShowCallback
+            ?.call(); // Chama o callback de falha
+        ensureRewardedVideoIsLoaded(); // Tenta carregar um novo
       },
     ).then((ad) {
-      print('Start.io Helper: Anúncio RECOMPENSADO carregado com sucesso.');
-      _rewardedAd = ad;
-      _isLoadingRewarded = false;
-    }).catchError((error) {
-      print('Start.io Helper: Erro ao carregar anúncio RECOMPENSADO: $error');
-      _rewardedAd = null;
-      _isLoadingRewarded = false;
+      print(
+          'Start.io Helper: Anúncio RECOMPENSADO carregado com sucesso (interno).');
+      _rewardedAdInstance = ad;
+      _isRewardedAdLoading = false;
+      if (!_rewardedAdLoadCompleter!.isCompleted) {
+        _rewardedAdLoadCompleter!.complete(ad);
+      }
+    }).catchError((error, stackTrace) {
+      print(
+          'Start.io Helper: Erro ao carregar anúncio RECOMPENSADO (interno): $error');
+      print('Start.io Helper: StackTrace RECOMPENSADO (interno): $stackTrace');
+      _rewardedAdInstance = null;
+      _isRewardedAdLoading = false;
+      if (!_rewardedAdLoadCompleter!.isCompleted) {
+        _rewardedAdLoadCompleter!.complete(null);
+      }
     });
+    return _rewardedAdLoadCompleter!.future;
   }
 
-  void showRewardedAd({
-    required OnUserEarnedRewardCallback onUserEarnedReward,
-    required VoidCallback onAdFailedToShow,
-  }) {
-    print('Start.io Helper: Tentando exibir anúncio RECOMPENSADO...');
-    _onUserEarnedRewardCallbackForRewarded = onUserEarnedReward;
-    _onRewardedAdFailedToShowCallback = onAdFailedToShow;
-
-    if (_rewardedAd != null) {
-      _rewardedAd!.show().then((shown) {
-        if (shown) {
-          print('Start.io Helper: RECOMPENSADO show() executado com sucesso.');
-        } else {
-          print('Start.io Helper: RECOMPENSADO show() retornou false.');
-          _onRewardedAdFailedToShowCallback?.call();
-        }
-      }).catchError((error) {
-        print('Start.io Helper: Erro ao chamar RECOMPENSADO show(): $error');
-        _onRewardedAdFailedToShowCallback?.call();
-      });
-    } else {
-      print(
-          'Start.io Helper: Nenhum anúncio RECOMPENSADO pronto. Chamando onAdFailedToShow.');
-      _onRewardedAdFailedToShowCallback?.call();
-      if (!_isLoadingRewarded) {
-        _loadRewardedVideo();
-      }
+  // Garante que um anúncio recompensado esteja sendo carregado ou já carregado.
+  // Usado para pré-carregamento.
+  void ensureRewardedVideoIsLoaded() {
+    if (_rewardedAdInstance == null && !_isRewardedAdLoading) {
+      _loadRewardedVideoAdInternal();
     }
   }
 
-  // --- NOVO: Lógica para Anúncios Intersticiais ---
+  // Tenta mostrar um anúncio. Se não estiver carregado, carrega e depois mostra.
+  Future<void> showRewardedAd({
+    required OnUserEarnedRewardCallback onUserEarnedReward,
+    required VoidCallback onAdFailedToShow,
+    VoidCallback?
+        onAdHidden, // Opcional: se o middleware precisar saber quando foi fechado
+  }) async {
+    print(
+        'Start.io Helper: Tentando exibir anúncio RECOMPENSADO (com carregamento sob demanda)...');
+    _currentOnUserEarnedRewardCallback = onUserEarnedReward;
+    _currentOnRewardedAdFailedToShowCallback = onAdFailedToShow;
+    _currentOnRewardedAdHiddenCallback = onAdHidden;
+
+    StartAppRewardedVideoAd? adToShow = _rewardedAdInstance;
+
+    if (adToShow == null) {
+      if (_isRewardedAdLoading) {
+        print(
+            'Start.io Helper: Anúncio RECOMPENSADO está carregando, aguardando...');
+        // Espera pelo carregamento atual
+        adToShow = await (_rewardedAdLoadCompleter?.future);
+      } else {
+        print(
+            'Start.io Helper: Nenhum anúncio RECOMPENSADO carregado, iniciando novo carregamento...');
+        // Inicia um novo carregamento e espera por ele
+        adToShow = await _loadRewardedVideoAdInternal();
+      }
+    }
+
+    if (adToShow != null) {
+      try {
+        print(
+            'Start.io Helper: Anúncio RECOMPENSADO está pronto. Tentando mostrar...');
+        bool shown = await adToShow.show();
+        if (shown) {
+          print(
+              'Start.io Helper: RECOMPENSADO show() chamado com sucesso (retornou true).');
+          // Os callbacks onVideoCompleted e onAdHidden definidos em _loadRewardedVideoAdInternal
+          // serão acionados pelo SDK.
+        } else {
+          print(
+              'Start.io Helper: RECOMPENSADO show() retornou false (anúncio não exibido).');
+          _currentOnRewardedAdFailedToShowCallback?.call();
+          // Se show() retorna false, o SDK pode ter chamado onAdNotDisplayed,
+          // que já tentaria recarregar. Mas por segurança, podemos garantir.
+          _rewardedAdInstance =
+              null; // Considerar que o anúncio não pôde ser usado
+          ensureRewardedVideoIsLoaded();
+        }
+      } catch (e) {
+        print('Start.io Helper: Erro ao chamar RECOMPENSADO show(): $e');
+        _currentOnRewardedAdFailedToShowCallback?.call();
+        _rewardedAdInstance = null; // Anúncio pode ter se tornado inválido
+        ensureRewardedVideoIsLoaded(); // Tenta recarregar
+      }
+    } else {
+      print(
+          'Start.io Helper: Falha ao carregar anúncio RECOMPENSADO após espera.');
+      _currentOnRewardedAdFailedToShowCallback?.call();
+    }
+  }
+
+  // --- Lógica para Anúncios Intersticiais (mantida como antes, mas pode ser adaptada de forma similar) ---
   void _loadInterstitialAd() {
-    if (_isLoadingInterstitial) {
+    if (_isInterstitialAdLoading) {
       print('Start.io Helper: Carregamento de INTERSTICIAL já em andamento.');
       return;
     }
-    if (_interstitialAd != null) {
-      print(
-          'Start.io Helper: Um INTERSTICIAL já está carregado. Use showInterstitialAd().');
+    if (_interstitialAdInstance != null) {
+      print('Start.io Helper: Um anúncio INTERSTICIAL já está carregado.');
       return;
     }
-    _isLoadingInterstitial = true;
+    _isInterstitialAdLoading = true;
     print('Start.io Helper: Carregando um novo anúncio INTERSTICIAL...');
-
     _sdk.loadInterstitialAd(
-        // Callbacks para o ciclo de vida do anúncio intersticial
-        onAdDisplayed: () {
-      print('Start.io Helper: INTERSTICIAL onAdDisplayed - Anúncio exibido.');
-    }, onAdHidden: () {
-      print('Start.io Helper: INTERSTICIAL onAdHidden - Anúncio fechado.');
-      // Importante: Anúncios intersticiais do Start.io só podem ser mostrados uma vez.
-      // É preciso descartar e carregar um novo.
-      _interstitialAd?.dispose(); // Descarta o anúncio usado
-      _interstitialAd = null; // Limpa a referência
-      _loadInterstitialAd(); // Começa a carregar o próximo
-    }, onAdClicked: () {
-      print('Start.io Helper: INTERSTICIAL onAdClicked - Anúncio clicado.');
-    }, onAdNotDisplayed: () {
-      print(
-          'Start.io Helper: INTERSTICIAL onAdNotDisplayed - Anúncio não foi exibido.');
-      _interstitialAd?.dispose();
-      _interstitialAd = null;
-      // Tenta carregar um novo se este não pôde ser exibido.
-      _loadInterstitialAd();
-    }).then((ad) {
+      onAdDisplayed: () {/* ... */},
+      onAdHidden: () {
+        print('Start.io Helper: INTERSTICIAL onAdHidden - Anúncio fechado.');
+        _interstitialAdInstance?.dispose();
+        _interstitialAdInstance = null;
+        _isInterstitialAdLoading = false;
+        _loadInterstitialAd();
+      },
+      onAdClicked: () {/* ... */},
+      onAdNotDisplayed: () {
+        print(
+            'Start.io Helper: INTERSTICIAL onAdNotDisplayed - Anúncio não foi exibido.');
+        _interstitialAdInstance?.dispose();
+        _interstitialAdInstance = null;
+        _isInterstitialAdLoading = false;
+        _loadInterstitialAd();
+      },
+    ).then((ad) {
       print('Start.io Helper: Anúncio INTERSTICIAL carregado com sucesso.');
-      _interstitialAd = ad;
-      _isLoadingInterstitial = false;
+      _interstitialAdInstance = ad;
+      _isInterstitialAdLoading = false;
     }).catchError((error, stackTrace) {
-      // Adicionado stackTrace para mais detalhes
       print('Start.io Helper: Erro ao carregar anúncio INTERSTICIAL: $error');
       print('Start.io Helper: StackTrace INTERSTICIAL: $stackTrace');
-      _interstitialAd = null;
-      _isLoadingInterstitial = false;
+      _interstitialAdInstance = null;
+      _isInterstitialAdLoading = false;
     });
   }
 
-  // Função para tentar mostrar um anúncio intersticial.
-  // Retorna true se o comando show() foi chamado, false caso contrário (ex: anúncio não carregado).
-  // A exibição real e o recarregamento são gerenciados pelos callbacks em _loadInterstitialAd.
   Future<bool> showInterstitialAd() async {
     print('Start.io Helper: Tentando exibir anúncio INTERSTICIAL...');
-    if (_interstitialAd != null) {
+    StartAppInterstitialAd? adToDisplay = _interstitialAdInstance;
+
+    if (adToDisplay == null && !_isInterstitialAdLoading) {
+      print(
+          'Start.io Helper: Intersticial não carregado, iniciando carregamento e aguardando...');
+      // Para intersticiais, o padrão pode ser apenas tentar carregar para a próxima vez,
+      // ou você pode implementar um Completer similar ao recompensado se quiser esperar.
+      // Por simplicidade aqui, vamos apenas tentar carregar para a próxima vez.
+      _loadInterstitialAd();
+      return false; // Não mostra agora, pois não está pronto.
+    } else if (_isInterstitialAdLoading) {
+      print('Start.io Helper: Intersticial ainda carregando...');
+      return false; // Não mostra agora.
+    }
+
+    if (adToDisplay != null) {
+      // Deve ser _interstitialAdInstance aqui
       try {
-        bool shown = await _interstitialAd!.show();
+        bool shown = await adToDisplay.show();
         if (shown) {
           print(
-              'Start.io Helper: INTERSTICIAL show() executado com sucesso (retornou true).');
-          // O callback onAdHidden em _loadInterstitialAd cuidará de limpar e recarregar.
+              'Start.io Helper: INTERSTICIAL show() chamado com sucesso (retornou true).');
         } else {
           print(
-              'Start.io Helper: INTERSTICIAL show() retornou false. Anúncio não exibido.');
-          // O callback onAdNotDisplayed deve ser chamado pelo SDK se show() retorna false por esse motivo.
-          // Se não, podemos precisar forçar um recarregamento aqui se o anúncio ainda existir mas não mostrar.
-          // No entanto, a documentação sugere que após show(), ele deve ser null.
+              'Start.io Helper: INTERSTICIAL show() retornou false (anúncio não exibido).');
+          _interstitialAdInstance = null; // Já foi usado ou falhou em mostrar
+          _loadInterstitialAd(); // Tenta recarregar
         }
         return shown;
       } catch (e) {
         print('Start.io Helper: Erro ao chamar INTERSTICIAL show(): $e');
-        // Limpa e recarrega em caso de erro na exibição
-        _interstitialAd?.dispose();
-        _interstitialAd = null;
+        _interstitialAdInstance = null;
         _loadInterstitialAd();
         return false;
       }
-    } else {
-      print('Start.io Helper: Nenhum anúncio INTERSTICIAL pronto para exibir.');
-      // Se não há anúncio e não estamos carregando, tentamos carregar um.
-      if (!_isLoadingInterstitial) {
-        _loadInterstitialAd();
-      }
-      return false;
     }
+    return false; // Se chegou aqui, algo deu errado.
   }
 
   void dispose() {
-    _rewardedAd?.dispose();
-    _rewardedAd = null;
-    _interstitialAd?.dispose(); // NOVO: Dispose do intersticial
-    _interstitialAd = null;
+    print("Start.io Helper: Chamando dispose().");
+    _rewardedAdInstance?.dispose();
+    _rewardedAdInstance = null;
+    _interstitialAdInstance?.dispose();
+    _interstitialAdInstance = null;
   }
 }
