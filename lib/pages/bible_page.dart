@@ -21,6 +21,7 @@ import 'package:resumo_dos_deuses_flutter/redux/actions/bible_progress_actions.d
 // ignore: unused_import
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart'
     show StringExtension;
+import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _BiblePageViewModel {
@@ -1551,10 +1552,17 @@ class _BiblePageState extends State<BiblePage> {
             label: const Text("Estudos", style: TextStyle(fontSize: 12)),
             onPressed: () {
               if (mounted) {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const StudyHubPage()));
+                interstitialManager
+                    .tryShowInterstitial(fromScreen: "BiblePage_To_StudyHub")
+                    .then((_) {
+                  // Certifique-se que o contexto ainda é válido se a operação for assíncrona
+                  if (mounted) {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const StudyHubPage()));
+                  }
+                });
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1648,6 +1656,11 @@ class _BiblePageState extends State<BiblePage> {
                   ? "Ocultar Hebraico Interlinear"
                   : "Mostrar Hebraico Interlinear",
               onPressed: () {
+                if (!_showHebrewInterlinear) {
+                  // Se está prestes a se tornar true
+                  interstitialManager.tryShowInterstitial(
+                      fromScreen: "BiblePage_ToggleHebrewInterlinear");
+                }
                 setState(() {
                   _showHebrewInterlinear = !_showHebrewInterlinear;
                   if (_showHebrewInterlinear) {
@@ -1679,6 +1692,11 @@ class _BiblePageState extends State<BiblePage> {
                   ? "Ocultar Grego Interlinear"
                   : "Mostrar Grego Interlinear",
               onPressed: () {
+                if (!_showGreekInterlinear) {
+                  // Se está prestes a se tornar true
+                  interstitialManager.tryShowInterstitial(
+                      fromScreen: "BiblePage_ToggleGreekInterlinear");
+                }
                 setState(() {
                   _showGreekInterlinear = !_showGreekInterlinear;
                   if (_showGreekInterlinear) {

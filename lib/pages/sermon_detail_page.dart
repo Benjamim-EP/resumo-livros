@@ -3,6 +3,7 @@ import 'dart:convert'; // Necessário se você for parsear JSON internamente (n�
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para rootBundle, mas não usaremos para carregar sermão aqui
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart';
 import 'package:share_plus/share_plus.dart'; // Para funcionalidade de compartilhar
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart'; // Importa o serviço
 
@@ -114,6 +115,13 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   void initState() {
     super.initState();
     _loadSermonDataFromFirestore();
+  }
+
+  @override
+  void dispose() {
+    interstitialManager.tryShowInterstitial(
+        fromScreen: "SermonDetailPage"); // Chamar aqui
+    super.dispose();
   }
 
   Future<void> _loadSermonDataFromFirestore() async {

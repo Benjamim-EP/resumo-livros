@@ -282,7 +282,7 @@ class BiblePageWidgets {
     final theme = Theme.of(context);
     final greekText = wordData['text'] ?? '';
     final strongNumber = wordData['strong'] ?? '';
-    final morphology = wordData['morph'] ?? 'N/A';
+    //final morphology = wordData['morph'] ?? 'N/A';
 
     final double baseGreekFontSize = 19.0;
     final double baseStrongMorphFontSize = 9.0;
@@ -322,14 +322,14 @@ class BiblePageWidgets {
                   color: theme.colorScheme.secondary.withOpacity(0.8),
                 ),
               ),
-            Text(
-              morphology,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: baseStrongMorphFontSize * fontSizeMultiplier,
-                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-              ),
-            ),
+            // Text(
+            //   morphology,
+            //   textAlign: TextAlign.center,
+            //   style: TextStyle(
+            //     fontSize: baseStrongMorphFontSize * fontSizeMultiplier,
+            //     color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -446,12 +446,12 @@ class BiblePageWidgets {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
-            Text("Hebraico Interlinear:",
-                style: TextStyle(
-                    fontSize: 11 * fontSizeMultiplier,
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-                    fontStyle: FontStyle.italic)),
-            const SizedBox(height: 2),
+            // Text("Hebraico Interlinear:",
+            //     style: TextStyle(
+            //         fontSize: 11 * fontSizeMultiplier,
+            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+            //         fontStyle: FontStyle.italic)),
+            // const SizedBox(height: 2),
             Wrap(
               alignment: WrapAlignment.end,
               textDirection: TextDirection.rtl,
@@ -486,12 +486,12 @@ class BiblePageWidgets {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
-            Text("Grego Interlinear:",
-                style: TextStyle(
-                    fontSize: 11 * fontSizeMultiplier,
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-                    fontStyle: FontStyle.italic)),
-            const SizedBox(height: 2),
+            // Text("Grego Interlinear:",
+            //     style: TextStyle(
+            //         fontSize: 11 * fontSizeMultiplier,
+            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+            //         fontStyle: FontStyle.italic)),
+            // const SizedBox(height: 2),
             Wrap(
               alignment: WrapAlignment.start,
               runSpacing: 4.0,

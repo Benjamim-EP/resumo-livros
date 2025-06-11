@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 // Importe suas páginas de destino
 import 'package:resumo_dos_deuses_flutter/pages/spurgeon_sermons_index_page.dart';
-import 'package:resumo_dos_deuses_flutter/pages/biblie_page/study_hub_page.dart'; // Reutilizando para Estudos Temáticos
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/study_hub_page.dart';
+import 'package:resumo_dos_deuses_flutter/services/interstitial_manager.dart'; // Reutilizando para Estudos Temáticos
 
 class ResourceCard extends StatelessWidget {
   final String title;
@@ -157,11 +158,17 @@ class _LibraryPageState extends State<LibraryPage> {
           'icon': Icons.campaign_outlined,
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'onTap': () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const SpurgeonSermonsIndexPage()),
-            );
+            // Tenta mostrar o anúncio ANTES de navegar
+            interstitialManager
+                .tryShowInterstitial(
+                    fromScreen: "LibraryPage_To_SpurgeonSermons")
+                .then((_) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const SpurgeonSermonsIndexPage()),
+              );
+            });
           },
         },
         {
