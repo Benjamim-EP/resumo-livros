@@ -7,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:resumo_dos_deuses_flutter/components/login_required.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_widgets.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_filter_bar.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_results_page.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/section_item_widget.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/study_hub_page.dart';
@@ -133,6 +134,10 @@ class _BiblePageState extends State<BiblePage> {
   String? selectedBook;
   int? selectedChapter;
 
+  String? _filterSelectedTestament;
+  String? _filterSelectedBookAbbrev;
+  String? _filterSelectedContentType;
+
   String selectedTranslation1 = 'nvi';
   String? selectedTranslation2 = 'acf';
   bool _isCompareModeActive = false;
@@ -156,9 +161,6 @@ class _BiblePageState extends State<BiblePage> {
   bool _isSemanticSearchActive = false;
   final TextEditingController _semanticQueryController =
       TextEditingController();
-  String? _filterSelectedTestament;
-  String? _filterSelectedBookAbbrev;
-  String? _filterSelectedContentType;
   bool _showExtraOptions = false;
 
   final List<Map<String, String>> _tiposDeConteudoDisponiveisParaFiltro = [
@@ -1825,256 +1827,32 @@ class _BiblePageState extends State<BiblePage> {
     );
   }
 
-  Widget _buildFilterChipButton({
-    required BuildContext context,
-    required String label, // O que está selecionado ou o placeholder
-    required IconData icon,
-    required VoidCallback onPressed,
-    bool isActive = false, // Para indicar se um filtro está ativo
-  }) {
-    final theme = Theme.of(context);
-    return ActionChip(
-      avatar: Icon(
-        icon,
-        size: 16,
-        color: isActive
-            ? theme.colorScheme
-                .onPrimaryContainer // Cor do ícone quando filtro está ativo
-            : theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-      ),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: isActive
-              ? theme.colorScheme
-                  .onPrimaryContainer // Cor do texto quando filtro está ativo
-              : theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      onPressed: onPressed,
-      backgroundColor: isActive
-          ? theme.colorScheme.primaryContainer
-              .withOpacity(0.8) // Cor de fundo quando ativo
-          : theme.inputDecorationTheme.fillColor ??
-              theme.cardColor.withOpacity(0.5),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isActive
-              ? theme.colorScheme.primaryContainer
-              : theme.dividerColor.withOpacity(0.3),
-          width: 0.8,
-        ),
-      ),
-      elevation: isActive ? 1 : 0,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    );
-  }
-
   Widget _buildSemanticSearchFilterWidgets(ThemeData theme) {
-    // Lista de testamentos disponíveis
-    List<String> testamentosDisponiveis = ["Antigo", "Novo"];
-
-    // Monta os itens do Dropdown para os livros (para o BottomSheet)
-    List<DropdownMenuItem<String>> bookDropdownItems = [
-      DropdownMenuItem<String>(
-          value: null,
-          child: Text("Todos os Livros",
-              style: TextStyle(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)))),
-    ];
-    if (booksMap != null && booksMap!.isNotEmpty) {
-      List<MapEntry<String, dynamic>> sortedBooks = booksMap!.entries.toList()
-        ..sort((a, b) =>
-            (a.value['nome'] as String).compareTo(b.value['nome'] as String));
-      for (var entry in sortedBooks) {
-        bookDropdownItems.add(DropdownMenuItem<String>(
-          value: entry.key,
-          child: Text(entry.value['nome'] as String,
-              style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
-        ));
-      }
-    }
-
-    // Monta os itens do Dropdown para os tipos de conteúdo (para o BottomSheet)
-    List<DropdownMenuItem<String>> typeDropdownItems = [
-      DropdownMenuItem<String>(
-          value: null,
-          child: Text("Todos os Tipos",
-              style: TextStyle(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)))),
-    ];
-    for (var tipoMap in _tiposDeConteudoDisponiveisParaFiltro) {
-      typeDropdownItems.add(DropdownMenuItem<String>(
-        value: tipoMap['value'],
-        child: Text(tipoMap['display']!,
-            style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
-      ));
-    }
-
-    // Função para mostrar o BottomSheet de seleção
-    Future<T?> _showFilterSelectionSheet<T>({
-      required BuildContext context, // O contexto do builder da BiblePage
-      required String title,
-      required List<DropdownMenuItem<T>> items,
-      required T? currentValue,
-      required ValueChanged<T?> onChanged,
-    }) {
-      return showModalBottomSheet<T>(
-        context: context, // Usa o contexto passado
-        backgroundColor: theme.dialogBackgroundColor,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (BuildContext modalContext) {
-          // modalContext é o contexto do BottomSheet
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(color: theme.colorScheme.onSurface),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<T>(
-                  value: currentValue,
-                  items: items,
-                  onChanged: (T? newValue) {
-                    onChanged(newValue);
-                    Navigator.pop(
-                        modalContext); // Fecha o BottomSheet após a seleção
-                  },
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: theme.inputDecorationTheme.fillColor ??
-                        theme.cardColor.withOpacity(0.1),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10), // Ajustado
-                  ),
-                  dropdownColor: theme.dialogBackgroundColor,
-                  style: TextStyle(
-                      color: theme.textTheme.bodyLarge?.color, fontSize: 14),
-                  iconEnabledColor: theme.iconTheme.color,
-                  isExpanded: true, // Garante que o dropdown ocupe a largura
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          );
-        },
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          border: Border(
-              bottom: BorderSide(
-                  color: theme.dividerColor.withOpacity(0.3), width: 0.5))),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: <Widget>[
-            _buildFilterChipButton(
-              context: context, // Passa o contexto da BiblePage
-              icon: Icons.menu_book_outlined,
-              label: _filterSelectedTestament ?? "Testamento",
-              isActive: _filterSelectedTestament != null,
-              onPressed: () {
-                _showFilterSelectionSheet<String>(
-                  context: context, // Passa o contexto da BiblePage
-                  title: "Selecionar Testamento",
-                  items: [
-                    DropdownMenuItem<String>(
-                        value: null,
-                        child: Text("Todos os Testamentos",
-                            style: TextStyle(
-                                color: theme.textTheme.bodyMedium?.color
-                                    ?.withOpacity(0.7)))),
-                    ...testamentosDisponiveis.map((String value) =>
-                        DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value,
-                                style: TextStyle(
-                                    color: theme.textTheme.bodyLarge?.color)))),
-                  ],
-                  currentValue: _filterSelectedTestament,
-                  onChanged: (String? newValue) {
-                    setState(() => _filterSelectedTestament = newValue);
-                  },
-                );
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildFilterChipButton(
-              context: context, // Passa o contexto da BiblePage
-              icon: Icons.auto_stories_outlined,
-              label: _filterSelectedBookAbbrev != null
-                  ? (booksMap?[_filterSelectedBookAbbrev]?['nome'] ?? "Livro")
-                  : "Livro",
-              isActive: _filterSelectedBookAbbrev != null,
-              onPressed: () {
-                _showFilterSelectionSheet<String>(
-                  context: context, // Passa o contexto da BiblePage
-                  title: "Selecionar Livro",
-                  items: bookDropdownItems,
-                  currentValue: _filterSelectedBookAbbrev,
-                  onChanged: (String? newValue) {
-                    setState(() => _filterSelectedBookAbbrev = newValue);
-                  },
-                );
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildFilterChipButton(
-              context: context, // Passa o contexto da BiblePage
-              icon: Icons.category_outlined,
-              label: _filterSelectedContentType != null
-                  ? (_tiposDeConteudoDisponiveisParaFiltro.firstWhere(
-                      (t) => t['value'] == _filterSelectedContentType,
-                      orElse: () => {'display': "Tipo"})['display']!)
-                  : "Tipo",
-              isActive: _filterSelectedContentType != null,
-              onPressed: () {
-                _showFilterSelectionSheet<String>(
-                  context: context, // Passa o contexto da BiblePage
-                  title: "Selecionar Tipo de Conteúdo",
-                  items: typeDropdownItems,
-                  currentValue: _filterSelectedContentType,
-                  onChanged: (String? newValue) {
-                    setState(() => _filterSelectedContentType = newValue);
-                  },
-                );
-              },
-            ),
-            if (_filterSelectedTestament != null ||
-                _filterSelectedBookAbbrev != null ||
-                _filterSelectedContentType != null) ...[
-              const SizedBox(width: 12),
-              IconButton(
-                icon: Icon(Icons.clear_all_rounded,
-                    size: 22, color: theme.colorScheme.error.withOpacity(0.8)),
-                tooltip: "Limpar Filtros",
-                onPressed: () {
-                  _clearFiltersInReduxAndResetLocal();
-                },
-                splashRadius: 20,
-                visualDensity: VisualDensity.compact,
-              ),
-            ]
-          ],
-        ),
-      ),
+    return BibleSearchFilterBar(
+      initialBooksMap: booksMap, // Passa o booksMap já carregado pela BiblePage
+      initialActiveFilters: _store?.state.bibleSearchState.activeFilters ?? {},
+      onFilterChanged: (
+          {String? testament, String? bookAbbrev, String? contentType}) {
+        // Atualiza o estado local da BiblePage (se ainda precisar deles aqui)
+        // E/OU despacha ações para o Redux se a barra de filtro não fizer isso diretamente
+        // Para este exemplo, vamos assumir que a busca é disparada pelo botão principal na AppBar
+        // então só precisamos que a BiblePage saiba quais filtros estão selecionados para
+        // a próxima chamada a _applyFiltersToReduxAndSearch.
+        // A UI da barra de filtros (chips) já se atualiza internamente.
+        setState(() {
+          _filterSelectedTestament = testament;
+          _filterSelectedBookAbbrev = bookAbbrev;
+          _filterSelectedContentType = contentType;
+        });
+        // Se quiser que o filtro seja aplicado no Redux imediatamente:
+        // _store?.dispatch(SetBibleSearchFilterAction('testamento', testament));
+        // _store?.dispatch(SetBibleSearchFilterAction('livro_curto', bookAbbrev));
+        // _store?.dispatch(SetBibleSearchFilterAction('tipo', contentType));
+      },
+      onClearFilters: () {
+        // Esta função é chamada quando o botão de limpar dentro da barra é tocado
+        _clearFiltersInReduxAndResetLocal(); // Sua função existente na BiblePage
+      },
     );
   }
 

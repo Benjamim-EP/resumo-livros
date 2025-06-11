@@ -8,8 +8,9 @@ import 'package:resumo_dos_deuses_flutter/redux/reducers.dart';
 import 'package:resumo_dos_deuses_flutter/redux/store.dart';
 import 'package:resumo_dos_deuses_flutter/redux/actions/bible_search_actions.dart';
 import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_page_helper.dart';
-import 'package:resumo_dos_deuses_flutter/redux/actions.dart'; // Para SetInitialBibleLocationAction, RequestBottomNavChangeAction
+import 'package:resumo_dos_deuses_flutter/redux/actions.dart';
 import 'package:resumo_dos_deuses_flutter/services/firestore_service.dart';
+import 'package:resumo_dos_deuses_flutter/pages/biblie_page/bible_search_filter_bar.dart'; // IMPORTADO
 
 class BibleSearchResultsPage extends StatefulWidget {
   final String initialQuery;
@@ -22,9 +23,6 @@ class BibleSearchResultsPage extends StatefulWidget {
 class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
   late TextEditingController _queryController;
   Map<String, dynamic> _localBooksMap = {};
-  String? _selectedTestament;
-  String? _selectedBookAbbrev;
-  String? _selectedType;
 
   String? _expandedItemId;
   String? _loadedExpandedContent;
@@ -32,78 +30,63 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
 
   final FirestoreService _firestoreService = FirestoreService();
 
-  final List<Map<String, String>> _tiposDeConteudoDisponiveis = [
-    {'value': 'biblia_comentario_secao', 'display': 'Comentário da Seção'},
-    {'value': 'biblia_versiculos', 'display': 'Versículos Bíblicos'},
-  ];
-
   @override
   void initState() {
     super.initState();
     _queryController = TextEditingController(text: widget.initialQuery);
-    _loadBooksMapForDropdown();
+    _loadBooksMapForFilterBar();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final store = StoreProvider.of<AppState>(context, listen: false);
-        final initialFilters = store.state.bibleSearchState.activeFilters;
-        setState(() {
-          _selectedTestament = initialFilters['testamento'] as String?;
-          _selectedBookAbbrev = initialFilters['livro_curto'] as String?;
-          _selectedType = initialFilters['tipo'] as String?;
-        });
-        // Se a query inicial não estiver vazia e os resultados estiverem vazios, dispara a busca
         if (widget.initialQuery.isNotEmpty &&
             store.state.bibleSearchState.results.isEmpty) {
-          _applyFiltersAndSearch(context);
+          _triggerSearchWithCurrentFilters(context, widget.initialQuery);
         }
       }
     });
   }
 
-  Future<void> _loadBooksMapForDropdown() async {
+  Future<void> _loadBooksMapForFilterBar() async {
     final map = await BiblePageHelper.loadBooksMap();
-    if (mounted) setState(() => _localBooksMap = map);
-  }
-
-  void _applyFiltersAndSearch(BuildContext context) {
-    final store = StoreProvider.of<AppState>(context, listen: false);
-    store
-        .dispatch(SetBibleSearchFilterAction('testamento', _selectedTestament));
-    store.dispatch(
-        SetBibleSearchFilterAction('livro_curto', _selectedBookAbbrev));
-    store.dispatch(SetBibleSearchFilterAction('tipo', _selectedType));
-    final queryToSearch = _queryController.text.trim();
-    if (queryToSearch.isNotEmpty) {
-      store.dispatch(SearchBibleSemanticAction(queryToSearch));
-    } else if (store.state.bibleSearchState.currentQuery.isNotEmpty) {
-      store.dispatch(
-          SearchBibleSemanticAction(store.state.bibleSearchState.currentQuery));
-    } else {
-      print("Nenhuma query para buscar após aplicar filtros.");
-      store.dispatch(SearchBibleSemanticSuccessAction(
-          [])); // Limpa resultados se não houver query
+    if (mounted) {
+      setState(() {
+        _localBooksMap = map;
+      });
     }
   }
 
-  void _clearAllFilters(BuildContext context) {
+  void _triggerSearchWithCurrentFilters(BuildContext context, String query) {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    setState(() {
-      _selectedTestament = null;
-      _selectedBookAbbrev = null;
-      _selectedType = null;
-    });
-    store.dispatch(ClearBibleSearchFiltersAction());
-    final queryToSearch = _queryController.text.trim();
+    final queryToSearch = query.trim(); // Usa a query passada ou do controller
+
     if (queryToSearch.isNotEmpty) {
       store.dispatch(SearchBibleSemanticAction(queryToSearch));
     } else if (store.state.bibleSearchState.currentQuery.isNotEmpty) {
       store.dispatch(
           SearchBibleSemanticAction(store.state.bibleSearchState.currentQuery));
     } else {
-      print("Nenhuma query para buscar após limpar filtros.");
+      print("BibleSearchResultsPage: Nenhuma query para buscar.");
       store.dispatch(SearchBibleSemanticSuccessAction([]));
     }
+  }
+
+  void _handleFilterChangeAndUpdateSearch({
+    String? testament,
+    String? bookAbbrev,
+    String? contentType,
+  }) {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    store.dispatch(SetBibleSearchFilterAction('testamento', testament));
+    store.dispatch(SetBibleSearchFilterAction('livro_curto', bookAbbrev));
+    store.dispatch(SetBibleSearchFilterAction('tipo', contentType));
+    _triggerSearchWithCurrentFilters(context, _queryController.text);
+  }
+
+  void _handleClearFiltersAndSearch() {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    store.dispatch(ClearBibleSearchFiltersAction());
+    _triggerSearchWithCurrentFilters(context, _queryController.text);
   }
 
   @override
@@ -128,7 +111,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
         final chapterData = await BiblePageHelper.loadChapterDataComparison(
           bookAbbrev,
           int.parse(chapterStr),
-          'nvi', // Tradução padrão para exibição
+          'nvi',
           null,
         );
 
@@ -220,10 +203,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
           _isLoadingExpandedContent = false;
         });
       } else if (mounted && _expandedItemId != itemId) {
-        // Se outro item foi selecionado enquanto este carregava, não atualiza o conteúdo
-        // mas para o loading se ainda estiver ativo para o itemId original.
         if (_isLoadingExpandedContent && _expandedItemId == null) {
-          // Verifica se o loading era para o item que não é mais o expandido
           setState(() => _isLoadingExpandedContent = false);
         }
       }
@@ -247,9 +227,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                 color: theme.textTheme.titleLarge?.color ??
                     theme.colorScheme.onSurface),
             onSubmitted: (query) {
-              if (query.trim().isNotEmpty) {
-                _applyFiltersAndSearch(context);
-              }
+              _triggerSearchWithCurrentFilters(context, query);
             }),
         actions: [
           IconButton(
@@ -257,9 +235,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                 color: theme.appBarTheme.actionsIconTheme?.color ??
                     theme.colorScheme.onPrimary),
             onPressed: () {
-              if (_queryController.text.trim().isNotEmpty) {
-                _applyFiltersAndSearch(context);
-              }
+              _triggerSearchWithCurrentFilters(context, _queryController.text);
             },
           )
         ],
@@ -269,7 +245,23 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
         builder: (context, state) {
           return Column(
             children: [
-              _buildFilterWidgets(context, state.activeFilters),
+              BibleSearchFilterBar(
+                initialBooksMap: _localBooksMap,
+                initialActiveFilters: state.activeFilters,
+                onFilterChanged: (
+                    {String? testament,
+                    String? bookAbbrev,
+                    String? contentType}) {
+                  _handleFilterChangeAndUpdateSearch(
+                    testament: testament,
+                    bookAbbrev: bookAbbrev,
+                    contentType: contentType,
+                  );
+                },
+                onClearFilters: () {
+                  _handleClearFiltersAndSearch();
+                },
+              ),
               if (state.isLoading && state.results.isEmpty)
                 const Expanded(
                     child: Center(child: CircularProgressIndicator())),
@@ -278,19 +270,34 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                     child: Center(
                         child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text("Erro: ${state.error}",
+                  child: Text("Erro na busca: ${state.error}",
+                      textAlign: TextAlign.center,
                       style: TextStyle(color: theme.colorScheme.error)),
                 ))),
               if (!state.isLoading &&
                   state.error == null &&
                   state.results.isEmpty &&
-                  _queryController.text.isNotEmpty)
+                  state.currentQuery.isNotEmpty)
                 Expanded(
                     child: Center(
                         child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
-                      "Nenhum resultado encontrado para '${_queryController.text}'.",
+                      "Nenhum resultado encontrado para '${state.currentQuery}' com os filtros aplicados.",
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium),
+                ))),
+              if (!state.isLoading &&
+                  state.error == null &&
+                  state.results.isEmpty &&
+                  state.currentQuery.isEmpty)
+                Expanded(
+                    child: Center(
+                        child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                      "Use a busca e os filtros acima para encontrar referências bíblicas.",
+                      textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium),
                 ))),
               if (state.results.isNotEmpty)
@@ -319,8 +326,7 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
 
                       String previewContent = "Toque para ver detalhes";
                       if (tipoResultado == 'biblia_comentario_secao') {
-                        previewContent =
-                            commentaryTitle ?? "Ver comentário da seção...";
+                        previewContent = commentaryTitle ?? "Ver comentário...";
                       } else if (tipoResultado == 'biblia_versiculos') {
                         previewContent = "Ver versículos...";
                       }
@@ -355,50 +361,56 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                                   _toggleItemExpansion(metadata, itemId),
                             ),
                             if (isExpanded)
-                              Container(
-                                // Container para o conteúdo expandido
-                                color: theme.colorScheme.surfaceVariant.withOpacity(
-                                    0.1), // Um fundo sutil para a área expandida
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0, vertical: 12.0),
-                                child: _isLoadingExpandedContent
-                                    ? const Center(
-                                        child: Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: SizedBox(
-                                            height: 20,
-                                            width: 20,
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 2.5)),
-                                      ))
-                                    : (_loadedExpandedContent != null &&
-                                            _loadedExpandedContent!.isNotEmpty
-                                        ? MarkdownBody(
-                                            data: _loadedExpandedContent!,
-                                            selectable: true,
-                                            styleSheet:
-                                                MarkdownStyleSheet.fromTheme(
-                                                        theme)
-                                                    .copyWith(
-                                              p: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                      fontSize: 14,
-                                                      height: 1.5,
-                                                      color: theme.colorScheme
-                                                          .onSurfaceVariant),
-                                              strong: TextStyle(
-                                                  fontWeight: FontWeight.bold,
+                              AnimatedSize(
+                                // Para uma animação suave ao expandir/recolher
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                child: Container(
+                                  width: double
+                                      .infinity, // Garante que o container ocupe a largura
+                                  color: theme.colorScheme.surfaceVariant
+                                      .withOpacity(0.1),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 12.0),
+                                  child: _isLoadingExpandedContent
+                                      ? const Center(
+                                          child: Padding(
+                                          padding: EdgeInsets.all(8.0),
+                                          child: SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2.5)),
+                                        ))
+                                      : (_loadedExpandedContent != null &&
+                                              _loadedExpandedContent!.isNotEmpty
+                                          ? MarkdownBody(
+                                              data: _loadedExpandedContent!,
+                                              selectable: true,
+                                              styleSheet:
+                                                  MarkdownStyleSheet.fromTheme(
+                                                          theme)
+                                                      .copyWith(
+                                                p: theme.textTheme.bodyMedium
+                                                    ?.copyWith(
+                                                        fontSize: 14,
+                                                        height: 1.5,
+                                                        color: theme.colorScheme
+                                                            .onSurfaceVariant),
+                                                strong: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: theme.colorScheme
+                                                        .onSurfaceVariant),
+                                                blockSpacing: 8.0,
+                                              ),
+                                            )
+                                          : Text(
+                                              "Conteúdo não disponível ou não pôde ser carregado.",
+                                              style: TextStyle(
                                                   color: theme.colorScheme
-                                                      .onSurfaceVariant),
-                                              blockSpacing: 8.0,
-                                            ),
-                                          )
-                                        : Text(
-                                            "Conteúdo não disponível ou não pôde ser carregado.",
-                                            style: TextStyle(
-                                                color: theme.colorScheme
-                                                    .onSurfaceVariant
-                                                    .withOpacity(0.7)))),
+                                                      .onSurfaceVariant
+                                                      .withOpacity(0.7)))),
+                                ),
                               ),
                             if (isExpanded && !_isLoadingExpandedContent)
                               Padding(
@@ -439,8 +451,9 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                                                     bookAbbrev, chapterInt));
                                         StoreProvider.of<AppState>(context,
                                                 listen: false)
-                                            .dispatch(RequestBottomNavChangeAction(
-                                                1)); // Assumindo que Bíblia é índice 1
+                                            .dispatch(
+                                                RequestBottomNavChangeAction(
+                                                    1));
                                         Navigator.popUntil(
                                             context,
                                             ModalRoute.withName(
@@ -458,7 +471,9 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
                             if (score != null && !isExpanded)
                               Padding(
                                 padding: const EdgeInsets.only(
-                                    left: 16.0, bottom: 8.0),
+                                    left: 16.0,
+                                    bottom: 8.0,
+                                    top: 0), // Ajustado padding
                                 child: Text(
                                     "Similaridade: ${score.toStringAsFixed(3)}",
                                     style: TextStyle(
@@ -473,185 +488,6 @@ class _BibleSearchResultsPageState extends State<BibleSearchResultsPage> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildFilterWidgets(
-      BuildContext context, Map<String, dynamic> activeFilters) {
-    final theme = Theme.of(context);
-    List<String> testamentos = ["Antigo", "Novo"];
-
-    List<DropdownMenuItem<String>> bookItems = [
-      DropdownMenuItem<String>(
-          value: null,
-          child: Text("Todos Livros",
-              style: TextStyle(fontSize: 12, color: theme.hintColor))),
-    ];
-    if (_localBooksMap.isNotEmpty) {
-      List<MapEntry<String, dynamic>> sortedBooks = _localBooksMap.entries
-          .toList()
-        ..sort((a, b) =>
-            (a.value['nome'] as String).compareTo(b.value['nome'] as String));
-      for (var entry in sortedBooks) {
-        bookItems.add(DropdownMenuItem<String>(
-          value: entry.key,
-          child: Text(entry.value['nome'] as String,
-              style: TextStyle(
-                  fontSize: 12, color: theme.textTheme.bodyLarge?.color)),
-        ));
-      }
-    }
-
-    List<DropdownMenuItem<String>> typeItems = [
-      DropdownMenuItem<String>(
-          value: null,
-          child: Text("Todos Tipos",
-              style: TextStyle(fontSize: 12, color: theme.hintColor))),
-    ];
-    for (var tipoMap in _tiposDeConteudoDisponiveis) {
-      typeItems.add(DropdownMenuItem<String>(
-        value: tipoMap['value'],
-        child: Text(tipoMap['display']!,
-            style: TextStyle(
-                fontSize: 12, color: theme.textTheme.bodyLarge?.color)),
-      ));
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 8.0, vertical: 8.0), // Aumentado padding vertical
-      decoration: BoxDecoration(
-          color: theme.cardColor.withOpacity(0.05),
-          border: Border(
-              bottom: BorderSide(
-                  color: theme.dividerColor.withOpacity(0.4), width: 0.5))),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              width: 120, // Ajustado
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  hint: Text("Testamento",
-                      style: TextStyle(
-                          fontSize: 11, color: theme.hintColor)), // Reduzido
-                  value: _selectedTestament,
-                  items: [
-                    DropdownMenuItem<String>(
-                        value: null,
-                        child: Text("Todos Test.",
-                            style: TextStyle(
-                                fontSize: 11, color: theme.hintColor))),
-                    ...testamentos.map((String value) {
-                      return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: theme.textTheme.bodyLarge
-                                      ?.color))); // Reduzido
-                    })
-                  ],
-                  onChanged: (String? newValue) {
-                    setState(() => _selectedTestament = newValue);
-                  },
-                  style: TextStyle(
-                      color: theme.textTheme.bodyLarge?.color,
-                      fontSize: 11), // Reduzido
-                  dropdownColor: theme.dialogBackgroundColor,
-                  iconEnabledColor: theme.iconTheme.color?.withOpacity(0.7),
-                  itemHeight: 48, // Altura padrão
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 130, // Ajustado
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  hint: Text("Livro",
-                      style: TextStyle(
-                          fontSize: 11, color: theme.hintColor)), // Reduzido
-                  value: _selectedBookAbbrev,
-                  items: bookItems
-                      .map((item) => DropdownMenuItem(
-                            value: item.value,
-                            child: item.child != null
-                                ? SizedBox(width: 90, child: item.child!)
-                                : item.child,
-                            alignment: item.alignment,
-                          ))
-                      .toList(), // Garante que o texto não quebre
-                  onChanged: (String? newValue) {
-                    setState(() => _selectedBookAbbrev = newValue);
-                  },
-                  style: TextStyle(
-                      color: theme.textTheme.bodyLarge?.color,
-                      fontSize: 11), // Reduzido
-                  dropdownColor: theme.dialogBackgroundColor,
-                  iconEnabledColor: theme.iconTheme.color?.withOpacity(0.7),
-                  itemHeight: 48,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 135, // Ajustado
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  hint: Text("Tipo",
-                      style: TextStyle(
-                          fontSize: 11, color: theme.hintColor)), // Reduzido
-                  value: _selectedType,
-                  items: typeItems,
-                  onChanged: (String? newValue) {
-                    setState(() => _selectedType = newValue);
-                  },
-                  style: TextStyle(
-                      color: theme.textTheme.bodyLarge?.color,
-                      fontSize: 11), // Reduzido
-                  dropdownColor: theme.dialogBackgroundColor,
-                  iconEnabledColor: theme.iconTheme.color?.withOpacity(0.7),
-                  itemHeight: 48,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8), // Reduzido
-            ElevatedButton.icon(
-              icon: Icon(Icons.filter_alt_outlined, size: 14), // Reduzido
-              onPressed: () => _applyFiltersAndSearch(context),
-              label: const Text("Filtrar",
-                  style: TextStyle(fontSize: 11)), // Reduzido
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8), // Reduzido
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
-                  foregroundColor: theme.colorScheme.primary,
-                  elevation: 0,
-                  side: BorderSide(
-                      color: theme.colorScheme.primary.withOpacity(0.5),
-                      width: 0.8)),
-            ),
-            const SizedBox(width: 2), // Reduzido
-            IconButton(
-              icon: Icon(Icons.clear_all_outlined,
-                  size: 18,
-                  color: theme.iconTheme.color?.withOpacity(0.6)), // Reduzido
-              tooltip: "Limpar Filtros",
-              onPressed: () => _clearAllFilters(context),
-              padding: EdgeInsets.zero,
-              constraints:
-                  const BoxConstraints(minWidth: 36, minHeight: 36), // Ajustado
-              splashRadius: 18,
-            ),
-          ],
-        ),
       ),
     );
   }
