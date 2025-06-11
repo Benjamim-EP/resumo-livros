@@ -121,7 +121,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       _buildTabNavigator(_userNavigatorKey, const UserPage()),
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
       const LibraryPage(),
-      const _UnderConstructionPlaceholder(pageTitle: "Chat IA"),
+      //const _UnderConstructionPlaceholder(pageTitle: "Chat IA"),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -258,8 +258,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return "Bíblia";
       case 2:
         return "Biblioteca";
-      case 3:
-        return "Chat IA";
+      //case 3:
+      //return "Chat IA";
       default:
         return "Septima";
     }
@@ -453,8 +453,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     BottomNavigationBarItem(
                         icon: Icon(Icons.local_library_outlined),
                         label: 'Biblioteca'),
-                    BottomNavigationBarItem(
-                        icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+                    // BottomNavigationBarItem(
+                    //     icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
                   ],
                 ),
               ],

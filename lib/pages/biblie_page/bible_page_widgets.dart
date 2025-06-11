@@ -547,7 +547,7 @@ class BiblePageWidgets {
                     padding:
                         const EdgeInsets.only(left: 5.0, right: 2.0, top: 2.0),
                     child: Icon(Icons.note_alt_rounded,
-                        color: theme.colorScheme.secondary.withOpacity(0.7),
+                        color: theme.colorScheme.primary.withOpacity(0.8),
                         size: 16 * fontSizeMultiplier),
                   ),
               ],
@@ -563,142 +563,192 @@ class BiblePageWidgets {
   }
 
   static void _showVerseOptionsModal(
-      BuildContext context,
-      String verseId,
-      String? currentHighlightColor,
-      String? currentNote,
-      String bookAbbrev,
-      int chapter,
-      int verseNum,
-      String verseText) {
-    final theme = Theme.of(context);
+    BuildContext context, // Contexto da página que chama o modal
+    String verseId,
+    String? currentHighlightColor,
+    String? currentNote,
+    String bookAbbrev,
+    int chapter,
+    int verseNum,
+    String verseText,
+  ) {
+    final theme = Theme.of(context); // Usa o tema do contexto que abriu o modal
+
     showModalBottomSheet(
-      context: context,
-      backgroundColor: theme.dialogBackgroundColor,
+      context: context, // Contexto para ancorar o BottomSheet
+      backgroundColor: theme.dialogBackgroundColor, // Cor de fundo do sheet
+      isScrollControlled:
+          true, // Permite que o sheet use mais altura se necessário
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (modalContext) {
-        final store = StoreProvider.of<AppState>(modalContext);
+        // modalContext é o contexto DENTRO do BottomSheet
+        final store =
+            StoreProvider.of<AppState>(modalContext); // Acessa o store
+
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+          // Padding geral para o conteúdo do BottomSheet
+          padding: EdgeInsets.only(
+              top: 16.0,
+              left: 8.0,
+              right: 8.0,
+              bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16.0),
+          // MediaQuery.of(modalContext).viewInsets.bottom é para o teclado
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize
+                .min, // Faz o Column ocupar o mínimo de espaço vertical
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Seção do Título e Texto do Versículo (não rolável)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 8.0), // Ajuste no padding interno
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Opções para: $bookAbbrev $chapter:$verseNum",
-                        style: TextStyle(
-                            color: theme.colorScheme.onSurface,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold)),
+                    Text(
+                      "Opções para: $bookAbbrev $chapter:$verseNum",
+                      style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 16, // Pode ajustar o tamanho
+                          fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       verseText.isNotEmpty
                           ? verseText
-                          : "[Conteúdo interlinear, veja acima]",
+                          : "[Conteúdo interlinear, veja acima]", // Fallback para interlinear
                       style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          color: theme.colorScheme.onSurface
+                              .withOpacity(0.75), // Levemente mais opaco
                           fontStyle: FontStyle.italic,
-                          fontSize: 14),
+                          fontSize: 14), // Pode ajustar o tamanho
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Divider(color: theme.dividerColor, height: 25),
-              ListTile(
-                leading: Icon(Icons.format_paint_outlined,
-                    color: currentHighlightColor != null
-                        ? Color(int.parse(
-                            currentHighlightColor.replaceFirst('#', '0xff')))
-                        : theme.iconTheme.color?.withOpacity(0.7)),
-                title: Text(
-                    currentHighlightColor != null
-                        ? "Mudar/Remover Destaque"
-                        : "Destacar Versículo",
-                    style: TextStyle(color: theme.colorScheme.onSurface)),
-                onTap: () {
-                  Navigator.pop(modalContext);
-                  showDialog(
-                    context: context,
-                    builder: (_) => HighlightColorPickerModal(
-                        initialColor: currentHighlightColor,
-                        onColorSelected: (selectedColor) {
-                          store.dispatch(ToggleHighlightAction(verseId,
-                              colorHex: selectedColor));
+              Divider(
+                  color: theme.dividerColor.withOpacity(0.5),
+                  height: 20), // Ajuste na altura/espaçamento
+
+              // Seção das Opções (ListTiles) - esta parte será rolável se necessário
+              Flexible(
+                // Permite que o SingleChildScrollView ocupe o espaço restante
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize:
+                        MainAxisSize.min, // Importante para o Column interno
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.format_paint_outlined,
+                            color: currentHighlightColor != null
+                                ? Color(int.parse(currentHighlightColor
+                                    .replaceFirst('#', '0xff')))
+                                : theme.iconTheme.color
+                                    ?.withOpacity(0.8)), // Ícone mais visível
+                        title: Text(
+                            currentHighlightColor != null
+                                ? "Mudar/Remover Destaque"
+                                : "Destacar Versículo",
+                            style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 15)), // Ajuste de fonte
+                        onTap: () {
+                          Navigator.pop(modalContext); // Fecha o modal atual
+                          showDialog(
+                            context:
+                                context, // Usa o contexto original para o novo diálogo
+                            builder: (_) => HighlightColorPickerModal(
+                                initialColor: currentHighlightColor,
+                                onColorSelected: (selectedColor) {
+                                  store.dispatch(ToggleHighlightAction(verseId,
+                                      colorHex: selectedColor));
+                                },
+                                onRemoveHighlight: () {
+                                  store.dispatch(ToggleHighlightAction(
+                                      verseId)); // colorHex é nulo para remover
+                                }),
+                          );
                         },
-                        onRemoveHighlight: () {
-                          store.dispatch(ToggleHighlightAction(verseId));
-                        }),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                    currentNote != null
-                        ? Icons.edit_note_outlined
-                        : Icons.note_add_outlined,
-                    color: theme.iconTheme.color?.withOpacity(0.7)),
-                title: Text(
-                    currentNote != null ? "Editar Nota" : "Adicionar Nota",
-                    style: TextStyle(color: theme.colorScheme.onSurface)),
-                onTap: () {
-                  Navigator.pop(modalContext);
-                  showDialog(
-                    context: context,
-                    builder: (_) => NoteEditorModal(
-                      verseId: verseId,
-                      initialText: currentNote,
-                      bookReference: "$bookAbbrev $chapter:$verseNum",
-                      verseTextSample: verseText.isNotEmpty
-                          ? verseText
-                          : "[Conteúdo interlinear]",
-                    ),
-                  );
-                },
-              ),
-              if (currentNote != null)
-                ListTile(
-                  leading: Icon(Icons.delete_outline,
-                      color: theme.colorScheme.error.withOpacity(0.7)),
-                  title: Text("Remover Nota",
-                      style: TextStyle(color: theme.colorScheme.error)),
-                  onTap: () {
-                    store.dispatch(DeleteNoteAction(verseId));
-                    Navigator.pop(modalContext);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Nota removida.'),
-                            duration: Duration(seconds: 2)),
-                      );
-                    }
-                  },
+                      ),
+                      ListTile(
+                        leading: Icon(
+                            currentNote != null
+                                ? Icons.edit_note_outlined
+                                : Icons.note_add_outlined,
+                            color: theme.iconTheme.color?.withOpacity(0.8)),
+                        title: Text(
+                            currentNote != null
+                                ? "Editar Nota"
+                                : "Adicionar Nota",
+                            style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 15)),
+                        onTap: () {
+                          Navigator.pop(modalContext);
+                          showDialog(
+                            context: context,
+                            builder: (_) => NoteEditorModal(
+                              verseId: verseId,
+                              initialText: currentNote,
+                              bookReference: "$bookAbbrev $chapter:$verseNum",
+                              verseTextSample: verseText.isNotEmpty
+                                  ? verseText
+                                  : "[Conteúdo interlinear]",
+                            ),
+                          );
+                        },
+                      ),
+                      if (currentNote != null &&
+                          currentNote
+                              .isNotEmpty) // Só mostra se realmente houver nota
+                        ListTile(
+                          leading: Icon(Icons.delete_outline,
+                              color: theme.colorScheme.error.withOpacity(0.8)),
+                          title: Text("Remover Nota",
+                              style: TextStyle(
+                                  color: theme.colorScheme.error,
+                                  fontSize: 15)),
+                          onTap: () {
+                            store.dispatch(DeleteNoteAction(verseId));
+                            Navigator.pop(modalContext);
+                            // Adicionar feedback visual (SnackBar) é bom
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Nota removida.'),
+                                  duration: Duration(seconds: 2)),
+                            );
+                          },
+                        ),
+                      // ListTile(
+                      //   leading: Icon(Icons.bookmark_add_outlined,
+                      //       color: theme.iconTheme.color?.withOpacity(0.8)),
+                      //   title: Text("Salvar em Coleção",
+                      //       style: TextStyle(
+                      //           color: theme.colorScheme.onSurface,
+                      //           fontSize: 15)),
+                      //   onTap: () {
+                      //     Navigator.pop(modalContext);
+                      //     showDialog(
+                      //       context: context,
+                      //       builder: (dContext) => SaveVerseDialog(
+                      //         // dContext é o contexto do AlertDialog
+                      //         bookAbbrev: bookAbbrev,
+                      //         chapter: chapter,
+                      //         verseNumber: verseNum,
+                      //       ),
+                      //     );
+                      //   },
+                      // ),
+                    ],
+                  ),
                 ),
-              ListTile(
-                leading: Icon(Icons.bookmark_add_outlined,
-                    color: theme.iconTheme.color?.withOpacity(0.7)),
-                title: Text("Salvar em Coleção",
-                    style: TextStyle(color: theme.colorScheme.onSurface)),
-                onTap: () {
-                  Navigator.pop(modalContext);
-                  showDialog(
-                    context: context,
-                    builder: (dContext) => SaveVerseDialog(
-                      bookAbbrev: bookAbbrev,
-                      chapter: chapter,
-                      verseNumber: verseNum,
-                    ),
-                  );
-                },
               ),
-              const SizedBox(height: 10),
+              // const SizedBox(height: 10), // O padding inferior do Padding principal já pode ser suficiente
             ],
           ),
         );
