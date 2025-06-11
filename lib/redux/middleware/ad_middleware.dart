@@ -12,9 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart'; // NOVO
 const int COINS_PER_REWARDED_AD = 10;
 const int MAX_COINS_LIMIT = 100;
 const int MAX_ADS_PER_DAY = 12;
-const Duration ADS_COOLDOWN_DURATION = Duration(seconds: 10);
+const Duration ADS_COOLDOWN_DURATION = Duration(seconds: 60);
 const Duration SIX_HOUR_WINDOW_DURATION = Duration(hours: 6); // NOVO
-const int MAX_ADS_PER_SIX_HOUR_WINDOW = 30; // NOVO
+const int MAX_ADS_PER_SIX_HOUR_WINDOW = 3; // NOVO
 
 // Chaves para SharedPreferences
 const String _prefsFirstAdIn6HourWindowKey =
