@@ -1363,7 +1363,7 @@ class _BiblePageState extends State<BiblePage> {
                                                   _semanticQueryController
                                                       .text.isNotEmpty
                                               ? "Nenhum resultado encontrado para '${_semanticQueryController.text}'."
-                                              : "Resultados da busca são exibidos em uma nova página (verifique se a navegação ocorreu). Se não, ajuste o fluxo.")),
+                                              : "Nenhuma Busca Semântica Ativa.")),
                                   style: TextStyle(
                                       fontStyle: FontStyle.italic,
                                       color: theme.textTheme.bodyMedium?.color),
