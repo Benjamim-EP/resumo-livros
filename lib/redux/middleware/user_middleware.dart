@@ -356,58 +356,31 @@ void Function(Store<AppState>, RecordReadingHistoryAction, NextDispatcher)
     }
 
     try {
-      // Obtenha o nome do livro do estado local (booksMap) da BiblePage que foi passado via ação,
-      // ou, se você decidiu que não precisa mais do nome completo no histórico do Firestore, remova-o.
-      // A BiblePage agora tenta pegar o nome do seu 'booksMap' (que é o _localBooksMap).
-      // Se você adicionou 'bookName' à RecordReadingHistoryAction:
-      // String bookNameForHistory = action.bookName;
-
-      // Se você quer que o nome do livro venha do UserState.booksMap (se ele existir lá globalmente)
-      // ou se você decidir que o histórico só precisa da abreviação:
-      String bookNameForHistoryInFirestore;
-      final localBooksMapFromState = store
-              .state.metadataState.bibleSectionCounts[
-          'livros_mapa_local_nao_existe_aqui']; // Exemplo de onde poderia estar, ou use o da ação.
-      // O ideal é que a UI (BiblePage) que tem o _localBooksMap
-      // já forneça o nome correto na ação.
-
-      // ASSUMINDO QUE A BIBLEPAGE JÁ CARREGOU O bookName CORRETO e o middleware não precisa buscá-lo.
-      // A ação foi simplificada para não carregar mais o nome do livro aqui.
-      // O FirestoreService.addReadingHistoryEntry agora precisa lidar com o nome do livro
-      // ou a estrutura do histórico precisa ser simplificada.
-
-      // Para o FirestoreService.addReadingHistoryEntry, ele precisará do nome.
-      // Vamos assumir que o nome do livro é importante para o histórico.
-      // A BiblePage DEVE carregar o nome do seu mapa local e passá-lo.
-      // Se a ação RecordReadingHistoryAction não tiver bookName, você precisará adicioná-lo
-      // e fazer a BiblePage preenchê-lo.
-
-      // Cenário onde a Ação RecordReadingHistoryAction TEM o bookName:
-      // await firestoreService.addReadingHistoryEntry(
-      //     userId, action.bookAbbrev, action.chapter, action.bookName);
-
-      // Cenário onde a Ação NÃO TEM bookName e você quer buscar do abbrev_map via helper.
-      // Isso significa que o helper precisa estar acessível ou o mapa precisa ser carregado aqui.
-      // Vamos simplificar e assumir que o nome não é mais armazenado no histórico ou que a ação o fornece.
-      // Para o log do console, vamos usar a abreviação.
       final Map<String, dynamic>? booksMapFromHelper =
           await BiblePageHelper.loadBooksMap();
       String bookNameToUseForHistory = booksMapFromHelper?[action.bookAbbrev]
               ?['nome'] ??
           action.bookAbbrev.toUpperCase();
 
-      await firestoreService.addReadingHistoryEntry(userId, action.bookAbbrev,
-          action.chapter, bookNameToUseForHistory); // Passa o nome
+      // Grava a entrada no histórico (subcoleção)
+      await firestoreService.addReadingHistoryEntry(
+          userId, action.bookAbbrev, action.chapter, bookNameToUseForHistory);
       print(
           "UserMiddleware (RecordHistory): Entrada de histórico detalhado adicionada para $bookNameToUseForHistory ${action.chapter}.");
 
+      // Atualiza o lastRead no documento principal de progresso
       await firestoreService.updateLastReadLocation(
           userId, action.bookAbbrev, action.chapter);
       print(
           "UserMiddleware (RecordHistory): Última leitura atualizada em userBibleProgress.");
 
-      store.dispatch(
-          UpdateLastReadLocationAction(action.bookAbbrev, action.chapter));
+      // >>> INÍCIO DA CORREÇÃO <<<
+      // REMOVA a linha abaixo. Não despache uma ação que atualiza o estado que a BiblePage ouve.
+      // A atualização do estado do Redux sobre a última leitura acontecerá da próxima vez
+      // que o progresso geral for carregado, ou quando o usuário sair e voltar.
+      // Isso quebra o ciclo de feedback imediato que causa o loop.
+      // store.dispatch(UpdateLastReadLocationAction(action.bookAbbrev, action.chapter));
+      // >>> FIM DA CORREÇÃO <<<
     } catch (e) {
       print(
           'UserMiddleware (RecordHistory): Erro ao salvar histórico/última leitura: $e');

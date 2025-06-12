@@ -435,15 +435,26 @@ class _BiblePageState extends State<BiblePage> {
   void _applyNavigationState(String book, int chapter,
       {bool forceKeyUpdate = false}) {
     if (!mounted) return;
+
+    // <<< INÍCIO DA CORREÇÃO <<<
+    // A condição mais importante: a navegação só acontece se o livro ou capítulo MUDOU.
     bool bookOrChapterChanged =
         selectedBook != book || selectedChapter != chapter;
 
-    // <<< LÓGICA PARA GREGO INTERLINEAR (similar ao hebraico) >>>
+    if (!bookOrChapterChanged && !forceKeyUpdate) {
+      // Se nada mudou e não estamos forçando uma atualização, não fazemos nada.
+      // Isso quebra o loop de reconstrução.
+      return;
+    }
+    // >>> FIM DA CORREÇÃO <<<
+
+    // O resto da lógica da função já verifica 'bookOrChapterChanged' para a maioria das coisas.
+    // A adição da guarda no início é a camada extra de segurança.
+
+    // Se o livro mudou
     if (selectedBook != book) {
-      // Se o livro mudou
       final newBookData = booksMap?[book] as Map<String, dynamic>?;
 
-      // Se o novo livro NÃO for do Antigo Testamento, desabilita opções hebraicas
       if (newBookData?['testament'] != 'Antigo') {
         if (selectedTranslation1 == 'hebrew_original') {
           if (mounted) setState(() => selectedTranslation1 = 'nvi');
@@ -456,7 +467,6 @@ class _BiblePageState extends State<BiblePage> {
         }
       }
 
-      // Se o novo livro NÃO for do Novo Testamento, desabilita opções gregas
       if (newBookData?['testament'] != 'Novo') {
         if (selectedTranslation1 == 'greek_interlinear') {
           if (mounted) setState(() => selectedTranslation1 = 'nvi');
@@ -470,25 +480,25 @@ class _BiblePageState extends State<BiblePage> {
         }
       }
     }
-    // <<< FIM LÓGICA PARA GREGO INTERLINEAR >>>
 
     if (bookOrChapterChanged) {
       if (mounted) {
         setState(() {
           selectedBook = book;
           selectedChapter = chapter;
-          _currentChapterHebrewData = null; // Limpa dados anteriores
-          _currentChapterGreekData = null; // <<< LIMPA DADOS GREGOS
+          _currentChapterHebrewData = null;
+          _currentChapterGreekData = null;
           _updateSelectedBookSlug();
           if (_showHebrewInterlinear) _loadCurrentChapterHebrewDataIfNeeded();
-          if (_showGreekInterlinear)
-            _loadCurrentChapterGreekDataIfNeeded(); // <<< CARREGA GREGO SE NECESSÁRIO
+          if (_showGreekInterlinear) _loadCurrentChapterGreekDataIfNeeded();
         });
       }
     }
+
     if (bookOrChapterChanged || forceKeyUpdate) {
       _updateFutureBuilderKey();
-      _recordHistory(book, chapter);
+      _recordHistory(book,
+          chapter); // _recordHistory já tem uma guarda interna, mas agora será chamado com menos frequência.
     }
   }
 

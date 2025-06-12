@@ -1,145 +1,14 @@
-// lib/pages/login_page.dart
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-// Removido: import 'package:flutter_redux/flutter_redux.dart'; // Não é usado diretamente aqui
-// Removido: import 'package:septima_biblia/redux/store.dart';   // Não é usado diretamente aqui
-// Removido: import 'package:septima_biblia/redux/actions.dart';// Não é usado diretamente aqui
-import 'package:flutter_svg/svg.dart';
-import 'package:septima_biblia/main.dart'; // IMPORTAR PARA ACESSAR navigatorKey
-import '../services/sign_in_google.dart';
-import '../services/sign_email.dart';
+// Em: lib/pages/login_page.dart
 
-class LoginPage extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../services/sign_in_google.dart';
+
+class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-
-  String? _errorMessage;
-  bool _isLoading = false;
-  bool _isGoogleLoading = false;
-
-  // initState e outros métodos podem permanecer os mesmos se não usarem _auth ou CheckFirstLoginAction
-
-  Future<void> _signInWithEmail() async {
-    if (_emailController.text.trim().isEmpty ||
-        _passwordController.text.isEmpty) {
-      if (mounted) {
-        setState(() => _errorMessage = 'Por favor, preencha todos os campos.');
-      }
-      return;
-    }
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-    }
-
-    try {
-      // APENAS CHAMA O MÉTODO. Não verifica o retorno nem navega.
-      await signInWithEmail(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-      // O AuthCheck vai detectar a mudança e cuidar do resto.
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        setState(() {
-          switch (e.code) {
-            case 'invalid-email':
-            case 'INVALID_LOGIN_CREDENTIALS':
-              _errorMessage = 'Email ou senha inválidos.';
-              break;
-            case 'user-disabled':
-              _errorMessage = 'Este usuário foi desabilitado.';
-              break;
-            default:
-              _errorMessage =
-                  'Erro no login: ${e.message ?? "Tente novamente."}';
-              break;
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = 'Erro inesperado: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _handleGoogleSignIn() async {
-    // 1. Verifica se o widget ainda está na tela antes de fazer qualquer coisa.
-    if (!mounted) return;
-
-    // 2. Ativa o indicador de carregamento e limpa mensagens de erro antigas.
-    setState(() {
-      _isGoogleLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // 3. Chama a função de login. Esta função vai lidar com a janela de seleção de conta do Google
-      //    e a autenticação com o Firebase. Ela retorna um objeto `User` se tudo der certo,
-      //    ou `null` se o usuário cancelar ou se houver um erro de autenticação.
-      final User? user = await signInWithGoogle(context);
-
-      // 4. Verifica o resultado do login.
-      if (user != null) {
-        // SUCESSO! O login foi bem-sucedido.
-
-        // 4a. Verifica novamente se o widget está na tela antes de navegar.
-        //     Isso é uma boa prática para evitar erros em casos raros.
-        if (!mounted) return;
-
-        // 4b. Log para depuração, confirmando que este é o ponto de navegação.
-        print(
-            "LoginPage: Login com Google bem-sucedido. Navegando para /mainAppScreen.");
-
-        // 4c. Navega para a tela principal e remove todas as telas anteriores (LoginPage, StartScreenPage)
-        //     da pilha. Isso garante que o usuário não possa voltar para a tela de login
-        //     pressionando o botão "Voltar" do Android.
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
-
-        // A função termina aqui em caso de sucesso. O estado de _isGoogleLoading não precisa ser
-        // alterado para `false` porque a tela de login será destruída.
-      } else {
-        // FALHA ou CANCELAMENTO. O usuário pode ter fechado a janela de login do Google.
-
-        // 4d. Verifica se o widget está na tela e para o indicador de carregamento.
-        if (mounted) {
-          print(
-              "LoginPage: Login com Google retornou nulo (cancelado ou falhou).");
-          setState(() {
-            _isGoogleLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      // ERRO INESPERADO. Algo deu errado na função `signInWithGoogle` que não foi
-      // um erro de autenticação normal.
-
-      // 4e. Verifica se o widget está na tela, para o indicador de carregamento e exibe uma mensagem de erro.
-      if (mounted) {
-        print(
-            "LoginPage: Capturou erro inesperado durante _handleGoogleSignIn: $e");
-        setState(() {
-          _isGoogleLoading = false;
-          _errorMessage = "Ocorreu um erro inesperado durante o login.";
-        });
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // ... (UI da LoginPage como na sua última versão)
     return Scaffold(
       backgroundColor: const Color(0xFFCDE7BE),
       body: SingleChildScrollView(
@@ -167,161 +36,42 @@ class _LoginPageState extends State<LoginPage> {
                     child: Text(
                       'Login',
                       style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
                     ),
                   ),
                   const SizedBox(height: 20),
                   const Center(
                     child: Text(
-                      'Ao fazer login, você concorda com nossos Termos e Política de Privacidade',
+                      'Use sua conta Google para acessar',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFFB0B0B0),
-                        fontSize: 16,
-                      ),
+                      style: TextStyle(color: Color(0xFFB0B0B0), fontSize: 16),
                     ),
                   ),
-                  const SizedBox(height: 60),
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.email, color: Colors.grey),
-                      labelText: 'Email',
-                      labelStyle: const TextStyle(color: Colors.grey),
-                      filled: true,
-                      fillColor: const Color(0xFFF2F2F2),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: const BorderSide(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: const BorderSide(color: Colors.blue),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.lock, color: Colors.grey),
-                      labelText: 'Senha',
-                      labelStyle: const TextStyle(color: Colors.grey),
-                      filled: true,
-                      fillColor: const Color(0xFFF2F2F2),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: const BorderSide(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: const BorderSide(color: Colors.blue),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 20.0),
-                      child: Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
-                      ),
-                    ),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _signInWithEmail,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFCDE7BE),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFF181A1A)),
-                            ),
-                          )
-                        : const Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: Color(0xFF181A1A),
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 120), // Aumenta o espaço
                   const Center(
                     child: Text(
-                      'Ou Conecte-se com',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFB0B0B0),
-                      ),
+                      'Conecte-se com',
+                      style: TextStyle(fontSize: 16, color: Color(0xFFB0B0B0)),
                     ),
                   ),
                   const SizedBox(height: 10),
                   ElevatedButton(
-                    onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
+                    onPressed: () {
+                      // Apenas chama a função, sem await, sem setState.
+                      // O AuthCheck cuidará do resto.
+                      signInWithGoogle(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: const CircleBorder(),
                       padding: const EdgeInsets.all(16),
                     ),
-                    child: _isGoogleLoading
-                        ? const SizedBox(
-                            width: 42,
-                            height: 42,
-                            child: Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.blue),
-                                ),
-                              ),
-                            ),
-                          )
-                        : SvgPicture.asset(
-                            'assets/icons/google.svg',
-                            width: 42,
-                            height: 42,
-                          ),
+                    child: SvgPicture.asset('assets/icons/google.svg',
+                        width: 42, height: 42),
                   ),
-                  const SizedBox(height: 30),
-                  GestureDetector(
-                    onTap: () {
-                      if (mounted) {
-                        setState(() {
-                          _errorMessage = null;
-                        });
-                      }
-                      Navigator.pushNamed(context, '/signup');
-                    },
-                    child: const Text(
-                      'Ainda não cadastrado?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 150), // Aumenta o espaço
                 ],
               ),
             ),

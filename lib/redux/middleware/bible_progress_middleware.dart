@@ -78,24 +78,32 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
           await firestoreService.getAllBibleProgress(userId);
       store.dispatch(AllBibleProgressLoadedAction(allProgressData));
 
-      DocumentSnapshot? userProgressDoc = await firestoreService
-          .getBibleProgressDocument(userId); // <<< USA A FUNÇÃO DO SERVIÇO
+      DocumentSnapshot? userProgressDoc =
+          await firestoreService.getBibleProgressDocument(userId);
 
       if (userProgressDoc != null && userProgressDoc.exists) {
         final data = userProgressDoc.data() as Map<String, dynamic>;
-        store.dispatch(UpdateLastReadLocationAction(
-          data['lastReadBookAbbrev'] as String,
-          data['lastReadChapter'] as int,
-        ));
-        print(
-            "BibleProgressMiddleware: Última leitura geral carregada: Livro ${data['lastReadBookAbbrev']}, Cap ${data['lastReadChapter']}");
+
+        // >>> INÍCIO DA CORREÇÃO <<<
+        // Verifica se os campos existem e não são nulos antes de usá-los.
+        final String? lastBook = data['lastReadBookAbbrev'] as String?;
+        final int? lastChapter = data['lastReadChapter'] as int?;
+
+        if (lastBook != null && lastChapter != null) {
+          store.dispatch(UpdateLastReadLocationAction(
+            lastBook,
+            lastChapter,
+          ));
+          print(
+              "BibleProgressMiddleware: Última leitura geral carregada: Livro $lastBook, Cap $lastChapter");
+        } else {
+          print(
+              "BibleProgressMiddleware: Nenhum dado de última leitura geral encontrado para o usuário (campos nulos).");
+        }
+        // >>> FIM DA CORREÇÃO <<<
       } else {
         print(
             "BibleProgressMiddleware: Documento userBibleProgress para $userId não encontrado ou vazio. Última leitura geral não definida/atualizada a partir dele.");
-        // Se não houver documento, não há última leitura geral para carregar dele.
-        // O UserState já pode ter valores nulos ou de uma sessão anterior.
-        // Se desejar limpar explicitamente aqui caso o doc não exista:
-        // store.dispatch(UpdateLastReadLocationAction(null, null));
       }
     } catch (e) {
       print("Erro em handleLoadAllBibleProgress: $e");

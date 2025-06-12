@@ -34,6 +34,9 @@ class _UserPageState extends State<UserPage> {
   bool _showAllBookProgress =
       false; // NOVO: Para controlar a expansão da lista de progresso por livro
 
+  bool _initialProgressLoadDispatched =
+      false; // Flag para controlar o despacho da ação
+
   final List<String> _availableTabs = const [
     'Progresso',
     'Destaques',
@@ -55,28 +58,47 @@ class _UserPageState extends State<UserPage> {
           !storeInstance.state.metadataState.isLoadingSectionCounts) {
         storeInstance.dispatch(LoadBibleSectionCountsAction());
       }
-      if (storeInstance.state.userState.allBooksProgress.isEmpty &&
-          storeInstance.state.userState.userId != null &&
-          !storeInstance.state.userState.isLoadingAllBibleProgress) {
-        storeInstance.dispatch(LoadAllBibleProgressAction());
-      }
 
-      if (storeInstance.state.userState.userId != null) {
-        storeInstance.dispatch(LoadUserStatsAction());
-        storeInstance.dispatch(LoadUserDiariesAction());
-        storeInstance.dispatch(LoadReadingHistoryAction());
-        if (storeInstance.state.userState.userHighlights.isEmpty) {
-          storeInstance.dispatch(LoadUserHighlightsAction());
-        }
-        if (storeInstance.state.userState.userCommentHighlights.isEmpty) {
-          storeInstance.dispatch(LoadUserCommentHighlightsAction());
-        }
-        if (storeInstance.state.userState.userNotes.isEmpty) {
-          storeInstance.dispatch(LoadUserNotesAction());
-        }
-      }
+      // >>> INÍCIO DA CORREÇÃO <<<
+      // Movemos a lógica de carregamento inicial para o initState
+      _dispatchInitialLoadActions(storeInstance);
+      // >>> FIM DA CORREÇÃO <<<
     });
   }
+
+  // >>> INÍCIO DA CORREÇÃO <<<
+  // Nova função para centralizar o carregamento inicial
+  void _dispatchInitialLoadActions(Store<AppState> storeInstance) {
+    if (storeInstance.state.userState.userId != null) {
+      // Carrega o progresso se ainda não foi solicitado
+      if (!_initialProgressLoadDispatched &&
+          storeInstance.state.userState.allBooksProgress.isEmpty &&
+          !storeInstance.state.userState.isLoadingAllBibleProgress) {
+        print(
+            "UserPage: Disparando carregamento inicial do progresso bíblico.");
+        storeInstance.dispatch(LoadAllBibleProgressAction());
+        setState(() {
+          _initialProgressLoadDispatched =
+              true; // Marca que a ação já foi despachada
+        });
+      }
+
+      // Carrega outros dados do usuário
+      storeInstance.dispatch(LoadUserStatsAction());
+      storeInstance.dispatch(LoadUserDiariesAction());
+      storeInstance.dispatch(LoadReadingHistoryAction());
+      if (storeInstance.state.userState.userHighlights.isEmpty) {
+        storeInstance.dispatch(LoadUserHighlightsAction());
+      }
+      if (storeInstance.state.userState.userCommentHighlights.isEmpty) {
+        storeInstance.dispatch(LoadUserCommentHighlightsAction());
+      }
+      if (storeInstance.state.userState.userNotes.isEmpty) {
+        storeInstance.dispatch(LoadUserNotesAction());
+      }
+    }
+  }
+  // >>> FIM DA CORREÇÃO <<<
 
   Future<void> _loadLocalBooksMap() async {
     // ... (sem alterações) ...
@@ -99,24 +121,14 @@ class _UserPageState extends State<UserPage> {
   }
 
   void _onTabSelected(String tab) {
-    // ... (sem alterações) ...
     if (mounted) {
       setState(() {
         _selectedTab = tab;
       });
-      if (tab == 'Progresso') {
-        final storeInstance =
-            StoreProvider.of<AppState>(context, listen: false);
-        if (storeInstance.state.metadataState.bibleSectionCounts.isEmpty &&
-            !storeInstance.state.metadataState.isLoadingSectionCounts) {
-          storeInstance.dispatch(LoadBibleSectionCountsAction());
-        }
-        if (storeInstance.state.userState.allBooksProgress.isEmpty &&
-            storeInstance.state.userState.userId != null &&
-            !storeInstance.state.userState.isLoadingAllBibleProgress) {
-          storeInstance.dispatch(LoadAllBibleProgressAction());
-        }
-      }
+      // A lógica de carregamento foi movida para o initState e para o RefreshIndicator.
+      // Não precisamos mais despachar ações aqui, pois isso estava causando o loop.
+      // A UI vai simplesmente mudar de aba, e o StoreConnector de cada aba cuidará de mostrar
+      // os dados que já estão no estado ou um indicador de loading se o carregamento inicial ainda estiver ocorrendo.
     }
   }
 
