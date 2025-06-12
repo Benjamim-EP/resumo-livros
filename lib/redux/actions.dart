@@ -575,7 +575,19 @@ class UpdateUserCoinsAction {
   UpdateUserCoinsAction(this.newCoinAmount);
 }
 
-// Novas ações para modo convidado
-class UserEnteredGuestModeAction {}
+class UserEnteredGuestModeAction {
+  // <<< INÍCIO DA MUDANÇA: Adiciona parâmetros opcionais >>>
+  final int? initialCoins;
+  final int? initialAdsToday;
+  final DateTime? initialLastAdTime;
+
+  UserEnteredGuestModeAction({
+    this.initialCoins,
+    this.initialAdsToday,
+    this.initialLastAdTime,
+  });
+  // <<< FIM DA MUDANÇA >>>
+}
 
 class UserExitedGuestModeAction {} // Ou use UserLoggedOutAction se fizer sentido
+

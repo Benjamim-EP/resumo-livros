@@ -435,13 +435,21 @@ UserState userReducer(UserState state, dynamic action) {
     // Similar a UserLoggedOutAction, mas pode ter lógica específica
     return state.copyWith(isGuestUser: false);
   } else if (action is UserEnteredGuestModeAction) {
+    // <<< INÍCIO DA MUDANÇA: Usa os dados da ação se disponíveis >>>
     return state.copyWith(
-      isLoggedIn: false, // Convidado não está "logado" no sentido Firebase
-      userId: null, // Sem ID de usuário
+      isLoggedIn: false,
+      userId: null,
       email: null,
       nome: "Convidado",
       isGuestUser: true,
+      userCoins: action.initialCoins ?? 10, // Usa moedas salvas ou o padrão 10
+      rewardedAdsWatchedToday: action.initialAdsToday ?? 0,
+      lastRewardedAdWatchTime: action.initialLastAdTime, // Pode ser nulo
+      // Resetar a janela de 6h ao entrar como convidado
+      adsWatchedIn6HourWindow: 0,
+      clearFirstAdIn6HourWindowTimestamp: true,
     );
+    // <<< FIM DA MUDANÇA >>>
   } else if (action is UpdateUserUidAction) {
     // Usado pelo AuthCheck se o UID inicial for nulo
     return state.copyWith(userId: action.uid);

@@ -16,6 +16,10 @@ const Duration ADS_COOLDOWN_DURATION = Duration(seconds: 60);
 const Duration SIX_HOUR_WINDOW_DURATION = Duration(hours: 6); // NOVO
 const int MAX_ADS_PER_SIX_HOUR_WINDOW = 3; // NOVO
 
+const String _prefsGuestCoinsKey = 'guest_user_coins';
+const String _prefsGuestLastAdTimeKey = 'guest_last_ad_time';
+const String _prefsGuestAdsTodayKey = 'guest_ads_today';
+
 // Chaves para SharedPreferences
 const String _prefsFirstAdIn6HourWindowKey =
     'firstAdIn6HourWindowTimestamp'; //NOVO
@@ -33,6 +37,21 @@ List<Middleware<AppState>> createAdMiddleware() {
     TypedMiddleware<AppState, LoadAdLimitDataAction>(_handleLoadAdLimitData)
         .call,
   ];
+}
+
+// Função para salvar dados do CONVIDADO no SharedPreferences
+Future<void> _saveGuestAdStatsToPrefs(
+    int coins, DateTime lastAdTime, int adsToday) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_prefsGuestCoinsKey, coins);
+    await prefs.setString(
+        _prefsGuestLastAdTimeKey, lastAdTime.toIso8601String());
+    await prefs.setInt(_prefsGuestAdsTodayKey, adsToday);
+    print("AdMiddleware: Stats de convidado salvos no SharedPreferences.");
+  } catch (e) {
+    print("AdMiddleware: Erro ao salvar stats de convidado: $e");
+  }
 }
 
 // NOVO: Handler para carregar dados do SharedPreferences
@@ -97,14 +116,21 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
     final userCoins = userState.userCoins;
     final lastAdTime = userState.lastRewardedAdWatchTime;
     final adsToday = userState.rewardedAdsWatchedToday;
+    final isGuest = userState.isGuestUser;
 
     // Dados da janela de 6 horas
     final firstAdIn6HourWindow = userState.firstAdIn6HourWindowTimestamp;
     final adsWatchedIn6HourWindow = userState.adsWatchedIn6HourWindow;
 
-    if (userId == null) {
+    // if (userId == null) {
+    //   print(
+    //       "AdMiddleware (Start.io): Usuário não logado. Ação de recompensa cancelada.");
+    //   return;
+    // }
+
+    if (userId == null && !isGuest) {
       print(
-          "AdMiddleware (Start.io): Usuário não logado. Ação de recompensa cancelada.");
+          "AdMiddleware: Usuário nem logado, nem convidado. Ação de recompensa cancelada.");
       return;
     }
 
@@ -160,13 +186,12 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
       return;
     }
 
-    // Se passou por todas as verificações, mostra o anúncio do Start.io
     adHelper.showRewardedAd(
       // O callback a ser executado QUANDO o Start.io confirmar a recompensa
       onUserEarnedReward: () async {
         print("AdMiddleware (Start.io): Callback onUserEarnedReward acionado!");
 
-        // --- LÓGICA DE CONCESSÃO DE RECOMPENSA (idêntica à anterior) ---
+        // --- LÓGICA DE CONCESSÃO DE RECOMPENSA ---
         int coinsAwarded = COINS_PER_REWARDED_AD;
         // Pega o valor mais recente das moedas do estado Redux para evitar race conditions
         int currentCoinsInState = store.state.userState.userCoins;
@@ -188,7 +213,6 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
         int finalCoinsToAdd = (coinsAwarded > coinsThatCanBeAdded)
             ? coinsThatCanBeAdded
             : coinsAwarded;
-
         DateTime adWatchedTime = DateTime.now();
 
         // Despacha a ação para atualizar o estado do Redux otimisticamente
@@ -221,37 +245,51 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
         await _saveAdWindowStatsToPrefs(
             newFirstAdInWindowTimestamp, newAdsWatchedInWindow);
 
-        // Tenta salvar no Firestore
-        try {
-          int newTotalCoins = currentCoinsInState + finalCoinsToAdd;
-          int adsWatchedTodayForFirestore =
-              store.state.userState.rewardedAdsWatchedToday;
+        // >>>>> INÍCIO DA LÓGICA DE PERSISTÊNCIA (LOGADO vs. CONVIDADO) <<<<<
 
-          await firestoreService.updateUserCoinsAndAdStats(
-            userId,
-            newTotalCoins,
-            adWatchedTime,
-            adsWatchedTodayForFirestore,
-          );
-          print(
-              "AdMiddleware (Start.io): Moedas e estatísticas de anúncio atualizadas no Firestore.");
-          if (currentContext != null && currentContext.mounted) {
-            ScaffoldMessenger.of(currentContext).showSnackBar(
-              SnackBar(content: Text('Você ganhou $finalCoinsToAdd moedas!')),
+        // Pega os valores atualizados do estado do Redux para salvar
+        int newTotalCoins = store.state.userState.userCoins;
+        int adsWatchedTodayForPersistence =
+            store.state.userState.rewardedAdsWatchedToday;
+
+        if (userId != null) {
+          // --- LÓGICA PARA USUÁRIO LOGADO ---
+          try {
+            await firestoreService.updateUserCoinsAndAdStats(
+              userId,
+              newTotalCoins,
+              adWatchedTime,
+              adsWatchedTodayForPersistence,
             );
+            print(
+                "AdMiddleware (Start.io): Moedas e estatísticas de anúncio atualizadas no Firestore.");
+          } catch (e) {
+            print(
+                "AdMiddleware (Start.io): Erro ao atualizar moedas/stats no Firestore: $e");
+            if (currentContext != null && currentContext.mounted) {
+              ScaffoldMessenger.of(currentContext).showSnackBar(
+                const SnackBar(
+                    content: Text(
+                        'Erro ao salvar sua recompensa. Tente novamente mais tarde.')),
+              );
+            }
+            // Considere reverter o estado do Redux se a escrita no Firestore falhar
+            // Por exemplo: store.dispatch(RewardedAdWatchedAction(-finalCoinsToAdd, adWatchedTime));
+            return; // Interrompe para não mostrar a mensagem de sucesso
           }
-        } catch (e) {
-          print(
-              "AdMiddleware (Start.io): Erro ao atualizar moedas/stats no Firestore: $e");
-          if (currentContext != null && currentContext.mounted) {
-            ScaffoldMessenger.of(currentContext).showSnackBar(
-              const SnackBar(
-                  content: Text(
-                      'Erro ao salvar sua recompensa. Tente novamente mais tarde.')),
-            );
-          }
-          // Considerar reverter o estado do Redux se a escrita no Firestore falhar
+        } else if (isGuest) {
+          // --- LÓGICA PARA USUÁRIO CONVIDADO ---
+          await _saveGuestAdStatsToPrefs(
+              newTotalCoins, adWatchedTime, adsWatchedTodayForPersistence);
         }
+
+        // Mostra a mensagem de sucesso para ambos os casos se a persistência deu certo
+        if (currentContext != null && currentContext.mounted) {
+          ScaffoldMessenger.of(currentContext).showSnackBar(
+            SnackBar(content: Text('Você ganhou $finalCoinsToAdd moedas!')),
+          );
+        }
+        // >>>>> FIM DA LÓGICA DE PERSISTÊNCIA <<<<<
       },
       // O callback a ser executado se o anúncio não puder ser mostrado
       onAdFailedToShow: () {

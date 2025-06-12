@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/actions.dart'; // Importar ações
 import 'package:septima_biblia/redux/store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StartScreenPage extends StatelessWidget {
   const StartScreenPage({super.key});
@@ -65,19 +66,47 @@ class StartScreenPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     final store =
                         StoreProvider.of<AppState>(context, listen: false);
                     store.dispatch(UserEnteredGuestModeAction());
 
-                    // ***** ALTERAÇÃO AQUI *****
-                    // Supondo que a aba da Bíblia na MainAppScreen é o índice 1.
-                    // Verifique lib/components/bottomNavigationBar/bottomNavigationBar.dart
-                    // para o índice correto da BiblePage.
-                    // _pages = [ UserPage (0), BiblePage (1), LibraryPage (2), Chat (3) ]
-                    // Então, o índice para a Bíblia é 1.
-                    store.dispatch(RequestBottomNavChangeAction(
-                        1)); // <<< ÍNDICE DA BÍBLIA
+                    // >>> INÍCIO DA MUDANÇA: Carrega dados do convidado <<<
+                    try {
+                      final prefs = await SharedPreferences.getInstance();
+                      // As chaves precisam ser as mesmas definidas no ad_middleware.dart
+                      final int? guestCoins = prefs.getInt('guest_user_coins');
+                      final int? guestAdsToday =
+                          prefs.getInt('guest_ads_today');
+                      final String? lastAdTimeString =
+                          prefs.getString('guest_last_ad_time');
+                      final DateTime? guestLastAdTime = lastAdTimeString != null
+                          ? DateTime.tryParse(lastAdTimeString)
+                          : null;
+
+                      // Reseta o contador diário se for um novo dia
+                      int finalAdsToday = guestAdsToday ?? 0;
+                      if (guestLastAdTime != null) {
+                        final now = DateTime.now();
+                        if (now.year > guestLastAdTime.year ||
+                            now.month > guestLastAdTime.month ||
+                            now.day > guestLastAdTime.day) {
+                          finalAdsToday = 0;
+                        }
+                      }
+
+                      // Despacha a ação com os dados carregados (ou nulos se não existirem)
+                      store.dispatch(UserEnteredGuestModeAction(
+                        initialCoins: guestCoins,
+                        initialAdsToday: finalAdsToday,
+                        initialLastAdTime: guestLastAdTime,
+                      ));
+                    } catch (e) {
+                      print("Erro ao carregar dados de convidado: $e");
+                      // Em caso de erro, despacha a ação padrão sem dados iniciais
+                      store.dispatch(UserEnteredGuestModeAction());
+                    }
+                    // >>> FIM DA MUDANÇA <<<
 
                     Navigator.pushNamedAndRemoveUntil(
                         context, '/mainAppScreen', (route) => false);

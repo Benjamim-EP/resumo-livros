@@ -340,8 +340,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                 StoreConnector<AppState, _UserCoinsViewModel>(
                   converter: (store) => _UserCoinsViewModel.fromStore(store),
                   builder: (context, coinsViewModel) {
-                    if (storeInstance.state.userState.isGuestUser ||
-                        coinsViewModel.isPremium) {
+                    if (coinsViewModel.isPremium) {
                       return const SizedBox.shrink();
                     }
                     return Padding(
