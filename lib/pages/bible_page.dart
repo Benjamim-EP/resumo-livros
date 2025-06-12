@@ -1384,35 +1384,49 @@ class _BiblePageState extends State<BiblePage> {
             icon: const Icon(Icons.translate, size: 18),
             label: Text(selectedTranslation1.toUpperCase(),
                 style: const TextStyle(fontSize: 12)),
-            onPressed: () => BiblePageWidgets.showTranslationSelection(
-              context: context,
-              selectedTranslation: selectedTranslation1,
-              onTranslationSelected: (value) {
-                if (mounted && value != selectedTranslation2) {
-                  // Evita selecionar a mesma tradução da segunda coluna
-                  setState(() {
-                    selectedTranslation1 = value;
-                    // Se a nova tradução for hebraica/grega e a segunda também, ajusta a segunda
-                    if ((value == 'hebrew_original' &&
-                            selectedTranslation2 == 'hebrew_original') ||
-                        (value == 'greek_interlinear' &&
-                            selectedTranslation2 == 'greek_interlinear')) {
-                      selectedTranslation2 = (value == 'nvi' || value == 'acf')
-                          ? 'aa'
-                          : 'nvi'; // Escolhe uma diferente
-                    }
-                    _updateFutureBuilderKey();
-                    // Se a nova tradução principal for interlinear, desativa o interlinear complementar
-                    if (value == 'hebrew_original' && _showHebrewInterlinear)
-                      _showHebrewInterlinear = false;
-                    if (value == 'greek_interlinear' && _showGreekInterlinear)
-                      _showGreekInterlinear = false;
-                  });
-                }
-              },
-              currentSelectedBookAbbrev: selectedBook,
-              booksMap: booksMap,
-            ),
+            onPressed: () {
+              // <<< MODIFICAR ESTE onPressed
+              BiblePageWidgets.showTranslationSelection(
+                context: context,
+                selectedTranslation: selectedTranslation1,
+                onTranslationSelected: (value) {
+                  if (mounted && value != selectedTranslation2) {
+                    // >>> INÍCIO DA MODIFICAÇÃO <<<
+                    interstitialManager
+                        .tryShowInterstitial(
+                            fromScreen:
+                                "BiblePage_ChangeTranslation1_To_$value")
+                        .then((_) {
+                      if (mounted) {
+                        setState(() {
+                          selectedTranslation1 = value;
+                          if ((value == 'hebrew_original' &&
+                                  selectedTranslation2 == 'hebrew_original') ||
+                              (value == 'greek_interlinear' &&
+                                  selectedTranslation2 ==
+                                      'greek_interlinear')) {
+                            selectedTranslation2 =
+                                (value == 'nvi' || value == 'acf')
+                                    ? 'aa'
+                                    : 'nvi';
+                          }
+                          _updateFutureBuilderKey();
+                          if (value == 'hebrew_original' &&
+                              _showHebrewInterlinear)
+                            _showHebrewInterlinear = false;
+                          if (value == 'greek_interlinear' &&
+                              _showGreekInterlinear)
+                            _showGreekInterlinear = false;
+                        });
+                      }
+                    });
+                    // >>> FIM DA MODIFICAÇÃO <<<
+                  }
+                },
+                currentSelectedBookAbbrev: selectedBook,
+                booksMap: booksMap,
+              );
+            },
             style: ElevatedButton.styleFrom(
                 backgroundColor: theme.cardColor,
                 foregroundColor: theme.textTheme.bodyLarge?.color,
@@ -1427,26 +1441,35 @@ class _BiblePageState extends State<BiblePage> {
           if (_isCompareModeActive)
             ElevatedButton.icon(
               icon: const Icon(Icons.translate, size: 18),
-              label: Text(
-                  selectedTranslation2?.toUpperCase() ??
-                      '...', // Mostra '...' se nulo
+              label: Text(selectedTranslation2?.toUpperCase() ?? '...',
                   style: const TextStyle(fontSize: 12)),
-              onPressed: () => BiblePageWidgets.showTranslationSelection(
-                context: context,
-                selectedTranslation:
-                    selectedTranslation2 ?? 'acf', // Padrão se nulo
-                onTranslationSelected: (value) {
-                  if (mounted && value != selectedTranslation1) {
-                    // Evita selecionar a mesma tradução da primeira coluna
-                    setState(() {
-                      selectedTranslation2 = value;
-                      _updateFutureBuilderKey();
-                    });
-                  }
-                },
-                currentSelectedBookAbbrev: selectedBook,
-                booksMap: booksMap,
-              ),
+              onPressed: () {
+                // <<< MODIFICAR ESTE onPressed
+                BiblePageWidgets.showTranslationSelection(
+                  context: context,
+                  selectedTranslation: selectedTranslation2 ?? 'acf',
+                  onTranslationSelected: (value) {
+                    if (mounted && value != selectedTranslation1) {
+                      // >>> INÍCIO DA MODIFICAÇÃO <<<
+                      interstitialManager
+                          .tryShowInterstitial(
+                              fromScreen:
+                                  "BiblePage_ChangeTranslation2_To_$value")
+                          .then((_) {
+                        if (mounted) {
+                          setState(() {
+                            selectedTranslation2 = value;
+                            _updateFutureBuilderKey();
+                          });
+                        }
+                      });
+                      // >>> FIM DA MODIFICAÇÃO <<<
+                    }
+                  },
+                  currentSelectedBookAbbrev: selectedBook,
+                  booksMap: booksMap,
+                );
+              },
               style: ElevatedButton.styleFrom(
                   backgroundColor: theme.cardColor,
                   foregroundColor: theme.textTheme.bodyLarge?.color,

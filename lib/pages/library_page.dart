@@ -184,54 +184,54 @@ class _LibraryPageState extends State<LibraryPage> {
             );
           },
         },
-        {
-          'title': "Cursos (Em Breve)",
-          'description':
-              "Cursos estruturados sobre teologia, vida cristã e mais.",
-          'icon': Icons.school_outlined,
-          'coverImagePath': null, // 'assets/covers/courses_cover.webp'
-          'onTap': () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cursos (Em breve!)')),
-            );
-          },
-        },
-        {
-          'title': "Biografias (Em Breve)",
-          'description':
-              "Conheça a vida de grandes homens e mulheres de fé que marcaram a história.",
-          'icon': Icons.person_search_outlined,
-          'coverImagePath': null, // 'assets/covers/biographies_cover.webp'
-          'onTap': () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Biografias (Em breve!)')),
-            );
-          },
-        },
-        {
-          'title': "Recursos Adicionais",
-          'description':
-              "Ferramentas, dicionários e outros materiais para auxiliar seu estudo.",
-          'icon': Icons.extension_outlined,
-          'coverImagePath': null,
-          'onTap': () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Recursos Adicionais (Em breve!)')),
-            );
-          },
-        },
-        {
-          'title': "Mapas Bíblicos (Em Breve)",
-          'description':
-              "Explore os locais da Bíblia com mapas interativos e informações.",
-          'icon': Icons.map_outlined,
-          'coverImagePath': null,
-          'onTap': () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Mapas Bíblicos (Em breve!)')),
-            );
-          },
-        },
+        // {
+        //   'title': "Cursos (Em Breve)",
+        //   'description':
+        //       "Cursos estruturados sobre teologia, vida cristã e mais.",
+        //   'icon': Icons.school_outlined,
+        //   'coverImagePath': null, // 'assets/covers/courses_cover.webp'
+        //   'onTap': () {
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       const SnackBar(content: Text('Cursos (Em breve!)')),
+        //     );
+        //   },
+        // },
+        // {
+        //   'title': "Biografias (Em Breve)",
+        //   'description':
+        //       "Conheça a vida de grandes homens e mulheres de fé que marcaram a história.",
+        //   'icon': Icons.person_search_outlined,
+        //   'coverImagePath': null, // 'assets/covers/biographies_cover.webp'
+        //   'onTap': () {
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       const SnackBar(content: Text('Biografias (Em breve!)')),
+        //     );
+        //   },
+        // },
+        // {
+        //   'title': "Recursos Adicionais",
+        //   'description':
+        //       "Ferramentas, dicionários e outros materiais para auxiliar seu estudo.",
+        //   'icon': Icons.extension_outlined,
+        //   'coverImagePath': null,
+        //   'onTap': () {
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       const SnackBar(content: Text('Recursos Adicionais (Em breve!)')),
+        //     );
+        //   },
+        // },
+        // {
+        //   'title': "Mapas Bíblicos (Em Breve)",
+        //   'description':
+        //       "Explore os locais da Bíblia com mapas interativos e informações.",
+        //   'icon': Icons.map_outlined,
+        //   'coverImagePath': null,
+        //   'onTap': () {
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       const SnackBar(content: Text('Mapas Bíblicos (Em breve!)')),
+        //     );
+        //   },
+        // },
       ];
 
   @override

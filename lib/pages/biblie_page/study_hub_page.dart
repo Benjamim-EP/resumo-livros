@@ -60,29 +60,7 @@ class StudyHubPage extends StatelessWidget {
             // },
           ],
         },
-        {
-          'categoryTitle': 'Curso de Teologia Sistemática',
-          'items': [
-            // {
-            //   'title': 'Módulo 1: Introdução à Teologia',
-            //   'description': 'O que é teologia, suas divisões e importância.',
-            //   'assetPath': 'assets/Biblia/curso_teologia/modulo1_introducao.json', // Exemplo
-            //   'dataKey': 'topicos_aula', // Exemplo
-            //   'pageBuilder': (List<dynamic> data) => GenericStudyViewerPage(studyData: data, title: "Introdução à Teologia"),
-            // },
-            // Adicione mais módulos/aulas aqui
-            {
-              'title': 'Bibliologia (Em Breve)',
-              'description': 'A doutrina das Escrituras.',
-              'isPlaceholder': true,
-            },
-            {
-              'title': 'Teontologia (Em Breve)',
-              'description': 'A doutrina de Deus.',
-              'isPlaceholder': true,
-            },
-          ],
-        },
+
         // Adicione mais categorias conforme necessário
       ];
 

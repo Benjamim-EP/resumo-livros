@@ -17,7 +17,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
-import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
+import 'package:septima_biblia/redux/reducers.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart'; // Para AppThemeOption
 
 // ViewModel para o StoreConnector das moedas (como antes)
 class _UserCoinsViewModel {
@@ -416,24 +417,49 @@ class _MainAppScreenState extends State<MainAppScreen> {
                       }
 
                       int previousIndex = _selectedIndex;
-                      setState(() {
-                        _selectedIndex = index;
-                      });
 
-                      if (previousIndex == 1 && index != 1) {
-                        // Saindo da BiblePage
-                        final userState = storeInstance.state.userState;
-                        if (userState.userId != null) {
-                          final pendingToAdd = userState.pendingSectionsToAdd;
-                          final pendingToRemove =
-                              userState.pendingSectionsToRemove;
-                          if (pendingToAdd.isNotEmpty ||
-                              pendingToRemove.isNotEmpty) {
-                            storeInstance
-                                .dispatch(ProcessPendingBibleProgressAction());
+                      // >>> INÍCIO DA MODIFICAÇÃO <<<
+                      // Se o usuário está mudando para uma ABA DIFERENTE
+                      if (previousIndex != index) {
+                        // Tenta mostrar um anúncio ANTES de mudar a aba.
+                        // O `then` garante que a mudança de aba ocorra DEPOIS que o anúncio
+                        // for tentado (e possivelmente fechado).
+                        interstitialManager
+                            .tryShowInterstitial(
+                                fromScreen:
+                                    "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
+                            .then((_) {
+                          // Garante que o widget ainda está montado após o futuro do anúncio
+                          if (mounted) {
+                            setState(() {
+                              _selectedIndex = index;
+                            });
+
+                            if (previousIndex == 1 && index != 1) {
+                              // Saindo da BiblePage
+                              final userState = storeInstance.state.userState;
+                              if (userState.userId != null) {
+                                final pendingToAdd =
+                                    userState.pendingSectionsToAdd;
+                                final pendingToRemove =
+                                    userState.pendingSectionsToRemove;
+                                if (pendingToAdd.isNotEmpty ||
+                                    pendingToRemove.isNotEmpty) {
+                                  storeInstance.dispatch(
+                                      ProcessPendingBibleProgressAction());
+                                }
+                              }
+                            }
                           }
-                        }
+                        });
+                      } else {
+                        // Se o usuário tocou na mesma aba, apenas atualiza o estado (sem anúncio)
+                        // Embora, geralmente, tocar na mesma aba não faz nada visualmente aqui.
+                        setState(() {
+                          _selectedIndex = index;
+                        });
                       }
+                      // >>> FIM DA MODIFICAÇÃO <<<
                     }
                   },
                   items: const [

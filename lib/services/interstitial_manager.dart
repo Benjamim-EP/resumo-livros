@@ -5,7 +5,7 @@ import 'package:septima_biblia/services/AdHelperStartIo.dart'; // Seu helper
 class InterstitialManager {
   static const _lastInterstitialShownKey = 'last_interstitial_shown_timestamp';
   // Escolha um cooldown que faça sentido para você, ex: 3 a 5 minutos
-  static const _interstitialCooldown = Duration(minutes: 2);
+  static const _interstitialCooldown = Duration(minutes: 7);
 
   final AdHelperStartIo _adHelper;
 
