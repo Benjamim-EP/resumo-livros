@@ -329,16 +329,15 @@ class _UserPageState extends State<UserPage> {
       case 'Progresso':
         return StoreConnector<AppState, _UserProgressViewModel>(
           converter: (store) => _UserProgressViewModel.fromStore(store),
+          distinct: true, // <<< ADICIONE distinct: true
           onInit: (store) {
-            if (store.state.metadataState.bibleSectionCounts.isEmpty &&
-                !store.state.metadataState.isLoadingSectionCounts) {
-              store.dispatch(LoadBibleSectionCountsAction());
+            // >>> INÍCIO DA MUDANÇA <<<
+            // Esta lógica já foi movida para o initState do widget,
+            // mas vamos garantir que ela seja robusta aqui também.
+            if (!_initialProgressLoadDispatched) {
+              _dispatchInitialLoadActions(store);
             }
-            if (store.state.userState.allBooksProgress.isEmpty &&
-                store.state.userState.userId != null &&
-                !store.state.userState.isLoadingAllBibleProgress) {
-              store.dispatch(LoadAllBibleProgressAction());
-            }
+            // >>> FIM DA MUDANÇA <<<
           },
           builder: (context, vm) {
             final theme = Theme.of(context); // Pega o tema aqui

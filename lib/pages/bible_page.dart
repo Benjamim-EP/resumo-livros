@@ -28,32 +28,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _BiblePageViewModel {
   final String? initialBook;
   final int? initialBibleChapter;
-  final String? lastReadBookAbbrev;
-  final int? lastReadChapter;
-  final String? userId;
-  final int pendingWritesCount;
-  //final String? initialSectionIdToScrollTo; // NOVO
+  // REMOVIDOS: lastReadBookAbbrev, lastReadChapter, userId, pendingWritesCount
+  // Eles não são necessários para a lógica de navegação inicial e causam reconstruções desnecessárias.
 
   _BiblePageViewModel({
     this.initialBook,
     this.initialBibleChapter,
-    this.lastReadBookAbbrev,
-    this.lastReadChapter,
-    this.userId,
-    required this.pendingWritesCount,
-    //this.initialSectionIdToScrollTo, // NOVO
   });
 
   static _BiblePageViewModel fromStore(Store<AppState> store) {
+    // Agora o ViewModel só se importa com a INTENÇÃO de navegação.
     return _BiblePageViewModel(
       initialBook: store.state.userState.initialBibleBook,
       initialBibleChapter: store.state.userState.initialBibleChapter,
-      lastReadBookAbbrev: store.state.userState.lastReadBookAbbrev,
-      lastReadChapter: store.state.userState.lastReadChapter,
-      userId: store.state.userState.userId,
-      pendingWritesCount: store.state.userState.pendingFirestoreWrites.length,
-      //initialSectionIdToScrollTo:
-      //  store.state.userState.initialBibleSectionIdToScrollTo, // NOVO
     );
   }
 
@@ -63,23 +50,10 @@ class _BiblePageViewModel {
       other is _BiblePageViewModel &&
           runtimeType == other.runtimeType &&
           initialBook == other.initialBook &&
-          initialBibleChapter == other.initialBibleChapter &&
-          lastReadBookAbbrev == other.lastReadBookAbbrev &&
-          lastReadChapter == other.lastReadChapter &&
-          pendingWritesCount == other.pendingWritesCount &&
-          userId == other.userId;
-  //initialSectionIdToScrollTo ==
-  //    (other as _BiblePageViewModel).initialSectionIdToScrollTo;
+          initialBibleChapter == other.initialBibleChapter;
 
   @override
-  int get hashCode =>
-      initialBook.hashCode ^
-      initialBibleChapter.hashCode ^
-      lastReadBookAbbrev.hashCode ^
-      lastReadChapter.hashCode ^
-      pendingWritesCount.hashCode ^
-      userId.hashCode;
-  //initialSectionIdToScrollTo.hashCode;
+  int get hashCode => initialBook.hashCode ^ initialBibleChapter.hashCode;
 }
 
 class _BibleContentViewModel {
@@ -509,37 +483,31 @@ class _BiblePageState extends State<BiblePage> {
       return;
     }
 
-    // NÃO LIMPE A INTENT DO REDUX AQUI.
-    // A limpeza será feita DENTRO do itemBuilder, após o scroll.
-
     String targetBook;
     int targetChapter;
-    String?
-        targetSectionIdFromVM; // Usar uma variável local para o ID da seção do ViewModel
     bool isFromIntent = false;
-
-    //print(
-    //    "BiblePage: _processIntentOrInitialLoad - Iniciando. ViewModel: initialBook=${vm.initialBook}, initialChapter=${vm.initialBibleChapter}, initialSectionId=${vm.initialSectionIdToScrollTo}");
 
     if (vm.initialBook != null && vm.initialBibleChapter != null) {
       targetBook = vm.initialBook!;
       targetChapter = vm.initialBibleChapter!;
-      //targetSectionIdFromVM =
-      //    vm.initialSectionIdToScrollTo; // Captura o ID da seção da intent
       isFromIntent = true;
       print(
-          "BiblePage: _processIntentOrInitialLoad - Navegação via intent: Livro: $targetBook, Cap: $targetChapter, Seção: $targetSectionIdFromVM");
+          "BiblePage: _processIntentOrInitialLoad - Navegação via intent: Livro: $targetBook, Cap: $targetChapter");
     } else {
       // Carregamento inicial ou retorno à aba sem intent específica
-      targetBook = vm.lastReadBookAbbrev ?? selectedBook ?? 'gn';
-      targetChapter = vm.lastReadChapter ?? selectedChapter ?? 1;
-      targetSectionIdFromVM =
-          null; // Sem scroll se não for de uma intent com sectionId
+      // >>> INÍCIO DA CORREÇÃO <<<
+      // Pega a última leitura diretamente do estado do Redux, em vez do ViewModel
+      final store = StoreProvider.of<AppState>(context, listen: false);
+      targetBook =
+          store.state.userState.lastReadBookAbbrev ?? selectedBook ?? 'gn';
+      targetChapter =
+          store.state.userState.lastReadChapter ?? selectedChapter ?? 1;
+      // >>> FIM DA CORREÇÃO <<<
       print(
           "BiblePage: _processIntentOrInitialLoad - Carregamento normal/última leitura: Livro: $targetBook, Cap: $targetChapter");
     }
 
-    // Validação do livro e capítulo
+    // O resto da função permanece igual...
     if (booksMap!.containsKey(targetBook)) {
       final bookData = booksMap![targetBook];
       final int totalChaptersInBook = (bookData['capitulos'] as int?) ?? 0;
@@ -548,44 +516,24 @@ class _BiblePageState extends State<BiblePage> {
         print(
             "BiblePage: _processIntentOrInitialLoad - Capítulo $targetChapter inválido para $targetBook (total: $totalChaptersInBook). Resetando para 1.");
         targetChapter = 1;
-        targetSectionIdFromVM =
-            null; // Se o capítulo for inválido, o ID da seção também não faz sentido
       }
     } else {
       print(
           "BiblePage: _processIntentOrInitialLoad - Livro $targetBook não encontrado. Resetando para Gênesis 1.");
       targetBook = 'gn';
       targetChapter = 1;
-      targetSectionIdFromVM = null;
     }
 
-    // Aplica o estado de navegação (livro e capítulo)
-    // O 'forceKeyUpdate' é importante se a intent for para o mesmo livro/capítulo que já está selecionado,
-    // mas queremos forçar uma reconstrução (ex: para o scroll).
     _applyNavigationState(targetBook, targetChapter,
         forceKeyUpdate: isFromIntent);
 
-    // Armazena o ID da seção para o qual rolar, se houver.
-    // O setState aqui irá disparar uma reconstrução, e o itemBuilder no _buildSingleViewContent
-    // usará _sectionIdToScrollAfterLoad para tentar o scroll.
-    if (mounted) {
-      setState(() {
-        _sectionIdToScrollAfterLoad = targetSectionIdFromVM;
-        if (targetSectionIdFromVM != null) {
-          print(
-              "BiblePage: _processIntentOrInitialLoad - _sectionIdToScrollAfterLoad definido para: $_sectionIdToScrollAfterLoad");
-        }
-      });
-    }
-
-    // Marca que o processamento inicial foi feito e carrega dados do usuário se necessário
     if (!_hasProcessedInitialNavigation &&
         selectedBook != null &&
         selectedChapter != null) {
       _hasProcessedInitialNavigation = true;
       print(
           "BiblePage: _processIntentOrInitialLoad - _hasProcessedInitialNavigation = true. Carregando dados do usuário.");
-      _loadUserDataIfNeeded(context); // context da BiblePage é usado aqui
+      _loadUserDataIfNeeded(context);
     }
     print(
         "BiblePage: _processIntentOrInitialLoad - Finalizado. selectedBook: $selectedBook, selectedChapter: $selectedChapter, _sectionIdToScrollAfterLoad: $_sectionIdToScrollAfterLoad");
@@ -981,25 +929,6 @@ class _BiblePageState extends State<BiblePage> {
               });
             }
           });
-        }
-      },
-      onDidChange: (previousViewModel, newViewModel) {
-        if (mounted && booksMap != null) {
-          if (!_hasProcessedInitialNavigation) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && !_hasProcessedInitialNavigation) {
-                _processIntentOrInitialLoad(newViewModel);
-              }
-            });
-          } else if (newViewModel.initialBook !=
-                  previousViewModel?.initialBook ||
-              newViewModel.initialBibleChapter !=
-                  previousViewModel?.initialBibleChapter) {
-            if (newViewModel.initialBook != null &&
-                newViewModel.initialBibleChapter != null) {
-              _processIntentOrInitialLoad(newViewModel);
-            }
-          }
         }
       },
       builder: (context, viewModel) {
