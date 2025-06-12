@@ -127,16 +127,31 @@ class _MainAppScreenState extends State<MainAppScreen> {
       if (mounted) {
         final storeInstance =
             StoreProvider.of<AppState>(context, listen: false);
-        final initialTargetIndex =
-            storeInstance.state.userState.targetBottomNavIndex;
-        final isGuest = storeInstance.state.userState.isGuestUser;
 
-        int newInitialIndex = 0;
+        // >>> INÍCIO DA MODIFICAÇÃO <<<
+        int initialTargetIndexFromRedux =
+            storeInstance.state.userState.targetBottomNavIndex ??
+                -1; // -1 se nulo
+        final bool isGuest = storeInstance.state.userState.isGuestUser;
 
-        if (isGuest && initialTargetIndex != null) {
-          newInitialIndex = _calculateActualIndexFromTarget(initialTargetIndex);
-        } else if (!isGuest && initialTargetIndex != null) {
-          newInitialIndex = _calculateActualIndexFromTarget(initialTargetIndex);
+        int newInitialIndex = 0; // Padrão é a UserPage (índice 0)
+
+        if (isGuest) {
+          // Se for convidado, e não houver uma navegação específica solicitada pelo Redux,
+          // vai para a BiblePage (índice 1).
+          // Se houver uma navegação específica (ex: vindo da StartScreen), respeita ela.
+          newInitialIndex = (initialTargetIndexFromRedux != -1)
+              ? initialTargetIndexFromRedux
+              : 1;
+        } else if (initialTargetIndexFromRedux != -1) {
+          // Se for usuário logado e houver uma navegação específica, usa ela.
+          newInitialIndex = initialTargetIndexFromRedux;
+        }
+        // Se for usuário logado e não houver navegação específica, `newInitialIndex` permanece 0 (UserPage).
+
+        // Garante que o índice calculado seja válido.
+        if (newInitialIndex < 0 || newInitialIndex >= _pages.length) {
+          newInitialIndex = isGuest ? 1 : 0; // Fallback seguro
         }
 
         if (newInitialIndex != _selectedIndex) {
@@ -145,9 +160,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
           });
         }
 
-        if (initialTargetIndex != null) {
+        if (initialTargetIndexFromRedux != -1) {
           storeInstance.dispatch(ClearTargetBottomNavAction());
         }
+        // >>> FIM DA MODIFICAÇÃO <<<
 
         final initialViewModel = _UserCoinsViewModel.fromStore(storeInstance);
         _updatePremiumUI(initialViewModel.isPremium);
