@@ -42,24 +42,15 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     try {
-      User? user = await signInWithEmail(
+      // APENAS CHAMA O MÉTODO. Não verifica o retorno nem navega.
+      await signInWithEmail(
         _emailController.text.trim(),
         _passwordController.text,
       );
-
-      if (user != null) {
-        print(
-            "LoginPage: Login com email bem-sucedido para: ${user.email}. Navegando para MainAppScreen.");
-        // NAVEGAÇÃO DIRETA APÓS SUCESSO
-        // navigatorKey.currentState
-        //     ?.pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
-      } else {
-        // Erro já tratado no catch ou dentro de signInWithEmail
-      }
+      // O AuthCheck vai detectar a mudança e cuidar do resto.
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() {
-          // ... (tratamento de erro como antes)
           switch (e.code) {
             case 'invalid-email':
             case 'INVALID_LOGIN_CREDENTIALS':
@@ -83,29 +74,67 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    if (mounted) {
-      setState(() {
-        _isGoogleLoading = true;
-        _errorMessage = null;
-      });
+    // 1. Verifica se o widget ainda está na tela antes de fazer qualquer coisa.
+    if (!mounted) return;
+
+    // 2. Ativa o indicador de carregamento e limpa mensagens de erro antigas.
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // 3. Chama a função de login. Esta função vai lidar com a janela de seleção de conta do Google
+      //    e a autenticação com o Firebase. Ela retorna um objeto `User` se tudo der certo,
+      //    ou `null` se o usuário cancelar ou se houver um erro de autenticação.
+      final User? user = await signInWithGoogle(context);
+
+      // 4. Verifica o resultado do login.
+      if (user != null) {
+        // SUCESSO! O login foi bem-sucedido.
+
+        // 4a. Verifica novamente se o widget está na tela antes de navegar.
+        //     Isso é uma boa prática para evitar erros em casos raros.
+        if (!mounted) return;
+
+        // 4b. Log para depuração, confirmando que este é o ponto de navegação.
+        print(
+            "LoginPage: Login com Google bem-sucedido. Navegando para /mainAppScreen.");
+
+        // 4c. Navega para a tela principal e remove todas as telas anteriores (LoginPage, StartScreenPage)
+        //     da pilha. Isso garante que o usuário não possa voltar para a tela de login
+        //     pressionando o botão "Voltar" do Android.
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
+
+        // A função termina aqui em caso de sucesso. O estado de _isGoogleLoading não precisa ser
+        // alterado para `false` porque a tela de login será destruída.
+      } else {
+        // FALHA ou CANCELAMENTO. O usuário pode ter fechado a janela de login do Google.
+
+        // 4d. Verifica se o widget está na tela e para o indicador de carregamento.
+        if (mounted) {
+          print(
+              "LoginPage: Login com Google retornou nulo (cancelado ou falhou).");
+          setState(() {
+            _isGoogleLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      // ERRO INESPERADO. Algo deu errado na função `signInWithGoogle` que não foi
+      // um erro de autenticação normal.
+
+      // 4e. Verifica se o widget está na tela, para o indicador de carregamento e exibe uma mensagem de erro.
+      if (mounted) {
+        print(
+            "LoginPage: Capturou erro inesperado durante _handleGoogleSignIn: $e");
+        setState(() {
+          _isGoogleLoading = false;
+          _errorMessage = "Ocorreu um erro inesperado durante o login.";
+        });
+      }
     }
-
-    // Passar `context` para `signInWithGoogle` se ele ainda precisar para `ScaffoldMessenger`
-    User? user = await signInWithGoogle(context);
-
-    if (user != null) {
-      print(
-          "LoginPage: Login com Google bem-sucedido para: ${user.email}. Navegando para MainAppScreen.");
-      // NAVEGAÇÃO DIRETA APÓS SUCESSO
-      // navigatorKey.currentState
-      //     ?.pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
-    } else {
-      print("LoginPage: Login com Google falhou ou foi cancelado.");
-      // signInWithGoogle já deve ter mostrado um SnackBar em caso de erro de autenticação.
-      // Se foi apenas cancelamento, _errorMessage pode continuar null.
-    }
-
-    if (mounted) setState(() => _isGoogleLoading = false);
   }
 
   @override

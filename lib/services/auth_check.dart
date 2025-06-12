@@ -98,7 +98,6 @@ class _AuthCheckState extends State<AuthCheck> {
       return;
     }
 
-    // Verifica se já estamos processando este usuário para evitar múltiplas execuções
     if (_processingUser && store.state.userState.userId == user.uid) {
       print(
           "AuthCheck: _processUser - Já processando usuário ${user.uid}. Abortando nova execução.");
@@ -109,13 +108,12 @@ class _AuthCheckState extends State<AuthCheck> {
     print(
         "AuthCheck: _processUser - Iniciando para usuário ${user.uid}. _processingUser = true.");
 
-    // Se o usuário Redux for diferente ou não estiver logado, despacha UserLoggedInAction
     if (store.state.userState.userId != user.uid ||
         !store.state.userState.isLoggedIn) {
       store.dispatch(UserLoggedInAction(
         userId: user.uid,
         email: user.email ?? '',
-        nome: user.displayName ?? '', // Nome inicial do Firebase Auth
+        nome: user.displayName ?? '',
       ));
     }
 
@@ -126,13 +124,23 @@ class _AuthCheckState extends State<AuthCheck> {
 
       if (!mounted) {
         print("AuthCheck: _processUser - Desmontado após get do Firestore.");
-        _processingUser = false; // Resetar flag
+        _processingUser = false;
         return;
       }
 
       if (!docSnapshot.exists) {
         print(
             "AuthCheck: _processUser - Novo usuário ${user.uid}. Criando documentos no Firestore.");
+
+        // <<< ADIÇÃO: Atualiza o DisplayName no Firebase Auth para novos usuários >>>
+        if (user.displayName == null || user.displayName!.isEmpty) {
+          // Isso é comum no cadastro por e-mail/senha.
+          // Precisamos de um nome. Se a tela de cadastro coletou, ele estaria no estado.
+          // Como simplificamos, vamos usar um nome padrão ou extrair do email.
+          String newName = user.email?.split('@')[0] ?? 'Novo Usuário';
+          await user.updateDisplayName(newName);
+        }
+
         final String initialName = user.displayName ?? 'Novo Usuário Septima';
         final String initialEmail =
             user.email ?? 'email.desconhecido@example.com';
@@ -140,12 +148,14 @@ class _AuthCheckState extends State<AuthCheck> {
 
         final Map<String, dynamic> newUserFirestoreData = {
           'userId': user.uid,
-          'nome':
-              initialName, // Pode ser atualizado por UserDetailsLoadedAction
+          'nome': initialName,
           'email': initialEmail,
           'photoURL': initialPhotoURL,
           'dataCadastro': FieldValue.serverTimestamp(),
-          'Dias': 0, 'Livros': 0, 'Tópicos': 0, 'selos': 10,
+          'Dias': 0,
+          'Livros': 0,
+          'Tópicos': 0,
+          'selos': 10,
           'descrição': "Bem-vindo(a) ao Septima!",
           'topicSaves': {},
           'userCoins': 100,
@@ -217,7 +227,6 @@ class _AuthCheckState extends State<AuthCheck> {
           migratedData['subscriptionStatus'] = 'inactive';
           needsMigrationUpdateInUsersDoc = true;
         }
-        // Adicione aqui a verificação para 'nome' e 'email' se eles podem estar ausentes
         if (migratedData['nome'] == null ||
             (migratedData['nome'] as String).isEmpty) {
           migratedData['nome'] = user.displayName ?? 'Usuário Septima';
@@ -234,8 +243,7 @@ class _AuthCheckState extends State<AuthCheck> {
           await userDocRef.update(migratedData);
           print("AuthCheck: Dados de migração aplicados a /users/${user.uid}.");
         }
-        store.dispatch(UserDetailsLoadedAction(
-            migratedData)); // Despacha os dados (possivelmente migrados)
+        store.dispatch(UserDetailsLoadedAction(migratedData));
 
         final WriteBatch migrationBatch = FirebaseFirestore.instance.batch();
         bool needsMigrationBatchCommit = false;
@@ -290,11 +298,18 @@ class _AuthCheckState extends State<AuthCheck> {
       if (!mounted) {
         print(
             "AuthCheck: _processUser - Desmontado antes de despachar LoadAdLimitDataAction.");
-        _processingUser = false; // Resetar flag
+        _processingUser = false;
         return;
       }
       store.dispatch(LoadAdLimitDataAction());
       print("AuthCheck: _processUser - LoadAdLimitDataAction despachada.");
+
+      // if (mounted) {
+      //   print(
+      //       "AuthCheck: _processUser - Processamento concluído. Navegando para /mainAppScreen.");
+      //   Navigator.of(context)
+      //       .pushNamedAndRemoveUntil('/mainAppScreen', (route) => false);
+      // }
     } catch (e, s) {
       print(
           "AuthCheck: _processUser - Erro durante o processamento do usuário ${user.uid}: $e");
