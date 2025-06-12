@@ -36,14 +36,14 @@ class SearchBar2 extends StatelessWidget {
           if (query.isNotEmpty) {
             final storeInstance = StoreProvider.of<AppState>(context,
                 listen: false); // Mude para storeInstance
-            if (storeInstance.state.userState.isGuestUser) {
-              showLoginRequiredDialog(context, featureName: "a pesquisa");
-            } else {
-              storeInstance.dispatch(
-                  SearchByQueryAction(query: query)); // Use storeInstance
-              print("Navegando para a página de resultados...");
-              Navigator.pushNamed(context, '/queryResults');
-            }
+            // if (storeInstance.state.userState.isGuestUser) {
+            //   showLoginRequiredDialog(context, featureName: "a pesquisa");
+            // } else {
+            storeInstance.dispatch(
+                SearchByQueryAction(query: query)); // Use storeInstance
+            print("Navegando para a página de resultados...");
+            Navigator.pushNamed(context, '/queryResults');
+            //}
           }
         },
       ),

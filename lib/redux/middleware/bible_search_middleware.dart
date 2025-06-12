@@ -3,69 +3,56 @@ import 'package:flutter/material.dart'; // NOVO: Para ScaffoldMessenger
 import 'package:redux/redux.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/main.dart'; // NOVO: Para navigatorKey
 import 'package:septima_biblia/redux/actions.dart'; // NOVO: Para RewardedAdWatchedAction
 import 'package:septima_biblia/services/firestore_service.dart'; // NOVO
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-const int BIBLE_SEARCH_COST = 5; // Custo da busca
+const int BIBLE_SEARCH_COST = 3; // Custo da busca
+const String guestUserCoinsPrefsKeyForBibleSearch =
+    'shared_guest_user_coins'; // Use a mesma chave que no sermon_search e ad_middleware
 
 void _handleSearchBibleSemantic(Store<AppState> store,
     SearchBibleSemanticAction action, NextDispatcher next) async {
-  // 1. Ação original é passada APÓS a verificação de moedas.
-  //    Se não houver moedas, a ação de busca não prossegue para o isLoading, etc.
+  // --- INÍCIO DA LÓGICA DE CUSTO E VERIFICAÇÃO DE MOEDAS ---
+  final BuildContext? currentContext = navigatorKey.currentContext;
+  final userState = store.state.userState;
+  final userId = userState.userId;
+  final isGuest = userState.isGuestUser;
+  final userCoins = userState.userCoins;
+  final isPremium =
+      store.state.subscriptionState.status == SubscriptionStatus.premiumActive;
 
-  final BuildContext? currentContext = navigatorKey.currentContext; // NOVO
-  final userId = store.state.userState.userId;
-  final userCoins = store.state.userState.userCoins;
-
-  if (userId == null) {
-    print("BibleSearchMiddleware: Usuário não logado. Busca cancelada.");
+  if (userId == null && !isGuest) {
+    print(
+        "BibleSearchMiddleware: Usuário nem logado, nem convidado. Busca bíblica cancelada.");
     if (currentContext != null && currentContext.mounted) {
       ScaffoldMessenger.of(currentContext).showSnackBar(
-        const SnackBar(content: Text('Você precisa estar logado para buscar.')),
+        const SnackBar(
+            content: Text(
+                'Você precisa estar logado ou continuar como convidado para buscar na Bíblia.')),
       );
     }
-    // Não despacha SearchBibleSemanticFailureAction aqui, pois a busca nem começou.
-    // O reducer de SearchBibleSemanticAction não deve ter sido chamado para isLoading=true.
-    return;
+    return; // Não prossegue com a busca
   }
 
-  // Verifica se o usuário é premium
-  bool isUserPremium = false;
-  final userDetails = store.state.userState.userDetails;
-  if (userDetails != null) {
-    final status = userDetails['subscriptionStatus'] as String?;
-    final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
-    if (status == 'active') {
-      if (endDateTimestamp != null) {
-        isUserPremium = endDateTimestamp.toDate().isAfter(DateTime.now());
-      } else {
-        // Se endDateTimestamp for nulo mas o status for 'active',
-        // pode ser uma assinatura vitalícia ou um erro nos dados.
-        // Por segurança, vamos considerar premium aqui, mas revise sua lógica de `active` sem `endDate`.
-        isUserPremium = true;
-      }
-    }
-  }
-  print("BibleSearchMiddleware: Usuário é premium? $isUserPremium");
-
-  // Se o usuário NÃO for premium, verifica as moedas
-  if (!isUserPremium) {
+  // Usuários Premium não pagam pela busca
+  if (!isPremium) {
     print(
-        "BibleSearchMiddleware: Usuário não é premium. Verificando moedas...");
+        "BibleSearchMiddleware: Usuário não é premium. Verificando moedas para busca bíblica...");
     if (userCoins < BIBLE_SEARCH_COST) {
       print(
-          "BibleSearchMiddleware: Moedas insuficientes ($userCoins) para buscar (custo: $BIBLE_SEARCH_COST).");
+          "BibleSearchMiddleware: Moedas insuficientes ($userCoins) para busca bíblica (custo: $BIBLE_SEARCH_COST).");
       if (currentContext != null && currentContext.mounted) {
         ScaffoldMessenger.of(currentContext).showSnackBar(
           SnackBar(
             content: Text(
                 'Moedas insuficientes para buscar. Você tem $userCoins, são necessárias $BIBLE_SEARCH_COST.'),
             action: SnackBarAction(
-              // NOVO: Adiciona ação para ganhar moedas
               label: 'Ganhar Moedas',
               onPressed: () {
                 store.dispatch(RequestRewardedAdAction());
@@ -74,72 +61,67 @@ void _handleSearchBibleSemantic(Store<AppState> store,
           ),
         );
       }
-      // Despacha uma falha para que a UI possa parar o loading se já tiver começado (embora a ideia seja não começar).
-      // É importante que SearchBibleSemanticAction não sete isLoading=true diretamente no reducer.
-      // O middleware controla o isLoading.
       store.dispatch(SearchBibleSemanticFailureAction('Moedas insuficientes.'));
-      return;
+      return; // Não prossegue com a busca
+    }
+
+    // Se tem moedas suficientes (e não é premium), deduz as moedas
+    print(
+        "BibleSearchMiddleware: Deduzindo $BIBLE_SEARCH_COST moedas do usuário/convidado.");
+
+    int newCoinTotal = userCoins - BIBLE_SEARCH_COST;
+    store.dispatch(UpdateUserCoinsAction(newCoinTotal)); // Atualiza o Redux
+
+    if (userId != null) {
+      // Usuário Logado
+      final firestoreService = FirestoreService();
+      try {
+        await firestoreService.updateUserField(
+            userId, 'userCoins', newCoinTotal);
+        print(
+            "BibleSearchMiddleware: Moedas deduzidas (usuário logado) com sucesso. Novo total: $newCoinTotal");
+      } catch (e) {
+        print(
+            "BibleSearchMiddleware: Erro ao deduzir moedas do Firestore para usuário logado: $e");
+        store.dispatch(SearchBibleSemanticFailureAction(
+            'Erro ao processar custo da busca bíblica.'));
+        return;
+      }
+    } else if (isGuest) {
+      // Usuário Convidado
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt(guestUserCoinsPrefsKeyForBibleSearch, newCoinTotal);
+        print(
+            "BibleSearchMiddleware: Moedas deduzidas (convidado) com sucesso. Novo total: $newCoinTotal");
+      } catch (e) {
+        print(
+            "BibleSearchMiddleware: Erro ao salvar moedas do convidado no SharedPreferences: $e");
+        store.dispatch(SearchBibleSemanticFailureAction(
+            'Erro ao processar custo da busca bíblica.'));
+        return;
+      }
+    }
+
+    if (currentContext != null && currentContext.mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (currentContext.mounted) {
+          ScaffoldMessenger.of(currentContext).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    '$BIBLE_SEARCH_COST moedas usadas para a busca bíblica.')),
+          );
+        }
+      });
     }
   } else {
     print(
-        "BibleSearchMiddleware: Usuário é premium. Busca sem custo de moedas.");
+        "BibleSearchMiddleware: Usuário é premium. Busca bíblica sem custo de moedas.");
   }
+  // --- FIM DA LÓGICA DE CUSTO E VERIFICAÇÃO DE MOEDAS ---
 
-  // Se chegou aqui, o usuário tem moedas (ou é premium) ou a verificação de moedas foi pulada.
-  // Agora sim, despacha a ação para o reducer indicar que o carregamento começou.
+  // Passa a ação para o reducer (para atualizar isLoading, currentQuery, etc.)
   next(action);
-
-  // Dedução de moedas (APENAS SE NÃO FOR PREMIUM)
-  if (!isUserPremium) {
-    print(
-        "BibleSearchMiddleware: Deduzindo $BIBLE_SEARCH_COST moedas do usuário $userId.");
-    // Usamos RewardedAdWatchedAction com valor negativo para deduzir.
-    // Isso reutiliza a lógica do reducer para atualizar moedas e o FirestoreService para salvar.
-    // A data do 'adWatchTime' não é relevante aqui, mas a ação espera.
-    store.dispatch(RewardedAdWatchedAction(-BIBLE_SEARCH_COST, DateTime.now()));
-    // A ação RewardedAdWatchedAction já chama o FirestoreService para atualizar moedas
-    // (ver ad_middleware), então não precisamos chamar de novo aqui.
-    // No entanto, a atualização de `rewardedAdsWatchedToday` não faz sentido aqui.
-    // Seria melhor ter uma ação específica `DeductCoinsAction` ou
-    // modificar `RewardedAdWatchedAction` para ser mais genérica ou
-    // atualizar o firestore diretamente aqui para moedas.
-
-    // VAMOS OPTAR POR ATUALIZAR DIRETAMENTE O FIRESTORE PARA MOEDAS,
-    // E DESPACHAR UMA AÇÃO MAIS SIMPLES PARA O REDUX.
-    // Isso evita o efeito colateral de `rewardedAdsWatchedToday` da `RewardedAdWatchedAction`.
-
-    final firestoreService = FirestoreService(); // Instancia aqui ou injeta
-    try {
-      int newCoinTotal = userCoins - BIBLE_SEARCH_COST;
-      await firestoreService.updateUserField(userId, 'userCoins', newCoinTotal);
-      // Despachar uma ação para o Redux atualizar apenas as moedas no estado
-      store.dispatch(UpdateUserCoinsAction(
-          newCoinTotal)); // <<< PRECISA CRIAR ESTA AÇÃO E REDUCER
-
-      print(
-          "BibleSearchMiddleware: Moedas deduzidas com sucesso. Novo total: $newCoinTotal");
-      if (currentContext != null && currentContext.mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          // Garante que é executado após o build
-          if (currentContext.mounted) {
-            // Verifica de novo
-            ScaffoldMessenger.of(currentContext).showSnackBar(
-              const SnackBar(
-                  content:
-                      Text('$BIBLE_SEARCH_COST moedas usadas para a busca.')),
-            );
-          }
-        });
-      }
-    } catch (e) {
-      print("BibleSearchMiddleware: Erro ao deduzir moedas do Firestore: $e");
-      // Considerar reverter a busca ou notificar o usuário do erro na dedução.
-      // Por ora, a busca prossegue, mas a dedução pode ter falhado.
-      store.dispatch(SearchBibleSemanticFailureAction(
-          'Erro ao processar custo da busca.'));
-      return; // Interrompe a busca se a dedução falhou
-    }
-  }
 
   try {
     print(
@@ -153,7 +135,7 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     final requestData = {
       'query': action.query,
       'filters': store.state.bibleSearchState.activeFilters,
-      'topK': 15,
+      'topK': 30,
     };
 
     print(

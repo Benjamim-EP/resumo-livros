@@ -769,12 +769,12 @@ class _BiblePageState extends State<BiblePage> {
   void _applyFiltersToReduxAndSearch() {
     // ... (sem alterações)
     if (!mounted || _store == null) return;
-    if (_store!.state.userState.isGuestUser) {
-      // NOVO CHECK
-      showLoginRequiredDialog(context,
-          featureName: "a busca avançada na Bíblia");
-      return;
-    }
+    // if (_store!.state.userState.isGuestUser) {
+    //   // NOVO CHECK
+    //   showLoginRequiredDialog(context,
+    //       featureName: "a busca avançada na Bíblia");
+    //   return;
+    // }
     _store!.dispatch(
         SetBibleSearchFilterAction('testamento', _filterSelectedTestament));
     _store!.dispatch(
@@ -872,16 +872,16 @@ class _BiblePageState extends State<BiblePage> {
         ),
         tooltip: "Busca Semântica",
         onPressed: () {
-          final store = StoreProvider.of<AppState>(context, listen: false);
-          if (store.state.userState.isGuestUser) {
-            showLoginRequiredDialog(context,
-                featureName: "a busca avançada na Bíblia");
-          } else {
-            setState(() {
-              _isSemanticSearchActive = true;
-              _showExtraOptions = false;
-            });
-          }
+          //final store = StoreProvider.of<AppState>(context, listen: false);
+          // if (store.state.userState.isGuestUser) {
+          //   showLoginRequiredDialog(context,
+          //       featureName: "a busca avançada na Bíblia");
+          // } else {
+          setState(() {
+            _isSemanticSearchActive = true;
+            _showExtraOptions = false;
+          });
+          //}
         },
       ));
       actions.add(IconButton(
