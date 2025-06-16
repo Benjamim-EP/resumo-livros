@@ -21,7 +21,7 @@ class StudyHubPage extends StatelessWidget {
           'categoryTitle': 'Estudos Temáticos',
           'items': [
             {
-              'title': 'Profecias de Sua Vinda',
+              'title': 'Profecias de Vinda do Messias',
               'description':
                   'Explore as profecias do Antigo Testamento sobre a vinda do Messias.',
               'assetPath':

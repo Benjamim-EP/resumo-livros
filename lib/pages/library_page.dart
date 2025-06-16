@@ -1,6 +1,7 @@
 // lib/pages/library_page.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
+import 'package:septima_biblia/pages/library_page/promises_page.dart';
 // Importe suas páginas de destino
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
@@ -204,6 +205,26 @@ class _LibraryPageState extends State<LibraryPage> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => const BibleTimelinePage()),
+                );
+              }
+            });
+          },
+        },
+        {
+          'title': "Promessas da Bíblia",
+          'description': "+800 promessas de Deus na Bíblia.",
+          'icon': Icons
+              .verified_user_outlined, // Ou outro ícone como Icons.star_outline
+          'coverImagePath':
+              null, // Ou 'assets/covers/promises_cover.webp' se você criar uma
+          'onTap': () {
+            interstitialManager
+                .tryShowInterstitial(fromScreen: "LibraryPage_To_Promises")
+                .then((_) {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PromisesPage()),
                 );
               }
             });

@@ -93,6 +93,7 @@ flutter:
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json
 
     - assets/timelines/timeline_full_bible_pt.json
+    - assets/promises/promessas.json
 
     - assets/achievements/
     - assets/covers/
