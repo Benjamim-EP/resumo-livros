@@ -1,30 +1,48 @@
 // lib/redux/middleware/bible_search_middleware.dart
-import 'package:flutter/material.dart'; // NOVO: Para ScaffoldMessenger
+import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
-import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
-import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/main.dart'; // NOVO: Para navigatorKey
-import 'package:septima_biblia/redux/actions.dart'; // NOVO: Para RewardedAdWatchedAction
-import 'package:septima_biblia/services/firestore_service.dart'; // NOVO
+import 'package:septima_biblia/redux/reducers.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart'; // Para SubscriptionStatus
+import 'package:septima_biblia/redux/store.dart'; // Para AppState
+import 'package:septima_biblia/main.dart'; // Para navigatorKey
+import 'package:septima_biblia/redux/actions.dart'; // Para UpdateUserCoinsAction, RequestRewardedAdAction
+import 'package:septima_biblia/services/firestore_service.dart'; // Para FirestoreService
+import 'package:shared_preferences/shared_preferences.dart'; // Para SharedPreferences
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// Custo da busca semântica na Bíblia
+const int BIBLE_SEARCH_COST =
+    3; // Você mencionou 3, mas no código anterior estava 5. Ajuste conforme necessário.
 
-const int BIBLE_SEARCH_COST = 3; // Custo da busca
-const String guestUserCoinsPrefsKeyForBibleSearch =
-    'shared_guest_user_coins'; // Use a mesma chave que no sermon_search e ad_middleware
+// Chave para SharedPreferences para moedas do usuário convidado.
+// Certifique-se de que esta chave seja consistente onde quer que você leia/escreva as moedas do convidado.
+const String guestUserCoinsPrefsKeyForBibleSearch = 'shared_guest_user_coins';
 
 void _handleSearchBibleSemantic(Store<AppState> store,
     SearchBibleSemanticAction action, NextDispatcher next) async {
-  // --- INÍCIO DA LÓGICA DE CUSTO E VERIFICAÇÃO DE MOEDAS ---
+  // 1. Verifica se uma busca (incluindo o processamento de pagamento/dedução) já está em andamento.
+  //    Esta verificação usa o estado ANTES de 'next(action)' ser chamado.
+  if (store.state.bibleSearchState.isLoading ||
+      store.state.bibleSearchState.isProcessingPayment) {
+    print(
+        "BibleSearchMiddleware: Busca ou pagamento/dedução já em andamento. Nova solicitação ignorada para query: '${action.query}'.");
+    return; // Ignora a ação se já estiver processando
+  }
+
+  // 2. Despacha a ação IMEDIATAMENTE para o reducer.
+  //    O reducer deve definir isLoading = true E isProcessingPayment = true.
+  next(action);
+
+  // 3. Pega o estado ATUALIZADO após o reducer ter sido executado.
   final BuildContext? currentContext = navigatorKey.currentContext;
-  final userState = store.state.userState;
-  final userId = userState.userId;
-  final isGuest = userState.isGuestUser;
-  final userCoins = userState.userCoins;
-  final isPremium =
+  final UserState currentUserState = store.state.userState; // Estado do usuário
+  // O bibleSearchState já foi atualizado pelo 'next(action)' acima.
+
+  final String? userId = currentUserState.userId;
+  final bool isGuest = currentUserState.isGuestUser;
+  final int userCoins = currentUserState.userCoins;
+  final bool isPremium =
       store.state.subscriptionState.status == SubscriptionStatus.premiumActive;
 
   if (userId == null && !isGuest) {
@@ -37,13 +55,16 @@ void _handleSearchBibleSemantic(Store<AppState> store,
                 'Você precisa estar logado ou continuar como convidado para buscar na Bíblia.')),
       );
     }
-    return; // Não prossegue com a busca
+    // Notifica o reducer para resetar isLoading e isProcessingPayment
+    store.dispatch(SearchBibleSemanticFailureAction(
+        'Usuário não autenticado ou convidado.'));
+    return;
   }
 
-  // Usuários Premium não pagam pela busca
+  // --- LÓGICA DE CUSTO E VERIFICAÇÃO DE MOEDAS ---
   if (!isPremium) {
     print(
-        "BibleSearchMiddleware: Usuário não é premium. Verificando moedas para busca bíblica...");
+        "BibleSearchMiddleware: Usuário não é premium. Verificando moedas para busca bíblica... Moedas atuais: $userCoins, Custo: $BIBLE_SEARCH_COST");
     if (userCoins < BIBLE_SEARCH_COST) {
       print(
           "BibleSearchMiddleware: Moedas insuficientes ($userCoins) para busca bíblica (custo: $BIBLE_SEARCH_COST).");
@@ -53,24 +74,21 @@ void _handleSearchBibleSemantic(Store<AppState> store,
             content: Text(
                 'Moedas insuficientes para buscar. Você tem $userCoins, são necessárias $BIBLE_SEARCH_COST.'),
             action: SnackBarAction(
-              label: 'Ganhar Moedas',
-              onPressed: () {
-                store.dispatch(RequestRewardedAdAction());
-              },
-            ),
+                label: 'Ganhar Moedas',
+                onPressed: () => store.dispatch(RequestRewardedAdAction())),
           ),
         );
       }
       store.dispatch(SearchBibleSemanticFailureAction('Moedas insuficientes.'));
-      return; // Não prossegue com a busca
+      return;
     }
 
-    // Se tem moedas suficientes (e não é premium), deduz as moedas
     print(
         "BibleSearchMiddleware: Deduzindo $BIBLE_SEARCH_COST moedas do usuário/convidado.");
-
     int newCoinTotal = userCoins - BIBLE_SEARCH_COST;
     store.dispatch(UpdateUserCoinsAction(newCoinTotal)); // Atualiza o Redux
+
+    String? errorPersistence;
 
     if (userId != null) {
       // Usuário Logado
@@ -81,11 +99,7 @@ void _handleSearchBibleSemantic(Store<AppState> store,
         print(
             "BibleSearchMiddleware: Moedas deduzidas (usuário logado) com sucesso. Novo total: $newCoinTotal");
       } catch (e) {
-        print(
-            "BibleSearchMiddleware: Erro ao deduzir moedas do Firestore para usuário logado: $e");
-        store.dispatch(SearchBibleSemanticFailureAction(
-            'Erro ao processar custo da busca bíblica.'));
-        return;
+        errorPersistence = "Erro ao deduzir moedas do Firestore (logado): $e";
       }
     } else if (isGuest) {
       // Usuário Convidado
@@ -95,17 +109,24 @@ void _handleSearchBibleSemantic(Store<AppState> store,
         print(
             "BibleSearchMiddleware: Moedas deduzidas (convidado) com sucesso. Novo total: $newCoinTotal");
       } catch (e) {
-        print(
-            "BibleSearchMiddleware: Erro ao salvar moedas do convidado no SharedPreferences: $e");
-        store.dispatch(SearchBibleSemanticFailureAction(
-            'Erro ao processar custo da busca bíblica.'));
-        return;
+        errorPersistence =
+            "Erro ao salvar moedas do convidado (SharedPreferences): $e";
       }
+    }
+
+    if (errorPersistence != null) {
+      print("BibleSearchMiddleware: $errorPersistence");
+      store.dispatch(SearchBibleSemanticFailureAction(
+          'Erro ao processar custo da busca bíblica.'));
+      // Opcional: Reverter a dedução no Redux se a persistência falhar.
+      // store.dispatch(UpdateUserCoinsAction(userCoins));
+      return;
     }
 
     if (currentContext != null && currentContext.mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentContext.mounted) {
+          // Verifica novamente se está montado
           ScaffoldMessenger.of(currentContext).showSnackBar(
             const SnackBar(
                 content: Text(
@@ -118,28 +139,27 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     print(
         "BibleSearchMiddleware: Usuário é premium. Busca bíblica sem custo de moedas.");
   }
-  // --- FIM DA LÓGICA DE CUSTO E VERIFICAÇÃO DE MOEDAS ---
+  // --- FIM DA LÓGICA DE CUSTO ---
 
-  // Passa a ação para o reducer (para atualizar isLoading, currentQuery, etc.)
-  next(action);
-
+  // 4. Executa a busca real (chamada da Cloud Function)
   try {
     print(
-        'BibleSearchMiddleware: Iniciando busca para query="${action.query}" com filtros: ${store.state.bibleSearchState.activeFilters}');
-
+        'BibleSearchMiddleware: Iniciando chamada da Cloud Function para query="${action.query}"...');
     final functions =
         FirebaseFunctions.instanceFor(region: "southamerica-east1");
     final HttpsCallable callable =
         functions.httpsCallable('semantic_bible_search');
 
+    // Usa o estado atual dos filtros, que foi atualizado pelo reducer se a ação SetBibleSearchFilterAction
+    // foi despachada antes desta SearchBibleSemanticAction.
     final requestData = {
       'query': action.query,
       'filters': store.state.bibleSearchState.activeFilters,
-      'topK': 30,
+      'topK': 30, // Ajuste este valor conforme necessário
     };
 
     print(
-        'BibleSearchMiddleware: Chamando Cloud Function com dados: $requestData');
+        'BibleSearchMiddleware: Chamando Cloud Function "semantic_bible_search" com dados: $requestData');
     final HttpsCallableResult<dynamic> response =
         await callable.call<Map<String, dynamic>>(requestData);
 
@@ -152,31 +172,31 @@ void _handleSearchBibleSemantic(Store<AppState> store,
             if (item is Map) {
               return Map<String, dynamic>.from(item);
             }
-            return <String, dynamic>{};
+            return <String,
+                dynamic>{}; // Caso o item não seja um Map, retorna um mapa vazio
           })
-          .where((item) => item.isNotEmpty)
+          .where((item) => item.isNotEmpty) // Filtra mapas vazios
           .toList();
+      print(
+          'BibleSearchMiddleware: Resultados recebidos e processados: ${resultsList.length} itens.');
     } else if (rawResults != null) {
       print(
-          'BibleSearchMiddleware: "results" não é uma lista, recebido: ${rawResults.runtimeType}');
+          'BibleSearchMiddleware: "results" da Cloud Function não é uma lista, recebido: ${rawResults.runtimeType}');
+    } else {
+      print('BibleSearchMiddleware: "results" da Cloud Function é nulo.');
     }
 
-    print(
-        'BibleSearchMiddleware: Resultados recebidos da Cloud Function: ${resultsList.length} itens.');
     store.dispatch(SearchBibleSemanticSuccessAction(resultsList));
+  } on FirebaseFunctionsException catch (e) {
+    print(
+        "BibleSearchMiddleware: Erro FirebaseFunctionsException ao chamar 'semantic_bible_search': code=${e.code}, message=${e.message}, details=${e.details}");
+    store.dispatch(SearchBibleSemanticFailureAction(
+        "Erro na busca (${e.code}): ${e.message ?? 'Falha no servidor.'}"));
   } catch (e) {
     print(
-        "BibleSearchMiddleware: Erro ao chamar a Cloud Function 'semantic_bible_search': $e");
-    var errorMessage = "Ocorreu um erro desconhecido durante a busca.";
-    if (e is FirebaseFunctionsException) {
-      print(
-          "BibleSearchMiddleware: Detalhes da FirebaseFunctionsException: code=${e.code}, message=${e.message}, details=${e.details}");
-      errorMessage =
-          "Erro na busca (${e.code}): ${e.message ?? 'Falha ao contatar o servidor.'}";
-    } else {
-      errorMessage = e.toString();
-    }
-    store.dispatch(SearchBibleSemanticFailureAction(errorMessage));
+        "BibleSearchMiddleware: Erro inesperado na chamada da Cloud Function: $e");
+    store.dispatch(SearchBibleSemanticFailureAction(
+        "Ocorreu um erro desconhecido durante a busca."));
   }
 }
 

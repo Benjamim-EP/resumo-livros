@@ -947,6 +947,7 @@ class BibleSearchState {
   final String? error;
   final Map<String, dynamic> activeFilters;
   final String currentQuery;
+  final bool isProcessingPayment; // <<< ADICIONAR ESTE CAMPO
 
   BibleSearchState({
     this.isLoading = false,
@@ -954,6 +955,7 @@ class BibleSearchState {
     this.error,
     this.activeFilters = const {},
     this.currentQuery = "",
+    this.isProcessingPayment = false, // <<< ADICIONAR VALOR PADRÃO
   });
 
   BibleSearchState copyWith({
@@ -962,6 +964,7 @@ class BibleSearchState {
     String? error,
     Map<String, dynamic>? activeFilters,
     String? currentQuery,
+    bool? isProcessingPayment, // <<< ADICIONAR ESTE PARÂMETRO
     bool clearError = false,
     bool clearResults = false,
   }) {
@@ -971,6 +974,8 @@ class BibleSearchState {
       error: clearError ? null : error ?? this.error,
       activeFilters: activeFilters ?? this.activeFilters,
       currentQuery: currentQuery ?? this.currentQuery,
+      isProcessingPayment: isProcessingPayment ??
+          this.isProcessingPayment, // <<< USAR O PARÂMETRO
     );
   }
 }
@@ -982,6 +987,7 @@ BibleSearchState bibleSearchReducer(BibleSearchState state, dynamic action) {
       currentQuery: action.query,
       clearError: true,
       clearResults: true,
+      isProcessingPayment: true, // Define ao iniciar
     );
   }
   if (action is SetBibleSearchFilterAction) {
@@ -998,10 +1004,19 @@ BibleSearchState bibleSearchReducer(BibleSearchState state, dynamic action) {
     return state.copyWith(activeFilters: {});
   }
   if (action is SearchBibleSemanticSuccessAction) {
-    return state.copyWith(isLoading: false, results: action.results);
+    return state.copyWith(
+      isLoading: false,
+      results: action.results,
+      isProcessingPayment: false, // Limpa ao sucesso
+      clearError: true,
+    );
   }
   if (action is SearchBibleSemanticFailureAction) {
-    return state.copyWith(isLoading: false, error: action.error);
+    return state.copyWith(
+      isLoading: false,
+      error: action.error,
+      isProcessingPayment: false, // Limpa em falha
+    );
   }
   return state;
 }
