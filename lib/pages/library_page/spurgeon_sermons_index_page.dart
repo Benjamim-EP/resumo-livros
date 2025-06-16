@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart'; // Para DateFormat
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart'; // Para os Dropdowns
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
@@ -37,7 +38,6 @@ class SpurgeonSermonsIndexPage extends StatefulWidget {
 }
 
 class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
-  // Estados para a lista pré-carregada e filtros locais
   List<PreloadSermonItem> _allPreloadedSermons = [];
   List<PreloadSermonItem> _displayedSermonsFromPreload = [];
   bool _isLoadingPreload = true;
@@ -50,14 +50,14 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   String _localTitleSearchTerm = "";
   Timer? _localTitleSearchDebounce;
   final Random _random = Random();
-  final int _preloadDisplayCount = 20;
+  final int _preloadDisplayCount =
+      20; // Sermões a carregar por vez na lista pré-carregada
   final ScrollController _preloadScrollController = ScrollController();
   bool _isLoadingMorePreload = false;
 
-  // Estado para a busca semântica
   final TextEditingController _semanticSermonSearchController =
       TextEditingController();
-  bool _isSemanticSearchModeActive = false; // NOVO: Controla o modo de busca
+  bool _isSemanticSearchModeActive = false;
 
   @override
   void initState() {
@@ -65,6 +65,19 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     _loadInitialPreloadedData();
     _preloadScrollController.addListener(_scrollListenerForPreload);
     _localTitleSearchController.addListener(_onLocalTitleSearchChanged);
+
+    // Carregar histórico de busca de sermões ao iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final store = StoreProvider.of<AppState>(context, listen: false);
+        if (store.state.sermonSearchState.searchHistory.isEmpty &&
+            !store.state.sermonSearchState.isLoadingHistory) {
+          print(
+              "SpurgeonSermonsIndexPage: Disparando LoadSermonSearchHistoryAction no initState.");
+          store.dispatch(LoadSermonSearchHistoryAction());
+        }
+      }
+    });
   }
 
   @override
@@ -79,6 +92,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   Future<void> _loadInitialPreloadedData() async {
+    // ... (código existente, sem alterações)
     if (!mounted) return;
     setState(() => _isLoadingPreload = true);
     try {
@@ -132,8 +146,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   void _onLocalTitleSearchChanged() {
-    if (_isSemanticSearchModeActive)
-      return; // Não aplica filtro local se busca semântica estiver ativa
+    // ... (código existente, sem alterações)
+    if (_isSemanticSearchModeActive) return;
     if (_localTitleSearchDebounce?.isActive ?? false)
       _localTitleSearchDebounce!.cancel();
     _localTitleSearchDebounce = Timer(const Duration(milliseconds: 500), () {
@@ -155,7 +169,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   void _scrollListenerForPreload() {
-    // Só carrega mais se não estivermos em modo de busca semântica e houver mais itens pré-carregados
+    // ... (código existente, sem alterações)
     if (!_isSemanticSearchModeActive &&
         _preloadScrollController.position.pixels >=
             _preloadScrollController.position.maxScrollExtent - 300 &&
@@ -165,6 +179,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   String _normalizeTextForSearchLocal(String text) {
+    // ... (código existente, sem alterações)
     if (text.isEmpty) return "";
     return unorm
         .nfd(text)
@@ -174,6 +189,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
 
   bool _preloadedSermonMatchesTitleQuery(
       PreloadSermonItem sermon, String normalizedQuery) {
+    // ... (código existente, sem alterações)
     if (normalizedQuery.isEmpty) return true;
     final normalizedTitleToSearch = _normalizeTextForSearchLocal(sermon.title);
     final queryKeywords =
@@ -184,6 +200,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   List<PreloadSermonItem> _getPreloadedSermonListBasedOnLocalFilters() {
+    // ... (código existente, sem alterações)
     List<PreloadSermonItem> filteredList = List.from(_allPreloadedSermons);
     final normalizedTitleQuery =
         _normalizeTextForSearchLocal(_localTitleSearchTerm);
@@ -209,6 +226,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
 
   void _applyLocalFiltersAndDisplayPreloadedSermons(
       {bool isInitialLoad = false}) {
+    // ... (código existente, sem alterações)
     if (!mounted) return;
     List<PreloadSermonItem> fullyFilteredList =
         _getPreloadedSermonListBasedOnLocalFilters();
@@ -225,12 +243,16 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
           fullyFilteredList.take(_preloadDisplayCount).toList());
     }
 
-    if (_preloadScrollController.hasClients && !isInitialLoad)
+    if (_preloadScrollController.hasClients && !isInitialLoad) {
       _preloadScrollController.jumpTo(0.0);
-    if (isInitialLoad) setState(() => _isLoadingPreload = false);
+    }
+    if (isInitialLoad) {
+      setState(() => _isLoadingPreload = false);
+    }
   }
 
   void _loadMorePreloadedSermons() {
+    // ... (código existente, sem alterações)
     if (!mounted || _allPreloadedSermons.isEmpty || _isLoadingMorePreload)
       return;
     List<PreloadSermonItem> sourceListForMore =
@@ -268,35 +290,34 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   void _performSemanticSermonSearch() {
+    // ... (código existente, sem alterações)
     final query = _semanticSermonSearchController.text.trim();
     if (query.isNotEmpty) {
-      // Não precisa limpar os filtros locais aqui, pois _isSemanticSearchModeActive controlará a exibição
       StoreProvider.of<AppState>(context, listen: false).dispatch(
         SearchSermonsAction(query: query),
       );
     } else {
-      // Se a query semântica estiver vazia, mas o modo semântico ainda estiver ativo,
-      // limpa os resultados semânticos. A UI mostrará "nenhum resultado" para a busca semântica.
       StoreProvider.of<AppState>(context, listen: false)
           .dispatch(ClearSermonSearchResultsAction());
     }
   }
 
   void _toggleSemanticSearchMode() {
+    // ... (código existente, sem alterações)
     setState(() {
       _isSemanticSearchModeActive = !_isSemanticSearchModeActive;
       if (!_isSemanticSearchModeActive) {
-        // Se estiver saindo do modo semântico, limpa a query semântica e os resultados
         _semanticSermonSearchController.clear();
         StoreProvider.of<AppState>(context, listen: false)
             .dispatch(ClearSermonSearchResultsAction());
-        // E reaplica os filtros locais para garantir que a lista pré-carregada seja exibida corretamente
         _applyLocalFiltersAndDisplayPreloadedSermons();
       } else {
-        // Se estiver entrando no modo semântico, pode limpar a busca local por título, se desejar
-        // _localTitleSearchController.clear();
-        // _localTitleSearchTerm = "";
-        // _applyLocalFiltersAndDisplayPreloadedSermons(); // Para atualizar a lista de fundo, se visível
+        // Ao entrar no modo semântico, carrega o histórico se necessário
+        final store = StoreProvider.of<AppState>(context, listen: false);
+        if (store.state.sermonSearchState.searchHistory.isEmpty &&
+            !store.state.sermonSearchState.isLoadingHistory) {
+          store.dispatch(LoadSermonSearchHistoryAction());
+        }
       }
     });
   }
@@ -304,8 +325,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final store = StoreProvider.of<AppState>(
-        context); // Para despachar ClearSermonSearchResultsAction
+    // Removido: final store = StoreProvider.of<AppState>(context);
+    // O store será acessado dentro do StoreConnector ou via StoreProvider.of<AppState>(context, listen: false) quando necessário.
 
     return Scaffold(
       appBar: AppBar(
@@ -317,12 +338,10 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
       ),
       body: Column(
         children: [
-          // Barra de Busca Principal (Semântica ou Local por Título)
           Padding(
             padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 8.0),
             child: Row(
               children: [
-                // Botão para alternar modo de busca
                 IconButton(
                   icon: SvgPicture.asset(
                     'assets/icons/buscasemantica.svg',
@@ -336,7 +355,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                     height: 24,
                   ),
                   tooltip: _isSemanticSearchModeActive
-                      ? "Alternar para Busca por Título/Filtros"
+                      ? "Alternar para Lista/Filtros"
                       : "Alternar para Busca Inteligente",
                   onPressed: _toggleSemanticSearchMode,
                 ),
@@ -356,7 +375,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                       hintStyle: TextStyle(
                           color: theme.hintColor.withOpacity(0.8),
                           fontSize: 14),
-                      // O prefixIcon foi removido para dar espaço ao botão de toggle
                       suffixIcon: IconButton(
                         icon: Icon(Icons.search_rounded,
                             color: theme.iconTheme.color?.withOpacity(0.9),
@@ -365,7 +383,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                         onPressed: _isSemanticSearchModeActive
                             ? _performSemanticSermonSearch
                             : () =>
-                                _applyLocalFiltersAndDisplayPreloadedSermons(), // Para busca local, apenas aplica os filtros
+                                _applyLocalFiltersAndDisplayPreloadedSermons(),
                       ),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
@@ -374,20 +392,17 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                       fillColor: theme.inputDecorationTheme.fillColor ??
                           theme.cardColor.withOpacity(0.5),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25.0),
-                        borderSide: BorderSide.none,
-                      ),
+                          borderRadius: BorderRadius.circular(25.0),
+                          borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25.0),
-                        borderSide: BorderSide(
-                            color: theme.dividerColor.withOpacity(0.3),
-                            width: 0.8),
-                      ),
+                          borderRadius: BorderRadius.circular(25.0),
+                          borderSide: BorderSide(
+                              color: theme.dividerColor.withOpacity(0.3),
+                              width: 0.8)),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25.0),
-                        borderSide: BorderSide(
-                            color: theme.colorScheme.primary, width: 1.5),
-                      ),
+                          borderRadius: BorderRadius.circular(25.0),
+                          borderSide: BorderSide(
+                              color: theme.colorScheme.primary, width: 1.5)),
                     ),
                     onSubmitted: (_) => _isSemanticSearchModeActive
                         ? _performSemanticSermonSearch()
@@ -398,56 +413,122 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
               ],
             ),
           ),
-
-          // Barra de Filtros para a lista pré-carregada (visível apenas se não estiver em modo semântico)
           if (!_isSemanticSearchModeActive) _buildFilterBarForPreload(theme),
-
           Expanded(
             child: StoreConnector<AppState, SermonSearchState>(
-              converter: (s) => store.state.sermonSearchState,
+              converter: (store) => store.state.sermonSearchState,
               builder: (context, sermonSearchState) {
                 if (_isSemanticSearchModeActive) {
-                  if (sermonSearchState.isLoading) {
+                  // --- INÍCIO DA LÓGICA DE EXIBIÇÃO PARA BUSCA SEMÂNTICA E HISTÓRICO ---
+                  if (sermonSearchState.isLoading &&
+                      sermonSearchState.sermonResults.isEmpty &&
+                      sermonSearchState.searchHistory.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  if (sermonSearchState.error != null) {
+                  if (!sermonSearchState.isLoading &&
+                      sermonSearchState.error != null) {
                     return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text("Erro na busca: ${sermonSearchState.error}",
-                            style: TextStyle(color: theme.colorScheme.error)),
-                      ),
-                    );
+                        child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                                "Erro na busca: ${sermonSearchState.error}",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: theme.colorScheme.error))));
                   }
-                  if (sermonSearchState.currentSermonQuery.isNotEmpty &&
-                      sermonSearchState.sermonResults.isNotEmpty) {
+                  // Se há resultados da busca ATUAL de sermões, mostra eles
+                  if (sermonSearchState.sermonResults.isNotEmpty) {
                     return _buildSemanticSearchResultsList(
                         theme, sermonSearchState.sermonResults);
                   }
-                  if (sermonSearchState.currentSermonQuery.isNotEmpty &&
-                      sermonSearchState.sermonResults.isEmpty &&
-                      !sermonSearchState.isLoading) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                            "Nenhum sermão encontrado para sua busca inteligente.",
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.textTheme.bodySmall?.color
-                                    ?.withOpacity(0.7))),
-                      ),
+                  // Se NÃO há query ATIVA (campo de busca vazio) E HÁ histórico, mostra o histórico de sermões
+                  if (sermonSearchState.currentSermonQuery.isEmpty &&
+                      sermonSearchState.searchHistory.isNotEmpty) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 12.0),
+                          child: Text("Histórico de Buscas de Sermões:",
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.9))),
+                        ),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: sermonSearchState.searchHistory.length,
+                            itemBuilder: (context, index) {
+                              final historyEntry =
+                                  sermonSearchState.searchHistory[index];
+                              final String query =
+                                  historyEntry['query'] as String? ??
+                                      'Busca inválida';
+                              final String? timestampStr =
+                                  historyEntry['timestamp'] as String?;
+                              final DateTime? timestamp = timestampStr != null
+                                  ? DateTime.tryParse(timestampStr)
+                                  : null;
+
+                              return ListTile(
+                                leading: Icon(Icons.history,
+                                    color: theme.iconTheme.color
+                                        ?.withOpacity(0.6)),
+                                title: Text(query,
+                                    style: theme.textTheme.bodyLarge),
+                                subtitle: timestamp != null
+                                    ? Text(
+                                        DateFormat('dd/MM/yy HH:mm')
+                                            .format(timestamp.toLocal()),
+                                        style: theme.textTheme.bodySmall)
+                                    : null,
+                                trailing: Icon(Icons.arrow_forward_ios_rounded,
+                                    size: 16,
+                                    color: theme.iconTheme.color
+                                        ?.withOpacity(0.5)),
+                                onTap: () {
+                                  _semanticSermonSearchController.text = query;
+                                  StoreProvider.of<AppState>(context,
+                                          listen: false)
+                                      .dispatch(
+                                          ViewSermonSearchFromHistoryAction(
+                                              historyEntry));
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     );
                   }
-                  // Se a busca semântica está ativa mas sem query, mostra uma mensagem
+                  // Se houve uma busca ATIVA mas não encontrou resultados
+                  if (!sermonSearchState.isLoading &&
+                      sermonSearchState.sermonResults.isEmpty &&
+                      sermonSearchState.currentSermonQuery.isNotEmpty) {
+                    return Center(
+                        child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                                "Nenhum sermão encontrado para '${sermonSearchState.currentSermonQuery}'.",
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyMedium)));
+                  }
+                  // Mensagem padrão (campo de busca vazio e sem histórico, ou carregando histórico)
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Text("Digite algo para a busca inteligente.",
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodySmall?.color
-                                  ?.withOpacity(0.7))),
+                      child: Text(
+                        sermonSearchState.isLoadingHistory
+                            ? "Carregando histórico de sermões..."
+                            : "Digite algo para a busca inteligente de sermões. Seu histórico aparecerá aqui.",
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.textTheme.bodySmall?.color
+                                ?.withOpacity(0.7)),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   );
+                  // --- FIM DA LÓGICA DE EXIBIÇÃO PARA BUSCA SEMÂNTICA E HISTÓRICO ---
                 } else {
                   // Modo de lista pré-carregada
                   return _buildPreloadedSermonsList(theme);
@@ -461,6 +542,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   Widget _buildFilterBarForPreload(ThemeData theme) {
+    // ... (código existente, sem alterações)
     return Container(
       padding:
           const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0), // Ajustado padding
@@ -471,10 +553,9 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                 color: theme.dividerColor.withOpacity(0.2), width: 1)),
       ),
       child: Row(
-        // Mudado para Row para melhor layout em uma linha
         children: <Widget>[
           Expanded(
-            flex: 2, // Mais espaço para o livro
+            flex: 2,
             child: UtilsBiblePage.buildBookDropdown(
               context: context,
               selectedBook: _selectedBookFilterLocal,
@@ -495,7 +576,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            flex: 1, // Menos espaço para o capítulo
+            flex: 1,
             child: UtilsBiblePage.buildChapterDropdown(
               context: context,
               selectedChapter: _selectedChapterFilterLocal,
@@ -535,6 +616,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   }
 
   Widget _buildPreloadedSermonsList(ThemeData theme) {
+    // ... (código existente, sem alterações)
     if (_isLoadingPreload) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -619,6 +701,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
 
   Widget _buildSemanticSearchResultsList(
       ThemeData theme, List<Map<String, dynamic>> sermonResults) {
+    // ... (código existente, sem alterações)
     return ListView.builder(
       padding: const EdgeInsets.all(8.0),
       itemCount: sermonResults.length,

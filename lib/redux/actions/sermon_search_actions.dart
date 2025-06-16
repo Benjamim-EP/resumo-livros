@@ -27,3 +27,22 @@ class SearchSermonsFailureAction {
 
 // Opcional: Ação para limpar os resultados da busca de sermões
 class ClearSermonSearchResultsAction {}
+
+class AddSermonSearchToHistoryAction {
+  final String query;
+  final List<Map<String, dynamic>> results;
+
+  AddSermonSearchToHistoryAction({required this.query, required this.results});
+}
+
+class LoadSermonSearchHistoryAction {}
+
+class SermonSearchHistoryLoadedAction {
+  final List<Map<String, dynamic>> history;
+  SermonSearchHistoryLoadedAction(this.history);
+}
+
+class ViewSermonSearchFromHistoryAction {
+  final Map<String, dynamic> searchEntry;
+  ViewSermonSearchFromHistoryAction(this.searchEntry);
+}
