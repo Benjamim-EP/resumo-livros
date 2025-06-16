@@ -1,8 +1,7 @@
-// lib/pages/biblie_page/bible_search_filter_bar.dart
+// Em: lib/pages/biblie_page/bible_search_filter_bar.dart
 import 'package:flutter/material.dart';
-import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart'; // Para carregar booksMap se necessário aqui
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 
-// Defina os tipos de callback que o widget pai precisará fornecer
 typedef OnFilterChanged = void Function({
   String? testament,
   String? bookAbbrev,
@@ -10,10 +9,10 @@ typedef OnFilterChanged = void Function({
 });
 
 class BibleSearchFilterBar extends StatefulWidget {
-  final Map<String, dynamic>? initialBooksMap; // Passar o booksMap carregado
+  final Map<String, dynamic>? initialBooksMap;
   final Map<String, dynamic> initialActiveFilters;
   final OnFilterChanged onFilterChanged;
-  final VoidCallback onClearFilters; // Callback para limpar filtros
+  final VoidCallback onClearFilters;
 
   const BibleSearchFilterBar({
     super.key,
@@ -33,7 +32,6 @@ class _BibleSearchFilterBarState extends State<BibleSearchFilterBar> {
   String? _selectedType;
   Map<String, dynamic>? _booksMap;
 
-  // Seus tipos de conteúdo (pode vir de uma constante também)
   final List<Map<String, String>> _tiposDeConteudoDisponiveisParaFiltro = [
     {'value': 'biblia_comentario_secao', 'display': 'Comentário da Seção'},
     {'value': 'biblia_versiculos', 'display': 'Versículos Bíblicos'},
@@ -61,111 +59,59 @@ class _BibleSearchFilterBarState extends State<BibleSearchFilterBar> {
     }
   }
 
-  // Função auxiliar para construir os botões de filtro (copiada da BiblePage)
-  Widget _buildFilterChipButton({
+  // Helper para construir o botão de filtro com PopupMenuButton
+  Widget _buildFilterPopupMenuButton<T>({
     required BuildContext context,
-    required String label,
+    required String currentLabel,
     required IconData icon,
-    required VoidCallback onPressed,
-    bool isActive = false,
-  }) {
-    final theme = Theme.of(context);
-    return ActionChip(
-      avatar: Icon(
-        icon,
-        size: 16,
-        color: isActive
-            ? theme.colorScheme.onPrimaryContainer
-            : theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-      ),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: isActive
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.onSurfaceVariant,
-        ),
-        overflow: TextOverflow.ellipsis,
-      ),
-      onPressed: onPressed,
-      backgroundColor: isActive
-          ? theme.colorScheme.primaryContainer.withOpacity(0.8)
-          : theme.inputDecorationTheme.fillColor ??
-              theme.cardColor.withOpacity(0.5),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isActive
-              ? theme.colorScheme.primaryContainer
-              : theme.dividerColor.withOpacity(0.3),
-          width: 0.8,
-        ),
-      ),
-      elevation: isActive ? 1 : 0,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-
-  // Função para mostrar o BottomSheet de seleção (copiada da BiblePage)
-  Future<T?> _showFilterSelectionSheet<T>({
-    required BuildContext context,
-    required String title,
-    required List<DropdownMenuItem<T>> items,
     required T? currentValue,
-    required ValueChanged<T?>
-        onChangedCallback, // Renomeado para evitar conflito
+    required List<PopupMenuEntry<T>> items,
+    required ValueChanged<T?> onSelected,
+    String? tooltip,
   }) {
     final theme = Theme.of(context);
-    return showModalBottomSheet<T>(
-      context: context,
-      backgroundColor: theme.dialogBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (BuildContext modalContext) {
-        return Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(color: theme.colorScheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<T>(
-                value: currentValue,
-                items: items,
-                onChanged: (T? newValue) {
-                  onChangedCallback(newValue); // Usa o callback passado
-                  Navigator.pop(modalContext);
-                },
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: theme.inputDecorationTheme.fillColor ??
-                      theme.cardColor.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-                dropdownColor: theme.dialogBackgroundColor,
-                style: TextStyle(
-                    color: theme.textTheme.bodyLarge?.color, fontSize: 14),
-                iconEnabledColor: theme.iconTheme.color,
-                isExpanded: true,
-              ),
-              const SizedBox(height: 20),
-            ],
+    final bool isActive = currentValue != null;
+
+    return PopupMenuButton<T>(
+      tooltip: tooltip ?? "Selecionar ${currentLabel.toLowerCase()}",
+      initialValue: currentValue,
+      onSelected: onSelected,
+      itemBuilder: (BuildContext context) => items,
+      child: ActionChip(
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: isActive
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+        ),
+        label: Text(
+          currentLabel,
+          style: TextStyle(
+            fontSize: 12,
+            color: isActive
+                ? theme.colorScheme.onSurfaceVariant
+                : theme.colorScheme.onSurfaceVariant,
           ),
-        );
-      },
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: isActive
+            ? theme.colorScheme.primaryContainer.withOpacity(0.8)
+            : theme.inputDecorationTheme.fillColor ??
+                theme.cardColor.withOpacity(0.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isActive
+                ? theme.colorScheme.primaryContainer
+                : theme.dividerColor.withOpacity(0.3),
+            width: 0.8,
+          ),
+        ),
+        elevation: isActive ? 1 : 0,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
     );
   }
 
@@ -174,40 +120,53 @@ class _BibleSearchFilterBarState extends State<BibleSearchFilterBar> {
     final theme = Theme.of(context);
     List<String> testamentosDisponiveis = ["Antigo", "Novo"];
 
-    List<DropdownMenuItem<String>> bookDropdownItems = [
-      DropdownMenuItem<String>(
-          value: null,
-          child: Text("Todos os Livros",
-              style: TextStyle(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)))),
+    // Itens para o PopupMenu de Testamento
+    List<PopupMenuEntry<String?>> testamentMenuItems = [
+      const PopupMenuItem<String?>(
+        value: null,
+        child: Text("Todos os Testamentos"),
+      ),
+      ...testamentosDisponiveis.map((String value) => PopupMenuItem<String?>(
+            value: value,
+            child: Text(value),
+          )),
+    ];
+
+    // Itens para o PopupMenu de Livro
+    List<PopupMenuEntry<String?>> bookMenuItems = [
+      const PopupMenuItem<String?>(
+        value: null,
+        child: Text("Todos os Livros"),
+      ),
     ];
     if (_booksMap != null && _booksMap!.isNotEmpty) {
       List<MapEntry<String, dynamic>> sortedBooks = _booksMap!.entries.toList()
         ..sort((a, b) =>
             (a.value['nome'] as String).compareTo(b.value['nome'] as String));
       for (var entry in sortedBooks) {
-        bookDropdownItems.add(DropdownMenuItem<String>(
-          value: entry.key,
-          child: Text(entry.value['nome'] as String,
-              style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
-        ));
+        // Filtra livros pelo testamento selecionado, se houver
+        if (_selectedTestament == null ||
+            entry.value['testament'] == _selectedTestament) {
+          bookMenuItems.add(PopupMenuItem<String?>(
+            value: entry.key,
+            child: Text(entry.value['nome'] as String),
+          ));
+        }
       }
     }
 
-    List<DropdownMenuItem<String>> typeDropdownItems = [
-      DropdownMenuItem<String>(
-          value: null,
-          child: Text("Todos os Tipos",
-              style: TextStyle(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)))),
+    // Itens para o PopupMenu de Tipo de Conteúdo
+    List<PopupMenuEntry<String?>> typeMenuItems = [
+      const PopupMenuItem<String?>(
+        value: null,
+        child: Text("Todos os Tipos"),
+      ),
+      ..._tiposDeConteudoDisponiveisParaFiltro
+          .map((tipoMap) => PopupMenuItem<String?>(
+                value: tipoMap['value'],
+                child: Text(tipoMap['display']!),
+              )),
     ];
-    for (var tipoMap in _tiposDeConteudoDisponiveisParaFiltro) {
-      typeDropdownItems.add(DropdownMenuItem<String>(
-        value: tipoMap['value'],
-        child: Text(tipoMap['display']!,
-            style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
-      ));
-    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
@@ -220,91 +179,62 @@ class _BibleSearchFilterBarState extends State<BibleSearchFilterBar> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: <Widget>[
-            _buildFilterChipButton(
+            _buildFilterPopupMenuButton<String?>(
               context: context,
               icon: Icons.menu_book_outlined,
-              label: _selectedTestament ?? "Testamento",
-              isActive: _selectedTestament != null,
-              onPressed: () {
-                _showFilterSelectionSheet<String>(
-                  context: context,
-                  title: "Selecionar Testamento",
-                  items: [
-                    DropdownMenuItem<String>(
-                        value: null,
-                        child: Text("Todos os Testamentos",
-                            style: TextStyle(
-                                color: theme.textTheme.bodyMedium?.color
-                                    ?.withOpacity(0.7)))),
-                    ...testamentosDisponiveis.map((String value) =>
-                        DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value,
-                                style: TextStyle(
-                                    color: theme.textTheme.bodyLarge?.color)))),
-                  ],
-                  currentValue: _selectedTestament,
-                  onChangedCallback: (String? newValue) {
-                    // Renomeado aqui
-                    setState(() => _selectedTestament = newValue);
-                    widget.onFilterChanged(
-                        testament: newValue,
-                        bookAbbrev: _selectedBookAbbrev,
-                        contentType: _selectedType);
-                  },
-                );
+              currentLabel: _selectedTestament ?? "Testamento",
+              currentValue: _selectedTestament,
+              items: testamentMenuItems,
+              onSelected: (String? newValue) {
+                setState(() {
+                  _selectedTestament = newValue;
+                  // Se o testamento mudou e o livro selecionado não pertence mais a ele, reseta o livro
+                  if (_selectedBookAbbrev != null &&
+                      _booksMap?[_selectedBookAbbrev]?['testament'] !=
+                          _selectedTestament) {
+                    _selectedBookAbbrev = null;
+                  }
+                });
+                widget.onFilterChanged(
+                    testament: _selectedTestament,
+                    bookAbbrev: _selectedBookAbbrev,
+                    contentType: _selectedType);
               },
             ),
             const SizedBox(width: 8),
-            _buildFilterChipButton(
+            _buildFilterPopupMenuButton<String?>(
               context: context,
               icon: Icons.auto_stories_outlined,
-              label: _selectedBookAbbrev != null
+              currentLabel: _selectedBookAbbrev != null
                   ? (_booksMap?[_selectedBookAbbrev]?['nome'] ?? "Livro")
                   : "Livro",
-              isActive: _selectedBookAbbrev != null,
-              onPressed: () {
-                _showFilterSelectionSheet<String>(
-                  context: context,
-                  title: "Selecionar Livro",
-                  items: bookDropdownItems,
-                  currentValue: _selectedBookAbbrev,
-                  onChangedCallback: (String? newValue) {
-                    // Renomeado aqui
-                    setState(() => _selectedBookAbbrev = newValue);
-                    widget.onFilterChanged(
-                        testament: _selectedTestament,
-                        bookAbbrev: newValue,
-                        contentType: _selectedType);
-                  },
-                );
+              currentValue: _selectedBookAbbrev,
+              items: bookMenuItems, // Agora filtrado pelo testamento
+              onSelected: (String? newValue) {
+                setState(() => _selectedBookAbbrev = newValue);
+                widget.onFilterChanged(
+                    testament: _selectedTestament,
+                    bookAbbrev: _selectedBookAbbrev,
+                    contentType: _selectedType);
               },
             ),
             const SizedBox(width: 8),
-            _buildFilterChipButton(
+            _buildFilterPopupMenuButton<String?>(
               context: context,
               icon: Icons.category_outlined,
-              label: _selectedType != null
+              currentLabel: _selectedType != null
                   ? (_tiposDeConteudoDisponiveisParaFiltro.firstWhere(
                       (t) => t['value'] == _selectedType,
                       orElse: () => {'display': "Tipo"})['display']!)
                   : "Tipo",
-              isActive: _selectedType != null,
-              onPressed: () {
-                _showFilterSelectionSheet<String>(
-                  context: context,
-                  title: "Selecionar Tipo de Conteúdo",
-                  items: typeDropdownItems,
-                  currentValue: _selectedType,
-                  onChangedCallback: (String? newValue) {
-                    // Renomeado aqui
-                    setState(() => _selectedType = newValue);
-                    widget.onFilterChanged(
-                        testament: _selectedTestament,
-                        bookAbbrev: _selectedBookAbbrev,
-                        contentType: newValue);
-                  },
-                );
+              currentValue: _selectedType,
+              items: typeMenuItems,
+              onSelected: (String? newValue) {
+                setState(() => _selectedType = newValue);
+                widget.onFilterChanged(
+                    testament: _selectedTestament,
+                    bookAbbrev: _selectedBookAbbrev,
+                    contentType: _selectedType);
               },
             ),
             if (_selectedTestament != null ||
@@ -321,7 +251,7 @@ class _BibleSearchFilterBarState extends State<BibleSearchFilterBar> {
                     _selectedBookAbbrev = null;
                     _selectedType = null;
                   });
-                  widget.onClearFilters(); // Chama o callback do pai
+                  widget.onClearFilters();
                 },
                 splashRadius: 20,
                 visualDensity: VisualDensity.compact,

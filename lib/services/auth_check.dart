@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:septima_biblia/design/theme.dart';
 import 'package:septima_biblia/pages/start_screen_page.dart';
 import 'package:septima_biblia/pages/login_page.dart';
 import 'package:septima_biblia/pages/signup_page.dart';
@@ -31,7 +32,7 @@ class AuthCheck extends StatelessWidget {
           return MaterialApp(
               debugShowCheckedModeBanner: false,
               // Um tema fixo para a tela de login
-              theme: ThemeData.dark(),
+              theme: AppTheme.greenTheme,
               home: StreamBuilder<User?>(
                 stream: FirebaseAuth.instance.authStateChanges(),
                 builder: (context, snapshot) {
