@@ -948,6 +948,8 @@ class BibleSearchState {
   final Map<String, dynamic> activeFilters;
   final String currentQuery;
   final bool isProcessingPayment; // <<< ADICIONAR ESTE CAMPO
+  final List<Map<String, dynamic>> searchHistory;
+  final bool isLoadingHistory;
 
   BibleSearchState({
     this.isLoading = false,
@@ -956,6 +958,8 @@ class BibleSearchState {
     this.activeFilters = const {},
     this.currentQuery = "",
     this.isProcessingPayment = false, // <<< ADICIONAR VALOR PADRÃO
+    this.searchHistory = const [],
+    this.isLoadingHistory = false,
   });
 
   BibleSearchState copyWith({
@@ -967,6 +971,8 @@ class BibleSearchState {
     bool? isProcessingPayment, // <<< ADICIONAR ESTE PARÂMETRO
     bool clearError = false,
     bool clearResults = false,
+    List<Map<String, dynamic>>? searchHistory,
+    bool? isLoadingHistory,
   }) {
     return BibleSearchState(
       isLoading: isLoading ?? this.isLoading,
@@ -976,6 +982,8 @@ class BibleSearchState {
       currentQuery: currentQuery ?? this.currentQuery,
       isProcessingPayment: isProcessingPayment ??
           this.isProcessingPayment, // <<< USAR O PARÂMETRO
+      searchHistory: searchHistory ?? this.searchHistory,
+      isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
     );
   }
 }
@@ -1016,6 +1024,46 @@ BibleSearchState bibleSearchReducer(BibleSearchState state, dynamic action) {
       isLoading: false,
       error: action.error,
       isProcessingPayment: false, // Limpa em falha
+    );
+  } else if (action is AddSearchToHistoryAction) {
+    List<Map<String, dynamic>> updatedHistory = List.from(state.searchHistory);
+
+    // Remove buscas antigas com a mesma query para evitar duplicatas exatas, mantendo a mais recente
+    updatedHistory.removeWhere((item) => item['query'] == action.query);
+
+    updatedHistory.insert(0, {
+      // Adiciona no início (mais recente primeiro)
+      'query': action.query,
+      'results': action.results,
+      'timestamp': DateTime.now()
+          .toIso8601String(), // Salva como string para facilitar serialização
+    });
+
+    // Limita o histórico a 50 itens
+    if (updatedHistory.length > 50) {
+      updatedHistory = updatedHistory.sublist(0, 50);
+    }
+    return state.copyWith(searchHistory: updatedHistory);
+  }
+
+  if (action is LoadSearchHistoryAction) {
+    return state.copyWith(isLoadingHistory: true);
+  }
+
+  if (action is SearchHistoryLoadedAction) {
+    return state.copyWith(
+        searchHistory: action.history, isLoadingHistory: false);
+  }
+
+  if (action is ViewSearchFromHistoryAction) {
+    // Quando o usuário clica em um item do histórico,
+    // preenchemos os resultados atuais e a query atual com os dados do histórico.
+    return state.copyWith(
+      currentQuery: action.searchEntry['query'] as String,
+      results: List<Map<String, dynamic>>.from(
+          action.searchEntry['results'] as List<dynamic>),
+      isLoading: false, // A busca já foi feita
+      clearError: true,
     );
   }
   return state;

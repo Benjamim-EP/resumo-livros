@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
@@ -13,6 +14,7 @@ import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
@@ -22,6 +24,7 @@ import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 // ignore: unused_import
 import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart'
     show StringExtension;
+import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -116,6 +119,10 @@ class _BiblePageState extends State<BiblePage> {
   String? selectedTranslation2 = 'acf';
   bool _isCompareModeActive = false;
   bool _isFocusModeActive = false;
+
+  String? _expandedItemId;
+  String? _loadedExpandedContent;
+  bool _isLoadingExpandedContent = false;
 
   // Hebraico Interlinear
   bool _showHebrewInterlinear = false;
@@ -476,6 +483,178 @@ class _BiblePageState extends State<BiblePage> {
     }
   }
 
+  void _toggleItemExpansionInBiblePage(
+      Map<String, dynamic> metadata, String itemId) async {
+    if (_expandedItemId == itemId) {
+      setState(() {
+        _expandedItemId = null;
+        _loadedExpandedContent = null;
+      });
+    } else {
+      setState(() {
+        _expandedItemId = itemId;
+        _isLoadingExpandedContent = true;
+        _loadedExpandedContent = null;
+      });
+      final content = await _fetchDetailedContentForBiblePage(
+          metadata, itemId); // Chama a nova função
+      if (mounted && _expandedItemId == itemId) {
+        setState(() {
+          _loadedExpandedContent = content;
+          _isLoadingExpandedContent = false;
+        });
+      } else if (mounted && _expandedItemId != itemId) {
+        // Se o usuário clicou em outro item antes deste carregar
+        if (_isLoadingExpandedContent && _expandedItemId == null) {
+          setState(() => _isLoadingExpandedContent = false);
+        }
+      }
+    }
+  }
+
+  Future<String> _fetchDetailedContentForBiblePage(
+      Map<String, dynamic> metadata, String itemId) async {
+    final tipo = metadata['tipo'] as String?;
+    final bookAbbrev = metadata['livro_curto'] as String?;
+    final chapterStr = metadata['capitulo']?.toString();
+    final versesRange = metadata['versiculos'] as String?; // Ex: "1-5" ou "10"
+
+    print(
+        "Fetching detailed content for itemId: $itemId, tipo: $tipo, book: $bookAbbrev, chapter: $chapterStr, verses: $versesRange");
+
+    if (tipo == 'biblia_versiculos' &&
+        bookAbbrev != null &&
+        chapterStr != null &&
+        versesRange != null) {
+      try {
+        final List<String> versesContent = [];
+        final int? chapterInt = int.tryParse(chapterStr);
+        if (chapterInt == null) {
+          print("Erro: Capítulo inválido '$chapterStr'");
+          return "Erro: Capítulo inválido.";
+        }
+
+        // Carrega os dados do capítulo inteiro para a tradução 'nvi'
+        // A função loadChapterDataComparison retorna um mapa com 'verseData' e 'sectionStructure'
+        final chapterDataMap = await BiblePageHelper.loadChapterDataComparison(
+          bookAbbrev,
+          chapterInt,
+          'nvi', // Tradução padrão para exibir o texto
+          null, // Sem tradução de comparação aqui
+        );
+
+        final dynamic nviVerseListData = chapterDataMap['verseData']?['nvi'];
+
+        if (nviVerseListData != null && nviVerseListData is List) {
+          // Converte para List<String> se for List<dynamic>
+          final List<String> nviVerseList =
+              nviVerseListData.map((e) => e.toString()).toList();
+
+          List<int> verseNumbersToLoad = [];
+          if (versesRange.contains('-')) {
+            final parts = versesRange.split('-');
+            if (parts.length == 2) {
+              final start = int.tryParse(parts[0]);
+              final end = int.tryParse(parts[1]);
+              if (start != null && end != null && start <= end) {
+                for (int i = start; i <= end; i++) {
+                  verseNumbersToLoad.add(i);
+                }
+              }
+            }
+          } else {
+            final singleVerse = int.tryParse(versesRange);
+            if (singleVerse != null) {
+              verseNumbersToLoad.add(singleVerse);
+            }
+          }
+
+          if (verseNumbersToLoad.isEmpty) {
+            print("Erro: Intervalo de versículos inválido '$versesRange'");
+            return "Intervalo de versículos inválido: $versesRange";
+          }
+
+          for (int vn in verseNumbersToLoad) {
+            if (vn > 0 && vn <= nviVerseList.length) {
+              // Adiciona o número do versículo em negrito antes do texto
+              versesContent.add("**$vn** ${nviVerseList[vn - 1]}");
+            } else {
+              versesContent.add(
+                  "**$vn** [Texto do versículo não disponível na tradução NVI para $bookAbbrev $chapterInt]");
+            }
+          }
+        } else {
+          print(
+              "Erro: Dados dos versículos NVI não encontrados ou em formato inesperado para $bookAbbrev $chapterInt.");
+          return "Dados dos versículos NVI não encontrados para $bookAbbrev $chapterStr.";
+        }
+
+        return versesContent.isNotEmpty
+            ? versesContent.join(
+                "\n\n") // Adiciona duas quebras de linha entre os versículos
+            : "Texto dos versículos não encontrado para $bookAbbrev $chapterStr:$versesRange.";
+      } catch (e, s) {
+        print(
+            "Erro ao carregar versículos para $itemId ($bookAbbrev $chapterStr:$versesRange): $e\nStack: $s");
+        return "Erro ao carregar versículos.";
+      }
+    } else if (tipo == 'biblia_comentario_secao') {
+      // O itemId para comentários de seção já deve ser o ID do documento correto.
+      // Ex: 'gn_c1_v1-5_bc' ou apenas 'gn_c1_v1-5' se o '_bc' for adicionado/removido em outro lugar.
+      // Assumindo que itemId é o ID do documento na coleção 'commentary_sections'.
+      final String commentaryDocId = itemId.endsWith('_bc')
+          ? itemId.substring(0, itemId.length - 3)
+          : itemId;
+
+      try {
+        // Instancie FirestoreService se ainda não o fez no escopo da classe _BiblePageState
+        final firestoreService = FirestoreService();
+        final commentaryData =
+            await firestoreService.getSectionCommentary(commentaryDocId);
+
+        if (commentaryData != null && commentaryData['commentary'] is List) {
+          final List<dynamic> commentsRaw = commentaryData['commentary'];
+          if (commentsRaw.isEmpty) {
+            print(
+                "Nenhum comentário disponível para a seção: $commentaryDocId");
+            return "Nenhum comentário disponível para esta seção.";
+          }
+
+          final List<String> commentsText = commentsRaw
+              .map((c) {
+                if (c is Map<String, dynamic>) {
+                  return (c['traducao'] as String?)?.trim() ??
+                      (c['original'] as String?)?.trim() ??
+                      "";
+                }
+                return c
+                    .toString()
+                    .trim(); // Fallback se a estrutura for inesperada
+              })
+              .where((text) => text.isNotEmpty)
+              .toList();
+
+          if (commentsText.isEmpty) {
+            print(
+                "Comentários encontrados, mas todos os textos estão vazios para: $commentaryDocId");
+            return "Comentário com texto vazio.";
+          }
+          return commentsText
+              .join("\n\n---\n\n"); // Separa múltiplos parágrafos de comentário
+        }
+        print(
+            "Comentário não encontrado ou em formato inválido para a seção: $commentaryDocId");
+        return "Comentário não encontrado para a seção.";
+      } catch (e, s) {
+        print(
+            "Erro ao carregar comentário para $itemId (docId: $commentaryDocId): $e\nStack: $s");
+        return "Erro ao carregar comentário.";
+      }
+    }
+    print("Tipo de conteúdo desconhecido ou dados insuficientes: $tipo");
+    return "Detalhes não disponíveis para este tipo de conteúdo.";
+  }
+
   void _processIntentOrInitialLoad(_BiblePageViewModel vm) {
     if (!mounted || booksMap == null) {
       print(
@@ -767,31 +946,32 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _applyFiltersToReduxAndSearch() {
-    // ... (sem alterações)
     if (!mounted || _store == null) return;
-    // if (_store!.state.userState.isGuestUser) {
-    //   // NOVO CHECK
-    //   showLoginRequiredDialog(context,
-    //       featureName: "a busca avançada na Bíblia");
-    //   return;
-    // }
+
     _store!.dispatch(
         SetBibleSearchFilterAction('testamento', _filterSelectedTestament));
     _store!.dispatch(
         SetBibleSearchFilterAction('livro_curto', _filterSelectedBookAbbrev));
     _store!.dispatch(
         SetBibleSearchFilterAction('tipo', _filterSelectedContentType));
+
     final queryToSearch = _semanticQueryController.text.trim();
     if (queryToSearch.isNotEmpty) {
+      print(
+          "UI (BiblePage): Despachando SearchBibleSemanticAction com query: $queryToSearch");
       _store!.dispatch(SearchBibleSemanticAction(queryToSearch));
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  BibleSearchResultsPage(initialQuery: queryToSearch)));
+      // >>> REMOVER A NAVEGAÇÃO ABAIXO <<<
+      // Navigator.push(
+      //     context,
+      //     MaterialPageRoute(
+      //         builder: (context) =>
+      //             BibleSearchResultsPage(initialQuery: queryToSearch)));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Digite um termo para buscar.')));
+      // Se a query for vazia, limpa os resultados atuais para mostrar o histórico
+      _store!.dispatch(SearchBibleSemanticSuccessAction([]));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:
+              Text('Digite um termo para buscar ou selecione do histórico.')));
     }
   }
 
@@ -1252,35 +1432,260 @@ class _BiblePageState extends State<BiblePage> {
                             );
                           },
                         )
-                      : (_isSemanticSearchActive && !_isFocusModeActive)
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Text(
-                                  _semanticQueryController.text.isEmpty &&
-                                          (_store?.state.bibleSearchState
-                                                  .results.isEmpty ??
-                                              true)
-                                      ? "Digite sua busca acima e pressione o ícone de lupa para pesquisar."
-                                      : ((_store?.state.bibleSearchState
-                                                  .isLoading ??
-                                              false)
-                                          ? "Buscando..."
-                                          : ((_store?.state.bibleSearchState
-                                                          .results.isEmpty ??
-                                                      true) &&
-                                                  _semanticQueryController
-                                                      .text.isNotEmpty
-                                              ? "Nenhum resultado encontrado para '${_semanticQueryController.text}'."
-                                              : "Nenhuma Busca Semântica Ativa.")),
-                                  style: TextStyle(
-                                      fontStyle: FontStyle.italic,
-                                      color: theme.textTheme.bodyMedium?.color),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
+                      : (_isSemanticSearchActive &&
+                              !_isFocusModeActive) // Se ESTIVER em modo de busca semântica
+                          ? StoreConnector<AppState, BibleSearchState>(
+                              // Conecta ao BibleSearchState
+                              converter: (store) =>
+                                  store.state.bibleSearchState,
+                              onInit: (store) {
+                                // <<< ADICIONA onInit PARA CARREGAR HISTÓRICO AQUI
+                                if (store.state.bibleSearchState.searchHistory
+                                        .isEmpty &&
+                                    !store.state.bibleSearchState
+                                        .isLoadingHistory) {
+                                  store.dispatch(LoadSearchHistoryAction());
+                                }
+                              },
+                              builder: (context, searchState) {
+                                final theme = Theme.of(
+                                    context); // Pega o tema aqui para usar nos widgets filhos
+
+                                // 1. Se estiver carregando uma NOVA busca e não há resultados antigos ou histórico para mostrar
+                                if (searchState.isLoading &&
+                                    searchState.results.isEmpty &&
+                                    searchState.searchHistory.isEmpty) {
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                }
+                                // 2. Se houve um erro na busca
+                                if (!searchState.isLoading &&
+                                    searchState.error != null) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Text(
+                                          "Erro na busca: ${searchState.error}",
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                              color: theme.colorScheme.error)),
+                                    ),
+                                  );
+                                }
+                                // 3. Se houver resultados da busca ATUAL, mostra eles
+                                if (searchState.results.isNotEmpty) {
+                                  // >>> CONSTRÓI A LISTA DE RESULTADOS DIRETAMENTE AQUI <<<
+                                  return ListView.builder(
+                                    padding: const EdgeInsets.all(8.0),
+                                    itemCount: searchState.results.length,
+                                    itemBuilder: (context, index) {
+                                      final item = searchState.results[index];
+                                      final itemId = item['id'] as String? ??
+                                          'unknown_id_$index';
+                                      Map<String, dynamic> metadata = {};
+                                      final rawMetadata = item['metadata'];
+                                      if (rawMetadata is Map) {
+                                        metadata = Map<String, dynamic>.from(
+                                            rawMetadata.map((key, value) =>
+                                                MapEntry(
+                                                    key.toString(), value)));
+                                      }
+
+                                      final tipoResultado =
+                                          metadata['tipo'] as String?;
+                                      String? commentaryTitle =
+                                          metadata['titulo_comentario']
+                                              as String?;
+                                      final reference =
+                                          "${metadata['livro_completo'] ?? metadata['livro_curto'] ?? '?'} ${metadata['capitulo'] ?? '?'}:${metadata['versiculos'] ?? '?'}";
+                                      final score = item['score'] as double?;
+                                      final bool isExpanded = _expandedItemId ==
+                                          itemId; // Você precisará gerenciar _expandedItemId e related state no _BiblePageState
+
+                                      String previewContent =
+                                          "Toque para ver detalhes";
+                                      if (tipoResultado ==
+                                          'biblia_comentario_secao') {
+                                        previewContent = commentaryTitle ??
+                                            "Ver comentário...";
+                                      } else if (tipoResultado ==
+                                          'biblia_versiculos') {
+                                        previewContent = "Ver versículos...";
+                                      }
+
+                                      return Card(
+                                        elevation: 2,
+                                        margin: const EdgeInsets.symmetric(
+                                            vertical: 6.0),
+                                        color: theme.cardColor,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10)),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            ListTile(
+                                              title: Text(reference,
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: theme.textTheme
+                                                          .titleLarge?.color)),
+                                              subtitle: Text(previewContent,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                      color: theme.textTheme
+                                                          .bodyMedium?.color
+                                                          ?.withOpacity(0.7))),
+                                              trailing: Icon(
+                                                  isExpanded
+                                                      ? Icons.expand_less
+                                                      : Icons.expand_more,
+                                                  color: theme.iconTheme.color),
+                                              onTap: () {
+                                                // Sua lógica para _toggleItemExpansion precisa ser adaptada para funcionar dentro da BiblePage
+                                                // Isso envolve ter _expandedItemId, _loadedExpandedContent, _isLoadingExpandedContent
+                                                // como variáveis de estado em _BiblePageState e uma função _toggleItemExpansion lá.
+                                                // Por agora, vou deixar um placeholder:
+                                                print(
+                                                    "Toggle expansion para: $itemId");
+                                                // _toggleItemExpansion(metadata, itemId); // Você precisará recriar esta função no _BiblePageState
+                                              },
+                                            ),
+                                            if (isExpanded)
+                                              AnimatedSize(
+                                                duration: const Duration(
+                                                    milliseconds: 300),
+                                                curve: Curves.easeInOut,
+                                                child: Container(
+                                                    /* ... seu código para exibir conteúdo expandido ... */),
+                                              ),
+                                            if (score != null && !isExpanded)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 16.0,
+                                                    bottom: 8.0,
+                                                    top: 0),
+                                                child: Text(
+                                                    "Similaridade: ${score.toStringAsFixed(3)}",
+                                                    style: TextStyle(
+                                                        fontSize: 10,
+                                                        color:
+                                                            Colors.grey[600])),
+                                              ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }
+                                // 4. Se NÃO há query ATIVA (campo de busca vazio) E HÁ histórico, mostra o histórico
+                                if (searchState.currentQuery.isEmpty &&
+                                    searchState.searchHistory.isNotEmpty) {
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0, vertical: 12.0),
+                                        child: Text(
+                                            "Histórico de Buscas Recentes:",
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme.onSurface
+                                                        .withOpacity(0.9))),
+                                      ),
+                                      Expanded(
+                                        child: ListView.builder(
+                                          itemCount:
+                                              searchState.searchHistory.length,
+                                          itemBuilder: (context, index) {
+                                            final historyEntry = searchState
+                                                .searchHistory[index];
+                                            final String query =
+                                                historyEntry['query']
+                                                        as String? ??
+                                                    'Busca inválida';
+                                            final String? timestampStr =
+                                                historyEntry['timestamp']
+                                                    as String?;
+                                            final DateTime? timestamp =
+                                                timestampStr != null
+                                                    ? DateTime.tryParse(
+                                                        timestampStr)
+                                                    : null;
+
+                                            return ListTile(
+                                              leading: Icon(Icons.history,
+                                                  color: theme.iconTheme.color
+                                                      ?.withOpacity(0.6)),
+                                              title: Text(query,
+                                                  style: theme
+                                                      .textTheme.bodyLarge),
+                                              subtitle: timestamp != null
+                                                  ? Text(
+                                                      DateFormat(
+                                                              'dd/MM/yy HH:mm')
+                                                          .format(timestamp
+                                                              .toLocal()),
+                                                      style: theme
+                                                          .textTheme.bodySmall)
+                                                  : null,
+                                              trailing: Icon(
+                                                  Icons
+                                                      .arrow_forward_ios_rounded,
+                                                  size: 16,
+                                                  color: theme.iconTheme.color
+                                                      ?.withOpacity(0.5)),
+                                              onTap: () {
+                                                _semanticQueryController.text =
+                                                    query;
+                                                StoreProvider.of<AppState>(
+                                                        context,
+                                                        listen: false)
+                                                    .dispatch(
+                                                        ViewSearchFromHistoryAction(
+                                                            historyEntry));
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
+                                // 5. Se houve uma busca ATIVA mas não encontrou resultados
+                                if (!searchState.isLoading &&
+                                    searchState.results.isEmpty &&
+                                    searchState.currentQuery.isNotEmpty) {
+                                  return Center(
+                                      /* ... mensagem "Nenhum resultado encontrado..." ... */);
+                                }
+                                // 6. Mensagem padrão
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Text(
+                                      searchState.isLoadingHistory
+                                          ? "Carregando histórico..."
+                                          : "Digite sua busca acima e pressione o ícone de lupa para pesquisar. Seu histórico aparecerá aqui.",
+                                      style: TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                          color: theme
+                                              .textTheme.bodyMedium?.color),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ) // Fim do StoreConnector<BibleSearchState>
+                          : const SizedBox
+                              .shrink(), // Caso padrão (não está em modo de busca semântica)
                 ),
                 Visibility(
                     visible: !_isFocusModeActive &&
