@@ -25,10 +25,10 @@ Future<void> _saveSearchHistory(Store<AppState> store, String query,
   final userId = userState.userId;
   final isGuest = userState.isGuestUser;
 
-  // Atualiza o estado Redux primeiro com a nova entrada de histórico
+  // 1. Atualiza o estado Redux primeiro (o reducer já limita a 50)
   store.dispatch(AddSearchToHistoryAction(query: query, results: results));
 
-  // Pega o histórico atualizado do Redux para persistir
+  // 2. Pega o histórico ATUALIZADO E JÁ LIMITADO do Redux para persistir
   final List<Map<String, dynamic>> currentHistoryToPersist =
       store.state.bibleSearchState.searchHistory;
 
@@ -36,13 +36,11 @@ Future<void> _saveSearchHistory(Store<AppState> store, String query,
     // Usuário Logado
     final firestoreService = FirestoreService();
     try {
-      // Abordagem Simples (campo array no documento do usuário):
-      // CUIDADO: Documentos do Firestore têm limite de tamanho (1MB).
-      // Se o histórico + resultados se tornarem muito grandes, considere uma subcoleção.
+      // A lista 'currentHistoryToPersist' já tem no máximo 50 itens.
       await firestoreService.updateUserField(
           userId, 'bibleSearchHistory', currentHistoryToPersist);
       print(
-          "BibleSearchMiddleware: Histórico de busca bíblica salvo no Firestore para usuário $userId.");
+          "BibleSearchMiddleware: Histórico de busca bíblica (limitado a ${currentHistoryToPersist.length} itens) salvo no Firestore para usuário $userId.");
     } catch (e) {
       print(
           "BibleSearchMiddleware: Erro ao salvar histórico de busca bíblica no Firestore: $e");
@@ -51,10 +49,11 @@ Future<void> _saveSearchHistory(Store<AppState> store, String query,
     // Usuário Convidado
     try {
       final prefs = await SharedPreferences.getInstance();
+      // A lista 'currentHistoryToPersist' já tem no máximo 50 itens.
       final String historyJson = jsonEncode(currentHistoryToPersist);
       await prefs.setString(_searchHistoryKeyPrefs, historyJson);
       print(
-          "BibleSearchMiddleware: Histórico de busca bíblica salvo no SharedPreferences para convidado.");
+          "BibleSearchMiddleware: Histórico de busca bíblica (limitado a ${currentHistoryToPersist.length} itens) salvo no SharedPreferences para convidado.");
     } catch (e) {
       print(
           "BibleSearchMiddleware: Erro ao salvar histórico de busca bíblica no SharedPreferences: $e");
