@@ -92,6 +92,8 @@ flutter:
     - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json
 
+    - assets/timelines/timeline_full_bible_pt.json
+
     - assets/achievements/
     - assets/covers/
 

@@ -1,7 +1,8 @@
 // lib/pages/library_page.dart
 import 'package:flutter/material.dart';
+import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
 // Importe suas páginas de destino
-import 'package:septima_biblia/pages/spurgeon_sermons_index_page.dart';
+import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart'; // Reutilizando para Estudos Temáticos
 
@@ -182,6 +183,30 @@ class _LibraryPageState extends State<LibraryPage> {
               context,
               MaterialPageRoute(builder: (context) => const StudyHubPage()),
             );
+          },
+        },
+        {
+          'title': "Linha do Tempo Bíblica",
+          'description':
+              "Explore os principais eventos bíblicos e da história mundial em ordem cronológica.",
+          'icon': Icons
+              .timeline_outlined, // Ou um ícone que represente melhor uma linha do tempo
+          'coverImagePath':
+              null, // Ou 'assets/covers/timeline_cover.webp' se você criar uma
+          'onTap': () {
+            // Tenta mostrar um anúncio ANTES de navegar
+            interstitialManager
+                .tryShowInterstitial(fromScreen: "LibraryPage_To_BibleTimeline")
+                .then((_) {
+              if (mounted) {
+                // Garante que o widget ainda está montado
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const BibleTimelinePage()),
+                );
+              }
+            });
           },
         },
         // {

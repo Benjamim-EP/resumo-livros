@@ -1,0 +1,1297 @@
+{
+  "timelineTitle": "Linha do Tempo da Bíblia",
+  "key": [
+    {
+      "symbol": "Flag icon",
+      "description": "Evento principal"
+    },
+    {
+      "symbol": "c.",
+      "description": "Circa (aproximadamente)"
+    },
+    {
+      "symbol": "||",
+      "description": "10 anos entre as linhas"
+    },
+    {
+      "symbol": "Circle icon",
+      "description": "Marcador de ano"
+    },
+    {
+      "symbol": "Rectangle icon",
+      "description": "Marcador de período de tempo"
+    },
+    {
+      "note": "Muitas datas listadas são aproximadas e podem variar de acordo com diferentes estudiosos."
+    }
+  ],
+  "timePeriods": [
+    {
+      "periodName": "2200 a.C. - 1700 a.C.",
+      "biblicalBooksContext": "GÊNESIS, JÓ",
+      "events": [
+        {
+          "category": "História Bíblica",
+          "event": "ABRAÃO",
+          "date": "c. 2166-1991 a.C.",
+          "notes": "Alguns estudiosos situam o nascimento de Abraão em 1952 a.C. Nesse caso, os eventos bíblicos até José seriam deslocados para a direita em 114 anos."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ALIANÇA ABRAÂMICA",
+          "date": "Associada a Abraão"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JÓ",
+          "date": "datas desconhecidas"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ISMAEL",
+          "date": "c. 2080-1943 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ISAQUE",
+          "date": "c. 2066-1886 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JACÓ (ISRAEL)",
+          "date": "c. 2005-1859 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JACÓ FOGE PARA HARÃ",
+          "date": "c. 1929 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JOSÉ",
+          "date": "c. 1914-1805 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JOSÉ TORNA-SE UMA AUTORIDADE NO EGITO",
+          "date": "c. 1884 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JACÓ E SUA FAMÍLIA VÃO PARA O EGITO",
+          "date": "c. 1876 a.C.",
+          "details": "Filhos de Jacó (Israel)-Rúben, Simeão, Levi, Judá, Dã, Naftali, Gade, Aser, Issacar, Zebulom, José, Benjamim. Netos (filhos de José)-Manassés, Efraim."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "Linhagem da Criação até Abraão",
+          "type": "lineage_chart",
+          "individuals": [
+            {"name": "ADÃO", "age": 930, "notes": "A Queda"},
+            {"name": "SETE", "age": 912},
+            {"name": "ENOS", "age": 905},
+            {"name": "QUENÃ (CAINÃ)", "age": 910},
+            {"name": "MAALALEL", "age": 895},
+            {"name": "JAREDE", "age": 962},
+            {"name": "ENOQUE", "age": 365, "notes": "Deus o tomou."},
+            {"name": "METUSALÉM", "age": 969},
+            {"name": "LAMEQUE", "age": 777},
+            {"name": "NOÉ", "age": 950, "notes": "O Dilúvio"},
+            {"name": "SEM", "age": 600},
+            {"name": "ARFAXADE", "age": 438},
+            {"name": "SALÁ", "age": 433},
+            {"name": "ÉBER", "age": 464},
+            {"name": "PÉLEGUE", "age": 239},
+            {"name": "REÚ", "age": 239},
+            {"name": "SERUGUE", "age": 230},
+            {"name": "NAOR", "age": 148},
+            {"name": "TERÁ", "age": 205},
+            {"name": "ABRAÃO", "age": 175}
+          ],
+          "chart_note": "Os números indicam a idade da pessoa na morte. As linhas vermelhas indicam o tempo de vida da pessoa em relação às outras."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Primeiras formas de escrita (cuneiforme)",
+          "date": "c. 3200 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Primeiros Zigurates construídos por Ur-Nammu",
+          "date": "c. 2112-2095 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "A cidade de Ur cai",
+          "date": "c. 2004 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Hamurabi reina na Babilônia",
+          "date": "1792-1750 a.C.",
+          "details": "Código de leis de Hamurabi",
+          "image_description": "Código de Hamurabi, Mural de Beni Hasan, Ruínas de Jericó"
+        },
+        {
+          "category": "História do Oriente Médio",
+          "region": "Egito",
+          "event": "Pirâmides do Império Antigo construídas",
+          "date": "c. 2700-2200 a.C.",
+          "image_description": "Pirâmides"
+        },
+        {
+          "category": "História do Oriente Médio",
+          "region": "Egito",
+          "event": "Império Médio (11ª-12ª Dinastia)",
+          "date": "c. 2050-1800 a.C."
+        },
+        {
+          "category": "História do Oriente Médio",
+          "event": "Segundo Período Intermediário (13ª-17ª Dinastias)",
+          "date": "c. 1800-1570 a.C."
+        }
+      ]
+    },
+    {
+      "periodName": "1600 a.C. - 1300 a.C.",
+      "biblicalBooksContext": "ÊXODO, LEVÍTICO, NÚMEROS, DEUTERONÔMIO, JOSUÉ",
+      "events": [
+        {
+          "category": "História Bíblica",
+          "event": "ESCRAVIDÃO NO EGITO",
+          "date": "datas incertas (começa antes de 1529 a.C.)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "AARÃO",
+          "date": "c. 1529-1407 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "MOISÉS",
+          "date": "c. 1526-1406 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "\"DATA ALTA\" PARA O ÊXODO E PEREGRINAÇÕES NO DESERTO",
+          "date": "c. 1446 a.C.",
+          "sub_events": [
+            "PRIMEIRA PÁSCOA c. 1446 a.C.",
+            "DEZ MANDAMENTOS E OUTRAS LEIS DADAS",
+            "TABERNÁCULO CONSTRUÍDO"
+          ],
+          "image_description": "Representação do Tabernáculo"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JOSUÉ LIDERA OS ISRAELITAS PARA CANAÃ",
+          "date": "Após 1406 a.C. (morte de Moisés)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "RAABE AJUDA A SALVAR ESPIÕES",
+          "date": "Associado à conquista de Josué"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "COMEÇA A ERA DOS JUÍZES",
+          "date": "c. 1350 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "\"DATA BAIXA\" PARA O ÊXODO",
+          "date": "c. 1290 a.C.",
+          "notes": "Alguns estudiosos datam o Êxodo em 1290. Para um Êxodo de 'data baixa', as datas da Páscoa, eventos do deserto e a data de início da era dos Juízes seriam deslocadas para a direita em 156 anos, comprimindo os tempos dos Juízes."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Hititas saqueiam a Babilônia",
+          "date": "1595 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Dinastia Shang na China",
+          "date": "c. 1450-1027 a.C.",
+          "image_description": "Artefato chinês (vaso ding)"
+        },
+        {
+          "category": "História do Oriente Médio",
+          "event": "Hicsos governam o Egito",
+          "date": "c. 1670-1570 a.C."
+        },
+        {
+          "category": "História do Oriente Médio",
+          "region": "Egito",
+          "event": "Início da 18ª Dinastia",
+          "date": "1570 a.C.",
+          "rulers_mentioned": [
+            {"name": "Ahmés", "reign": "1570-1545 a.C."},
+            {"name": "Amenhotep (I)", "reign": "1545-1529 a.C."},
+            {"name": "Tutmés (I)", "reign": "1529-1517 a.C."},
+            {"name": "Tutmés II", "reign": "1517-1504 a.C."},
+            {"name": "Rainha Hatshepsut", "reign": "1504-1483 a.C."},
+            {"name": "Tutmés III", "reign": "1504-1453 a.C."},
+            {"name": "Amenhotep II", "reign": "1453-1426 a.C."},
+            {"name": "Tutmés IV", "reign": "1426-1416 a.C."},
+            {"name": "Amenhotep III", "reign": "1416-1377 a.C."},
+            {"name": "Amenhotep IV (Akhenaton)", "reign": "1377-1360 a.C."},
+            {"name": "Tutancâmon ('Rei Tut')", "reign": "1360-1350 a.C.", "image_description": "Máscara do Rei Tutancâmon"},
+            {"name": "Ay", "reign": "1350-1347 a.C."},
+            {"name": "Horemheb", "reign": "1347-1318 a.C."}
+          ]
+        },
+        {
+          "category": "História do Oriente Médio",
+          "region": "Egito",
+          "event": "Início da 19ª Dinastia",
+          "date": "1318 a.C.",
+          "rulers_mentioned": [
+            {"name": "Ramsés I", "reign": "1318-1317 a.C."},
+            {"name": "Seti I", "reign": "1317-1304 a.C."}
+          ]
+        }
+      ]
+    },
+    {
+      "periodName": "1300 a.C. - 1000 a.C.",
+      "biblicalBooksContext": "JUÍZES, RUTE, 1 & 2 SAMUEL, 1 CRÔNICAS, SALMOS",
+      "events": [
+        {
+          "category": "História Bíblica",
+          "event": "Juízes ativos",
+          "date": "c. 1350 a.C. em diante",
+          "details": "Otniel, Eúde, Sangar, Débora (e Baraque), Gideão, Tola, Jair, Jefté, Ibsã, Elom, Abdom, Sansão, Eli e Samuel."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "RUTE",
+          "date": "Durante o tempo dos Juízes (ex: c. 1150 a.C., varia)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ELI, SACERDOTE EM SILÓ",
+          "date": "c. 1100-1060 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "SAMUEL, JUIZ E PROFETA DE ISRAEL",
+          "date": "c. 1060-1020 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "REI SAUL (REIS DE ISRAEL)",
+          "date": "c. 1051-1011 a.C.",
+          "notes": "Começa o Reino Unido"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "SACERDÓCIO DE ABIATAR",
+          "date": "Associado ao reinado de Davi"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Começa a Idade do Ferro: colapso do Império Hitita",
+          "date": "c. 1200 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Começa a Guerra de Troia",
+          "date": "c. 1190 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Começa a Dinastia Chou na China",
+          "date": "c. 1150 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "O poder do Egito começa a declinar",
+          "date": "c. 1164 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Tiglate-Pileser I governa a Assíria",
+          "date": "1114-1076 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Dinastias Maias fundadas na América Central",
+          "date": "c. 1000 a.C."
+        },
+        {
+          "category": "História do Oriente Médio",
+          "region": "Egito",
+          "event": "Merneptá",
+          "date": "1237-1227 a.C.",
+          "details": "A estela da vitória do Faraó Merneptá menciona Israel pela primeira vez na história não-bíblica.",
+          "image_description": "Estela de Merneptá"
+        },
+        {
+          "category": "História do Oriente Médio",
+          "region": "Egito",
+          "event": "Ramsés II",
+          "date": "1304-1237 a.C."
+        }
+      ]
+    },
+    {
+      "periodName": "1000 a.C. - 700 a.C.",
+      "biblicalBooksContext": "1 REIS, 2 REIS (parcial), 1 CRÔNICAS (parcial), 2 CRÔNICAS (parcial), SALMOS (muitos atribuídos a Davi), PROVÉRBIOS, ECLESIASTES, CÂNTICO DOS CÂNTICOS (atribuído a Salomão), JONAS, AMÓS, ISAÍAS (começa), OSEIAS (começa), MIQUEIAS (começa)",
+      "events": [
+        {
+          "category": "História Bíblica",
+          "event": "REI DAVI",
+          "date": "c. 1011-971 a.C.",
+          "details": "Reinado continua do período anterior; estabelece Jerusalém como capital."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "NATÃ (profeta)",
+          "date": "Contemporâneo de Davi"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "SACERDÓCIO DE ABIATAR",
+          "date": "Continua, mais tarde Zadoque também proeminente."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "REI SALOMÃO",
+          "date": "c. 971-931 a.C.",
+          "details": "Conhecido pela sabedoria, construção do Primeiro Templo."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "TEMPLO DE SALOMÃO CONCLUÍDO",
+          "date": "c. 960 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "DIVISÃO DO REINO",
+          "date": "931 a.C.",
+          "details": "O reino se divide em Israel (Reino do Norte) e Judá (Reino do Sul)."
+        },
+        {
+          "category": "História Bíblica",
+          "group": "Reis de Israel (Reino do Norte)",
+          "rulers_chronology": [
+            {"name": "JEROBOÃO I", "reign": "931-910 a.C."},
+            {"name": "NADABE", "reign": "910-909 a.C."},
+            {"name": "BAASA", "reign": "909-886 a.C."},
+            {"name": "ELÁ", "reign": "886-885 a.C."},
+            {"name": "ZINRI", "reign": "885 a.C. (7 dias)"},
+            {"name": "TIBNI", "reign": "885-880 a.C. (rei rival)"},
+            {"name": "ONRI", "reign": "885-874 a.C. (consolidou o poder c. 880 a.C.)"},
+            {"name": "ACABE", "reign": "874-853 a.C."},
+            {"name": "ACAZIAS (Israel)", "reign": "853-852 a.C."},
+            {"name": "JORÃO (ou Jeorão) (Israel)", "reign": "852-841 a.C."},
+            {"name": "JEÚ", "reign": "841-814 a.C."},
+            {"name": "JEOACAZ (Israel)", "reign": "814-798 a.C."},
+            {"name": "JEOÁS (ou Joás) (Israel)", "reign": "798-782 a.C."},
+            {"name": "JEROBOÃO II", "reign": "793-753 a.C. (co-regente a partir de 793, governante único a partir de 782)"},
+            {"name": "ZACARIAS (Israel)", "reign": "753 a.C. (6 meses)"},
+            {"name": "SALUM (Israel)", "reign": "752 a.C. (1 mês)"},
+            {"name": "MENAÉM", "reign": "752-742 a.C."},
+            {"name": "PECAÍAS", "reign": "742-740 a.C."},
+            {"name": "PECA", "reign": "752-732 a.C. (rival de Menaém/Pecaías, depois governante único 740-732)"},
+            {"name": "OSEIAS (Israel)", "reign": "732-722 a.C."}
+          ]
+        },
+        {
+          "category": "História Bíblica",
+          "group": "Reis de Judá (Reino do Sul)",
+          "rulers_chronology": [
+            {"name": "ROBOÃO", "reign": "931-913 a.C."},
+            {"name": "ABIAS (ou Abião)", "reign": "913-911 a.C."},
+            {"name": "ASA", "reign": "911-870 a.C."},
+            {"name": "JOSAFÁ", "reign": "873-848 a.C. (co-regente a partir de 873)"},
+            {"name": "JEORÃO (ou Jorão) (Judá)", "reign": "853-841 a.C. (co-regente a partir de 853)"},
+            {"name": "ACAZIAS (Judá)", "reign": "841 a.C."},
+            {"name": "RAINHA ATALIA (usurpadora)", "reign": "841-835 a.C."},
+            {"name": "JOÁS (ou Jeoás) (Judá)", "reign": "835-796 a.C."},
+            {"name": "AMAZIAS", "reign": "796-767 a.C."},
+            {"name": "UZIAS (ou Azarias)", "reign": "792-740 a.C. (co-regente a partir de 792, governante único a partir de 767)"},
+            {"name": "JOTÃO", "reign": "750-732 a.C. (co-regente a partir de 750, governante único a partir de 740)"},
+            {"name": "ACAZ (ou Jeoacaz)", "reign": "735-716 a.C. (co-regente a partir de 735, governante único a partir de 732)"},
+            {"name": "EZEQUIAS", "reign": "716-687 a.C. (co-regente a partir de c. 729, governante único a partir de 716)"}
+          ]
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ELIAS (profeta em Israel)",
+          "date": "c. 870-845 a.C. (ativo durante o reinado de Acabe)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ELISEU (profeta em Israel)",
+          "date": "c. 845-800 a.C. (sucessor de Elias)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JONAS (profeta, provavelmente para Nínive)",
+          "date": "c. 781 a.C. (ou antes, durante o reinado de Jeroboão II)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "AMÓS (profeta em Israel)",
+          "date": "c. 765-754 a.C. (durante os reinados de Uzias de Judá e Jeroboão II de Israel)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "OSEIAS (profeta em Israel)",
+          "date": "c. 758-725 a.C. (ativo até a queda de Samaria)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ISAÍAS (profeta em Judá)",
+          "date": "c. 760-673 a.C. (começa o ministério durante o reinado de Uzias, continua no próximo período)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "MIQUEIAS (profeta em Judá)",
+          "date": "c. 738-698 a.C. (contemporâneo de Isaías, durante os reinados de Jotão, Acaz, Ezequias)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Hirão, rei de Tiro",
+          "date": "c. 978-944 a.C. (aliado de Davi e Salomão)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Cidade de Samaria fundada (capital do Reino do Norte)",
+          "date": "c. 879 a.C. (por Onri)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Batalha de Qarqar - Israel (Acabe) e Síria entram em conflito com a Assíria (Salmaneser III)",
+          "date": "853 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Assíria força Israel (Jeú) a pagar tributo",
+          "date": "841 a.C.",
+          "image_description": "Obelisco Negro de Salmaneser III (retrata Jeú se curvando)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Homero (poeta grego, Ilíada e Odisseia)",
+          "date": "c. 800-701 a.C. (datação tradicional)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Primeiros jogos olímpicos registrados",
+          "date": "776 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Data tradicional da fundação de Roma",
+          "date": "753 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Síria oprime Israel",
+          "date": "Ao longo do início do século VIII a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Rei Mesa de Moabe (Estela de Mesa registra conflito com Israel)",
+          "date": "c. 830 a.C."
+        },
+        {
+          "category": "História do Oriente Médio",
+          "event": "Sisaque I (Faraó do Egito) invade Judá e Israel",
+          "date": "c. 925-924 a.C. (durante o reinado de Roboão)",
+          "image_description": "Cativos mostrados no Relevo de Sisaque"
+        },
+        {
+          "category": "História do Oriente Médio",
+          "group": "Império Assírio (Expansão e Domínio)",
+          "rulers_and_events": [
+            {"name": "Assurnasirpal II", "reign": "883-859 a.C.", "notes": "Campanhas militares, expansão."},
+            {"name": "Salmaneser III", "reign": "858-824 a.C.", "notes": "Batalha de Qarqar, recebe tributo de Jeú."},
+            {"name": "Samsi-Adade V", "reign": "823-811 a.C."},
+            {"name": "Adade-Nirari III", "reign": "810-783 a.C.", "notes": "Campanhas contra a Síria, influencia Israel."},
+            {"name": "Salmaneser IV", "reign": "783-773 a.C."},
+            {"name": "Assurdã III", "reign": "772-755 a.C."},
+            {"name": "Assur-Nirari V", "reign": "754-745 a.C."},
+            {"name": "Tiglate-Pileser III (Pul)", "reign": "744-727 a.C.", "notes": "Grande expansão assíria, recebe tributo de Menaém de Israel, deporta israelitas."},
+            {"name": "Salmaneser V", "reign": "726-722 a.C.", "notes": "Sitia Samaria."}
+          ]
+        },
+        {
+          "category": "História do Oriente Médio",
+          "event": "Assíria governa o Egito (brevemente, várias campanhas e influência)",
+          "date": "c. 671-652 a.C. (embora a influência comece antes, este é o pico)"
+        }
+      ]
+    },
+    {
+      "periodName": "700 a.C. - 400 a.C.",
+      "biblicalBooksContext": "2 REIS (conclusão), 2 CRÔNICAS (conclusão), ISAÍAS (conclusão), JEREMIAS, LAMENTAÇÕES, EZEQUIEL, DANIEL, NAUM, SOFONIAS, HABACUQUE, OBADIAS, AGEU, ZACARIAS, MALAQUIAS, ESTER, ESDRAS, NEEMIAS, JOEL (datação varia, possivelmente aqui ou antes)",
+      "events": [
+        {
+          "category": "História Bíblica",
+          "group": "Reis de Judá (Reino do Sul) - Conclusão",
+          "rulers_chronology": [
+            {"name": "EZEQUIAS", "reign": "716-687 a.C. (continua do período anterior)"},
+            {"name": "MANASSÉS", "reign": "697-643 a.C. (co-regente a partir de 697, governante único a partir de 687)"},
+            {"name": "AMOM", "reign": "643-641 a.C."},
+            {"name": "JOSIAS", "reign": "641-609 a.C.", "details": "Grandes reformas religiosas."},
+            {"name": "JEOACAZ (Salum) (Judá)", "reign": "609 a.C. (3 meses)"},
+            {"name": "JEOIAQUIM (Eliaquim)", "reign": "609-598 a.C."},
+            {"name": "JOAQUIM (Jeconias ou Conias)", "reign": "598-597 a.C. (3 meses)"},
+            {"name": "ZEDEQUIAS (Matanias)", "reign": "597-586 a.C.", "details": "Último rei de Judá antes da destruição babilônica."}
+          ]
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ISRAEL (REINO DO NORTE) CAI PERANTE OS ASSÍRIOS",
+          "date": "722 a.C.",
+          "details": "Samaria capturada por Sargão II da Assíria; população deportada. (Evento no início/transição deste período, mas suas consequências ressoam por toda parte)."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "PRIMEIRO EXÍLIO DOS JUDEUS PARA A BABILÔNIA (incluindo Joaquim, Ezequiel, companheiros de Daniel)",
+          "date": "605 a.C. (Daniel e outros são levados) & 597 a.C. (Joaquim, Ezequiel e muitos nobres)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JUDÁ, O REINO DO SUL, CAI PERANTE A BABILÔNIA",
+          "date": "586 a.C.",
+          "details": "Jerusalém e o Templo de Salomão destruídos por Nabucodonosor II; grande deportação."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "GEDALIAS, GOVERNADOR DE JUDÁ (nomeado pelos babilônios, depois assassinado)",
+          "date": "c. 586 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "EXÍLIO NA BABILÔNIA",
+          "date": "586-538 a.C. (período principal)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ISAÍAS (profeta em Judá - conclusão do ministério)",
+          "date": "Termina c. 673 a.C. (ministério se estendeu para este período)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "NAUM (profeta, profecia contra Nínive)",
+          "date": "c. 658-615 a.C. (antes da queda de Nínive em 612 a.C.)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JEREMIAS (profeta em Judá, durante seu declínio e queda)",
+          "date": "c. 650-582 a.C. (ministério do reinado de Josias até o início do exílio)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "SOFONIAS (profeta em Judá, durante o reinado de Josias)",
+          "date": "c. 640-626 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "HABACUQUE (profeta em Judá, antes da invasão babilônica)",
+          "date": "c. 608-598 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "EZEQUIEL (profeta durante o exílio na Babilônia)",
+          "date": "c. 620-570 a.C. (ministério começa em 593 a.C.)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "DANIEL (estadista e profeta na Babilônia e Pérsia)",
+          "date": "c. 620-540 a.C. (ativo desde a primeira deportação)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "OBADIAS (profeta, profecia contra Edom, provavelmente após a queda de Jerusalém)",
+          "date": "c. 590 a.C. (ou um pouco mais tarde)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ÉDITO DE CIRO PERMITE QUE OS JUDEUS RETORNEM À SUA TERRA",
+          "date": "538 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "EXILADOS COMEÇAM A RETORNAR A JERUSALÉM (liderados por Sesbazar/Zorobabel)",
+          "date": "538 a.C. em diante"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "COMEÇA A RECONSTRUÇÃO DO TEMPLO",
+          "date": "536 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "AGEU (profeta, incentiva a reconstrução do templo)",
+          "date": "c. 520 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ZACARIAS (profeta, contemporâneo de Ageu)",
+          "date": "c. 522-509 a.C. (ou mais tarde, ministério começou em 520 a.C.)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "TEMPLO CONCLUÍDO (Segundo Templo)",
+          "date": "516 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ZOROBABEL E JOSUÉ LIDERAM OS JUDEUS PARA TERMINAR A RECONSTRUÇÃO DO TEMPLO",
+          "date": "520-516 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ESTER (Rainha da Pérsia, eventos do livro de Ester)",
+          "date": "c. 478 a.C. (ou durante o reinado de Xerxes I, 485-465 a.C.)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "MALAQUIAS (profeta, último dos profetas do Antigo Testamento)",
+          "date": "c. 465 a.C. (ou um pouco mais tarde, pós-reconstrução do templo)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ESDRAS ENVIADO A JUDÁ (mestre da Lei)",
+          "date": "457 a.C. (data tradicional)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JOEL (profeta, a datação é debatida, alguns o colocam aqui no período pós-exílico)",
+          "date": "c. 450 a.C. (se pós-exílico, senão antes)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "NEEMIAS GOVERNA JUDÁ (reconstrói os muros de Jerusalém)",
+          "date": "444-432 a.C. (primeiro mandato)"
+        },
+        {
+          "category": "História Bíblica",
+          "event": "NEEMIAS NA BABILÔNIA (retorna brevemente)",
+          "date": "c. 432-430 a.C. (aproximado, antes de retornar para o segundo mandato)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Assíria governa o Egito (brevemente)",
+          "date": "671-652 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Nínive, capital da Assíria, cai perante os babilônios e os medos",
+          "date": "612 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Babilônia cai para a Pérsia (Ciro, o Grande)",
+          "date": "539 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Buda, Índia",
+          "date": "c. 550-480 a.C. (datas tradicionais)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Confúcio, filósofo chinês",
+          "date": "551-479 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "República Romana estabelecida",
+          "date": "509 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Egito governado pelos persas (Primeiro Período Persa)",
+          "date": "525-405 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Heródoto (historiador grego, 'Pai da História')",
+          "date": "c. 485-424 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Péricles (estadista ateniense, Idade de Ouro de Atenas)",
+          "date": "c. 500-429 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Guerra do Peloponeso entre Atenas e Esparta",
+          "date": "431-404 a.C."
+        },
+        {
+          "category": "História do Oriente Médio",
+          "group": "Império Assírio (Declínio e Queda)",
+          "rulers_and_events": [
+            {"name": "Sargão II", "reign": "722-705 a.C.", "notes": "Captura Samaria."},
+            {"name": "Senaqueribe", "reign": "704-681 a.C.", "notes": "Campanhas contra Judá (Ezequias)."},
+            {"name": "Esar-Hadom", "reign": "680-669 a.C.", "notes": "Conquista o Egito."},
+            {"name": "Assurbanípal", "reign": "668-627 a.C.", "notes": "Auge da cultura assíria, biblioteca em Nínive."}
+          ]
+        },
+        {
+          "category": "História do Oriente Médio",
+          "group": "Império Neobabilônico (Caldeu)",
+          "rulers_and_events": [
+            {"name": "Nabopolassar I", "reign": "625-605 a.C.", "notes": "Funda o Império Neobabilônico, alia-se aos medos para destruir Nínive."},
+            {"name": "Nabucodonosor II", "reign": "604-562 a.C.", "notes": "Destrói Jerusalém, exila judeus, constrói os Jardins Suspensos (lenda)."}
+          ]
+        },
+        {
+          "category": "História do Oriente Médio",
+          "group": "Império Persa (Aquemênida) - Ascensão",
+          "rulers_and_events": [
+            {"name": "Ciro, o Grande", "reign": "559-530 a.C.", "notes": "Conquista a Babilônia (539 a.C.), emite édito para os judeus retornarem."},
+            {"name": "Cambises II", "reign": "529-522 a.C.", "notes": "Conquista o Egito."},
+            {"name": "Dario I (Dario, o Grande)", "reign": "522-486 a.C.", "notes": "Organiza o império, apoia a reconstrução do templo, começam as Guerras Greco-Persas."},
+            {"name": "Xerxes I (Assuero de Ester)", "reign": "485-465 a.C.", "notes": "Invasão da Grécia (Termópilas, Salamina)."},
+            {"name": "Artaxerxes I Longímano", "reign": "464-424 a.C.", "notes": "Esdras e Neemias ativos durante seu reinado."},
+            {"name": "Dario II", "reign": "423-405 a.C."}
+          ]
+        },
+        {
+            "category": "História do Oriente Médio",
+            "event": "Dario (Gubaru), o Medo, governador da Babilônia",
+            "date": "539 a.C. (segundo Daniel, identidade debatida por historiadores, possivelmente um título ou governador regional sob Ciro)"
+        }
+      ]
+    },
+    {
+      "periodName": "400 a.C. - 1 d.C. (Período Intertestamentário)",
+      "biblicalBooksContext": "Nenhum novo livro canônico do Antigo Testamento segundo o cânon protestante. Livros deuterocanônicos/apócrifos (ex: 1 & 2 Macabeus, Judite, Tobias, Sabedoria de Salomão, Sirácida) são em grande parte desta era. Início dos eventos do Novo Testamento no final deste período.",
+      "events": [
+        {
+          "category": "História Judaica",
+          "event": "Palestina sob Domínio Persa (continua)",
+          "date": "Início deste período, até Alexandre"
+        },
+        {
+          "category": "História Judaica",
+          "event": "ALEXANDRE, O GRANDE, CONQUISTA O EGITO E A PALESTINA, COMEÇA A HELENIZAÇÃO",
+          "date": "332 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "EGITO PTOLEMAICO CONTROLA A PALESTINA",
+          "date": "c. 331-198 a.C. (ou mais precisamente 323/301 - 198 a.C. após a morte de Alexandre e as guerras dos Diádocos)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "SEPTUAGINTA (LXX) - Escrituras traduzidas para o grego em Alexandria",
+          "date": "Começa c. 285-246 a.C. (Pentateuco primeiro, o resto nos séculos seguintes)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "OS SELÊUCIDAS SÍRIOS COMEÇAM A GOVERNAR A PALESTINA",
+          "date": "198 a.C. (após a Batalha de Pânio)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "Sacerdotes judeus inicialmente em bons termos com os selêucidas",
+          "date": "Início do domínio selêucida"
+        },
+        {
+          "category": "História Judaica",
+          "event": "O GOVERNANTE SELÊUCIDA ANTÍOCO IV EPIFÂNIO TENTA FORÇAR OS JUDEUS A ABANDONAR SUA LEI, PROFANA O TEMPLO (Abominação da Desolação)",
+          "date": "175-163 a.C. (perseguição se intensifica c. 167 a.C.)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "JUDAS MACABEU LIDERA UMA REVOLTA JUDAICA CONTRA OS SELÊUCIDAS (REVOLTA DOS MACABEUS)",
+          "date": "166-160 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "TEMPLO EM JERUSALÉM REDEDICADO, HANUCÁ INSTITUÍDO",
+          "date": "164 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "JÔNATAS, IRMÃO DE JUDAS MACABEU, CONTINUA A REVOLTA, TORNA-SE SUMO SACERDOTE",
+          "date": "160-143 a.C. (Sumo Sacerdote a partir de 152 a.C.)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "SIMÃO, IRMÃO DE JUDAS MACABEU, GOVERNA A JUDEIA, ALCANÇA INDEPENDÊNCIA POLÍTICA",
+          "date": "142-135 a.C. (Independência c. 142/141 a.C.)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "DINASTIA HASMONEIA (Autogoverno Judaico)",
+          "date": "c. 142-63 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "JOÃO HIRCANO I, SUMO SACERDOTE E GOVERNANTE DA JUDEIA",
+          "date": "134-104 a.C. (expande território, destrói o templo samaritano)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "ARISTÓBULO I DECLARA-SE REI (primeiro rei hasmoneu)",
+          "date": "104-103 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "ALEXANDRE JANEU SUCEDE ARISTÓBULO COMO REI E SUMO SACERDOTE",
+          "date": "103-76 a.C. (período de conflito e expansão)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "SALOMÉ ALEXANDRA (Rainha, viúva de Janeu)",
+          "date": "76-67 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "ARISTÓBULO II (e Hircano II, filhos de Salomé, guerra civil)",
+          "date": "67-63 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "POMPEU CONQUISTA JERUSALÉM PARA ROMA, JUDEIA TORNA-SE UM ESTADO CLIENTE ROMANO",
+          "date": "63 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "HIRCANO II, SUMO SACERDOTE (sob influência romana)",
+          "date": "63-40 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "ANTÍPATRO, O IDUMEU (pai de Herodes) ganha poder na Judeia sob Roma",
+          "date": "A partir de c. 63 a.C., nomeado Procurador c. 47 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "HERODES, O GRANDE, NOMEADO REI DA JUDEIA POR ROMA",
+          "date": "40 a.C. (governo efetivo a partir de 37 a.C.)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "HERODES COMEÇA A REFORMAR O TEMPLO EM JERUSALÉM (Templo de Herodes)",
+          "date": "c. 20/19 a.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "HILEL E SHAMAI SÃO OS PRINCIPAIS RABINOS / ESCOLAS FARISEIAS",
+          "date": "c. 30 a.C. - 10 d.C."
+        },
+        {
+          "category": "História Judaica",
+          "event": "MANUSCRITOS DO MAR MORTO (cópias das Escrituras e escritos sectários)",
+          "date": "Escritos/copiados c. 200 a.C. - 70 d.C. (comunidade de Qumran ativa)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "JOÃO BATISTA NASCE",
+          "date": "c. 7-5 a.C. (sobrepõe-se ao início do período d.C.)"
+        },
+        {
+          "category": "História Judaica",
+          "event": "JESUS NASCE EM BELÉM",
+          "date": "c. 6-4 a.C. (sobrepõe-se ao início do período d.C.)"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Artaxerxes II (Pérsia)",
+          "reign": "404-359 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Artaxerxes III (Pérsia)",
+          "reign": "358-338 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Egito independente da Pérsia (brevemente)",
+          "date": "405-342 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Pérsia retoma o controle do Egito",
+          "date": "342-332 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "ALEXANDRE, O GRANDE (Macedônia)",
+          "reign": "336-323 a.C.",
+          "image_description": "Busto de Alexandre"
+        },
+        {
+          "category": "História Mundial",
+          "event": "IMPÉRIO ALEXANDRINO DIVIDIDO; PTOLOMEU GOVERNA O EGITO, SELEUCO GOVERNA A PÉRSIA E A SÍRIA, ANTÍGONO GOVERNA A MACEDÔNIA E A GRÉCIA",
+          "date": "323 a.C. (Seguem-se as Guerras dos Diádocos)"
+        },
+        {
+          "category": "História Mundial",
+          "group": "Ptolomeus do Egito (Governantes Helenísticos)",
+          "rulers_chronology": [
+            {"name": "PTOLOMEU I SÓTER", "reign": "323-285/283 a.C. (Sátrapa a partir de 323, Rei a partir de 305)"},
+            {"name": "PTOLOMEU II FILADELFO", "reign": "285/283-246 a.C."},
+            {"name": "PTOLOMEU III EVÉRGETA", "reign": "246-221 a.C."},
+            {"name": "PTOLOMEU IV FILOPÁTOR", "reign": "221-203 a.C."},
+            {"name": "PTOLOMEU V EPÍFANES", "reign": "203-181 a.C."}
+          ]
+        },
+        {
+          "category": "História Mundial",
+          "group": "Selêucidas da Síria (Governantes Helenísticos)",
+          "rulers_chronology": [
+            {"name": "SELEUCO I NICATOR", "reign": "312-281 a.C. (Sátrapa a partir de 321, Rei a partir de 305)"},
+            {"name": "ANTÍOCO I SÓTER", "reign": "280-261 a.C."},
+            {"name": "ANTÍOCO II TÉOS", "reign": "261-247 a.C."},
+            {"name": "ANTÍOCO III, O GRANDE", "reign": "223-187 a.C.", "details": "Derrotado pelos romanos em Magnésia (190 a.C.)."},
+            {"name": "SELEUCO IV FILOPÁTOR", "reign": "187-175 a.C."},
+            {"name": "ANTÍOCO IV EPIFÂNIO", "reign": "175-163 a.C.", "details": "Persegue os judeus."},
+            {"name": "ANTÍOCO V EUPÁTOR", "reign": "163-162 a.C."},
+            {"name": "DEMÉTRIO I SÓTER", "reign": "162-150 a.C."},
+            {"name": "ALEXANDRE BALAS", "reign": "150-145 a.C."},
+            {"name": "DEMÉTRIO II NICATOR", "reign": "145-138 a.C. (primeiro reinado)"},
+            {"name": "ANTÍOCO VI DIÔNISO", "reign": "145-142 a.C. (rival/co-governante)"},
+            {"name": "ANTÍOCO VII SÍDETES", "reign": "138-129 a.C."}
+          ]
+        },
+        {
+          "category": "História Mundial",
+          "event": "Gauleses saqueiam Roma",
+          "date": "c. 390 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Primeira Guerra Púnica (Roma vs. Cartago)",
+          "date": "264-241 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Segunda Guerra Púnica (Aníbal na Itália)",
+          "date": "219-201 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Pedra de Roseta, tributo a Ptolomeu V, escrita em grego, hieróglifos egípcios e demótico egípcio",
+          "date": "196 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Terceira Guerra Púnica: Romanos controlam a Grécia, destroem Corinto, destroem Cartago",
+          "date": "149-146 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Espártaco lidera revolta de escravos na Itália",
+          "date": "73-71 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Júlio César, Crasso e Pompeu formam o Primeiro Triunvirato (Roma)",
+          "date": "60 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Júlio César assassinado",
+          "date": "44 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Batalha de Filipos (Antônio e Otaviano derrotam Bruto e Cássio)",
+          "date": "42 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Cleópatra VII governa o Egito (última governante ptolemaica)",
+          "date": "51-31 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Batalha de Ácio, Roma (Otaviano) controla o Egito",
+          "date": "31 a.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "CÉSAR AUGUSTO (OTAVIANO), PRIMEIRO IMPERADOR ROMANO",
+          "date": "27 a.C. - 14 d.C.",
+          "details": "Início do Império Romano e da Pax Romana."
+        },
+        {
+          "category": "Visuals",
+          "items": ["Édito no Cilindro de Ciro (anterior, mas contexto para a Pérsia)", "Ruínas de Éfeso", "Monte Vesúvio (entra em erupção mais tarde, mas geograficamente relevante)", "Massada", "Coliseu Romano (construído mais tarde, mas representa o poder romano)"]
+        }
+      ]
+    },
+    {
+      "periodName": "1 d.C. - 100+ d.C.",
+      "biblicalBooksContext": "MATEUS, LUCAS, MARCOS, JOÃO, ATOS, TIAGO, 1&2 CORÍNTIOS, ROMANOS, EFÉSIOS, FILIPENSES, COLOSSENSES, TITO, 1&2 TIMÓTEO, FILEMON, HEBREUS, 1&2 PEDRO, JUDAS, 1,2&3 JOÃO, APOCALIPSE",
+      "events": [
+        {
+          "category": "História Bíblica",
+          "event": "JOÃO BATISTA NASCE",
+          "date": "7-5 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JESUS NASCE EM BELÉM",
+          "date": "6-4 a.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "HERODES ARQUELAU GOVERNA A JUDEIA",
+          "date": "4 a.C. - 6 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "HERODES ANTIPAS GOVERNA A GALILEIA",
+          "date": "4 a.C. - 39 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JESUS IMPRESSIONA OS MESTRES NO TEMPLO",
+          "date": "c. 7 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JUDEIA TORNA-SE UMA PROVÍNCIA ROMANA GOVERNADA POR UM PREFEITO/PROCURADOR",
+          "date": "6-41 d.C., 44-46 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "CAIFÁS, SUMO SACERDOTE",
+          "date": "18-36 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JESUS É BATIZADO, MINISTÉRIO COMEÇA",
+          "date": "c. 26 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "PÔNCIO PILATOS, GOVERNADOR DA JUDEIA",
+          "date": "26-36 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "CRUCIFICAÇÃO, MORTE E RESSURREIÇÃO DE JESUS CRISTO",
+          "date": "c. 30 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "CRISTO RESSUSCITADO É VISTO POR MAIS DE 500 PESSOAS, ASCENDE AO CÉU",
+          "date": "c. 30 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "ESTÊVÃO MARTIRIZADO",
+          "date": "c. 32 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "CONVERSÃO DE PAULO",
+          "date": "c. 37 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "EVANGELHO PREGADO AOS GENTIOS",
+          "date": "c. 40 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "HERODES AGRIPA I, REI DA JUDEIA",
+          "date": "41-44 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "TIAGO, O APÓSTOLO, MARTIRIZADO",
+          "date": "c. 44 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "PRIMEIRA VIAGEM MISSIONÁRIA DE PAULO",
+          "date": "c. 47-49 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "JUDEUS, INCLUINDO PRISCILA E ÁQUILA, EXPULSOS DE ROMA",
+          "date": "49 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "CONCÍLIO DE JERUSALÉM",
+          "date": "c. 49 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "SEGUNDA VIAGEM MISSIONÁRIA DE PAULO",
+          "date": "c. 49-51 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "PRIMEIROS LIVROS DO NOVO TESTAMENTO ESCRITOS",
+          "date": "c. 49 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "FÉLIX, GOVERNADOR DA JUDEIA",
+          "date": "52-57 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "TERCEIRA VIAGEM MISSIONÁRIA DE PAULO",
+          "date": "c. 52-57 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "FESTO, GOVERNADOR DA JUDEIA",
+          "date": "59-62 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "TIAGO, O IRMÃO DE JESUS, MARTIRIZADO",
+          "date": "62 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "PEDRO E PAULO MARTIRIZADOS EM ROMA",
+          "date": "c. 64 ou c. 68 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "CRISTÃOS DE JERUSALÉM FOGEM EM VEZ DE SE JUNTAR À REVOLTA JUDAICA",
+          "date": "66 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "REVOLTA JUDAICA",
+          "date": "66-73 d.C."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "APÓSTOLO JOÃO EXILADO EM PATMOS NO MAR EGEU",
+          "date": "Durante o governo de Domiciano (81-96 d.C.) ou o governo de Nero (54-68 d.C.)",
+          "notes": "Alguns estudiosos acreditam que o exílio de João foi sob o governo de Domiciano; outros acreditam que foi sob o governo de Nero."
+        },
+        {
+          "category": "História Bíblica",
+          "event": "LIVRO DO APOCALIPSE ESCRITO",
+          "date": "c. 90-96 d.C. ou c. 68-69 d.C.",
+          "notes": "Veja a nota para o exílio de João."
+        },
+         {
+          "category": "História Mundial",
+          "event": "Hilel e Shamai são os principais rabinos",
+          "date": "30 a.C. - 10 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "César Augusto (Otaviano), primeiro Imperador Romano",
+          "date": "27 a.C. - 14 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Fílon de Alexandria",
+          "date": "20 a.C. - 50 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Tibério",
+          "date": "14-37 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Calígula",
+          "date": "37-41 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Cláudio",
+          "date": "41-54 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Cláudio conquista a Britânia para Roma",
+          "date": "43 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Gálio, procônsul da Acaia",
+          "date": "51-52 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Nero",
+          "date": "54-68 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Roma queima, Nero culpa e persegue os cristãos",
+          "date": "64-68 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperadores Galba, Otão, Vitélio",
+          "date": "68-69 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Vespasiano",
+          "date": "69-79 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Romanos destroem o templo judaico e Jerusalém",
+          "date": "70 d.C.",
+          "notes": "Qumran destruída em 68 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Começa a construção do Coliseu Romano",
+          "date": "71 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Massada cai perante os romanos",
+          "date": "73 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Monte Vesúvio entra em erupção, destruindo Pompeia e Herculano",
+          "date": "79 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Tito",
+          "date": "79-81 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Dedicação do Coliseu",
+          "date": "80 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Domiciano",
+          "date": "81-96 d.C.",
+          "details": "Exige o título de 'Senhor e Deus'"
+        },
+        {
+          "category": "História Mundial",
+          "event": "Josefo, historiador judeu",
+          "date": "37-100 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Nerva",
+          "date": "96-98 d.C."
+        },
+        {
+          "category": "História Mundial",
+          "event": "Imperador Trajano",
+          "date": "98-117 d.C."
+        }
+      ]
+    }
+  ]
+}
