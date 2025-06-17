@@ -2,11 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/actions.dart'; // Importar ações
-import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/redux/store.dart'; // Para AppState
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:septima_biblia/consts.dart'; // <<< IMPORTAR SEU ARQUIVO DE CONSTANTES GLOBAIS
 
-const String _guestUserCoinsPrefsKeyFromSermonSearch =
-    'sermon_search_guest_user_coins';
+// Remova a definição local da chave se você a importou de consts.dart
+// const String _guestUserCoinsPrefsKeyFromSermonSearch = 'sermon_search_guest_user_coins'; // REMOVER OU COMENTAR
 
 class StartScreenPage extends StatelessWidget {
   const StartScreenPage({super.key});
@@ -53,55 +54,80 @@ class StartScreenPage extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
+                    // Se o usuário escolher logar, a StartScreen será removida da pilha
+                    // e a LoginPage será mostrada.
                     Navigator.pushReplacementNamed(context, '/login');
                   },
                   child: const Text('Login / Cadastrar'),
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton(
-                  style: OutlinedButton.styleFrom(/* ... */),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: theme.colorScheme.primary),
+                    foregroundColor: theme.colorScheme.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle:
+                        theme.textTheme.labelLarge?.copyWith(fontSize: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   onPressed: () async {
                     final store =
                         StoreProvider.of<AppState>(context, listen: false);
 
+                    int? loadedGuestCoins;
+                    int loadedAdsToday = 0;
+                    DateTime? loadedLastAdTime;
+
                     try {
                       final prefs = await SharedPreferences.getInstance();
 
-                      // Carrega moedas salvas para o convidado usando a chave correta
-                      final int? guestCoins =
-                          prefs.getInt(_guestUserCoinsPrefsKeyFromSermonSearch);
-                      // A lógica para guestAdsToday e guestLastAdTime do ad_middleware pode permanecer
-                      // se você quiser que os limites de anúncios recompensados sejam separados
-                      // das moedas gastas em buscas. Se não, precisaria de chaves separadas para eles também.
+                      // Carrega moedas salvas para o convidado usando a constante global
+                      loadedGuestCoins = prefs.getInt(guestUserCoinsPrefsKey);
+                      print(
+                          "StartScreenPage: Moedas do convidado lidas do SharedPreferences (Chave: '$guestUserCoinsPrefsKey'): $loadedGuestCoins");
 
-                      // Para simplificar, vamos focar apenas nas moedas agora.
-                      // A lógica de resetar adsToday do ad_middleware pode ser mantida.
-                      int finalAdsToday =
-                          0; // Resetar se for o caso, ou carregar
-                      DateTime? finalLastAdTime; // Carregar se for o caso
-                      // Exemplo de como você carregaria os outros dados de anúncio do convidado (do ad_middleware):
-                      // final int? guestAdsTodayFromAd = prefs.getInt('guest_ads_today'); // Use a chave do ad_middleware
-                      // final String? lastAdTimeStringFromAd = prefs.getString('guest_last_ad_time'); // Use a chave do ad_middleware
-                      // final DateTime? guestLastAdTimeFromAd = lastAdTimeStringFromAd != null ? DateTime.tryParse(lastAdTimeStringFromAd) : null;
-                      // if (guestLastAdTimeFromAd != null) {
+                      // Carrega dados relacionados a anúncios recompensados do convidado
+                      // Use chaves diferentes para estes se forem distintos do saldo de moedas gasto em buscas
+                      // Por exemplo, defina estas chaves em consts.dart também:
+                      // const String guestLastAdTimePrefsKey = 'guest_last_ad_time_reward';
+                      // const String guestAdsTodayPrefsKey = 'guest_ads_today_reward';
+
+                      // Se você tem chaves separadas para os dados de anúncios do ad_middleware:
+                      // final String? lastAdTimeStringFromAd = prefs.getString(guestLastAdTimePrefsKey); // Usaria a chave do ad_middleware
+                      // loadedLastAdTime = lastAdTimeStringFromAd != null ? DateTime.tryParse(lastAdTimeStringFromAd) : null;
+                      // final int? guestAdsTodayFromAd = prefs.getInt(guestAdsTodayPrefsKey); // Usaria a chave do ad_middleware
+
+                      // Lógica para resetar adsToday se for um novo dia (se você estiver carregando esses dados)
+                      // if (loadedLastAdTime != null) {
                       //     final now = DateTime.now();
-                      //     if(now.year > guestLastAdTimeFromAd.year || now.month > guestLastAdTimeFromAd.month || now.day > guestLastAdTimeFromAd.day) {
-                      //         finalAdsToday = 0;
+                      //     if(now.year > loadedLastAdTime!.year || now.month > loadedLastAdTime!.month || now.day > loadedLastAdTime!.day) {
+                      //         loadedAdsToday = 0;
                       //     } else {
-                      //         finalAdsToday = guestAdsTodayFromAd ?? 0;
+                      //         loadedAdsToday = guestAdsTodayFromAd ?? 0;
                       //     }
-                      //     finalLastAdTime = guestLastAdTimeFromAd;
+                      // } else {
+                      //    loadedAdsToday = guestAdsTodayFromAd ?? 0;
                       // }
-
-                      store.dispatch(UserEnteredGuestModeAction(
-                        initialCoins: guestCoins, // Passa as moedas carregadas
-                        // initialAdsToday: finalAdsToday,         // Opcional: se quiser carregar do ad_middleware
-                        // initialLastAdTime: finalLastAdTime,       // Opcional: se quiser carregar do ad_middleware
-                      ));
                     } catch (e) {
-                      print("Erro ao carregar dados de convidado: $e");
-                      store.dispatch(UserEnteredGuestModeAction());
+                      print(
+                          "StartScreenPage: Erro ao carregar dados de convidado do SharedPreferences: $e");
+                      // Não impede o fluxo, usará os defaults na ação
                     }
+
+                    // Despacha a ação com os dados carregados (ou nulos/padrão se não encontrados/erro)
+                    store.dispatch(UserEnteredGuestModeAction(
+                      initialCoins:
+                          loadedGuestCoins, // Passa as moedas carregadas (pode ser null)
+                      initialAdsToday:
+                          loadedAdsToday, // Passa o valor (pode ser 0)
+                      initialLastAdTime:
+                          loadedLastAdTime, // Passa o valor (pode ser null)
+                    ));
+
+                    // Solicita a navegação para a aba da Bíblia (índice 1) para convidados
+                    store.dispatch(RequestBottomNavChangeAction(1));
 
                     Navigator.pushNamedAndRemoveUntil(
                         context, '/mainAppScreen', (route) => false);

@@ -12,11 +12,14 @@ import 'package:septima_biblia/redux/actions.dart'; // Para UpdateUserCoinsActio
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart'; // Para DateFormat
+import 'package:septima_biblia/consts.dart'; // <<< IMPORTAR ARQUIVO DE CONSTANTES
 
+// Custo da busca semântica na Bíblia
 const int BIBLE_SEARCH_COST = 3;
-const String guestUserCoinsPrefsKeyForBibleSearch = 'shared_guest_user_coins';
-const String _searchHistoryKeyPrefs =
-    'bible_search_history_guest'; // Chave específica para histórico de convidado
+// Não precisa definir guestUserCoinsPrefsKeyForBibleSearch aqui se estiver importando de consts.dart
+
+// Chave específica para o histórico de busca bíblica do convidado no SharedPreferences
+const String _bibleSearchHistoryKeyPrefsGuest = 'bible_search_history_guest';
 
 // Função Helper para salvar histórico
 Future<void> _saveSearchHistory(Store<AppState> store, String query,
@@ -36,7 +39,6 @@ Future<void> _saveSearchHistory(Store<AppState> store, String query,
     // Usuário Logado
     final firestoreService = FirestoreService();
     try {
-      // A lista 'currentHistoryToPersist' já tem no máximo 50 itens.
       await firestoreService.updateUserField(
           userId, 'bibleSearchHistory', currentHistoryToPersist);
       print(
@@ -49,9 +51,9 @@ Future<void> _saveSearchHistory(Store<AppState> store, String query,
     // Usuário Convidado
     try {
       final prefs = await SharedPreferences.getInstance();
-      // A lista 'currentHistoryToPersist' já tem no máximo 50 itens.
       final String historyJson = jsonEncode(currentHistoryToPersist);
-      await prefs.setString(_searchHistoryKeyPrefs, historyJson);
+      await prefs.setString(_bibleSearchHistoryKeyPrefsGuest,
+          historyJson); // Usa a chave específica para o histórico
       print(
           "BibleSearchMiddleware: Histórico de busca bíblica (limitado a ${currentHistoryToPersist.length} itens) salvo no SharedPreferences para convidado.");
     } catch (e) {
@@ -90,7 +92,8 @@ void _handleLoadSearchHistory(Store<AppState> store,
     // Usuário Convidado
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String? historyJson = prefs.getString(_searchHistoryKeyPrefs);
+      final String? historyJson = prefs.getString(
+          _bibleSearchHistoryKeyPrefsGuest); // Usa a chave específica para o histórico
       if (historyJson != null) {
         final List<dynamic> decodedList = jsonDecode(historyJson);
         history = decodedList
@@ -105,14 +108,13 @@ void _handleLoadSearchHistory(Store<AppState> store,
     }
   }
 
-  // Ordena por timestamp (descendente) se o timestamp foi salvo corretamente
   history.sort((a, b) {
     final DateTime? timeA = DateTime.tryParse(a['timestamp'] as String? ?? '');
     final DateTime? timeB = DateTime.tryParse(b['timestamp'] as String? ?? '');
     if (timeA == null && timeB == null) return 0;
-    if (timeA == null) return 1; // Nulos no final
+    if (timeA == null) return 1;
     if (timeB == null) return -1;
-    return timeB.compareTo(timeA); // Mais recente primeiro
+    return timeB.compareTo(timeA);
   });
 
   store.dispatch(SearchHistoryLoadedAction(history));
@@ -127,7 +129,7 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     return;
   }
 
-  next(action); // Reducer define isLoading e isProcessingPayment para true
+  next(action);
 
   final BuildContext? currentContext = navigatorKey.currentContext;
   final UserState currentUserState = store.state.userState;
@@ -192,7 +194,8 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     } else if (isGuest) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt(guestUserCoinsPrefsKeyForBibleSearch, newCoinTotal);
+        await prefs.setInt(
+            guestUserCoinsPrefsKey, newCoinTotal); // <<< USA A CONSTANTE GLOBAL
         print(
             "BibleSearchMiddleware: Moedas (convidado) atualizadas no SharedPreferences: $newCoinTotal");
       } catch (e) {
@@ -205,8 +208,6 @@ void _handleSearchBibleSemantic(Store<AppState> store,
       print("BibleSearchMiddleware: $errorPersistence");
       store.dispatch(SearchBibleSemanticFailureAction(
           'Erro ao processar custo da busca.'));
-      // Opcional: reverter a atualização de moedas no Redux se a persistência falhar
-      // store.dispatch(UpdateUserCoinsAction(userCoins));
       return;
     }
 

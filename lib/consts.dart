@@ -25,3 +25,5 @@ const Map<String, int> stripePriceAmountMap = {
   stripePriceIdRecurring: 1999, // R$ 19.99
   stripePriceIdQuarterly: 4797, // R$ 47.97
 };
+
+const String guestUserCoinsPrefsKey = 'global_guest_user_coins_balance';

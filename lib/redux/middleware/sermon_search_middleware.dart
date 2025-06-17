@@ -12,18 +12,14 @@ import 'package:septima_biblia/redux/actions.dart'; // Para UpdateUserCoinsActio
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart'; // Para DateFormat
+import 'package:septima_biblia/consts.dart'; // <<< IMPORTAR ARQUIVO DE CONSTANTES GLOBAIS
 
+// Custo da busca de sermões
 const int SERMON_SEARCH_COST = 3;
+// Não precisa definir guestUserCoinsPrefsKey aqui se estiver importando de consts.dart
 
-// Chave para SharedPreferences para o histórico de busca de sermões do convidado
+// Chave específica para o histórico de busca de sermões do convidado no SharedPreferences
 const String _sermonSearchHistoryKeyPrefsGuest = 'sermon_search_history_guest';
-
-// Chave para SharedPreferences para as moedas do usuário convidado.
-// **IMPORTANTE:** Esta chave DEVE ser a mesma usada no ad_middleware.dart e na StartScreenPage
-// se você quiser que o saldo de moedas do convidado seja compartilhado entre as funcionalidades.
-// Se cada funcionalidade tiver seu próprio "pote" de moedas para convidados, use chaves diferentes.
-// Para este exemplo, vamos assumir que é um pote compartilhado.
-const String _guestUserCoinsPrefsKey = 'shared_guest_user_coins';
 
 // Função Helper para salvar histórico de sermões
 Future<void> _saveSermonSearchHistory(Store<AppState> store, String query,
@@ -45,8 +41,8 @@ Future<void> _saveSermonSearchHistory(Store<AppState> store, String query,
     // Usuário Logado
     final firestoreService = FirestoreService();
     try {
-      // Salva no Firestore. CUIDADO com o limite de 1MB do documento se 'results' for grande.
-      // Considere uma subcoleção para 'sermonSearchHistory' se necessário.
+      // Salva no Firestore.
+      // IMPORTANTE: Use uma chave diferente para o histórico de sermões para não sobrescrever o da Bíblia.
       await firestoreService.updateUserField(
           userId, 'sermonSearchHistory', currentHistoryToPersist);
       print(
@@ -85,6 +81,7 @@ void _handleLoadSermonSearchHistory(Store<AppState> store,
     final firestoreService = FirestoreService();
     try {
       final userDoc = await firestoreService.getUserDetails(userId);
+      // IMPORTANTE: Use a chave correta, ex: 'sermonSearchHistory'
       if (userDoc != null && userDoc['sermonSearchHistory'] is List) {
         history = List<Map<String, dynamic>>.from(
             userDoc['sermonSearchHistory'] as List<dynamic>);
@@ -212,10 +209,10 @@ void _handleSearchSermons(
       // Usuário Convidado
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt(_guestUserCoinsPrefsKey,
-            newCoinTotal); // Usa a chave correta para moedas
+        await prefs.setInt(
+            guestUserCoinsPrefsKey, newCoinTotal); // <<< USA A CONSTANTE GLOBAL
         print(
-            "SermonSearchMiddleware: Moedas (convidado) atualizadas no SharedPreferences: $newCoinTotal");
+            "SermonSearchMiddleware: Moedas (convidado) atualizadas no SharedPreferences: $newCoinTotal usando a chave '$guestUserCoinsPrefsKey'");
       } catch (e) {
         errorPersistence = "Erro ao salvar moedas (SharedPreferences): $e";
       }
@@ -225,13 +222,12 @@ void _handleSearchSermons(
       print("SermonSearchMiddleware: $errorPersistence");
       store.dispatch(SearchSermonsFailureAction(
           'Erro ao processar custo da busca de sermões.'));
-      // Opcional: reverter a atualização de moedas no Redux.
-      // store.dispatch(UpdateUserCoinsAction(userCoins));
       return;
     }
     if (currentContext != null && currentContext.mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentContext.mounted) {
+          // Verifica novamente
           ScaffoldMessenger.of(currentContext).showSnackBar(
             const SnackBar(
                 content: Text(
@@ -242,7 +238,7 @@ void _handleSearchSermons(
     }
   } else {
     print(
-        "SermonSearchMiddleware: Usuário é premium. Busca de sermões sem custo de moedas.");
+        "SermonSearchMiddleware: Usuário é premium. Busca de sermões sem custo.");
   }
   // --- FIM DA LÓGICA DE CUSTO ---
 
@@ -259,7 +255,7 @@ void _handleSearchSermons(
       'query': action.query,
       'topKSermons': action.topKSermons,
       'topKParagraphs': action.topKParagraphs,
-      // 'filters': action.filters, // Adicionar se você implementar filtros para sermões
+      // 'filters': action.filters, // Se você tiver filtros para sermões
     };
 
     print(
@@ -268,8 +264,7 @@ void _handleSearchSermons(
         await callable.call<Map<String, dynamic>>(requestData);
 
     List<Map<String, dynamic>> resultsList = [];
-    final dynamic rawResults = response.data?[
-        'sermons']; // A chave 'sermons' deve corresponder ao que sua CF retorna
+    final dynamic rawResults = response.data?['sermons'];
 
     if (rawResults is List) {
       resultsList = rawResults
@@ -290,7 +285,6 @@ void _handleSearchSermons(
       print('SermonSearchMiddleware: "sermons" da CF é nulo.');
     }
 
-    // Salva no histórico se houver resultados
     if (resultsList.isNotEmpty) {
       await _saveSermonSearchHistory(store, action.query, resultsList);
     }

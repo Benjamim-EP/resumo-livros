@@ -1,6 +1,7 @@
 // lib/redux/middleware/ad_middleware.dart
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/consts.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/AdHelperStartIo.dart';
@@ -45,6 +46,7 @@ Future<void> _saveGuestAdStatsToPrefs(
   try {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_prefsGuestCoinsKey, coins);
+    await prefs.setInt(guestUserCoinsPrefsKey, coins);
     await prefs.setString(
         _prefsGuestLastAdTimeKey, lastAdTime.toIso8601String());
     await prefs.setInt(_prefsGuestAdsTodayKey, adsToday);
