@@ -27,6 +27,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart'
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class _BiblePageViewModel {
   final String? initialBook;
@@ -119,6 +120,7 @@ class _BiblePageState extends State<BiblePage> {
   String? selectedTranslation2 = 'acf';
   bool _isCompareModeActive = false;
   bool _isFocusModeActive = false;
+  final FirestoreService _firestoreService = FirestoreService();
 
   String? _expandedItemId;
   String? _loadedExpandedContent;
@@ -485,10 +487,13 @@ class _BiblePageState extends State<BiblePage> {
 
   void _toggleItemExpansionInBiblePage(
       Map<String, dynamic> metadata, String itemId) async {
+    if (!mounted) return; // Adiciona verificação
+
     if (_expandedItemId == itemId) {
       setState(() {
         _expandedItemId = null;
         _loadedExpandedContent = null;
+        _isLoadingExpandedContent = false; // Garante que o loading para
       });
     } else {
       setState(() {
@@ -496,15 +501,16 @@ class _BiblePageState extends State<BiblePage> {
         _isLoadingExpandedContent = true;
         _loadedExpandedContent = null;
       });
-      final content = await _fetchDetailedContentForBiblePage(
-          metadata, itemId); // Chama a nova função
+      final content = await _fetchDetailedContentForBiblePage(metadata, itemId);
       if (mounted && _expandedItemId == itemId) {
+        // Verifica se ainda é o mesmo item expandido
         setState(() {
           _loadedExpandedContent = content;
           _isLoadingExpandedContent = false;
         });
       } else if (mounted && _expandedItemId != itemId) {
-        // Se o usuário clicou em outro item antes deste carregar
+        // Se o usuário clicou em outro item enquanto este carregava, não faz nada com o conteúdo antigo.
+        // Se o item foi colapsado (_expandedItemId == null) enquanto carregava
         if (_isLoadingExpandedContent && _expandedItemId == null) {
           setState(() => _isLoadingExpandedContent = false);
         }
@@ -517,10 +523,10 @@ class _BiblePageState extends State<BiblePage> {
     final tipo = metadata['tipo'] as String?;
     final bookAbbrev = metadata['livro_curto'] as String?;
     final chapterStr = metadata['capitulo']?.toString();
-    final versesRange = metadata['versiculos'] as String?; // Ex: "1-5" ou "10"
+    final versesRange = metadata['versiculos'] as String?;
 
     print(
-        "Fetching detailed content for itemId: $itemId, tipo: $tipo, book: $bookAbbrev, chapter: $chapterStr, verses: $versesRange");
+        "Fetching detailed content for BiblePage - itemId: $itemId, tipo: $tipo, book: $bookAbbrev, chapter: $chapterStr, verses: $versesRange");
 
     if (tipo == 'biblia_versiculos' &&
         bookAbbrev != null &&
@@ -529,27 +535,19 @@ class _BiblePageState extends State<BiblePage> {
       try {
         final List<String> versesContent = [];
         final int? chapterInt = int.tryParse(chapterStr);
-        if (chapterInt == null) {
-          print("Erro: Capítulo inválido '$chapterStr'");
-          return "Erro: Capítulo inválido.";
-        }
+        if (chapterInt == null) return "Erro: Capítulo inválido.";
 
-        // Carrega os dados do capítulo inteiro para a tradução 'nvi'
-        // A função loadChapterDataComparison retorna um mapa com 'verseData' e 'sectionStructure'
         final chapterDataMap = await BiblePageHelper.loadChapterDataComparison(
           bookAbbrev,
           chapterInt,
-          'nvi', // Tradução padrão para exibir o texto
-          null, // Sem tradução de comparação aqui
+          'nvi',
+          null,
         );
-
         final dynamic nviVerseListData = chapterDataMap['verseData']?['nvi'];
 
         if (nviVerseListData != null && nviVerseListData is List) {
-          // Converte para List<String> se for List<dynamic>
           final List<String> nviVerseList =
               nviVerseListData.map((e) => e.toString()).toList();
-
           List<int> verseNumbersToLoad = [];
           if (versesRange.contains('-')) {
             final parts = versesRange.split('-');
@@ -557,101 +555,61 @@ class _BiblePageState extends State<BiblePage> {
               final start = int.tryParse(parts[0]);
               final end = int.tryParse(parts[1]);
               if (start != null && end != null && start <= end) {
-                for (int i = start; i <= end; i++) {
-                  verseNumbersToLoad.add(i);
-                }
+                for (int i = start; i <= end; i++) verseNumbersToLoad.add(i);
               }
             }
           } else {
             final singleVerse = int.tryParse(versesRange);
-            if (singleVerse != null) {
-              verseNumbersToLoad.add(singleVerse);
-            }
+            if (singleVerse != null) verseNumbersToLoad.add(singleVerse);
           }
-
-          if (verseNumbersToLoad.isEmpty) {
-            print("Erro: Intervalo de versículos inválido '$versesRange'");
+          if (verseNumbersToLoad.isEmpty)
             return "Intervalo de versículos inválido: $versesRange";
-          }
-
           for (int vn in verseNumbersToLoad) {
             if (vn > 0 && vn <= nviVerseList.length) {
-              // Adiciona o número do versículo em negrito antes do texto
               versesContent.add("**$vn** ${nviVerseList[vn - 1]}");
             } else {
-              versesContent.add(
-                  "**$vn** [Texto do versículo não disponível na tradução NVI para $bookAbbrev $chapterInt]");
+              versesContent.add("**$vn** [Texto não disponível na NVI]");
             }
           }
+          return versesContent.isNotEmpty
+              ? versesContent.join("\n\n")
+              : "Texto dos versículos não encontrado.";
         } else {
-          print(
-              "Erro: Dados dos versículos NVI não encontrados ou em formato inesperado para $bookAbbrev $chapterInt.");
-          return "Dados dos versículos NVI não encontrados para $bookAbbrev $chapterStr.";
+          return "Dados dos versículos NVI não encontrados.";
         }
-
-        return versesContent.isNotEmpty
-            ? versesContent.join(
-                "\n\n") // Adiciona duas quebras de linha entre os versículos
-            : "Texto dos versículos não encontrado para $bookAbbrev $chapterStr:$versesRange.";
       } catch (e, s) {
-        print(
-            "Erro ao carregar versículos para $itemId ($bookAbbrev $chapterStr:$versesRange): $e\nStack: $s");
+        print("Erro ao carregar versículos para $itemId: $e\nStack: $s");
         return "Erro ao carregar versículos.";
       }
     } else if (tipo == 'biblia_comentario_secao') {
-      // O itemId para comentários de seção já deve ser o ID do documento correto.
-      // Ex: 'gn_c1_v1-5_bc' ou apenas 'gn_c1_v1-5' se o '_bc' for adicionado/removido em outro lugar.
-      // Assumindo que itemId é o ID do documento na coleção 'commentary_sections'.
       final String commentaryDocId = itemId.endsWith('_bc')
           ? itemId.substring(0, itemId.length - 3)
           : itemId;
-
       try {
-        // Instancie FirestoreService se ainda não o fez no escopo da classe _BiblePageState
-        final firestoreService = FirestoreService();
         final commentaryData =
-            await firestoreService.getSectionCommentary(commentaryDocId);
-
+            await _firestoreService.getSectionCommentary(commentaryDocId);
         if (commentaryData != null && commentaryData['commentary'] is List) {
           final List<dynamic> commentsRaw = commentaryData['commentary'];
-          if (commentsRaw.isEmpty) {
-            print(
-                "Nenhum comentário disponível para a seção: $commentaryDocId");
-            return "Nenhum comentário disponível para esta seção.";
-          }
-
+          if (commentsRaw.isEmpty) return "Nenhum comentário disponível.";
           final List<String> commentsText = commentsRaw
-              .map((c) {
-                if (c is Map<String, dynamic>) {
-                  return (c['traducao'] as String?)?.trim() ??
-                      (c['original'] as String?)?.trim() ??
-                      "";
-                }
-                return c
-                    .toString()
-                    .trim(); // Fallback se a estrutura for inesperada
-              })
+              .map((c) =>
+                  (c is Map<String, dynamic>
+                      ? (c['traducao'] as String?)?.trim() ??
+                          (c['original'] as String?)?.trim()
+                      : c.toString().trim()) ??
+                  "")
               .where((text) => text.isNotEmpty)
               .toList();
-
-          if (commentsText.isEmpty) {
-            print(
-                "Comentários encontrados, mas todos os textos estão vazios para: $commentaryDocId");
-            return "Comentário com texto vazio.";
-          }
-          return commentsText
-              .join("\n\n---\n\n"); // Separa múltiplos parágrafos de comentário
+          if (commentsText.isEmpty) return "Comentário com texto vazio.";
+          return commentsText.join("\n\n---\n\n");
         }
-        print(
-            "Comentário não encontrado ou em formato inválido para a seção: $commentaryDocId");
-        return "Comentário não encontrado para a seção.";
+        return "Comentário não encontrado.";
       } catch (e, s) {
         print(
             "Erro ao carregar comentário para $itemId (docId: $commentaryDocId): $e\nStack: $s");
         return "Erro ao carregar comentário.";
       }
     }
-    print("Tipo de conteúdo desconhecido ou dados insuficientes: $tipo");
     return "Detalhes não disponíveis para este tipo de conteúdo.";
   }
 
@@ -1474,7 +1432,6 @@ class _BiblePageState extends State<BiblePage> {
                                 }
                                 // 3. Se houver resultados da busca ATUAL, mostra eles
                                 if (searchState.results.isNotEmpty) {
-                                  // >>> CONSTRÓI A LISTA DE RESULTADOS DIRETAMENTE AQUI <<<
                                   return ListView.builder(
                                     padding: const EdgeInsets.all(8.0),
                                     itemCount: searchState.results.length,
@@ -1500,7 +1457,7 @@ class _BiblePageState extends State<BiblePage> {
                                           "${metadata['livro_completo'] ?? metadata['livro_curto'] ?? '?'} ${metadata['capitulo'] ?? '?'}:${metadata['versiculos'] ?? '?'}";
                                       final score = item['score'] as double?;
                                       final bool isExpanded = _expandedItemId ==
-                                          itemId; // Você precisará gerenciar _expandedItemId e related state no _BiblePageState
+                                          itemId; // Usa a variável de estado da BiblePage
 
                                       String previewContent =
                                           "Toque para ver detalhes";
@@ -1545,25 +1502,201 @@ class _BiblePageState extends State<BiblePage> {
                                                       ? Icons.expand_less
                                                       : Icons.expand_more,
                                                   color: theme.iconTheme.color),
-                                              onTap: () {
-                                                // Sua lógica para _toggleItemExpansion precisa ser adaptada para funcionar dentro da BiblePage
-                                                // Isso envolve ter _expandedItemId, _loadedExpandedContent, _isLoadingExpandedContent
-                                                // como variáveis de estado em _BiblePageState e uma função _toggleItemExpansion lá.
-                                                // Por agora, vou deixar um placeholder:
-                                                print(
-                                                    "Toggle expansion para: $itemId");
-                                                // _toggleItemExpansion(metadata, itemId); // Você precisará recriar esta função no _BiblePageState
-                                              },
+                                              onTap: () =>
+                                                  _toggleItemExpansionInBiblePage(
+                                                      metadata,
+                                                      itemId), // <<< CHAMA A FUNÇÃO DA BIBLEPAGE
                                             ),
-                                            if (isExpanded)
+                                            if (isExpanded) // Mostra o conteúdo expandido
                                               AnimatedSize(
                                                 duration: const Duration(
                                                     milliseconds: 300),
                                                 curve: Curves.easeInOut,
                                                 child: Container(
-                                                    /* ... seu código para exibir conteúdo expandido ... */),
+                                                  width: double.infinity,
+                                                  color: theme.colorScheme
+                                                      .surfaceVariant
+                                                      .withOpacity(0.1),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16.0,
+                                                      vertical: 12.0),
+                                                  child:
+                                                      _isLoadingExpandedContent
+                                                          ? const Center(
+                                                              child: Padding(
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .all(8.0),
+                                                              child: SizedBox(
+                                                                  height: 20,
+                                                                  width: 20,
+                                                                  child: CircularProgressIndicator(
+                                                                      strokeWidth:
+                                                                          2.5)),
+                                                            ))
+                                                          : (_loadedExpandedContent !=
+                                                                      null &&
+                                                                  _loadedExpandedContent!
+                                                                      .isNotEmpty
+                                                              ? MarkdownBody(
+                                                                  // Usa MarkdownBody para renderizar versículos/comentários
+                                                                  data:
+                                                                      _loadedExpandedContent!,
+                                                                  selectable:
+                                                                      true,
+                                                                  styleSheet: MarkdownStyleSheet
+                                                                          .fromTheme(
+                                                                              theme)
+                                                                      .copyWith(
+                                                                    p: theme
+                                                                        .textTheme
+                                                                        .bodyMedium
+                                                                        ?.copyWith(
+                                                                            fontSize: 14 *
+                                                                                _currentFontSizeMultiplier, // Aplica multiplicador de fonte
+                                                                            height:
+                                                                                1.5,
+                                                                            color:
+                                                                                theme.colorScheme.onSurfaceVariant),
+                                                                    strong: TextStyle(
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .bold,
+                                                                        color: theme
+                                                                            .colorScheme
+                                                                            .onSurfaceVariant),
+                                                                    blockSpacing:
+                                                                        8.0,
+                                                                  ),
+                                                                )
+                                                              : Text(
+                                                                  "Conteúdo não disponível ou não pôde ser carregado.",
+                                                                  style: TextStyle(
+                                                                      color: theme
+                                                                          .colorScheme
+                                                                          .onSurfaceVariant
+                                                                          .withOpacity(
+                                                                              0.7)))),
+                                                ),
                                               ),
-                                            if (score != null && !isExpanded)
+                                            // if (isExpanded &&
+                                            //     !_isLoadingExpandedContent &&
+                                            //     _loadedExpandedContent !=
+                                            //         null) // Botão "Abrir na Bíblia"
+                                            //   Padding(
+                                            //     padding: const EdgeInsets.only(
+                                            //         right: 8.0,
+                                            //         top: 4.0,
+                                            //         bottom: 8.0),
+                                            //     child: Align(
+                                            //       alignment:
+                                            //           Alignment.centerRight,
+                                            //       child: TextButton.icon(
+                                            //         icon: Icon(Icons.menu_book,
+                                            //             size: 18,
+                                            //             color: theme.colorScheme
+                                            //                 .primary),
+                                            //         label: Text(
+                                            //             "Abrir na Bíblia",
+                                            //             style: TextStyle(
+                                            //                 fontSize: 12,
+                                            //                 color: theme
+                                            //                     .colorScheme
+                                            //                     .primary,
+                                            //                 fontWeight:
+                                            //                     FontWeight
+                                            //                         .w500)),
+                                            //         style: TextButton.styleFrom(
+                                            //           padding: const EdgeInsets
+                                            //               .symmetric(
+                                            //               horizontal: 10,
+                                            //               vertical: 6),
+                                            //           tapTargetSize:
+                                            //               MaterialTapTargetSize
+                                            //                   .shrinkWrap,
+                                            //         ),
+                                            //         onPressed: () {
+                                            //           final bookAbbrevNav =
+                                            //               metadata[
+                                            //                       'livro_curto']
+                                            //                   as String?;
+                                            //           final chapterStrNav =
+                                            //               metadata['capitulo']
+                                            //                   ?.toString();
+                                            //           final versesRangeNav =
+                                            //               metadata['versiculos']
+                                            //                   as String?; // Ex: "1-5" ou "1"
+
+                                            //           int? chapterIntNav;
+                                            //           if (chapterStrNav != null)
+                                            //             chapterIntNav =
+                                            //                 int.tryParse(
+                                            //                     chapterStrNav);
+
+                                            //           // Tenta pegar o primeiro versículo do range para o scroll
+                                            //           String?
+                                            //               firstVerseInSection;
+                                            //           if (versesRangeNav !=
+                                            //               null) {
+                                            //             if (versesRangeNav
+                                            //                 .contains('-')) {
+                                            //               firstVerseInSection =
+                                            //                   versesRangeNav
+                                            //                       .split(
+                                            //                           '-')[0];
+                                            //             } else {
+                                            //               firstVerseInSection =
+                                            //                   versesRangeNav;
+                                            //             }
+                                            //           }
+
+                                            //           final String?
+                                            //               sectionIdToScroll =
+                                            //               (bookAbbrevNav !=
+                                            //                           null &&
+                                            //                       chapterIntNav !=
+                                            //                           null &&
+                                            //                       firstVerseInSection !=
+                                            //                           null)
+                                            //                   ? "${bookAbbrevNav}_c${chapterIntNav}_v$firstVerseInSection" // Constrói um ID simples para o primeiro verso da seção
+                                            //                   : null;
+
+                                            //           if (bookAbbrevNav !=
+                                            //                   null &&
+                                            //               chapterIntNav !=
+                                            //                   null) {
+                                            //             StoreProvider.of<
+                                            //                         AppState>(
+                                            //                     context,
+                                            //                     listen: false)
+                                            //                 .dispatch(
+                                            //                     SetInitialBibleLocationAction(
+                                            //                         bookAbbrevNav,
+                                            //                         chapterIntNav /*, sectionIdToScrollTo: sectionIdToScroll */) // sectionIdToScrollTo foi removido da ação
+                                            //                     );
+                                            //             StoreProvider.of<
+                                            //                         AppState>(
+                                            //                     context,
+                                            //                     listen: false)
+                                            //                 .dispatch(
+                                            //                     RequestBottomNavChangeAction(
+                                            //                         1));
+                                            //             // Não precisa do Navigator.popUntil se a MainAppScreen gerencia a navegação da BottomBar
+                                            //           } else {
+                                            //             ScaffoldMessenger.of(
+                                            //                     context)
+                                            //                 .showSnackBar(
+                                            //                     const SnackBar(
+                                            //                         content: Text(
+                                            //                             'Não foi possível abrir na Bíblia. Dados incompletos.')));
+                                            //           }
+                                            //         },
+                                            //       ),
+                                            //     ),
+                                            //   ),
+                                            if (score != null &&
+                                                !isExpanded) // Similaridade
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                     left: 16.0,
