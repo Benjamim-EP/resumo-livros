@@ -202,10 +202,38 @@ class BiblePageWidgets {
           text: verseText.substring(currentPosition), style: baseStyle));
     }
     if (spans.isEmpty && verseText.isNotEmpty) {
-      // Adicionado verseText.isNotEmpty para evitar span vazio
       return [TextSpan(text: verseText, style: baseStyle)];
     }
     return spans;
+  }
+
+  static String _extractShortDefinition(List<dynamic>? definitions) {
+    if (definitions == null || definitions.isEmpty) {
+      return "N/A";
+    }
+    String firstFullDefinition = definitions.first.toString().trim();
+    String cleanedDefinition =
+        firstFullDefinition.replaceFirst(RegExp(r'^\d+\s*[.)]\s*'), '');
+
+    List<String> parts = [];
+    if (cleanedDefinition.contains(',')) {
+      parts = cleanedDefinition.split(',');
+    } else if (cleanedDefinition.contains(';')) {
+      parts = cleanedDefinition.split(';');
+    } else {
+      parts = [cleanedDefinition];
+    }
+
+    String shortDef = parts.first.trim();
+    shortDef = shortDef
+        .replaceFirst(RegExp(r'^\((TWOT|BDB|KJV|LXX|et al)\.?\)\s*'), '')
+        .trim();
+
+    const maxLength = 25;
+    if (shortDef.length > maxLength) {
+      return "${shortDef.substring(0, maxLength)}...";
+    }
+    return shortDef.isNotEmpty ? shortDef : "N/A";
   }
 
   static Widget _buildHebrewInterlinearWord(
@@ -223,17 +251,35 @@ class BiblePageWidgets {
     final String strongNumberOnly =
         strongNumberWithPrefix.replaceAll(RegExp(r'^[Hc]/'), '');
     String transliteration = wordData['translit'] ?? "---";
+    String shortDefinition = "N/A";
 
-    if (transliteration == "---" &&
-        strongNumberOnly.isNotEmpty &&
-        hebrewLexicon != null) {
+    if (strongNumberOnly.isNotEmpty && hebrewLexicon != null) {
       final lexiconEntry =
           hebrewLexicon[strongNumberOnly] as Map<String, dynamic>?;
-      transliteration = lexiconEntry?['transliteration'] ?? transliteration;
+      if (lexiconEntry != null) {
+        if (transliteration == "---" &&
+            lexiconEntry['transliteration'] != null) {
+          transliteration = lexiconEntry['transliteration'];
+        }
+        List<dynamic>? definitionsPt =
+            lexiconEntry['definitions_pt'] as List<dynamic>?;
+        List<dynamic>? definitionsOrig =
+            lexiconEntry['definitions'] as List<dynamic>?;
+
+        if (definitionsPt != null &&
+            definitionsPt.isNotEmpty &&
+            !definitionsPt.every(
+                (d) => d.toString().toUpperCase().startsWith("TRADUZIR:"))) {
+          shortDefinition = _extractShortDefinition(definitionsPt);
+        } else if (definitionsOrig != null && definitionsOrig.isNotEmpty) {
+          shortDefinition = _extractShortDefinition(definitionsOrig);
+        }
+      }
     }
 
     final double baseHebrewFontSize = 20.0;
     final double baseTranslitFontSize = 10.0;
+    final double baseDefinitionFontSize = 9.0;
 
     return GestureDetector(
       onTap: () {
@@ -264,6 +310,21 @@ class BiblePageWidgets {
                 color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
               ),
             ),
+            if (shortDefinition.isNotEmpty && shortDefinition != "N/A")
+              Padding(
+                padding: const EdgeInsets.only(top: 1.0), // Pequeno espaço
+                child: Text(
+                  shortDefinition,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: baseDefinitionFontSize * fontSizeMultiplier,
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
           ],
         ),
       ),
@@ -282,10 +343,33 @@ class BiblePageWidgets {
     final theme = Theme.of(context);
     final greekText = wordData['text'] ?? '';
     final strongNumber = wordData['strong'] ?? '';
-    //final morphology = wordData['morph'] ?? 'N/A';
+    String shortDefinition = "N/A";
+
+    if (strongNumber.isNotEmpty &&
+        strongNumber != "N/A" &&
+        greekLexicon != null) {
+      final lexiconEntry = greekLexicon[strongNumber] as Map<String, dynamic>?;
+      if (lexiconEntry != null) {
+        List<dynamic>? definitionsPt =
+            lexiconEntry['definitions_pt'] as List<dynamic>?;
+        List<dynamic>? definitionsOrig =
+            lexiconEntry['definitions'] as List<dynamic>?;
+
+        if (definitionsPt != null &&
+            definitionsPt.isNotEmpty &&
+            !definitionsPt.every(
+                (d) => d.toString().toUpperCase().startsWith("TRADUZIR:"))) {
+          shortDefinition = _extractShortDefinition(definitionsPt);
+        } else if (definitionsOrig != null && definitionsOrig.isNotEmpty) {
+          shortDefinition = _extractShortDefinition(definitionsOrig);
+        }
+      }
+    }
 
     final double baseGreekFontSize = 19.0;
-    final double baseStrongMorphFontSize = 9.0;
+    final double baseStrongFontSize =
+        10.0; // Ajustado para apenas o número de Strong
+    final double baseDefinitionFontSize = 9.0;
 
     return GestureDetector(
       onTap: () {
@@ -317,19 +401,25 @@ class BiblePageWidgets {
               Text(
                 strongNumber,
                 style: TextStyle(
-                  fontSize: (baseStrongMorphFontSize + 1) *
-                      fontSizeMultiplier, // Um pouco maior
+                  fontSize: baseStrongFontSize * fontSizeMultiplier,
                   color: theme.colorScheme.secondary.withOpacity(0.8),
                 ),
               ),
-            // Text(
-            //   morphology,
-            //   textAlign: TextAlign.center,
-            //   style: TextStyle(
-            //     fontSize: baseStrongMorphFontSize * fontSizeMultiplier,
-            //     color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-            //   ),
-            // ),
+            if (shortDefinition.isNotEmpty && shortDefinition != "N/A")
+              Padding(
+                padding: const EdgeInsets.only(top: 1.0),
+                child: Text(
+                  shortDefinition,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: baseDefinitionFontSize * fontSizeMultiplier,
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
           ],
         ),
       ),
@@ -339,8 +429,7 @@ class BiblePageWidgets {
   static Widget buildVerseItem({
     required Key key,
     required int verseNumber,
-    required dynamic
-        verseData, // Se interlinear, é List<Map<String,String>> (palavras do verso)
+    required dynamic verseData,
     required String? selectedBook,
     required int? selectedChapter,
     required BuildContext context,
@@ -351,10 +440,8 @@ class BiblePageWidgets {
     bool isGreekInterlinear = false,
     bool showHebrewInterlinear = false,
     bool showGreekInterlinear = false,
-    List<Map<String, String>>?
-        hebrewVerseData, // Palavras do verso para interlinear complementar
-    List<Map<String, String>>?
-        greekVerseData, // Palavras do verso para interlinear complementar
+    List<Map<String, String>>? hebrewVerseData,
+    List<Map<String, String>>? greekVerseData,
   }) {
     final theme = Theme.of(context);
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
@@ -416,8 +503,7 @@ class BiblePageWidgets {
         ),
       );
     } else {
-      verseTextForModalDialog =
-          "[Formato de verso principal inválido ou dados ausentes]";
+      verseTextForModalDialog = "[Formato de verso inválido]";
       mainTranslationWidget = Text(verseTextForModalDialog,
           style: TextStyle(
               color: theme.colorScheme.error,
@@ -446,12 +532,6 @@ class BiblePageWidgets {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
-            // Text("Hebraico Interlinear:",
-            //     style: TextStyle(
-            //         fontSize: 11 * fontSizeMultiplier,
-            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-            //         fontStyle: FontStyle.italic)),
-            // const SizedBox(height: 2),
             Wrap(
               alignment: WrapAlignment.end,
               textDirection: TextDirection.rtl,
@@ -486,12 +566,6 @@ class BiblePageWidgets {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Divider(color: theme.dividerColor.withOpacity(0.3), height: 12),
-            // Text("Grego Interlinear:",
-            //     style: TextStyle(
-            //         fontSize: 11 * fontSizeMultiplier,
-            //         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-            //         fontStyle: FontStyle.italic)),
-            // const SizedBox(height: 2),
             Wrap(
               alignment: WrapAlignment.start,
               runSpacing: 4.0,
@@ -563,7 +637,7 @@ class BiblePageWidgets {
   }
 
   static void _showVerseOptionsModal(
-    BuildContext context, // Contexto da página que chama o modal
+    BuildContext context,
     String verseId,
     String? currentHighlightColor,
     String? currentNote,
@@ -572,39 +646,29 @@ class BiblePageWidgets {
     int verseNum,
     String verseText,
   ) {
-    final theme = Theme.of(context); // Usa o tema do contexto que abriu o modal
-
+    final theme = Theme.of(context);
     showModalBottomSheet(
-      context: context, // Contexto para ancorar o BottomSheet
-      backgroundColor: theme.dialogBackgroundColor, // Cor de fundo do sheet
-      isScrollControlled:
-          true, // Permite que o sheet use mais altura se necessário
+      context: context,
+      backgroundColor: theme.dialogBackgroundColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (modalContext) {
-        // modalContext é o contexto DENTRO do BottomSheet
-        final store =
-            StoreProvider.of<AppState>(modalContext); // Acessa o store
-
+        final store = StoreProvider.of<AppState>(modalContext);
         return Padding(
-          // Padding geral para o conteúdo do BottomSheet
           padding: EdgeInsets.only(
               top: 16.0,
               left: 8.0,
               right: 8.0,
               bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16.0),
-          // MediaQuery.of(modalContext).viewInsets.bottom é para o teclado
           child: Column(
-            mainAxisSize: MainAxisSize
-                .min, // Faz o Column ocupar o mínimo de espaço vertical
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Seção do Título e Texto do Versículo (não rolável)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 8.0), // Ajuste no padding interno
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -612,56 +676,47 @@ class BiblePageWidgets {
                       "Opções para: $bookAbbrev $chapter:$verseNum",
                       style: TextStyle(
                           color: theme.colorScheme.onSurface,
-                          fontSize: 16, // Pode ajustar o tamanho
+                          fontSize: 16,
                           fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       verseText.isNotEmpty
                           ? verseText
-                          : "[Conteúdo interlinear, veja acima]", // Fallback para interlinear
+                          : "[Conteúdo interlinear]",
                       style: TextStyle(
-                          color: theme.colorScheme.onSurface
-                              .withOpacity(0.75), // Levemente mais opaco
+                          color: theme.colorScheme.onSurface.withOpacity(0.75),
                           fontStyle: FontStyle.italic,
-                          fontSize: 14), // Pode ajustar o tamanho
+                          fontSize: 14),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Divider(
-                  color: theme.dividerColor.withOpacity(0.5),
-                  height: 20), // Ajuste na altura/espaçamento
-
-              // Seção das Opções (ListTiles) - esta parte será rolável se necessário
+              Divider(color: theme.dividerColor.withOpacity(0.5), height: 20),
               Flexible(
-                // Permite que o SingleChildScrollView ocupe o espaço restante
                 child: SingleChildScrollView(
                   child: Column(
-                    mainAxisSize:
-                        MainAxisSize.min, // Importante para o Column interno
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       ListTile(
                         leading: Icon(Icons.format_paint_outlined,
                             color: currentHighlightColor != null
                                 ? Color(int.parse(currentHighlightColor
                                     .replaceFirst('#', '0xff')))
-                                : theme.iconTheme.color
-                                    ?.withOpacity(0.8)), // Ícone mais visível
+                                : theme.iconTheme.color?.withOpacity(0.8)),
                         title: Text(
                             currentHighlightColor != null
                                 ? "Mudar/Remover Destaque"
                                 : "Destacar Versículo",
                             style: TextStyle(
                                 color: theme.colorScheme.onSurface,
-                                fontSize: 15)), // Ajuste de fonte
+                                fontSize: 15)),
                         onTap: () {
-                          Navigator.pop(modalContext); // Fecha o modal atual
+                          Navigator.pop(modalContext);
                           showDialog(
-                            context:
-                                context, // Usa o contexto original para o novo diálogo
+                            context: context,
                             builder: (_) => HighlightColorPickerModal(
                                 initialColor: currentHighlightColor,
                                 onColorSelected: (selectedColor) {
@@ -669,8 +724,8 @@ class BiblePageWidgets {
                                       colorHex: selectedColor));
                                 },
                                 onRemoveHighlight: () {
-                                  store.dispatch(ToggleHighlightAction(
-                                      verseId)); // colorHex é nulo para remover
+                                  store
+                                      .dispatch(ToggleHighlightAction(verseId));
                                 }),
                           );
                         },
@@ -703,9 +758,7 @@ class BiblePageWidgets {
                           );
                         },
                       ),
-                      if (currentNote != null &&
-                          currentNote
-                              .isNotEmpty) // Só mostra se realmente houver nota
+                      if (currentNote != null && currentNote.isNotEmpty)
                         ListTile(
                           leading: Icon(Icons.delete_outline,
                               color: theme.colorScheme.error.withOpacity(0.8)),
@@ -716,7 +769,6 @@ class BiblePageWidgets {
                           onTap: () {
                             store.dispatch(DeleteNoteAction(verseId));
                             Navigator.pop(modalContext);
-                            // Adicionar feedback visual (SnackBar) é bom
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Nota removida.'),
@@ -724,31 +776,10 @@ class BiblePageWidgets {
                             );
                           },
                         ),
-                      // ListTile(
-                      //   leading: Icon(Icons.bookmark_add_outlined,
-                      //       color: theme.iconTheme.color?.withOpacity(0.8)),
-                      //   title: Text("Salvar em Coleção",
-                      //       style: TextStyle(
-                      //           color: theme.colorScheme.onSurface,
-                      //           fontSize: 15)),
-                      //   onTap: () {
-                      //     Navigator.pop(modalContext);
-                      //     showDialog(
-                      //       context: context,
-                      //       builder: (dContext) => SaveVerseDialog(
-                      //         // dContext é o contexto do AlertDialog
-                      //         bookAbbrev: bookAbbrev,
-                      //         chapter: chapter,
-                      //         verseNumber: verseNum,
-                      //       ),
-                      //     );
-                      //   },
-                      // ),
                     ],
                   ),
                 ),
               ),
-              // const SizedBox(height: 10), // O padding inferior do Padding principal já pode ser suficiente
             ],
           ),
         );
@@ -779,7 +810,7 @@ class BiblePageWidgets {
     if (lexiconEntry == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-              "Definição para ${strongNumberWithPrefix} não encontrada.")));
+              "Definição para Strong $strongNumberWithPrefix não encontrada.")));
       return;
     }
 
@@ -788,13 +819,13 @@ class BiblePageWidgets {
     final String hebrewWordInEntry =
         lexiconEntry['hebrew_word_in_entry'] ?? lemma;
 
-    List<String> definitionsToShow =
-        List<String>.from(lexiconEntry['definitions_pt'] ?? []);
+    List<String> definitionsToShow = List<String>.from(
+        lexiconEntry['definitions_pt'] as List<dynamic>? ?? []);
     if (definitionsToShow.isEmpty ||
         definitionsToShow
             .every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
-      definitionsToShow =
-          List<String>.from(lexiconEntry['definitions'] ?? ['N/A']);
+      definitionsToShow = List<String>.from(
+          lexiconEntry['definitions'] as List<dynamic>? ?? ['N/A']);
     }
 
     Map<String, List<String>> notesToShow = {};
@@ -802,9 +833,11 @@ class BiblePageWidgets {
     final notesPt = lexiconEntry['notes_pt'] as Map<String, dynamic>? ?? {};
 
     for (var key in ['exegesis', 'explanation', 'translation']) {
-      String title = key.capitalizeFirstOfEach;
-      List<String> ptList = List<String>.from(notesPt['${key}_pt'] ?? []);
-      List<String> origList = List<String>.from(notesOriginal[key] ?? []);
+      String title = key.capitalizeFirstOfEach; // Usa a extensão
+      List<String> ptList =
+          List<String>.from(notesPt['${key}_pt'] as List<dynamic>? ?? []);
+      List<String> origList =
+          List<String>.from(notesOriginal[key] as List<dynamic>? ?? []);
 
       if (ptList.isNotEmpty &&
           !ptList.every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
@@ -847,27 +880,24 @@ class BiblePageWidgets {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16.0, vertical: 8.0),
-                      child: Column(
-                        children: [
-                          Text(
-                            "Léxico para: $strongNumberWithPrefix",
-                            style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                          Text(
-                            hebrewWordInEntry,
-                            textDirection: TextDirection.rtl,
-                            style: TextStyle(
+                      child: Column(children: [
+                        Text(
+                          "Léxico Hebraico: $strongNumberWithPrefix",
+                          style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          hebrewWordInEntry,
+                          textDirection: TextDirection.rtl,
+                          style: TextStyle(
                               fontFamily: 'NotoSansHebrew',
                               fontSize: 22,
-                              color: theme.colorScheme.secondary,
-                            ),
-                          ),
-                        ],
-                      ),
+                              color: theme.colorScheme.secondary),
+                        ),
+                      ]),
                     ),
                     Divider(color: theme.dividerColor, height: 1),
                     Expanded(
@@ -875,7 +905,7 @@ class BiblePageWidgets {
                         controller: scrollController,
                         padding: const EdgeInsets.all(16.0),
                         children: [
-                          Text("Lema Hebraico: $lemma",
+                          Text("Lema: $lemma",
                               style: TextStyle(
                                   color: theme.textTheme.bodyMedium?.color,
                                   fontSize: 14)),
@@ -958,8 +988,8 @@ class BiblePageWidgets {
 
     if (lexiconEntry == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text("Definição para ${strongNumberClicked} não encontrada.")));
+          content: Text(
+              "Definição para Strong $strongNumberClicked não encontrada.")));
       return;
     }
 
@@ -967,13 +997,13 @@ class BiblePageWidgets {
     final String translit = lexiconEntry['transliteration'] ?? 'N/A';
     final String pronunciation = lexiconEntry['pronunciation'] ?? 'N/A';
 
-    List<String> definitionsToShow =
-        List<String>.from(lexiconEntry['definitions_pt'] ?? []);
+    List<String> definitionsToShow = List<String>.from(
+        lexiconEntry['definitions_pt'] as List<dynamic>? ?? []);
     if (definitionsToShow.isEmpty ||
         definitionsToShow
             .every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
-      definitionsToShow =
-          List<String>.from(lexiconEntry['definitions'] ?? ['N/A']);
+      definitionsToShow = List<String>.from(
+          lexiconEntry['definitions'] as List<dynamic>? ?? ['N/A']);
     }
 
     Map<String, List<String>> notesToShow = {};
@@ -981,9 +1011,9 @@ class BiblePageWidgets {
     final notesPt = lexiconEntry['notes_pt'] as Map<String, dynamic>? ?? {};
 
     List<String> derivationPtList =
-        List<String>.from(notesPt['derivation_pt'] ?? []);
+        List<String>.from(notesPt['derivation_pt'] as List<dynamic>? ?? []);
     List<String> derivationOrigList =
-        List<String>.from(notesOriginal['derivation'] ?? []);
+        List<String>.from(notesOriginal['derivation'] as List<dynamic>? ?? []);
     if (derivationPtList.isNotEmpty &&
         !derivationPtList
             .every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
@@ -993,9 +1023,9 @@ class BiblePageWidgets {
     }
 
     List<String> kjvDefPtList =
-        List<String>.from(notesPt['kjv_definition_pt'] ?? []);
-    List<String> kjvDefOrigList =
-        List<String>.from(notesOriginal['kjv_definition'] ?? []);
+        List<String>.from(notesPt['kjv_definition_pt'] as List<dynamic>? ?? []);
+    List<String> kjvDefOrigList = List<String>.from(
+        notesOriginal['kjv_definition'] as List<dynamic>? ?? []);
     if (kjvDefPtList.isNotEmpty &&
         !kjvDefPtList.every((d) => d.toUpperCase().startsWith("TRADUZIR:"))) {
       notesToShow['Definição KJV (PT)'] = kjvDefPtList;
@@ -1018,10 +1048,9 @@ class BiblePageWidgets {
             builder: (_, scrollController) {
               return Container(
                 decoration: BoxDecoration(
-                  color: theme.dialogBackgroundColor,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                ),
+                    color: theme.dialogBackgroundColor,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(16))),
                 child: Column(
                   children: [
                     Padding(
@@ -1037,7 +1066,7 @@ class BiblePageWidgets {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16.0, vertical: 8.0),
                       child: Text(
-                        "Léxico para: $strongNumberClicked",
+                        "Léxico Grego: $strongNumberClicked",
                         style: TextStyle(
                             color: theme.colorScheme.onSurface,
                             fontSize: 18,
@@ -1048,14 +1077,11 @@ class BiblePageWidgets {
                     if (lemma != 'N/A')
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text(
-                          lemma,
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: theme.colorScheme.secondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        child: Text(lemma,
+                            style: TextStyle(
+                                fontSize: 22,
+                                color: theme.colorScheme.secondary),
+                            textAlign: TextAlign.center),
                       ),
                     Divider(color: theme.dividerColor, height: 1),
                     Expanded(
@@ -1169,6 +1195,7 @@ class BiblePageWidgets {
   }
 }
 
+// Extensão para capitalizar a primeira letra de cada palavra
 extension StringExtension on String {
   String get capitalizeFirstOfEach => split(" ")
       .map((str) =>
