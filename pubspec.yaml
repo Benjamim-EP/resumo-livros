@@ -160,7 +160,7 @@ flutter:
     - assets/Biblia/completa_traducoes/nvi/mc/
     - assets/Biblia/completa_traducoes/nvi/lc/
     - assets/Biblia/completa_traducoes/nvi/jo/
-    - assets/Biblia/completa_traducoes/nvi/jó/
+    - assets/Biblia/completa_traducoes/nvi/job/
     - assets/Biblia/completa_traducoes/nvi/atos/
     - assets/Biblia/completa_traducoes/nvi/rm/
     - assets/Biblia/completa_traducoes/nvi/1co/
@@ -228,7 +228,7 @@ flutter:
     - assets/Biblia/completa_traducoes/acf/mc/
     - assets/Biblia/completa_traducoes/acf/lc/
     - assets/Biblia/completa_traducoes/acf/jo/
-    - assets/Biblia/completa_traducoes/acf/jó/
+    - assets/Biblia/completa_traducoes/acf/job/
     - assets/Biblia/completa_traducoes/acf/atos/
     - assets/Biblia/completa_traducoes/acf/rm/
     - assets/Biblia/completa_traducoes/acf/1co/
@@ -296,7 +296,7 @@ flutter:
     - assets/Biblia/completa_traducoes/aa/mc/
     - assets/Biblia/completa_traducoes/aa/lc/
     - assets/Biblia/completa_traducoes/aa/jo/
-    - assets/Biblia/completa_traducoes/aa/jó/
+    - assets/Biblia/completa_traducoes/aa/job/
     - assets/Biblia/completa_traducoes/aa/atos/
     - assets/Biblia/completa_traducoes/aa/rm/
     - assets/Biblia/completa_traducoes/aa/1co/
@@ -338,7 +338,7 @@ flutter:
     - assets/Biblia/completa_traducoes/hebrew_original/ed/
     - assets/Biblia/completa_traducoes/hebrew_original/ne/
     - assets/Biblia/completa_traducoes/hebrew_original/et/
-    - assets/Biblia/completa_traducoes/hebrew_original/jó/
+    - assets/Biblia/completa_traducoes/hebrew_original/job/
     - assets/Biblia/completa_traducoes/hebrew_original/sl/
     - assets/Biblia/completa_traducoes/hebrew_original/pv/
     - assets/Biblia/completa_traducoes/hebrew_original/ec/
@@ -433,7 +433,7 @@ flutter:
     - assets/Biblia/blocos/mc/
     - assets/Biblia/blocos/lc/
     - assets/Biblia/blocos/jo/
-    - assets/Biblia/blocos/jó/
+    - assets/Biblia/blocos/job/
     - assets/Biblia/blocos/atos/
     - assets/Biblia/blocos/rm/
     - assets/Biblia/blocos/1co/

@@ -586,6 +586,7 @@ class _BiblePageState extends State<BiblePage> {
           ? itemId.substring(0, itemId.length - 3)
           : itemId;
       try {
+        print(commentaryDocId);
         final commentaryData =
             await _firestoreService.getSectionCommentary(commentaryDocId);
         if (commentaryData != null && commentaryData['commentary'] is List) {
