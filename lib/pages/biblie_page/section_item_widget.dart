@@ -74,7 +74,11 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         : "all_verses_in_section"; // Fallback se range for vazio
     // ***** ALTERAÇÃO AQUI *****
     // Usar bookAbbrev em vez de bookSlug para corresponder ao ID do Firestore
-    return "${widget.bookAbbrev}_c${widget.chapterNumber}_v$range";
+    String abbrevForFirestore = widget.bookAbbrev;
+    if (widget.bookAbbrev.toLowerCase() == 'job') {
+      abbrevForFirestore = 'jó'; // Usa 'jó' para buscar no Firestore
+    }
+    return "${abbrevForFirestore}_c${widget.chapterNumber}_v$range";
     // Exemplo: "1co_c10_v1-5"
   }
 
