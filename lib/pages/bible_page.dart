@@ -519,26 +519,28 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Future<String> _fetchDetailedContentForBiblePage(
-      Map<String, dynamic> metadata, String itemId) async {
+      Map<String, dynamic> metadata, String itemIdFromSearch) async {
     final tipo = metadata['tipo'] as String?;
-    final bookAbbrev = metadata['livro_curto'] as String?;
+    String? bookAbbrevFromMeta = metadata['livro_curto'] as String?;
     final chapterStr = metadata['capitulo']?.toString();
     final versesRange = metadata['versiculos'] as String?;
 
     print(
-        "Fetching detailed content for BiblePage - itemId: $itemId, tipo: $tipo, book: $bookAbbrev, chapter: $chapterStr, verses: $versesRange");
+        "Fetching detailed content for BiblePage - itemIdFromSearch: $itemIdFromSearch, tipo: $tipo, bookFromMeta: $bookAbbrevFromMeta, chapter: $chapterStr, verses: $versesRange");
 
     if (tipo == 'biblia_versiculos' &&
-        bookAbbrev != null &&
+        bookAbbrevFromMeta != null &&
         chapterStr != null &&
         versesRange != null) {
+      // Lógica para buscar versículos (permanece a mesma)
       try {
+        // ... (código de busca de versículos como na versão anterior) ...
         final List<String> versesContent = [];
         final int? chapterInt = int.tryParse(chapterStr);
         if (chapterInt == null) return "Erro: Capítulo inválido.";
 
         final chapterDataMap = await BiblePageHelper.loadChapterDataComparison(
-          bookAbbrev,
+          bookAbbrevFromMeta,
           chapterInt,
           'nvi',
           null,
@@ -578,20 +580,43 @@ class _BiblePageState extends State<BiblePage> {
           return "Dados dos versículos NVI não encontrados.";
         }
       } catch (e, s) {
-        print("Erro ao carregar versículos para $itemId: $e\nStack: $s");
+        print(
+            "Erro ao carregar versículos para $itemIdFromSearch: $e\nStack: $s");
         return "Erro ao carregar versículos.";
       }
     } else if (tipo == 'biblia_comentario_secao') {
-      final String commentaryDocId = itemId.endsWith('_bc')
-          ? itemId.substring(0, itemId.length - 3)
-          : itemId;
+      String docIdToFetch = itemIdFromSearch;
+
+      // 1. Remove o sufixo '_bc' se ele existir no ID vindo da busca
+      if (docIdToFetch.endsWith('_bc')) {
+        docIdToFetch = docIdToFetch.substring(0, docIdToFetch.length - 3);
+        print(
+            "BiblePage _fetchDetailedContent: Sufixo '_bc' removido. ID agora: $docIdToFetch");
+      }
+
+      // 2. Corrige a abreviação de Jó se necessário (de 'job_' para 'jó_')
+      //    Isso deve ser feito DEPOIS de remover o _bc, caso a busca retorne algo como 'job_c1_v1-5_bc'
+      //    Especialmente se bookAbbrevFromMeta vier como 'job' e o itemIdFromSearch também.
+      if (bookAbbrevFromMeta != null &&
+          bookAbbrevFromMeta.toLowerCase() == 'job') {
+        if (docIdToFetch.startsWith('job_')) {
+          docIdToFetch = docIdToFetch.replaceFirst('job_', 'jó_');
+          print(
+              "BiblePage _fetchDetailedContent: ID de comentário para Jó ajustado para Firestore: $docIdToFetch (original da busca: $itemIdFromSearch)");
+        }
+      }
+
+      print(
+          "BiblePage _fetchDetailedContent: Tentando buscar comentário com Doc ID final: $docIdToFetch");
+
       try {
-        print(commentaryDocId);
         final commentaryData =
-            await _firestoreService.getSectionCommentary(commentaryDocId);
+            await _firestoreService.getSectionCommentary(docIdToFetch);
+
         if (commentaryData != null && commentaryData['commentary'] is List) {
           final List<dynamic> commentsRaw = commentaryData['commentary'];
-          if (commentsRaw.isEmpty) return "Nenhum comentário disponível.";
+          if (commentsRaw.isEmpty)
+            return "Nenhum comentário disponível para esta seção.";
           final List<String> commentsText = commentsRaw
               .map((c) =>
                   (c is Map<String, dynamic>
@@ -604,13 +629,16 @@ class _BiblePageState extends State<BiblePage> {
           if (commentsText.isEmpty) return "Comentário com texto vazio.";
           return commentsText.join("\n\n---\n\n");
         }
-        return "Comentário não encontrado.";
+        print(
+            "Comentário não encontrado ou em formato inválido para a seção: $docIdToFetch");
+        return "Comentário não encontrado para a seção.";
       } catch (e, s) {
         print(
-            "Erro ao carregar comentário para $itemId (docId: $commentaryDocId): $e\nStack: $s");
+            "Erro ao carregar comentário para $itemIdFromSearch (tentativa com docId: $docIdToFetch): $e\nStack: $s");
         return "Erro ao carregar comentário.";
       }
     }
+    print("Tipo de conteúdo desconhecido ou dados insuficientes: $tipo");
     return "Detalhes não disponíveis para este tipo de conteúdo.";
   }
 
