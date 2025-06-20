@@ -480,9 +480,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   },
                   items: const [
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.account_circle), label: 'User'),
+                        icon: Icon(Icons.account_circle), label: 'Usuário'),
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.book_outlined), label: 'Bible'),
+                        icon: Icon(Icons.book_outlined), label: 'Bíblia'),
                     BottomNavigationBarItem(
                         icon: Icon(Icons.local_library_outlined),
                         label: 'Biblioteca'),

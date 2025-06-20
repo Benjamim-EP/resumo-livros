@@ -6,19 +6,19 @@ import 'package:flutter/services.dart' show rootBundle;
 // Modelo simples para os dados da linha do tempo
 class TimelineData {
   final String timelineTitle;
-  final List<dynamic> keyEntries;
+  // final List<dynamic> keyEntries; // Removido
   final List<dynamic> timePeriods;
 
   TimelineData({
     required this.timelineTitle,
-    required this.keyEntries,
+    // required this.keyEntries, // Removido
     required this.timePeriods,
   });
 
   factory TimelineData.fromJson(Map<String, dynamic> json) {
     return TimelineData(
       timelineTitle: json['timelineTitle'] ?? 'Linha do Tempo Bíblica',
-      keyEntries: List<dynamic>.from(json['key'] ?? []),
+      // keyEntries: List<dynamic>.from(json['key'] ?? []), // Removido
       timePeriods: List<dynamic>.from(json['timePeriods'] ?? []),
     );
   }
@@ -42,6 +42,7 @@ class _BibleTimelinePageState extends State<BibleTimelinePage> {
 
   Future<TimelineData> _loadTimelineData() async {
     try {
+      // Certifique-se que o caminho para o seu JSON está correto
       final String jsonString = await rootBundle
           .loadString('assets/timelines/timeline_full_bible_pt.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
@@ -87,7 +88,7 @@ class _BibleTimelinePageState extends State<BibleTimelinePage> {
               left: 12.0, right: 12.0, bottom: 12.0, top: 4.0),
           children: [
             ...individuals.map<Widget>((ind) {
-              final item = ind as Map<String, dynamic>; // Cast para Map
+              final item = ind as Map<String, dynamic>;
               final String name = item['name'] ?? 'N/A';
               final int? age = item['age'] as int?;
               final String? indNotes = item['notes'] as String?;
@@ -215,8 +216,7 @@ class _BibleTimelinePageState extends State<BibleTimelinePage> {
                     children: [
                       RichText(
                           text: TextSpan(
-                              style: theme.textTheme
-                                  .bodyMedium, // Estilo padrão para RichText
+                              style: theme.textTheme.bodyMedium,
                               children: [
                             TextSpan(
                                 text: "• $name",
@@ -279,70 +279,12 @@ class _BibleTimelinePageState extends State<BibleTimelinePage> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(8.0),
-            itemCount: timelineData.timePeriods.length + 1, // +1 para a legenda
+            itemCount:
+                timelineData.timePeriods.length, // Alterado aqui: removido +1
             itemBuilder: (context, index) {
-              if (index == 0) {
-                // Constrói a seção da legenda
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.all(8.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.0)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Legenda",
-                            style: theme.textTheme.titleLarge
-                                ?.copyWith(color: theme.colorScheme.primary)),
-                        const SizedBox(height: 10),
-                        ...(timelineData.keyEntries).map<Widget>((entry) {
-                          final item = entry as Map<String, dynamic>;
-                          final String? symbol = item['symbol'] as String?;
-                          final String? description =
-                              item['description'] as String?;
-                          final String? note = item['note'] as String?;
-
-                          if (symbol != null && description != null) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 3.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("$symbol: ",
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.bold)),
-                                  Expanded(
-                                      child: Text(description,
-                                          style: theme.textTheme.bodyMedium)),
-                                ],
-                              ),
-                            );
-                          } else if (note != null) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.only(top: 8.0, bottom: 2.0),
-                              child: Text(
-                                note,
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(fontStyle: FontStyle.italic),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        }).toList(),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              // Constrói os períodos de tempo
+              // Alterado aqui: removido o if (index == 0) para a legenda
               final period =
-                  timelineData.timePeriods[index - 1] as Map<String, dynamic>;
+                  timelineData.timePeriods[index] as Map<String, dynamic>;
               final String periodName =
                   period['periodName'] ?? 'Período Desconhecido';
               final String booksContext = period['biblicalBooksContext'] ?? '';
@@ -364,7 +306,7 @@ class _BibleTimelinePageState extends State<BibleTimelinePage> {
                 "História Bíblica",
                 "História do Oriente Médio",
                 "História Mundial",
-                "Visuals", // Adicionando Visuals se for uma categoria que você quer listar
+                "Visuals",
               ];
 
               return Card(
