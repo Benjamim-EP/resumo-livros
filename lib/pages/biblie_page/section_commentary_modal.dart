@@ -233,12 +233,13 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
     List<Map<String, dynamic>> userHighlights,
     String sectionIdForHighlights,
     ThemeData theme,
-    BuildContext pageContext, // Contexto da página para diálogos
+    BuildContext pageContext,
     double fontSize,
   ) {
     if (fullText.isEmpty) return [const TextSpan(text: "")];
 
-    List<Map<String, dynamic>> relevantHighlights = userHighlights.where((h) {
+    List<Map<String, dynamic>> relevantUserHighlights =
+        userHighlights.where((h) {
       final String? hSectionId = h['sectionId'] as String?;
       final String? hLang = h['language'] as String?;
       bool langMatch = _showOriginalText
@@ -247,57 +248,192 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       return hSectionId == sectionIdForHighlights && langMatch;
     }).toList();
 
-    if (relevantHighlights.isEmpty) {
-      return _buildTextSpansForSegment(fullText, theme, pageContext, fontSize);
-    }
-
-    relevantHighlights.sort((a, b) {
-      int startA = fullText.indexOf(a['selectedSnippet'] as String);
-      int startB = fullText.indexOf(b['selectedSnippet'] as String);
-      if (startA == -1) return 1; // Snippet A não encontrado, colocar no final
-      if (startB == -1) return -1; // Snippet B não encontrado, colocar no final
-      return startA.compareTo(startB);
-    });
-
-    List<TextSpan> finalSpans = [];
-    int currentPosition = 0;
-
-    for (var highlightData in relevantHighlights) {
+    // Mapeia os destaques do usuário para objetos de intervalo para facilitar a verificação
+    List<Map<String, dynamic>> userHighlightIntervals = [];
+    for (var highlightData in relevantUserHighlights) {
       final String snippet = highlightData['selectedSnippet'] as String;
       if (snippet.isEmpty) continue;
+      int startIndex = 0;
+      while (startIndex < fullText.length) {
+        final int pos = fullText.indexOf(snippet, startIndex);
+        if (pos == -1) break;
+        userHighlightIntervals.add({'start': pos, 'end': pos + snippet.length});
+        startIndex = pos + snippet.length;
+      }
+    }
+    // Ordena por início, depois por fim (maior primeiro para lidar com aninhamento se houver)
+    userHighlightIntervals.sort((a, b) {
+      int startCompare = (a['start'] as int).compareTo(b['start'] as int);
+      if (startCompare != 0) return startCompare;
+      return (b['end'] as int).compareTo(a['end'] as int);
+    });
 
-      final int snippetStart = fullText.indexOf(snippet, currentPosition);
+    // Remove sobreposições de destaques do usuário (o primeiro/maior vence)
+    List<Map<String, dynamic>> resolvedUserHighlights = [];
+    int lastUserHighlightEnd = -1;
+    for (var interval in userHighlightIntervals) {
+      if ((interval['start'] as int) >= lastUserHighlightEnd) {
+        resolvedUserHighlights.add(interval);
+        lastUserHighlightEnd = interval['end'] as int;
+      }
+    }
 
-      if (snippetStart == -1)
-        continue; // Snippet não encontrado a partir da posição atual
+    // Agora, processa o texto inteiro para referências e intercala com os destaques do usuário
+    final List<TextSpan> finalSpans = [];
+    final RegExp bibleRefRegex = RegExp(
+      r'\b([1-3]?[a-zA-Z]{1,5})\s*(\d+)\s*[:.]\s*(\d+(?:\s*-\s*\d+)?)\b',
+      caseSensitive: false,
+    );
 
-      // Texto antes do snippet atual (processar para referências)
-      if (snippetStart > currentPosition) {
-        String segment = fullText.substring(currentPosition, snippetStart);
-        finalSpans.addAll(
-            _buildTextSpansForSegment(segment, theme, pageContext, fontSize));
+    int currentPosition = 0;
+
+    // Encontra todas as referências primeiro
+    List<Match> allRefs = bibleRefRegex.allMatches(fullText).toList();
+
+    // Itera sobre o texto, considerando tanto os destaques do usuário quanto as referências
+    while (currentPosition < fullText.length) {
+      // Encontra o próximo destaque do usuário ou referência, o que vier primeiro
+      Map<String, dynamic>? nextUserHighlight;
+      for (var uh in resolvedUserHighlights) {
+        if ((uh['start'] as int) >= currentPosition) {
+          if (nextUserHighlight == null ||
+              (uh['start'] as int) < (nextUserHighlight['start'] as int)) {
+            nextUserHighlight = uh;
+          }
+        }
       }
 
-      // O snippet destacado
-      finalSpans.add(
-        TextSpan(
-          text: snippet,
-          style: TextStyle(
-            backgroundColor: theme.colorScheme.primary.withOpacity(0.35),
-            color: theme.colorScheme.onPrimaryContainer,
+      Match? nextRefMatch;
+      for (var refMatch in allRefs) {
+        if (refMatch.start >= currentPosition) {
+          if (nextRefMatch == null || refMatch.start < nextRefMatch.start) {
+            nextRefMatch = refMatch;
+          }
+        }
+      }
+
+      int nextEventPosition = fullText.length;
+      bool isNextEventRef = false;
+      bool isNextEventUserHighlight = false;
+
+      if (nextRefMatch != null) {
+        nextEventPosition = nextRefMatch.start;
+        isNextEventRef = true;
+      }
+      if (nextUserHighlight != null &&
+          (nextUserHighlight['start'] as int) < nextEventPosition) {
+        nextEventPosition = nextUserHighlight['start'] as int;
+        isNextEventRef =
+            false; // Destaque do usuário tem precedência se começar antes
+        isNextEventUserHighlight = true;
+      } else if (nextUserHighlight != null &&
+          (nextUserHighlight['start'] as int) == nextEventPosition &&
+          isNextEventRef) {
+        // Se ambos começam na mesma posição, precisamos decidir a prioridade.
+        // Se a referência estiver DENTRO do destaque do usuário, o destaque "envolve"
+        // Neste caso, vamos priorizar o destaque e processar o conteúdo dele para referências depois.
+        // Se a referência for maior que o destaque, a lógica atual de iterar já pode lidar com isso.
+        // Para simplificar, se for igual, vamos com o destaque primeiro.
+        isNextEventRef = false;
+        isNextEventUserHighlight = true;
+      }
+
+      // Adiciona texto normal antes do próximo evento
+      if (nextEventPosition > currentPosition) {
+        finalSpans.add(TextSpan(
+            text: fullText.substring(currentPosition, nextEventPosition)));
+      }
+
+      if (isNextEventUserHighlight && nextUserHighlight != null) {
+        // Processa o trecho destacado para referências INTERNAS
+        String highlightedSegment = fullText.substring(
+            nextUserHighlight['start'] as int, nextUserHighlight['end'] as int);
+        List<TextSpan> spansInHighlight = _buildTextSpansForSegment(
+            highlightedSegment, theme, pageContext, fontSize);
+
+        // Aplica o fundo de destaque a cada TextSpan dentro do segmento destacado,
+        // exceto para os que já são referências (que têm seu próprio estilo)
+        for (var span in spansInHighlight) {
+          if (span.recognizer == null) {
+            // Se não for uma referência clicável
+            finalSpans.add(TextSpan(
+              text: span.text,
+              style: (span.style ?? const TextStyle()).copyWith(
+                // Pega o estilo original do span (se houver)
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.35),
+                // Mantém a cor do texto do span original, ou define uma cor de contraste
+                color:
+                    (span.style?.color) ?? theme.colorScheme.onPrimaryContainer,
+              ),
+            ));
+          } else {
+            // É uma referência, mantém seu estilo e recognizer
+            finalSpans.add(span);
+          }
+        }
+        currentPosition = nextUserHighlight['end'] as int;
+      } else if (isNextEventRef && nextRefMatch != null) {
+        // Adiciona a referência clicável
+        final String matchedReference = nextRefMatch.group(0)!;
+        finalSpans.add(
+          TextSpan(
+            text: matchedReference,
+            style: TextStyle(
+              color:
+                  theme.colorScheme.primary, // Cor diferente para referências
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline,
+              decorationColor: theme.colorScheme.secondary,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () async {
+                showDialog(
+                  context: pageContext,
+                  barrierDismissible: false,
+                  builder: (BuildContext dialogContext) => const AlertDialog(
+                    content: Row(children: [
+                      CircularProgressIndicator(),
+                      SizedBox(width: 20),
+                      Text("Carregando...")
+                    ]),
+                  ),
+                );
+                try {
+                  final List<String> verseTexts =
+                      await BiblePageHelper.loadVersesFromReference(
+                          matchedReference, 'nvi');
+                  if (pageContext.mounted)
+                    Navigator.of(pageContext, rootNavigator: true)
+                        .pop(); // Fecha loading
+
+                  if (verseTexts.isNotEmpty &&
+                      !verseTexts.first.contains("Erro") &&
+                      !verseTexts.first.contains("inválid")) {
+                    if (pageContext.mounted)
+                      _showVerseTextDialog(pageContext, matchedReference,
+                          verseTexts.join("\n\n"));
+                  } else {
+                    if (pageContext.mounted)
+                      _showVerseTextDialog(pageContext, matchedReference,
+                          "Não foi possível carregar: ${verseTexts.join("\n")}");
+                  }
+                } catch (e) {
+                  if (pageContext.mounted)
+                    Navigator.of(pageContext, rootNavigator: true)
+                        .pop(); // Fecha loading
+                  if (pageContext.mounted)
+                    _showVerseTextDialog(
+                        pageContext, matchedReference, "Erro ao carregar: $e");
+                }
+              },
           ),
-        ),
-      );
-      currentPosition = snippetStart + snippet.length;
+        );
+        currentPosition = nextRefMatch.end;
+      } else {
+        // Não há mais eventos, sai do loop
+        currentPosition = fullText.length;
+      }
     }
-
-    // Texto restante após o último snippet (processar para referências)
-    if (currentPosition < fullText.length) {
-      String segment = fullText.substring(currentPosition);
-      finalSpans.addAll(
-          _buildTextSpansForSegment(segment, theme, pageContext, fontSize));
-    }
-
     return finalSpans.isEmpty ? [const TextSpan(text: "")] : finalSpans;
   }
 
