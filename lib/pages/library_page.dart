@@ -174,7 +174,7 @@ class _LibraryPageState extends State<LibraryPage> {
           },
         },
         {
-          'title': "Estudos Bíblicos Temáticos",
+          'title': "Estudos Bíblicos Rápidos",
           'description': "Temas da Bíblia com guias e referências.",
           'icon': Icons.menu_book_outlined,
           'coverImagePath':

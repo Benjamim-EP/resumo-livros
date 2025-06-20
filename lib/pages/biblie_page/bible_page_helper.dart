@@ -33,7 +33,7 @@ class BiblePageHelper {
     'esdras': 'ed',
     'neemias': 'ne',
     'ester': 'et',
-    'jó': 'job', 'jo': 'job', // Cuidado com "jo" para João
+    'jó': 'job', 'jo': 'jo', // Cuidado com "jo" para João
     'salmos': 'sl',
     'provérbios': 'pv', 'proverbios': 'pv',
     'eclesiastes': 'ec',

@@ -122,17 +122,17 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent, // O modal interno define a cor
+        backgroundColor: Colors.transparent,
         builder: (_) => SectionCommentaryModal(
-          sectionTitle: commentaryData?['title'] ??
-              widget.sectionTitle, // Usa o título do Firestore se disponível
+          sectionTitle: commentaryData?['title'] ?? widget.sectionTitle,
           commentaryItems: commentaryItems,
           bookAbbrev: widget.bookAbbrev,
-          bookSlug: widget
-              .bookSlug, // bookSlug ainda pode ser útil para outras coisas no modal
+          bookSlug: widget.bookSlug,
           bookName: bookFullName,
           chapterNumber: widget.chapterNumber,
           versesRangeStr: widget.versesRangeStr,
+          initialFontSizeMultiplier:
+              widget.fontSizeMultiplier, // <<< PASSA O MULTIPLICADOR
         ),
       );
     }
