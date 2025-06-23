@@ -1422,15 +1422,17 @@ class _BiblePageState extends State<BiblePage> {
                       : (_isSemanticSearchActive &&
                               !_isFocusModeActive) // Se ESTIVER em modo de busca semântica
                           ? StoreConnector<AppState, BibleSearchState>(
-                              // Conecta ao BibleSearchState
                               converter: (store) =>
                                   store.state.bibleSearchState,
+                              distinct:
+                                  true, // Evita reconstruções desnecessárias se o searchState não mudar
                               onInit: (store) {
-                                // <<< ADICIONA onInit PARA CARREGAR HISTÓRICO AQUI
                                 if (store.state.bibleSearchState.searchHistory
                                         .isEmpty &&
                                     !store.state.bibleSearchState
                                         .isLoadingHistory) {
+                                  print(
+                                      "BiblePage (Search Mode): Disparando LoadSearchHistoryAction no onInit.");
                                   store.dispatch(LoadSearchHistoryAction());
                                 }
                               },
@@ -1438,16 +1440,20 @@ class _BiblePageState extends State<BiblePage> {
                                 final theme = Theme.of(
                                     context); // Pega o tema aqui para usar nos widgets filhos
 
-                                // 1. Se estiver carregando uma NOVA busca e não há resultados antigos ou histórico para mostrar
+                                // 1. Se está carregando uma NOVA busca (isLoading é true E currentQuery foi definido)
                                 if (searchState.isLoading &&
-                                    searchState.results.isEmpty &&
-                                    searchState.searchHistory.isEmpty) {
+                                    searchState.currentQuery.isNotEmpty) {
+                                  print(
+                                      "BiblePage Semantic Search: Mostrando loader para nova busca ativa (Query: '${searchState.currentQuery}').");
                                   return const Center(
                                       child: CircularProgressIndicator());
                                 }
-                                // 2. Se houve um erro na busca
+
+                                // 2. Se houve um erro na busca (e não está mais carregando)
                                 if (!searchState.isLoading &&
                                     searchState.error != null) {
+                                  print(
+                                      "BiblePage Semantic Search: Mostrando erro: ${searchState.error}");
                                   return Center(
                                     child: Padding(
                                       padding: const EdgeInsets.all(16.0),
@@ -1459,8 +1465,11 @@ class _BiblePageState extends State<BiblePage> {
                                     ),
                                   );
                                 }
+
                                 // 3. Se houver resultados da busca ATUAL, mostra eles
                                 if (searchState.results.isNotEmpty) {
+                                  print(
+                                      "BiblePage Semantic Search: Mostrando ${searchState.results.length} resultados da busca para '${searchState.currentQuery}'.");
                                   return ListView.builder(
                                     padding: const EdgeInsets.all(8.0),
                                     itemCount: searchState.results.length,
@@ -1485,8 +1494,8 @@ class _BiblePageState extends State<BiblePage> {
                                       final reference =
                                           "${metadata['livro_completo'] ?? metadata['livro_curto'] ?? '?'} ${metadata['capitulo'] ?? '?'}:${metadata['versiculos'] ?? '?'}";
                                       final score = item['score'] as double?;
-                                      final bool isExpanded = _expandedItemId ==
-                                          itemId; // Usa a variável de estado da BiblePage
+                                      final bool isExpanded =
+                                          _expandedItemId == itemId;
 
                                       String previewContent =
                                           "Toque para ver detalhes";
@@ -1533,10 +1542,9 @@ class _BiblePageState extends State<BiblePage> {
                                                   color: theme.iconTheme.color),
                                               onTap: () =>
                                                   _toggleItemExpansionInBiblePage(
-                                                      metadata,
-                                                      itemId), // <<< CHAMA A FUNÇÃO DA BIBLEPAGE
+                                                      metadata, itemId),
                                             ),
-                                            if (isExpanded) // Mostra o conteúdo expandido
+                                            if (isExpanded)
                                               AnimatedSize(
                                                 duration: const Duration(
                                                     milliseconds: 300),
@@ -1554,22 +1562,22 @@ class _BiblePageState extends State<BiblePage> {
                                                       _isLoadingExpandedContent
                                                           ? const Center(
                                                               child: Padding(
-                                                              padding:
-                                                                  EdgeInsets
-                                                                      .all(8.0),
-                                                              child: SizedBox(
-                                                                  height: 20,
-                                                                  width: 20,
-                                                                  child: CircularProgressIndicator(
-                                                                      strokeWidth:
-                                                                          2.5)),
-                                                            ))
+                                                                  padding:
+                                                                      EdgeInsets
+                                                                          .all(
+                                                                              8.0),
+                                                                  child: SizedBox(
+                                                                      height:
+                                                                          20,
+                                                                      width: 20,
+                                                                      child: CircularProgressIndicator(
+                                                                          strokeWidth:
+                                                                              2.5))))
                                                           : (_loadedExpandedContent !=
                                                                       null &&
                                                                   _loadedExpandedContent!
                                                                       .isNotEmpty
                                                               ? MarkdownBody(
-                                                                  // Usa MarkdownBody para renderizar versículos/comentários
                                                                   data:
                                                                       _loadedExpandedContent!,
                                                                   selectable:
@@ -1578,16 +1586,15 @@ class _BiblePageState extends State<BiblePage> {
                                                                           .fromTheme(
                                                                               theme)
                                                                       .copyWith(
-                                                                    p: theme
-                                                                        .textTheme
-                                                                        .bodyMedium
-                                                                        ?.copyWith(
-                                                                            fontSize: 14 *
-                                                                                _currentFontSizeMultiplier, // Aplica multiplicador de fonte
-                                                                            height:
-                                                                                1.5,
-                                                                            color:
-                                                                                theme.colorScheme.onSurfaceVariant),
+                                                                    p: theme.textTheme.bodyMedium?.copyWith(
+                                                                        fontSize:
+                                                                            14 *
+                                                                                _currentFontSizeMultiplier,
+                                                                        height:
+                                                                            1.5,
+                                                                        color: theme
+                                                                            .colorScheme
+                                                                            .onSurfaceVariant),
                                                                     strong: TextStyle(
                                                                         fontWeight:
                                                                             FontWeight
@@ -1609,123 +1616,86 @@ class _BiblePageState extends State<BiblePage> {
                                                                               0.7)))),
                                                 ),
                                               ),
-                                            // if (isExpanded &&
-                                            //     !_isLoadingExpandedContent &&
-                                            //     _loadedExpandedContent !=
-                                            //         null) // Botão "Abrir na Bíblia"
-                                            //   Padding(
-                                            //     padding: const EdgeInsets.only(
-                                            //         right: 8.0,
-                                            //         top: 4.0,
-                                            //         bottom: 8.0),
-                                            //     child: Align(
-                                            //       alignment:
-                                            //           Alignment.centerRight,
-                                            //       child: TextButton.icon(
-                                            //         icon: Icon(Icons.menu_book,
-                                            //             size: 18,
-                                            //             color: theme.colorScheme
-                                            //                 .primary),
-                                            //         label: Text(
-                                            //             "Abrir na Bíblia",
-                                            //             style: TextStyle(
-                                            //                 fontSize: 12,
-                                            //                 color: theme
-                                            //                     .colorScheme
-                                            //                     .primary,
-                                            //                 fontWeight:
-                                            //                     FontWeight
-                                            //                         .w500)),
-                                            //         style: TextButton.styleFrom(
-                                            //           padding: const EdgeInsets
-                                            //               .symmetric(
-                                            //               horizontal: 10,
-                                            //               vertical: 6),
-                                            //           tapTargetSize:
-                                            //               MaterialTapTargetSize
-                                            //                   .shrinkWrap,
-                                            //         ),
-                                            //         onPressed: () {
-                                            //           final bookAbbrevNav =
-                                            //               metadata[
-                                            //                       'livro_curto']
-                                            //                   as String?;
-                                            //           final chapterStrNav =
-                                            //               metadata['capitulo']
-                                            //                   ?.toString();
-                                            //           final versesRangeNav =
-                                            //               metadata['versiculos']
-                                            //                   as String?; // Ex: "1-5" ou "1"
+                                            if (isExpanded &&
+                                                !_isLoadingExpandedContent &&
+                                                _loadedExpandedContent != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 8.0,
+                                                    top: 4.0,
+                                                    bottom: 8.0),
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerRight,
+                                                  child: TextButton.icon(
+                                                    icon: Icon(Icons.menu_book,
+                                                        size: 18,
+                                                        color: theme.colorScheme
+                                                            .primary),
+                                                    label: Text(
+                                                        "Abrir na Bíblia",
+                                                        style: TextStyle(
+                                                            fontSize: 12,
+                                                            color: theme
+                                                                .colorScheme
+                                                                .primary,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w500)),
+                                                    style: TextButton.styleFrom(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 6),
+                                                      tapTargetSize:
+                                                          MaterialTapTargetSize
+                                                              .shrinkWrap,
+                                                    ),
+                                                    onPressed: () {
+                                                      final bookAbbrevNav =
+                                                          metadata[
+                                                                  'livro_curto']
+                                                              as String?;
+                                                      final chapterStrNav =
+                                                          metadata['capitulo']
+                                                              ?.toString();
+                                                      int? chapterIntNav;
+                                                      if (chapterStrNav != null)
+                                                        chapterIntNav =
+                                                            int.tryParse(
+                                                                chapterStrNav);
 
-                                            //           int? chapterIntNav;
-                                            //           if (chapterStrNav != null)
-                                            //             chapterIntNav =
-                                            //                 int.tryParse(
-                                            //                     chapterStrNav);
-
-                                            //           // Tenta pegar o primeiro versículo do range para o scroll
-                                            //           String?
-                                            //               firstVerseInSection;
-                                            //           if (versesRangeNav !=
-                                            //               null) {
-                                            //             if (versesRangeNav
-                                            //                 .contains('-')) {
-                                            //               firstVerseInSection =
-                                            //                   versesRangeNav
-                                            //                       .split(
-                                            //                           '-')[0];
-                                            //             } else {
-                                            //               firstVerseInSection =
-                                            //                   versesRangeNav;
-                                            //             }
-                                            //           }
-
-                                            //           final String?
-                                            //               sectionIdToScroll =
-                                            //               (bookAbbrevNav !=
-                                            //                           null &&
-                                            //                       chapterIntNav !=
-                                            //                           null &&
-                                            //                       firstVerseInSection !=
-                                            //                           null)
-                                            //                   ? "${bookAbbrevNav}_c${chapterIntNav}_v$firstVerseInSection" // Constrói um ID simples para o primeiro verso da seção
-                                            //                   : null;
-
-                                            //           if (bookAbbrevNav !=
-                                            //                   null &&
-                                            //               chapterIntNav !=
-                                            //                   null) {
-                                            //             StoreProvider.of<
-                                            //                         AppState>(
-                                            //                     context,
-                                            //                     listen: false)
-                                            //                 .dispatch(
-                                            //                     SetInitialBibleLocationAction(
-                                            //                         bookAbbrevNav,
-                                            //                         chapterIntNav /*, sectionIdToScrollTo: sectionIdToScroll */) // sectionIdToScrollTo foi removido da ação
-                                            //                     );
-                                            //             StoreProvider.of<
-                                            //                         AppState>(
-                                            //                     context,
-                                            //                     listen: false)
-                                            //                 .dispatch(
-                                            //                     RequestBottomNavChangeAction(
-                                            //                         1));
-                                            //             // Não precisa do Navigator.popUntil se a MainAppScreen gerencia a navegação da BottomBar
-                                            //           } else {
-                                            //             ScaffoldMessenger.of(
-                                            //                     context)
-                                            //                 .showSnackBar(
-                                            //                     const SnackBar(
-                                            //                         content: Text(
-                                            //                             'Não foi possível abrir na Bíblia. Dados incompletos.')));
-                                            //           }
-                                            //         },
-                                            //       ),
-                                            //     ),
-                                            //   ),
-                                            if (score != null &&
-                                                !isExpanded) // Similaridade
+                                                      if (bookAbbrevNav !=
+                                                              null &&
+                                                          chapterIntNav !=
+                                                              null) {
+                                                        StoreProvider.of<
+                                                                    AppState>(
+                                                                context,
+                                                                listen: false)
+                                                            .dispatch(SetInitialBibleLocationAction(
+                                                                bookAbbrevNav,
+                                                                chapterIntNav));
+                                                        StoreProvider.of<
+                                                                    AppState>(
+                                                                context,
+                                                                listen: false)
+                                                            .dispatch(
+                                                                RequestBottomNavChangeAction(
+                                                                    1));
+                                                      } else {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                                const SnackBar(
+                                                                    content: Text(
+                                                                        'Não foi possível abrir na Bíblia. Dados incompletos.')));
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            if (score != null && !isExpanded)
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                     left: 16.0,
@@ -1744,9 +1714,12 @@ class _BiblePageState extends State<BiblePage> {
                                     },
                                   );
                                 }
+
                                 // 4. Se NÃO há query ATIVA (campo de busca vazio) E HÁ histórico, mostra o histórico
                                 if (searchState.currentQuery.isEmpty &&
                                     searchState.searchHistory.isNotEmpty) {
+                                  print(
+                                      "BiblePage Semantic Search: Mostrando histórico de ${searchState.searchHistory.length} buscas.");
                                   return Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -1821,14 +1794,28 @@ class _BiblePageState extends State<BiblePage> {
                                     ],
                                   );
                                 }
-                                // 5. Se houve uma busca ATIVA mas não encontrou resultados
+
+                                // 5. Se houve uma busca ATIVA mas não encontrou resultados (e não está carregando)
                                 if (!searchState.isLoading &&
                                     searchState.results.isEmpty &&
                                     searchState.currentQuery.isNotEmpty) {
+                                  print(
+                                      "BiblePage Semantic Search: Nenhum resultado para '${searchState.currentQuery}'.");
                                   return Center(
-                                      /* ... mensagem "Nenhum resultado encontrado..." ... */);
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Text(
+                                        "Nenhum resultado encontrado para '${searchState.currentQuery}' com os filtros aplicados.",
+                                        textAlign: TextAlign.center,
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                    ),
+                                  );
                                 }
-                                // 6. Mensagem padrão
+
+                                // 6. Mensagem padrão (campo de busca vazio e sem histórico, ou carregando histórico)
+                                print(
+                                    "BiblePage Semantic Search: Exibindo mensagem padrão/carregando histórico (isLoadingHistory: ${searchState.isLoadingHistory}).");
                                 return Center(
                                   child: Padding(
                                     padding: const EdgeInsets.all(16.0),
@@ -1839,15 +1826,15 @@ class _BiblePageState extends State<BiblePage> {
                                       style: TextStyle(
                                           fontStyle: FontStyle.italic,
                                           color: theme
-                                              .textTheme.bodyMedium?.color),
+                                              .textTheme.bodyMedium?.color
+                                              ?.withOpacity(0.7)),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
                                 );
                               },
-                            ) // Fim do StoreConnector<BibleSearchState>
-                          : const SizedBox
-                              .shrink(), // Caso padrão (não está em modo de busca semântica)
+                            )
+                          : const SizedBox.shrink(),
                 ),
                 Visibility(
                     visible: !_isFocusModeActive &&
