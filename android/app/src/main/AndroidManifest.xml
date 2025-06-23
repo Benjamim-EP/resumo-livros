@@ -4,6 +4,16 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="com.android.vending.BILLING" />
+
+    <queries>  <!-- <<< CORRETO: FORA DE <application> -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
     
     <application
         android:label="Septima Bíblia"
@@ -49,6 +59,8 @@
                 android:name="com.startapp.sdk.SPLASH_ADS_ENABLED"
                 android:value="false" />
         </provider>
+
+        
         <!-- <meta-data 
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-4567388888593257~4359914429"/> -->

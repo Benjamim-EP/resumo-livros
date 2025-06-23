@@ -5,9 +5,11 @@ import 'package:septima_biblia/redux/middleware/firestore_sync_middleware.dart';
 import 'package:septima_biblia/redux/middleware/metadata_middleware.dart';
 import 'package:septima_biblia/redux/middleware/payment_middleware.dart';
 import 'package:septima_biblia/redux/middleware/sermon_search_middleware.dart';
+import 'package:septima_biblia/redux/middleware/tts_middleware.dart';
 import 'package:septima_biblia/redux/reducers/metadata_reducer.dart';
 import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/reducers/tts_reducer.dart';
 import 'reducers.dart'; // Seu arquivo de reducers principal
 
 import 'middleware/book_middleware.dart';
@@ -35,6 +37,7 @@ class AppState {
 
   final MetadataState metadataState;
   final SubscriptionState subscriptionState;
+  final AppTtsState ttsState;
 
   AppState({
     required this.booksState,
@@ -47,6 +50,7 @@ class AppState {
     required this.metadataState,
     required this.subscriptionState,
     required this.sermonSearchState,
+    required this.ttsState,
   });
 
   // O método copyWith é útil para testes ou cenários de atualização mais complexos,
@@ -72,6 +76,7 @@ class AppState {
           metadataState ?? metadataState, // Mantém o estado de metadados atual
       subscriptionState: subscriptionState ?? this.subscriptionState,
       sermonSearchState: sermonSearchState ?? this.sermonSearchState,
+      ttsState: ttsState ?? this.ttsState, // Mantém o estado do TTS atual
     );
   }
 }
@@ -90,6 +95,7 @@ AppState appReducer(AppState state, dynamic action) {
     metadataState: metadataReducer(state.metadataState, action),
     subscriptionState: subscriptionReducer(state.subscriptionState, action),
     sermonSearchState: sermonSearchReducer(state.sermonSearchState, action),
+    ttsState: ttsReducer(state.ttsState, action),
   );
 }
 
@@ -111,6 +117,7 @@ final Store<AppState> store = Store<AppState>(
     subscriptionState: SubscriptionState.initial(),
     sermonSearchState:
         SermonSearchState(), // NOVO: Estado inicial para busca de sermões
+    ttsState: AppTtsState(),
   ),
   middleware: [
     // Combina todos os middlewares dos arquivos separados
@@ -130,6 +137,7 @@ final Store<AppState> store = Store<AppState>(
     ...createMetadataMiddleware(),
     ...createFirestoreSyncMiddleware(), // NOVO
     ...createSermonSearchMiddleware(),
+    ...createTtsMiddleware(),
   ],
 );
 
