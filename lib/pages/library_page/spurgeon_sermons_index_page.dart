@@ -58,6 +58,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
       TextEditingController();
   bool _isSemanticSearchModeActive = false;
 
+  String? _expandedSermonResultId;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +76,17 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
               "SpurgeonSermonsIndexPage: Disparando LoadSermonSearchHistoryAction no initState.");
           store.dispatch(LoadSermonSearchHistoryAction());
         }
+      }
+    });
+  }
+
+  void _toggleSermonParagraphsExpansion(String sermonIdBase) {
+    if (!mounted) return;
+    setState(() {
+      if (_expandedSermonResultId == sermonIdBase) {
+        _expandedSermonResultId = null; // Recolhe se já estiver expandido
+      } else {
+        _expandedSermonResultId = sermonIdBase; // Expande o novo item
       }
     });
   }
@@ -696,20 +709,46 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
 
   Widget _buildSemanticSearchResultsList(
       ThemeData theme, List<Map<String, dynamic>> sermonResults) {
+    if (sermonResults.isEmpty) {
+      // Adiciona uma verificação para lista vazia, embora a lógica externa já deva cobrir
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            "Nenhum sermão encontrado para os critérios.",
+            style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7)),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(8.0),
       itemCount: sermonResults.length,
       itemBuilder: (context, index) {
         final sermonData = sermonResults[index];
         final String sermonIdBase =
-            sermonData['sermon_id_base'] ?? 'unknown_id';
+            sermonData['sermon_id_base'] as String? ?? 'sermon_result_$index';
         final String title =
-            sermonData['title_translated'] ?? 'Sermão Sem Título';
+            sermonData['title_translated'] as String? ?? 'Sermão Sem Título';
         final String scripture =
-            sermonData['main_scripture_abbreviated'] ?? 'N/A';
-        final String preacher = sermonData['preacher'] ?? 'C.H. Spurgeon';
-        final List<dynamic> relevantParagraphs =
-            sermonData['relevant_paragraphs'] ?? [];
+            sermonData['main_scripture_abbreviated'] as String? ?? 'N/A';
+        final String preacher =
+            sermonData['preacher'] as String? ?? 'C.H. Spurgeon';
+
+        final List<dynamic> relevantParagraphsRaw =
+            sermonData['relevant_paragraphs'] as List<dynamic>? ?? [];
+        final List<String> relevantParagraphsTexts = relevantParagraphsRaw
+            .map((p) => (p is Map && p['text_preview'] is String)
+                ? p['text_preview'] as String
+                : null)
+            .where((p) => p != null)
+            .cast<String>()
+            .toList();
+
+        final bool isExpanded = _expandedSermonResultId == sermonIdBase;
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
@@ -723,6 +762,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+                  // Título do Sermão
                   title,
                   style: theme.textTheme.titleLarge?.copyWith(
                       fontSize: 17,
@@ -731,57 +771,143 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
+
+                // >>> INÍCIO DA MODIFICAÇÃO: Mostrar Pregador E Preview dos Parágrafos <<<
                 Text(
+                  // Pregador
                   "Por: $preacher",
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
+                      // Usando bodySmall para menos destaque que o preview
                       fontStyle: FontStyle.italic,
-                      fontSize: 12.5,
+                      fontSize: 11.5, // Um pouco menor
                       color:
-                          theme.textTheme.bodySmall?.color?.withOpacity(0.9)),
+                          theme.textTheme.bodySmall?.color?.withOpacity(0.75)),
                 ),
+
                 if (scripture.isNotEmpty && scripture != 'N/A') ...[
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 4),
                   Text(
+                    // Passagem Principal
                     "Passagem Principal: $scripture",
                     style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
+                        fontSize: 11.5, // Consistente com o pregador
                         color: theme.colorScheme.secondary.withOpacity(0.9)),
                   ),
                 ],
-                const SizedBox(height: 10),
-                if (relevantParagraphs.isNotEmpty) ...[
+
+                // Preview dos Trechos Relevantes (mesmo quando não expandido)
+                if (relevantParagraphsTexts.isNotEmpty) ...[
+                  const SizedBox(height: 8),
                   Text(
-                    "Trechos Relevantes:",
-                    style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                        color: theme.textTheme.bodyLarge?.color),
+                    // Pega o primeiro parágrafo relevante para o preview
+                    '"${relevantParagraphsTexts.first.length > 150 ? relevantParagraphsTexts.first.substring(0, 150) + "..." : relevantParagraphsTexts.first}"',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      height: 1.4,
+                      fontSize: 13, // Tamanho para o preview
+                      color: theme.colorScheme.onSurface.withOpacity(0.75),
+                      fontStyle: FontStyle.italic,
+                    ),
+                    maxLines: 3, // Limita o preview a 3 linhas
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 5),
-                  ...relevantParagraphs.take(2).map<Widget>((paragraph) {
-                    final String textPreview =
-                        (paragraph['text_preview'] as String?) ??
-                            "Trecho indisponível.";
-                    final double paraScore =
-                        (paragraph['score'] as num?)?.toDouble() ?? 0.0;
-                    return Padding(
-                      padding: const EdgeInsets.only(
-                          top: 2.0, bottom: 5.0, left: 8.0),
-                      child: Text(
-                        '"${textPreview.length > 120 ? textPreview.substring(0, 120) + "..." : textPreview}" (Similaridade: ${paraScore.toStringAsFixed(2)})',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            height: 1.4,
-                            fontSize: 11.5,
-                            color: theme.textTheme.bodyMedium?.color
-                                ?.withOpacity(0.85)),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  const SizedBox(height: 10),
                 ],
+                // >>> FIM DA MODIFICAÇÃO <<<
+
+                const SizedBox(height: 10), // Espaço antes dos botões
+
+                // Botão para expandir/recolher parágrafos relevantes
+                if (relevantParagraphsTexts.isNotEmpty)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      icon: Icon(
+                        isExpanded
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        size: 18,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      label: Text(
+                        isExpanded
+                            ? "Ocultar Parágrafos"
+                            : "Ver Todos os Parágrafos (${relevantParagraphsTexts.length})",
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w500),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () =>
+                          _toggleSermonParagraphsExpansion(sermonIdBase),
+                    ),
+                  ),
+
+                // Exibição dos parágrafos expandidos (quando isExpanded é true)
+                if (isExpanded && relevantParagraphsTexts.isNotEmpty)
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceVariant
+                              .withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8.0),
+                          border: Border.all(
+                              color: theme.dividerColor.withOpacity(0.3),
+                              width: 0.8)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: relevantParagraphsTexts
+                            .asMap()
+                            .entries
+                            .map((entry) {
+                          int pIndex = entry.key;
+                          String paragraphText = entry.value;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                                bottom:
+                                    pIndex < relevantParagraphsTexts.length - 1
+                                        ? 12.0
+                                        : 0.0),
+                            child: SelectableText(
+                              paragraphText,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                height: 1.55,
+                                color: theme.colorScheme.onSurfaceVariant
+                                    .withOpacity(0.9),
+                              ),
+                              textAlign: TextAlign.justify,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+
+                if (relevantParagraphsTexts.isEmpty && isExpanded)
+                  Padding(
+                    // Mensagem se tentou expandir mas não há trechos (caso raro)
+                    padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                    child: Text(
+                      "Nenhum trecho relevante destacado para este sermão.",
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withOpacity(0.6)),
+                    ),
+                  ),
+
+                // Espaçamento antes do botão "Ler Sermão Completo"
+                const SizedBox(height: 8),
+
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(

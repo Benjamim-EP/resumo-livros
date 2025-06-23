@@ -46,7 +46,7 @@ class ResourceCard extends StatelessWidget {
               child: hasCoverImage
                   ? Image.asset(
                       coverImagePath!,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.fill,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           color:
