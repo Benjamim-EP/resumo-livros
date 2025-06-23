@@ -178,7 +178,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'description': "Temas da Bíblia com guias e referências.",
           'icon': Icons.menu_book_outlined,
           'coverImagePath':
-              null, // Ou uma imagem genérica para estudos: 'assets/covers/study_cover.webp'
+              'assets/covers/estudos_tematicos_cover.webp', // Ou uma imagem genérica para estudos: 'assets/covers/study_cover.webp'
           'onTap': () {
             Navigator.push(
               context,
@@ -193,7 +193,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'icon': Icons
               .timeline_outlined, // Ou um ícone que represente melhor uma linha do tempo
           'coverImagePath':
-              null, // Ou 'assets/covers/timeline_cover.webp' se você criar uma
+              'assets/covers/timeline_cover.webp', // Ou null se não tiver imagem
           'onTap': () {
             // Tenta mostrar um anúncio ANTES de navegar
             interstitialManager
@@ -215,8 +215,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'description': "+800 promessas de Deus na Bíblia.",
           'icon': Icons
               .verified_user_outlined, // Ou outro ícone como Icons.star_outline
-          'coverImagePath':
-              null, // Ou 'assets/covers/promises_cover.webp' se você criar uma
+          'coverImagePath': 'assets/covers/promessas_cover.webp',
           'onTap': () {
             interstitialManager
                 .tryShowInterstitial(fromScreen: "LibraryPage_To_Promises")
