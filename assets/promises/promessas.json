@@ -2,8 +2,34 @@
   "book": "PRECIOSAS PROMESSAS DA BÍBLIA",
   "author": "Samuel Clarke",
   "parts": [
+     {
+      "part_number": 1, 
+      "title": "MOTIVAÇÃO PARA ESTUDAR AS PROMESSAS",
+      "type": "introduction",
+      "chapters": [
+        {
+          "chapter_number": 1,
+          "title": "Sermões Spurgeon",
+          "sections": [
+            {
+              "title": "Sermões",
+              "verses": [
+                {
+                 "text": "Bendito seja Deus, há também uma grande parte deste Livro ocupada com promessas. Caros amigos, familiarizem-se com as promessas! Muitas vezes achei proveitoso consultar aquele pequeno livro em que o Dr. Samuel Clarke organizou as promessas das Escrituras sob diferentes títulos. É muito útil, quando você estiver em dificuldades, consultar todas as promessas feitas àqueles que se encontram em circunstâncias semelhantes às suas. Por exemplo, aos doentes, aos pobres ou aos que sofrem com calúnias. Ao lê-las, uma após a outra, vocês dizem a si mesmos: \"Este é o meu talão de cheques — posso sacar as promessas quando precisar, assiná-las pela fé, apresentá-las ao grande Banco da Graça — e sair enriquecido com ajuda presente em tempos de necessidade\". Essa é a maneira de usar as promessas de Deus, para que elas ministrem à vida do nosso espírito.",
+                  "reference": "Sermão 44 de C.H. Spurgeon"
+                },
+                {
+                  "text": "Não há nada na terra, não há nada no Céu tão firme quanto a simples e nua Palavra de Deus. Quão poderosa é esta súplica, quando apresentais diante do Senhor a Sua própria Palavra sagrada! É uma Palavra real. Não esperamos que reis brinquem com as palavras. Eles dizem: \"Se a honra fosse banida de todo o resto da humanidade, ainda deveria encontrar refúgio no seio dos reis\". Mas o que direi do \"Rei eterno, imortal, invisível\"? Ele mentirá? Suspeitais do único \"Bendito e único Potentado\", o Rei dos Reis e Senhor dos Senhores? Como insultais Sua Majestade se sonhais que Ele pode falsificar o Seu juramento solene e quebrar a Sua Palavra! \"Onde está a palavra de um rei, há poder\", porque há fidelidade por trás dela.",
+                  "reference": "Sermão 1969 de C.H. Spurgeon"
+                }      
+              ]
+            }
+          ]
+        }
+      ]
+    },
     {
-      "part_number": 1,
+      "part_number": 2,
       "title": "PARTE UM: BÊNÇÃOS PROMETIDAS AOS CRENTES",
       "chapters": [
         {
@@ -4524,7 +4550,7 @@
       ]
     },
     {
-      "part_number": 2,
+      "part_number": 3,
       "title": "PARTE DOIS: PROMESSAS PARA O EXERCÍCIO DOS DEVERES E GLÓRIAS",
       "chapters": [
         {
@@ -7274,7 +7300,7 @@
       ]
     },
     {
-      "part_number": 3,
+      "part_number": 4,
       "title": "PARTE TRÊS: PROMESSAS DO CRESCIMENTO E DA GLÓRIA DA IGREJA",
       "chapters": [
         {
@@ -7878,7 +7904,7 @@
       ]
     },
     {
-      "part_number": 4,
+      "part_number": 5,
       "title": "CONCLUSÃO",
       "chapters": [
         {
