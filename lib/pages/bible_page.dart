@@ -26,6 +26,8 @@ import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart'
     show StringExtension;
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
+import 'package:septima_biblia/services/tts_manager.dart';
+// import 'package:septima_biblia/services/tts_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -112,6 +114,9 @@ class _BiblePageState extends State<BiblePage> {
   String? selectedBook;
   int? selectedChapter;
 
+  bool _isContinuousPlayActive = false;
+  final TtsManager _ttsManager = TtsManager();
+
   String? _filterSelectedTestament;
   String? _filterSelectedBookAbbrev;
   String? _filterSelectedContentType;
@@ -188,6 +193,95 @@ class _BiblePageState extends State<BiblePage> {
       // para que os itens já renderizados (se houver) usem a nova fonte.
       _updateFutureBuilderKey();
     });
+  }
+
+  // >>> NOVA FUNÇÃO PARA GERAR A FILA DE LEITURA <<<
+  Future<void> _handlePlayRequest(
+      String startSectionId, TtsContentType contentType) async {
+    // Pega os dados atuais do capítulo (que já foram carregados pelo FutureBuilder)
+    final chapterData = await BiblePageHelper.loadChapterDataComparison(
+      selectedBook!,
+      selectedChapter!,
+      selectedTranslation1, // Usa a tradução principal
+      null, // Não precisa de comparação para o texto
+    );
+
+    final List<Map<String, dynamic>> sections =
+        List<Map<String, dynamic>>.from(chapterData['sectionStructure'] ?? []);
+    final dynamic verseData = chapterData['verseData']?[selectedTranslation1];
+
+    if (sections.isEmpty || verseData == null || verseData is! List<String>) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Não foi possível gerar o áudio.")));
+      return;
+    }
+
+    List<TtsQueueItem> queue = [];
+
+    for (var section in sections) {
+      final buffer = StringBuffer();
+
+      final String sectionTitle = section['title'] ?? '';
+      final List<int> verseNumbers =
+          (section['verses'] as List?)?.cast<int>() ?? [];
+
+      // Constrói o texto dos versículos
+      buffer.writeln("$sectionTitle.");
+      for (int verseNum in verseNumbers) {
+        if (verseNum > 0 && verseNum <= verseData.length) {
+          final verseText = verseData[verseNum - 1];
+          buffer.writeln("Versículo $verseNum. $verseText");
+        }
+      }
+
+      if (contentType == TtsContentType.versesAndCommentary) {
+        // --- INÍCIO DA CORREÇÃO DA LÓGICA DO versesRangeStr DENTRO DE _handlePlayRequest ---
+        final String versesRangeStr = verseNumbers.isNotEmpty
+            ? (verseNumbers.length == 1
+                ? verseNumbers.first.toString()
+                : "${verseNumbers.first}-${verseNumbers.last}")
+            : "all_verses_in_section"; // Corrigido para corresponder à lógica de SectionItemWidget
+        // --- FIM DA CORREÇÃO ---
+
+        String abbrevForFirestore = selectedBook!;
+        if (selectedBook!.toLowerCase() == 'job') {
+          abbrevForFirestore = 'jó';
+        }
+        final commentaryDocId =
+            "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
+
+        final commentaryData =
+            await _firestoreService.getSectionCommentary(commentaryDocId);
+        if (commentaryData != null && commentaryData['commentary'] is List) {
+          buffer.writeln("Comentário da seção.");
+          for (var item in (commentaryData['commentary'] as List)) {
+            final text =
+                (item as Map)['traducao'] ?? (item as Map)['original'] ?? '';
+            if (text.isNotEmpty) {
+              buffer.writeln(text);
+            }
+          }
+        }
+      }
+
+      // --- INÍCIO DA CORREÇÃO DA GERAÇÃO DO sectionId ---
+      // Recriando a mesma lógica de geração de ID que existe no SectionItemWidget
+      final String versesRangeForId = verseNumbers.isNotEmpty
+          ? (verseNumbers.length == 1
+              ? verseNumbers.first.toString()
+              : "${verseNumbers.first}-${verseNumbers.last}")
+          : "all"; // Se não houver versos, use um fallback consistente
+
+      final String sectionId =
+          "${selectedBook}_c${selectedChapter}_v$versesRangeForId";
+      // --- FIM DA CORREÇÃO ---
+
+      queue.add(
+          TtsQueueItem(sectionId: sectionId, textToSpeak: buffer.toString()));
+    }
+
+    // Inicia a reprodução
+    _ttsManager.speak(queue, startSectionId);
   }
 
 // Nova função para salvar a preferência de tamanho da fonte
@@ -1146,7 +1240,35 @@ class _BiblePageState extends State<BiblePage> {
           appBar: AppBar(
             title: Text(appBarTitleText),
             leading: _isFocusModeActive ? const SizedBox.shrink() : null,
-            actions: _buildAppBarActions(context, theme, viewModel),
+            actions: [
+              // >>> ADICIONE O BOTÃO DE TOGGLE PARA LEITURA CONTÍNUA AQUI <<<
+              if (!_isSemanticSearchActive) // Mostra apenas se não estiver em modo de busca
+                IconButton(
+                  icon: Icon(
+                    _isContinuousPlayActive
+                        ? Icons.playlist_play_rounded
+                        : Icons.playlist_add_check_rounded,
+                    color: _isContinuousPlayActive
+                        ? theme.colorScheme.secondary
+                        : theme.iconTheme.color,
+                  ),
+                  tooltip: _isContinuousPlayActive
+                      ? "Desativar Leitura Contínua"
+                      : "Ativar Leitura Contínua",
+                  onPressed: () {
+                    setState(() {
+                      _isContinuousPlayActive = !_isContinuousPlayActive;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(_isContinuousPlayActive
+                          ? "Modo de leitura contínua ativado."
+                          : "Modo de leitura contínua desativado."),
+                      duration: const Duration(seconds: 2),
+                    ));
+                  },
+                ),
+              ..._buildAppBarActions(context, theme, viewModel),
+            ],
           ),
           body: PageStorage(
             bucket: _pageStorageBucket,
@@ -2460,6 +2582,8 @@ class _BiblePageState extends State<BiblePage> {
                 hebrewInterlinearSectionData: hebrewDataForThisSection,
                 greekInterlinearSectionData: greekDataForThisSection,
                 fontSizeMultiplier: fontSizeMultiplier,
+                isContinuousPlayActive: _isContinuousPlayActive,
+                onPlayRequest: _handlePlayRequest,
               );
             } else if (primaryTranslationVerseData != null &&
                 (primaryTranslationVerseData as List).isNotEmpty) {

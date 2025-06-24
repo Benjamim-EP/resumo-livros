@@ -6,13 +6,13 @@ import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
-import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart'; // Para BiblePageHelper.loadBooksMap() se necessário para nome
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/services/tts_manager.dart'; // Importa o serviço de TTS
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;
   final List<int> verseNumbersInSection;
-  final dynamic
-      allVerseDataInChapter; // Pode ser List<String> ou List<List<Map<String, String>>>
+  final dynamic allVerseDataInChapter;
   final String bookSlug;
   final String bookAbbrev;
   final int chapterNumber;
@@ -20,14 +20,18 @@ class SectionItemWidget extends StatefulWidget {
   final Map<String, String> userHighlights;
   final Map<String, String> userNotes;
   final bool isHebrew;
-  final bool isGreekInterlinear; // <<< NOVO
+  final bool isGreekInterlinear;
   final bool isRead;
   final bool showHebrewInterlinear;
-  final bool showGreekInterlinear; // <<< NOVO
+  final bool showGreekInterlinear;
   final List<List<Map<String, String>>>? hebrewInterlinearSectionData;
-  final List<List<Map<String, String>>>?
-      greekInterlinearSectionData; // <<< NOVO
-  final double fontSizeMultiplier; // <<< NOVO
+  final List<List<Map<String, String>>>? greekInterlinearSectionData;
+  final double fontSizeMultiplier;
+
+  // Propriedades para a funcionalidade de TTS
+  final bool isContinuousPlayActive;
+  final Function(String startSectionId, TtsContentType contentType)
+      onPlayRequest;
 
   const SectionItemWidget({
     super.key,
@@ -41,13 +45,15 @@ class SectionItemWidget extends StatefulWidget {
     required this.userHighlights,
     required this.userNotes,
     this.isHebrew = false,
-    this.isGreekInterlinear = false, // <<< NOVO
+    this.isGreekInterlinear = false,
     required this.isRead,
     required this.showHebrewInterlinear,
-    required this.showGreekInterlinear, // <<< NOVO
+    required this.showGreekInterlinear,
     this.hebrewInterlinearSectionData,
-    this.greekInterlinearSectionData, // <<< NOVO
+    this.greekInterlinearSectionData,
     required this.fontSizeMultiplier,
+    required this.isContinuousPlayActive,
+    required this.onPlayRequest,
   });
 
   @override
@@ -59,8 +65,63 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   final FirestoreService _firestoreService = FirestoreService();
   bool _isLoadingCommentary = false;
 
+  final TtsManager _ttsManager = TtsManager();
+  bool _isThisSectionPlaying = false;
+  TtsContentType? _currentlyPlayingType; // Para saber qual ícone destacar
+
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _ttsManager.playerState.addListener(_onTtsStateChanged);
+    _ttsManager.currentPlayingId.addListener(_onTtsStateChanged);
+  }
+
+  @override
+  void dispose() {
+    _ttsManager.playerState.removeListener(_onTtsStateChanged);
+    _ttsManager.currentPlayingId.removeListener(_onTtsStateChanged);
+    super.dispose();
+  }
+
+  /// Atualiza o estado local do widget quando o TtsManager muda.
+  void _onTtsStateChanged() {
+    if (!mounted) return;
+
+    final isPlaying = _ttsManager.playerState.value == TtsPlayerState.playing;
+    // O ID que está tocando agora pode ser o desta seção ou da primeira da fila contínua
+    final isMyQueuePlaying =
+        isPlaying && _ttsManager.currentPlayingId.value != null;
+
+    // Simplificação: o ícone fica "ativo" se QUALQUER COISA estiver tocando.
+    // Uma lógica mais complexa poderia destacar todas as seções da fila.
+    if (_isThisSectionPlaying != isMyQueuePlaying) {
+      setState(() {
+        _isThisSectionPlaying = isMyQueuePlaying;
+      });
+    }
+  }
+
+  /// Lida com a solicitação de play/stop.
+  void _handlePlayRequest(TtsContentType contentType) {
+    // Se o player ESTÁ TOCANDO, qualquer um dos botões de play o para.
+    if (_ttsManager.playerState.value == TtsPlayerState.playing) {
+      _ttsManager.stop();
+      setState(() {
+        _currentlyPlayingType = null;
+      });
+    } else {
+      // Se está PARADO, inicia a reprodução.
+      _ttsManager.isContinuousPlayEnabled = widget.isContinuousPlayActive;
+      setState(() {
+        _currentlyPlayingType = contentType;
+      });
+      // Chama a função da BiblePage para construir a fila e iniciar a reprodução
+      widget.onPlayRequest(_sectionIdForTracking, contentType);
+    }
+  }
 
   String get _sectionIdForTracking {
     final range =
@@ -71,28 +132,22 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   String get _commentaryDocId {
     final range = widget.versesRangeStr.isNotEmpty
         ? widget.versesRangeStr
-        : "all_verses_in_section"; // Fallback se range for vazio
-    // ***** ALTERAÇÃO AQUI *****
-    // Usar bookAbbrev em vez de bookSlug para corresponder ao ID do Firestore
+        : "all_verses_in_section";
     String abbrevForFirestore = widget.bookAbbrev;
     if (widget.bookAbbrev.toLowerCase() == 'job') {
-      abbrevForFirestore = 'jó'; // Usa 'jó' para buscar no Firestore
+      abbrevForFirestore = 'jó';
     }
     return "${abbrevForFirestore}_c${widget.chapterNumber}_v$range";
-    // Exemplo: "1co_c10_v1-5"
   }
 
   Future<void> _showCommentary(BuildContext context) async {
+    // ... (código existente da função sem alterações, pois está correto)
     if (!mounted) return;
     setState(() => _isLoadingCommentary = true);
 
-    print(
-        "Tentando carregar comentário para Doc ID: $_commentaryDocId"); // Log para debug
-
     final commentaryData =
         await _firestoreService.getSectionCommentary(_commentaryDocId);
-    // ... resto da função _showCommentary permanece igual
-    // ... (verificação de null, extração de commentaryItems, chamada do Modal)
+
     String bookFullName = widget.bookAbbrev.toUpperCase();
     try {
       final booksMap = await BiblePageHelper.loadBooksMap();
@@ -100,8 +155,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
       }
     } catch (e) {
-      print(
-          "Erro ao carregar nome do livro em SectionItemWidget para comentário: $e");
+      print("Erro ao carregar nome do livro: $e");
     }
 
     if (mounted) {
@@ -110,14 +164,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
           (commentaryData != null && commentaryData['commentary'] is List)
               ? List<Map<String, dynamic>>.from(commentaryData['commentary'])
               : const [];
-
-      if (commentaryItems.isEmpty && commentaryData == null) {
-        print(
-            "Nenhum dado de comentário encontrado para $_commentaryDocId ou documento não existe.");
-      } else if (commentaryItems.isEmpty && commentaryData != null) {
-        print(
-            "Documento $_commentaryDocId encontrado, mas o array 'commentary' está vazio ou não existe.");
-      }
 
       showModalBottomSheet(
         context: context,
@@ -131,8 +177,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
           bookName: bookFullName,
           chapterNumber: widget.chapterNumber,
           versesRangeStr: widget.versesRangeStr,
-          initialFontSizeMultiplier:
-              widget.fontSizeMultiplier, // <<< PASSA O MULTIPLICADOR
+          initialFontSizeMultiplier: widget.fontSizeMultiplier,
         ),
       );
     }
@@ -140,10 +185,21 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Necessário para AutomaticKeepAliveClientMixin
+    super.build(context);
     final theme = Theme.of(context);
     final sectionId = _sectionIdForTracking;
     final bool currentIsRead = widget.isRead;
+
+    // Lógica para destacar o ícone correto
+    final bool isAnyAudioPlaying =
+        _ttsManager.playerState.value == TtsPlayerState.playing;
+    final bool isVersesButtonActive =
+        isAnyAudioPlaying && _currentlyPlayingType == TtsContentType.versesOnly;
+    final bool isStudyButtonActive = isAnyAudioPlaying &&
+        _currentlyPlayingType == TtsContentType.versesAndCommentary;
+    final Color defaultIconColor =
+        theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
+    final Color activeIconColor = theme.colorScheme.secondary;
 
     return Card(
       elevation: 2,
@@ -174,37 +230,66 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                           color: currentIsRead
                               ? theme.primaryColor
                               : theme.colorScheme.primary,
-                          fontSize: 18,
+                          fontSize: 18 * widget.fontSizeMultiplier,
                           fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
-                _isLoadingCommentary
-                    ? Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        child: const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        ))
-                    : IconButton(
-                        icon: Icon(
-                          Icons.comment_outlined,
-                          color: theme.iconTheme.color?.withOpacity(0.7),
-                          size: 22,
-                        ),
-                        tooltip: "Ver Comentário da Seção",
-                        onPressed: () => _showCommentary(context),
-                        splashRadius: 20,
-                        padding: const EdgeInsets.all(8),
-                      ),
+
+                // Botão "Ouvir Versículos"
+                IconButton(
+                  icon: Icon(
+                    isAnyAudioPlaying
+                        ? Icons.stop_circle_outlined
+                        : Icons.play_circle_outline,
+                    color: isVersesButtonActive
+                        ? activeIconColor
+                        : defaultIconColor,
+                    size: 26,
+                  ),
+                  tooltip: "Ouvir Versículos",
+                  onPressed: () =>
+                      _handlePlayRequest(TtsContentType.versesOnly),
+                ),
+                // Botão "Ouvir Estudo"
+                IconButton(
+                  icon: Icon(
+                    isAnyAudioPlaying
+                        ? Icons.stop_circle_outlined
+                        : Icons.headset_mic_outlined,
+                    color: isStudyButtonActive
+                        ? activeIconColor
+                        : defaultIconColor,
+                    size: 24,
+                  ),
+                  tooltip: "Ouvir Estudo (Versículos e Comentários)",
+                  onPressed: () =>
+                      _handlePlayRequest(TtsContentType.versesAndCommentary),
+                ),
+                // Botão "Ver Comentário"
+                if (_isLoadingCommentary)
+                  const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Center(
+                          child: Padding(
+                              padding: EdgeInsets.all(10.0),
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2))))
+                else
+                  IconButton(
+                    icon: Icon(Icons.comment_outlined,
+                        color: defaultIconColor, size: 22),
+                    tooltip: "Ver Comentário da Seção",
+                    onPressed: () => _showCommentary(context),
+                  ),
               ],
             ),
             Divider(color: theme.dividerColor.withOpacity(0.5)),
             const SizedBox(height: 8),
+
+            // ... O resto do seu widget (ListView.builder para os versículos e o botão "Marcar como Lido")
+            // permanece exatamente o mesmo.
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -213,11 +298,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 final verseNumber = widget.verseNumbersInSection[indexInSecao];
                 dynamic mainTranslationVerseDataItem;
                 List<Map<String, String>>? hebrewDataForThisVerse;
-                List<Map<String, String>>? greekDataForThisVerse; // <<< NOVO
+                List<Map<String, String>>? greekDataForThisVerse;
 
-                // Determina o dado da tradução principal
                 if (widget.isGreekInterlinear) {
-                  // <<< SE FOR GREGO INTERLINEAR PRINCIPAL
                   if (widget.allVerseDataInChapter
                           is List<List<Map<String, String>>> &&
                       verseNumber > 0 &&
@@ -236,7 +319,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         as List<List<Map<String, String>>>)[verseNumber - 1];
                   }
                 } else {
-                  // Tradução normal (string)
                   if (widget.allVerseDataInChapter is List<String> &&
                       verseNumber > 0 &&
                       verseNumber <=
@@ -246,10 +328,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   }
                 }
 
-                // Determina dados para interlinear complementar HEBRAICO
                 if (widget.showHebrewInterlinear &&
-                    !widget
-                        .isHebrew && // Só mostra se não for a tradução principal
+                    !widget.isHebrew &&
                     widget.hebrewInterlinearSectionData != null &&
                     indexInSecao <
                         widget.hebrewInterlinearSectionData!.length) {
@@ -257,10 +337,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       widget.hebrewInterlinearSectionData![indexInSecao];
                 }
 
-                // Determina dados para interlinear complementar GREGO
                 if (widget.showGreekInterlinear &&
-                    !widget
-                        .isGreekInterlinear && // Só mostra se não for a tradução principal
+                    !widget.isGreekInterlinear &&
                     widget.greekInterlinearSectionData != null &&
                     indexInSecao < widget.greekInterlinearSectionData!.length) {
                   greekDataForThisVerse =
@@ -291,14 +369,13 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     userHighlights: widget.userHighlights,
                     userNotes: widget.userNotes,
                     isHebrew: widget.isHebrew,
-                    isGreekInterlinear:
-                        widget.isGreekInterlinear, // <<< PASSANDO
+                    isGreekInterlinear: widget.isGreekInterlinear,
                     showHebrewInterlinear:
                         widget.showHebrewInterlinear && !widget.isHebrew,
                     showGreekInterlinear: widget.showGreekInterlinear &&
-                        !widget.isGreekInterlinear, // <<< PASSANDO
+                        !widget.isGreekInterlinear,
                     hebrewVerseData: hebrewDataForThisVerse,
-                    greekVerseData: greekDataForThisVerse, // <<< PASSANDO
+                    greekVerseData: greekDataForThisVerse,
                     fontSizeMultiplier: widget.fontSizeMultiplier,
                   );
                 } else {
