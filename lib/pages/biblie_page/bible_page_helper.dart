@@ -84,6 +84,44 @@ class BiblePageHelper {
     'apocalipse': 'ap'
   };
 
+  static String formatReferenceForTts(String reference) {
+    // Substitui os dois pontos por " e " para guiar o motor TTS.
+    // Usamos uma expressão regular para garantir que só substituímos os dois pontos
+    // que estão entre números.
+    return reference.replaceAllMapped(
+      RegExp(r'(\d):(\d)'),
+      (match) => '${match.group(1)} versiculo ${match.group(2)}',
+    );
+  }
+
+  static Future<String> getFullReferenceName(
+      String abbreviatedReference) async {
+    try {
+      // Carrega o mapa de livros (usa o cache se já carregado)
+      final booksMap = await loadBooksMap();
+
+      // Regex para separar a abreviação do resto da referência (capítulo e versículos)
+      final regex = RegExp(r'^(\S+)\s*(.*)$');
+      final match = regex.firstMatch(abbreviatedReference.trim());
+
+      if (match != null) {
+        final abbrev = match.group(1)?.toLowerCase() ?? '';
+        final restOfReference = match.group(2) ?? '';
+
+        // Procura a abreviação no nosso mapa de livros
+        if (booksMap.containsKey(abbrev)) {
+          final bookName = booksMap[abbrev]?['nome'] ?? abbrev.toUpperCase();
+          return '$bookName $restOfReference';
+        }
+      }
+      // Se não encontrar ou o formato for inesperado, retorna a original
+      return abbreviatedReference;
+    } catch (e) {
+      print("Erro ao obter nome completo da referência: $e");
+      return abbreviatedReference; // Retorna a original em caso de erro
+    }
+  }
+
   // Método assíncrono para carregar e cachear o léxico Hebraico
   static Future<Map<String, dynamic>?>
       loadAndCacheHebrewStrongsLexicon() async {

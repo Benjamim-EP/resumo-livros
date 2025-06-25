@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:septima_biblia/services/interstitial_manager.dart'; // Assumindo que esta importação está correta
+import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
-import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart'; // Importe o helper da Bíblia
+import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/services/tts_manager.dart'; // Importa o serviço de TTS
 
 // Modelo de dados para o sermão
 class Sermon {
@@ -15,10 +16,9 @@ class Sermon {
   final String titleOriginal;
   final String translatedTitle;
   final String? mainScripturePassageOriginal;
-  final String? mainScripturePassageAbbreviated; // Ex: "Lc 9:42" ou "Gn 1:1-3"
+  final String? mainScripturePassageAbbreviated;
   final Map<String, dynamic>? sermonDetails;
-  final String?
-      mainVerseQuoted; // O texto original em inglês (ou mal formatado)
+  final String? mainVerseQuoted;
   final List<String> paragraphsOriginal;
   final List<String> paragraphsPt;
   final List<String>? embeddedScripturesOriginal;
@@ -104,7 +104,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   String? _error;
   double _currentFontSize = 16.0;
 
-  // NOVO: Estados para os versículos carregados
   List<String>? _loadedMainScriptureVerses;
   bool _isLoadingMainScripture = false;
 
@@ -113,17 +112,95 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   static const double FONT_STEP = 1.0;
 
   final FirestoreService _firestoreService = FirestoreService();
+  final TtsManager _ttsManager = TtsManager();
+  bool _isSermonPlaying = false;
 
   @override
   void initState() {
     super.initState();
     _loadSermonDataFromFirestore();
+    _ttsManager.playerState.addListener(_onTtsStateChanged);
   }
 
   @override
   void dispose() {
-    // interstitialManager.tryShowInterstitial(fromScreen: "SermonDetailPage"); // Descomente se interstitialManager estiver definido globalmente
+    _ttsManager.playerState.removeListener(_onTtsStateChanged);
+    _ttsManager.stop();
+    // Tenta mostrar um intersticial ao sair da tela
+    interstitialManager.tryShowInterstitial(
+        fromScreen: "SermonDetailPage_Dispose");
     super.dispose();
+  }
+
+  void _onTtsStateChanged() {
+    if (!mounted) return;
+    final isPlaying = _ttsManager.playerState.value == TtsPlayerState.playing;
+    if (_isSermonPlaying != isPlaying) {
+      setState(() {
+        _isSermonPlaying = isPlaying;
+      });
+    }
+  }
+
+  void _handlePlayStopSermon() async {
+    if (_isSermonPlaying) {
+      _ttsManager.stop();
+      return;
+    }
+
+    if (_sermonDataFromFirestore == null) return;
+
+    final sermon = _sermonDataFromFirestore!;
+    List<TtsQueueItem> queue = [];
+    final sermonId =
+        sermon.generatedSermonId ?? "sermon_${sermon.translatedTitle.hashCode}";
+
+    // 1. Título
+    queue.add(TtsQueueItem(
+        sectionId: sermonId,
+        textToSpeak: "Sermão: ${sermon.translatedTitle}."));
+
+    // 2. Passagem Principal
+    if (sermon.mainScripturePassageAbbreviated != null &&
+        sermon.mainScripturePassageAbbreviated!.isNotEmpty) {
+      final fullReferenceName = await BiblePageHelper.getFullReferenceName(
+          sermon.mainScripturePassageAbbreviated!);
+      final ttsFriendlyReference =
+          BiblePageHelper.formatReferenceForTts(fullReferenceName);
+      queue.add(TtsQueueItem(
+          sectionId: sermonId,
+          textToSpeak: "Passagem principal: $ttsFriendlyReference."));
+    }
+
+    // 3. Texto dos Versículos
+    if (_loadedMainScriptureVerses != null &&
+        _loadedMainScriptureVerses!.isNotEmpty) {
+      // >>> INÍCIO DA CORREÇÃO <<<
+      final versesTextOnly = _loadedMainScriptureVerses!.map((verseWithNumber) {
+        // Lógica mais segura para remover o número inicial
+        final parts =
+            verseWithNumber.split(RegExp(r'\s+')); // Divide em todos os espaços
+        return parts.length > 1
+            ? parts.sublist(1).join(' ')
+            : verseWithNumber; // Retorna o texto após o número
+      }).join(" "); // Junta com espaço para soar como uma única passagem
+      // >>> FIM DA CORREÇÃO <<<
+
+      if (versesTextOnly.trim().isNotEmpty) {
+        queue.add(
+            TtsQueueItem(sectionId: sermonId, textToSpeak: versesTextOnly));
+      }
+    }
+
+    // 4. Parágrafos do Sermão
+    for (var paragraph in sermon.paragraphsToDisplay) {
+      if (paragraph.trim().isNotEmpty) {
+        queue.add(TtsQueueItem(sectionId: sermonId, textToSpeak: paragraph));
+      }
+    }
+
+    // Inicia a reprodução
+    _ttsManager.speak(queue, sermonId);
   }
 
   Future<void> _loadSermonDataFromFirestore() async {
@@ -173,7 +250,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     if (!mounted) return;
     setState(() => _isLoadingMainScripture = true);
     try {
-      // Assumindo tradução "nvi" como padrão
       final verses =
           await BiblePageHelper.loadVersesFromReference(reference, "nvi");
       if (mounted) {
@@ -219,7 +295,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       final String shareText =
           "Confira este sermão de ${sermon.preacher ?? 'C.H. Spurgeon'}: ${sermon.translatedTitle}\n"
           "Referência Principal: ${sermon.mainScripturePassageAbbreviated ?? 'N/A'}\n"
-          "\nLeia no app Septima!"; // Adapte o link/mensagem do app
+          "\nLeia no app Septima!";
       Share.share(shareText, subject: "Sermão: ${sermon.translatedTitle}");
     }
   }
@@ -236,6 +312,19 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         actions: [
+          if (_sermonDataFromFirestore != null)
+            IconButton(
+              icon: Icon(
+                _isSermonPlaying
+                    ? Icons.stop_circle_outlined
+                    : Icons.play_circle_outline,
+                color: _isSermonPlaying
+                    ? theme.colorScheme.secondary
+                    : theme.appBarTheme.actionsIconTheme?.color,
+              ),
+              tooltip: _isSermonPlaying ? "Parar Leitura" : "Ouvir Sermão",
+              onPressed: _handlePlayStopSermon,
+            ),
           if (_sermonDataFromFirestore != null)
             IconButton(
               icon: const Icon(Icons.share_outlined),
@@ -298,53 +387,41 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Detalhes do sermão (Número, Pregador, Info de Entrega)
           if (details != null) ...[
             if (details['number_text'] != null &&
                 (details['number_text'] as String).isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  details['number_text'],
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      fontSize: _currentFontSize * 0.8),
-                ),
+                child: Text(details['number_text'],
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontSize: _currentFontSize * 0.8)),
               ),
             if (preacherName.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2.0),
-                child: Text(
-                  "Pregador: $preacherName",
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      fontSize: _currentFontSize * 0.9),
-                ),
+                child: Text("Pregador: $preacherName",
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: _currentFontSize * 0.9)),
               ),
             if (details['delivery_info'] != null &&
                 (details['delivery_info'] as String).isNotEmpty)
-              Text(
-                details['delivery_info'],
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(fontSize: _currentFontSize * 0.8),
-              ),
+              Text(details['delivery_info'],
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(fontSize: _currentFontSize * 0.8)),
             const SizedBox(height: 12),
           ],
-
-          // Passagem Principal (Referência)
           if (sermon.mainScripturePassageAbbreviated != null &&
               sermon.mainScripturePassageAbbreviated!.isNotEmpty) ...[
             Text(
-              "Passagem Principal: ${sermon.mainScripturePassageAbbreviated}",
-              style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: _currentFontSize * 0.9),
-            ),
+                "Passagem Principal: ${sermon.mainScripturePassageAbbreviated}",
+                style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: _currentFontSize * 0.9)),
             const SizedBox(height: 4),
           ],
-
-          // Exibição dos Versículos Carregados Localmente
           if (_isLoadingMainScripture)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -365,24 +442,20 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _loadedMainScriptureVerses!.map((verseText) {
-                    // Para destacar o número do versículo
-                    final parts =
-                        verseText.split(RegExp(r'\s+')); // Divide por espaço
+                    final parts = verseText.split(RegExp(r'\s+'));
                     String verseNumDisplay = "";
                     String textDisplay = verseText;
                     if (parts.isNotEmpty && int.tryParse(parts.first) != null) {
                       verseNumDisplay = "${parts.first} ";
                       textDisplay = parts.sublist(1).join(" ");
                     }
-
                     return Padding(
                         padding: const EdgeInsets.only(bottom: 4.0),
                         child: RichText(
                           text: TextSpan(
                             style: theme.textTheme.bodyMedium?.copyWith(
                                 fontStyle: FontStyle.italic,
-                                height:
-                                    1.45, // Ajustado para melhor legibilidade
+                                height: 1.45,
                                 fontSize: _currentFontSize * 0.95),
                             children: <TextSpan>[
                               TextSpan(
@@ -399,7 +472,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
             )
           else if (sermon.mainVerseQuoted != null &&
               sermon.mainVerseQuoted!.isNotEmpty)
-            // Fallback para o mainVerseQuoted original (se não conseguiu carregar ou não havia referência)
             Card(
               elevation: 0,
               color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
@@ -408,28 +480,20 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                   borderRadius: BorderRadius.circular(8)),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  sermon.mainVerseQuoted!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      height: 1.4,
-                      fontSize: _currentFontSize * 0.95),
-                ),
+                child: Text(sermon.mainVerseQuoted!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        height: 1.4,
+                        fontSize: _currentFontSize * 0.95)),
               ),
             ),
           const SizedBox(height: 16),
-
-          // Título "Sermão:"
-          Text(
-            "Sermão:",
-            style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.underline,
-                fontSize: _currentFontSize * 1.1),
-          ),
+          Text("Sermão:",
+              style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
+                  fontSize: _currentFontSize * 1.1)),
           const SizedBox(height: 8),
-
-          // Parágrafos do Sermão (Markdown)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: sermon.paragraphsToDisplay.map((paragraph) {
@@ -438,10 +502,8 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                 data: spacedParagraph,
                 selectable: true,
                 styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                  p: theme.textTheme.bodyLarge?.copyWith(
-                    fontSize: _currentFontSize,
-                    height: 1.5,
-                  ),
+                  p: theme.textTheme.bodyLarge
+                      ?.copyWith(fontSize: _currentFontSize, height: 1.5),
                   blockquoteDecoration: BoxDecoration(
                     color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
                     border: Border(
@@ -453,19 +515,15 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
               );
             }).toList(),
           ),
-
-          // Outras Referências Citadas
           if (sermon.embeddedScripturesAbbreviated != null &&
               sermon.embeddedScripturesAbbreviated!.isNotEmpty) ...[
             const SizedBox(height: 24),
             Divider(color: theme.dividerColor.withOpacity(0.5)),
             const SizedBox(height: 12),
-            Text(
-              "Outras Referências Citadas:",
-              style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: _currentFontSize * 0.9),
-            ),
+            Text("Outras Referências Citadas:",
+                style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: _currentFontSize * 0.9)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8.0,
