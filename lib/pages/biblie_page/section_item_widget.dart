@@ -187,15 +187,15 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     }
 
     // --- Lógica para o botão de OUVIR ESTUDO ---
-    IconData studyIcon = Icons.headset_mic_outlined;
-    Color studyIconColor = defaultIconColor;
+    IconData studyIcon = Icons.play_circle_outline;
+    Color studyIconColor = Color.fromRGBO(205, 231, 190, 1);
     String studyTooltip = "Ouvir Estudo (Versículos e Comentários)";
 
     if (isThisSectionTheCurrentOne &&
         playingType == TtsContentType.versesAndCommentary) {
       if (playerState == TtsPlayerState.playing) {
         studyIcon = Icons.pause_circle_outline;
-        studyIconColor = activeIconColor;
+        studyIconColor = const Color.fromRGBO(205, 231, 190, 1);
         studyTooltip = "Pausar Leitura";
       } else if (playerState == TtsPlayerState.paused) {
         studyIcon = Icons.play_circle_outline;
