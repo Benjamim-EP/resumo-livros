@@ -175,7 +175,7 @@ class _LibraryPageState extends State<LibraryPage> {
         },
         {
           'title': "Estudos Bíblicos Rápidos",
-          'description': "Temas da Bíblia com guias e referências.",
+          'description': "",
           'icon': Icons.menu_book_outlined,
           'coverImagePath':
               'assets/covers/estudos_tematicos_cover.webp', // Ou uma imagem genérica para estudos: 'assets/covers/study_cover.webp'
@@ -188,8 +188,7 @@ class _LibraryPageState extends State<LibraryPage> {
         },
         {
           'title': "Linha do Tempo Bíblica",
-          'description':
-              "Explore os principais eventos bíblicos e da história mundial em ordem cronológica.",
+          'description': "",
           'icon': Icons
               .timeline_outlined, // Ou um ícone que represente melhor uma linha do tempo
           'coverImagePath':
@@ -212,7 +211,7 @@ class _LibraryPageState extends State<LibraryPage> {
         },
         {
           'title': "Promessas da Bíblia",
-          'description': "+800 promessas de Deus na Bíblia.",
+          'description': "",
           'icon': Icons
               .verified_user_outlined, // Ou outro ícone como Icons.star_outline
           'coverImagePath': 'assets/covers/promessas_cover.webp',
@@ -289,7 +288,7 @@ class _LibraryPageState extends State<LibraryPage> {
         crossAxisSpacing: 16.0, // Espaçamento horizontal entre os cards
         mainAxisSpacing: 16.0, // Espaçamento vertical entre os cards
         childAspectRatio:
-            0.8, // Proporção largura/altura dos cards (ajuste fino aqui)
+            0.7, // Proporção largura/altura dos cards (ajuste fino aqui)
         // Valores comuns: 1.0 (quadrado), 2/3 (retrato), 3/2 (paisagem)
         // Para imagem de fundo e texto, um valor menor que 1 (ex: 0.7 a 0.9) pode ficar bom.
         children: libraryItems.map((itemData) {
