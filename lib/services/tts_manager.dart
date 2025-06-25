@@ -3,38 +3,35 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-/// Enum para representar o tipo de conteúdo a ser lido pelo TTS.
 enum TtsContentType { versesOnly, versesAndCommentary }
 
-/// Representa um item que pode ser reproduzido.
 class TtsQueueItem {
   final String sectionId;
   final String textToSpeak;
   TtsQueueItem({required this.sectionId, required this.textToSpeak});
 }
 
-/// Enum para os possíveis estados do player de TTS.
 enum TtsPlayerState { playing, stopped }
 
-/// Gerencia a funcionalidade de Text-to-Speech (TTS) para todo o aplicativo.
 class TtsManager {
-  // --- Padrão Singleton ---
   static final TtsManager _instance = TtsManager._internal();
   factory TtsManager() => _instance;
   TtsManager._internal() {
     _initTts();
   }
-  // -------------------------
 
   final FlutterTts _flutterTts = FlutterTts();
-
-  // --- Notificadores de Estado para a UI ---
   final ValueNotifier<TtsPlayerState> playerState =
       ValueNotifier(TtsPlayerState.stopped);
   final ValueNotifier<String?> currentPlayingId = ValueNotifier(null);
 
-  // --- Controle de Reprodução ---
+  final List<TtsQueueItem> _queue = [];
+  int _currentQueueIndex = -1;
   bool isContinuousPlayEnabled = false;
+
+  Function(String)? onError;
+  Function()? onStart;
+  Function()? onComplete;
 
   void _initTts() {
     _flutterTts.setLanguage("pt-BR");
@@ -42,79 +39,76 @@ class TtsManager {
     _flutterTts.setVolume(1.0);
     _flutterTts.setPitch(1.0);
 
-    // Handlers para atualizar o estado
     _flutterTts.setStartHandler(() {
       playerState.value = TtsPlayerState.playing;
+      onStart?.call();
     });
 
     _flutterTts.setCompletionHandler(() {
-      _stopAndClearState();
+      // Quando a fala de um item termina, toca o próximo se houver
+      if (isContinuousPlayEnabled && _currentQueueIndex < _queue.length - 1) {
+        _playNextInQueue();
+      } else {
+        _stopAndClear(); // Para tudo se for o fim da fila ou modo não-contínuo
+      }
+      onComplete?.call();
     });
 
     _flutterTts.setErrorHandler((msg) {
       print("TTS Manager Error: $msg");
-      _stopAndClearState();
-    });
-
-    // Handler para saber qual parte do texto está sendo falada
-    _flutterTts.setProgressHandler(
-        (String text, int startOffset, int endOffset, String word) {
-      // Esta lógica é um pouco mais complexa e pode ser implementada depois
-      // para destacar a seção atual na UI enquanto fala.
-      // Por agora, vamos manter simples.
+      _stopAndClear();
+      onError?.call(msg);
     });
   }
 
-  /// Apenas limpa as variáveis de estado, sem interagir com o plugin.
-  void _stopAndClearState() {
+  void _stopAndClear() {
+    _queue.clear();
+    _currentQueueIndex = -1;
     currentPlayingId.value = null;
     playerState.value = TtsPlayerState.stopped;
   }
 
-  /// Inicia a reprodução. Constrói o texto completo e faz uma única chamada.
-  Future<void> speak(
-      List<TtsQueueItem> itemsToPlay, String startSectionId) async {
-    if (itemsToPlay.isEmpty) return;
-
-    await stop(); // Garante que qualquer fala anterior seja parada.
-
-    int startIndex =
-        itemsToPlay.indexWhere((item) => item.sectionId == startSectionId);
-    if (startIndex == -1) {
-      print("Error: Start section ID '$startSectionId' not found.");
-      return;
-    }
-
-    // Define qual seção está "tocando" para a UI reagir.
-    // Para simplificar, consideramos a seção inicial como a que está tocando.
-    currentPlayingId.value = startSectionId;
-
-    // Constrói a string completa para ser lida.
-    final StringBuffer fullTextBuffer = StringBuffer();
-
-    // Se o modo contínuo estiver ativado, lê a partir da seção inicial até o fim.
-    // Se não, lê apenas a seção inicial.
-    final List<TtsQueueItem> playlist = isContinuousPlayEnabled
-        ? itemsToPlay.sublist(startIndex)
-        : [itemsToPlay[startIndex]];
-
-    for (var item in playlist) {
-      fullTextBuffer.writeln(item.textToSpeak);
-      fullTextBuffer.writeln(" "); // Adiciona uma pequena pausa entre as seções
-    }
-
-    final String textToSpeak = fullTextBuffer.toString();
-
-    if (textToSpeak.isNotEmpty) {
-      await _flutterTts.speak(textToSpeak);
-    } else {
-      _stopAndClearState();
+  void _playNextInQueue() {
+    _currentQueueIndex++;
+    if (_currentQueueIndex < _queue.length) {
+      final item = _queue[_currentQueueIndex];
+      // Atualiza o ID da seção que está tocando agora
+      currentPlayingId.value = item.sectionId;
+      _flutterTts.speak(item.textToSpeak);
     }
   }
 
-  /// Para a reprodução de áudio imediatamente.
+  /// Inicia a reprodução de uma fila de itens.
+  Future<void> speak(
+      List<TtsQueueItem> itemsToPlay, String startSectionId) async {
+    await stop();
+
+    _queue.clear();
+
+    // Se o modo contínuo não estiver ativo, a fila terá apenas o item inicial.
+    if (!isContinuousPlayEnabled) {
+      final startItem = itemsToPlay.firstWhere(
+          (item) => item.sectionId == startSectionId,
+          orElse: () => itemsToPlay.first);
+      _queue.add(startItem);
+      _currentQueueIndex = -1;
+    } else {
+      // Se for contínuo, adiciona todos os itens a partir do item inicial.
+      int startIndex =
+          itemsToPlay.indexWhere((item) => item.sectionId == startSectionId);
+      if (startIndex == -1) {
+        print("Error: Start section ID '$startSectionId' not found in queue.");
+        return;
+      }
+      _queue.addAll(itemsToPlay.sublist(startIndex));
+      _currentQueueIndex = -1;
+    }
+
+    _playNextInQueue();
+  }
+
   Future<void> stop() async {
     await _flutterTts.stop();
-    _stopAndClearState();
+    _stopAndClear();
   }
 }

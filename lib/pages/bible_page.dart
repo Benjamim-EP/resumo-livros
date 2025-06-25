@@ -198,90 +198,125 @@ class _BiblePageState extends State<BiblePage> {
   // >>> NOVA FUNÇÃO PARA GERAR A FILA DE LEITURA <<<
   Future<void> _handlePlayRequest(
       String startSectionId, TtsContentType contentType) async {
-    // Pega os dados atuais do capítulo (que já foram carregados pelo FutureBuilder)
-    final chapterData = await BiblePageHelper.loadChapterDataComparison(
-      selectedBook!,
-      selectedChapter!,
-      selectedTranslation1, // Usa a tradução principal
-      null, // Não precisa de comparação para o texto
+    // Mostra um indicador de "preparando áudio" para o usuário
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            CircularProgressIndicator(strokeWidth: 2),
+            SizedBox(width: 16),
+            Text("Preparando áudio..."),
+          ],
+        ),
+        duration: Duration(
+            seconds: 10), // Duração longa, será removida programaticamente
+      ),
     );
 
-    final List<Map<String, dynamic>> sections =
-        List<Map<String, dynamic>>.from(chapterData['sectionStructure'] ?? []);
-    final dynamic verseData = chapterData['verseData']?[selectedTranslation1];
+    try {
+      // Pega os dados atuais do capítulo
+      final chapterData = await BiblePageHelper.loadChapterDataComparison(
+        selectedBook!,
+        selectedChapter!,
+        selectedTranslation1,
+        null,
+      );
 
-    if (sections.isEmpty || verseData == null || verseData is! List<String>) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Não foi possível gerar o áudio.")));
-      return;
-    }
+      final List<Map<String, dynamic>> sections =
+          List<Map<String, dynamic>>.from(
+              chapterData['sectionStructure'] ?? []);
+      final dynamic verseData = chapterData['verseData']?[selectedTranslation1];
 
-    List<TtsQueueItem> queue = [];
-
-    for (var section in sections) {
-      final buffer = StringBuffer();
-
-      final String sectionTitle = section['title'] ?? '';
-      final List<int> verseNumbers =
-          (section['verses'] as List?)?.cast<int>() ?? [];
-
-      // Constrói o texto dos versículos
-      buffer.writeln("$sectionTitle.");
-      for (int verseNum in verseNumbers) {
-        if (verseNum > 0 && verseNum <= verseData.length) {
-          final verseText = verseData[verseNum - 1];
-          buffer.writeln("Versículo $verseNum. $verseText");
-        }
+      if (sections.isEmpty || verseData == null || verseData is! List<String>) {
+        ScaffoldMessenger.of(context)
+            .removeCurrentSnackBar(); // Remove a msg de "preparando"
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Não foi possível gerar o áudio.")));
+        return;
       }
 
-      if (contentType == TtsContentType.versesAndCommentary) {
-        // --- INÍCIO DA CORREÇÃO DA LÓGICA DO versesRangeStr DENTRO DE _handlePlayRequest ---
-        final String versesRangeStr = verseNumbers.isNotEmpty
+      List<TtsQueueItem> queue = [];
+
+      // Itera sobre todas as seções para construir a fila completa
+      for (var section in sections) {
+        final List<int> verseNumbers =
+            (section['verses'] as List?)?.cast<int>() ?? [];
+        final String versesRangeForId = verseNumbers.isNotEmpty
             ? (verseNumbers.length == 1
                 ? verseNumbers.first.toString()
                 : "${verseNumbers.first}-${verseNumbers.last}")
-            : "all_verses_in_section"; // Corrigido para corresponder à lógica de SectionItemWidget
-        // --- FIM DA CORREÇÃO ---
+            : "all";
+        final String currentSectionId =
+            "${selectedBook}_c${selectedChapter}_v$versesRangeForId";
 
-        String abbrevForFirestore = selectedBook!;
-        if (selectedBook!.toLowerCase() == 'job') {
-          abbrevForFirestore = 'jó';
+        // 1. Adiciona o título da seção à fila
+        final String sectionTitle = section['title'] ?? '';
+        if (sectionTitle.isNotEmpty) {
+          queue.add(TtsQueueItem(
+              sectionId: currentSectionId, textToSpeak: sectionTitle));
         }
-        final commentaryDocId =
-            "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
 
-        final commentaryData =
-            await _firestoreService.getSectionCommentary(commentaryDocId);
-        if (commentaryData != null && commentaryData['commentary'] is List) {
-          buffer.writeln("Comentário da seção.");
-          for (var item in (commentaryData['commentary'] as List)) {
-            final text =
-                (item as Map)['traducao'] ?? (item as Map)['original'] ?? '';
-            if (text.isNotEmpty) {
-              buffer.writeln(text);
+        // 2. Adiciona cada versículo como um item separado na fila
+        for (int verseNum in verseNumbers) {
+          if (verseNum > 0 && verseNum <= verseData.length) {
+            final verseText = verseData[verseNum - 1];
+            // Adiciona "Versículo X" para clareza no áudio
+            queue.add(TtsQueueItem(
+                sectionId: currentSectionId,
+                textToSpeak: "Versículo $verseNum. $verseText"));
+          }
+        }
+
+        // 3. Se for modo estudo, busca e adiciona cada parágrafo do comentário
+        if (contentType == TtsContentType.versesAndCommentary) {
+          final String versesRangeStr = verseNumbers.isNotEmpty
+              ? (verseNumbers.length == 1
+                  ? verseNumbers.first.toString()
+                  : "${verseNumbers.first}-${verseNumbers.last}")
+              : "all_verses_in_section";
+
+          String abbrevForFirestore = selectedBook!;
+          if (selectedBook!.toLowerCase() == 'job') {
+            abbrevForFirestore = 'jó';
+          }
+          final commentaryDocId =
+              "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
+
+          final commentaryData =
+              await _firestoreService.getSectionCommentary(commentaryDocId);
+
+          if (commentaryData != null && commentaryData['commentary'] is List) {
+            final commentaryList = commentaryData['commentary'] as List;
+            if (commentaryList.isNotEmpty) {
+              // Adiciona uma introdução para o comentário
+              queue.add(TtsQueueItem(
+                  sectionId: currentSectionId,
+                  textToSpeak: "Comentário da seção."));
+
+              // Adiciona cada parágrafo do comentário como um item separado
+              for (var item in commentaryList) {
+                final text = (item as Map)['traducao']?.trim() ??
+                    (item as Map)['original']?.trim() ??
+                    '';
+                if (text.isNotEmpty) {
+                  queue.add(TtsQueueItem(
+                      sectionId: currentSectionId, textToSpeak: text));
+                }
+              }
             }
           }
         }
       }
 
-      // --- INÍCIO DA CORREÇÃO DA GERAÇÃO DO sectionId ---
-      // Recriando a mesma lógica de geração de ID que existe no SectionItemWidget
-      final String versesRangeForId = verseNumbers.isNotEmpty
-          ? (verseNumbers.length == 1
-              ? verseNumbers.first.toString()
-              : "${verseNumbers.first}-${verseNumbers.last}")
-          : "all"; // Se não houver versos, use um fallback consistente
-
-      final String sectionId =
-          "${selectedBook}_c${selectedChapter}_v$versesRangeForId";
-      // --- FIM DA CORREÇÃO ---
-
-      queue.add(
-          TtsQueueItem(sectionId: sectionId, textToSpeak: buffer.toString()));
+      // Remove a mensagem de "preparando" e inicia a fala
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      _ttsManager.speak(queue, startSectionId);
+    } catch (e) {
+      print("Erro em _handlePlayRequest: $e");
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Ocorreu um erro ao preparar o áudio.")));
     }
-
-    // Inicia a reprodução
-    _ttsManager.speak(queue, startSectionId);
   }
 
 // Nova função para salvar a preferência de tamanho da fonte
