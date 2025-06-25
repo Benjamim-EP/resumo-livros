@@ -7,7 +7,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
-import 'package:septima_biblia/services/tts_manager.dart'; // Importa o serviço de TTS
+import 'package:septima_biblia/services/tts_manager.dart';
 
 class SectionItemWidget extends StatefulWidget {
   final String sectionTitle;
@@ -29,9 +29,13 @@ class SectionItemWidget extends StatefulWidget {
   final double fontSizeMultiplier;
 
   // Propriedades para a funcionalidade de TTS
-  final bool isContinuousPlayActive;
   final Function(String startSectionId, TtsContentType contentType)
       onPlayRequest;
+
+  // Parâmetros de estado recebidos da BiblePage para UI do player
+  final TtsPlayerState currentPlayerState;
+  final String? currentlyPlayingSectionId;
+  final TtsContentType? currentlyPlayingContentType;
 
   const SectionItemWidget({
     super.key,
@@ -52,8 +56,10 @@ class SectionItemWidget extends StatefulWidget {
     this.hebrewInterlinearSectionData,
     this.greekInterlinearSectionData,
     required this.fontSizeMultiplier,
-    required this.isContinuousPlayActive,
     required this.onPlayRequest,
+    required this.currentPlayerState,
+    this.currentlyPlayingSectionId,
+    this.currentlyPlayingContentType,
   });
 
   @override
@@ -65,68 +71,30 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   final FirestoreService _firestoreService = FirestoreService();
   bool _isLoadingCommentary = false;
 
-  final TtsManager _ttsManager = TtsManager();
-  bool _isThisSectionPlaying = false;
-  TtsContentType? _currentlyPlayingType; // Para saber qual ícone destacar
-
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    _ttsManager.playerState.addListener(_onTtsStateChanged);
-    _ttsManager.currentPlayingId.addListener(_onTtsStateChanged);
+    // Nenhum listener de TTS aqui, pois o estado é gerenciado pela BiblePage.
   }
 
   @override
   void dispose() {
-    _ttsManager.playerState.removeListener(_onTtsStateChanged);
-    _ttsManager.currentPlayingId.removeListener(_onTtsStateChanged);
+    // Nenhum listener para remover.
     super.dispose();
-  }
-
-  /// Atualiza o estado local do widget quando o TtsManager muda.
-  void _onTtsStateChanged() {
-    if (!mounted) return;
-
-    final isPlaying = _ttsManager.playerState.value == TtsPlayerState.playing;
-    // O ID que está tocando agora pode ser o desta seção ou da primeira da fila contínua
-    final isMyQueuePlaying =
-        isPlaying && _ttsManager.currentPlayingId.value != null;
-
-    // Simplificação: o ícone fica "ativo" se QUALQUER COISA estiver tocando.
-    // Uma lógica mais complexa poderia destacar todas as seções da fila.
-    if (_isThisSectionPlaying != isMyQueuePlaying) {
-      setState(() {
-        _isThisSectionPlaying = isMyQueuePlaying;
-      });
-    }
-  }
-
-  /// Lida com a solicitação de play/stop.
-  void _handlePlayRequest(TtsContentType contentType) {
-    // Se o player ESTÁ TOCANDO, qualquer um dos botões de play o para.
-    if (_ttsManager.playerState.value == TtsPlayerState.playing) {
-      _ttsManager.stop();
-      setState(() {
-        _currentlyPlayingType = null;
-      });
-    } else {
-      // Se está PARADO, inicia a reprodução.
-      //_ttsManager.isContinuousPlayEnabled = widget.isContinuousPlayActive;
-      setState(() {
-        _currentlyPlayingType = contentType;
-      });
-      // Chama a função da BiblePage para construir a fila e iniciar a reprodução
-      widget.onPlayRequest(_sectionIdForTracking, contentType);
-    }
   }
 
   String get _sectionIdForTracking {
     final range =
         widget.versesRangeStr.isNotEmpty ? widget.versesRangeStr : "all";
     return "${widget.bookAbbrev}_c${widget.chapterNumber}_v$range";
+  }
+
+  /// Apenas reporta o clique para a BiblePage.
+  void _handlePlayRequest(TtsContentType contentType) {
+    widget.onPlayRequest(_sectionIdForTracking, contentType);
   }
 
   String get _commentaryDocId {
@@ -141,7 +109,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   }
 
   Future<void> _showCommentary(BuildContext context) async {
-    // ... (código existente da função sem alterações, pois está correto)
     if (!mounted) return;
     setState(() => _isLoadingCommentary = true);
 
@@ -185,21 +152,57 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    super.build(context); // Necessário para AutomaticKeepAliveClientMixin
     final theme = Theme.of(context);
-    final sectionId = _sectionIdForTracking;
     final bool currentIsRead = widget.isRead;
 
-    // Lógica para destacar o ícone correto
-    final bool isAnyAudioPlaying =
-        _ttsManager.playerState.value == TtsPlayerState.playing;
-    final bool isVersesButtonActive =
-        isAnyAudioPlaying && _currentlyPlayingType == TtsContentType.versesOnly;
-    final bool isStudyButtonActive = isAnyAudioPlaying &&
-        _currentlyPlayingType == TtsContentType.versesAndCommentary;
+    // --- Lógica para determinar o estado dos botões desta seção ---
+    final bool isThisSectionTheCurrentOne =
+        widget.currentlyPlayingSectionId == _sectionIdForTracking;
+    final TtsPlayerState playerState = widget.currentPlayerState;
+    final TtsContentType? playingType = widget.currentlyPlayingContentType;
+
     final Color defaultIconColor =
         theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
-    final Color activeIconColor = theme.colorScheme.secondary;
+    final Color activeIconColor =
+        theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
+
+    // --- Lógica para o botão de OUVIR VERSÍCULOS ---
+    IconData versesIcon = Icons.play_circle_outline;
+    Color versesIconColor = defaultIconColor;
+    String versesTooltip = "Ouvir Versículos";
+
+    if (isThisSectionTheCurrentOne &&
+        playingType == TtsContentType.versesOnly) {
+      if (playerState == TtsPlayerState.playing) {
+        versesIcon = Icons.pause_circle_outline;
+        versesIconColor = activeIconColor;
+        versesTooltip = "Pausar Leitura";
+      } else if (playerState == TtsPlayerState.paused) {
+        versesIcon = Icons
+            .play_circle_outline; // Ícone de "Play" para indicar "Continuar"
+        versesIconColor = activeIconColor;
+        versesTooltip = "Continuar Leitura";
+      }
+    }
+
+    // --- Lógica para o botão de OUVIR ESTUDO ---
+    IconData studyIcon = Icons.headset_mic_outlined;
+    Color studyIconColor = defaultIconColor;
+    String studyTooltip = "Ouvir Estudo (Versículos e Comentários)";
+
+    if (isThisSectionTheCurrentOne &&
+        playingType == TtsContentType.versesAndCommentary) {
+      if (playerState == TtsPlayerState.playing) {
+        studyIcon = Icons.pause_circle_outline;
+        studyIconColor = activeIconColor;
+        studyTooltip = "Pausar Leitura";
+      } else if (playerState == TtsPlayerState.paused) {
+        studyIcon = Icons.play_circle_outline;
+        studyIconColor = activeIconColor;
+        studyTooltip = "Continuar Leitura";
+      }
+    }
 
     return Card(
       elevation: 2,
@@ -236,36 +239,22 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   ),
                 ),
 
-                // Botão "Ouvir Versículos"
+                // Botão "Ouvir Versículos" com a nova lógica de UI
                 IconButton(
-                  icon: Icon(
-                    isAnyAudioPlaying
-                        ? Icons.stop_circle_outlined
-                        : Icons.play_circle_outline,
-                    color: isVersesButtonActive
-                        ? activeIconColor
-                        : defaultIconColor,
-                    size: 26,
-                  ),
-                  tooltip: "Ouvir Versículos",
+                  icon: Icon(versesIcon, color: versesIconColor, size: 26),
+                  tooltip: versesTooltip,
                   onPressed: () =>
                       _handlePlayRequest(TtsContentType.versesOnly),
                 ),
-                // Botão "Ouvir Estudo"
+
+                // Botão "Ouvir Estudo" com a nova lógica de UI
                 IconButton(
-                  icon: Icon(
-                    isAnyAudioPlaying
-                        ? Icons.stop_circle_outlined
-                        : Icons.headset_mic_outlined,
-                    color: isStudyButtonActive
-                        ? activeIconColor
-                        : defaultIconColor,
-                    size: 24,
-                  ),
-                  tooltip: "Ouvir Estudo (Versículos e Comentários)",
+                  icon: Icon(studyIcon, color: studyIconColor, size: 24),
+                  tooltip: studyTooltip,
                   onPressed: () =>
                       _handlePlayRequest(TtsContentType.versesAndCommentary),
                 ),
+
                 // Botão "Ver Comentário"
                 if (_isLoadingCommentary)
                   const SizedBox(
@@ -287,9 +276,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
             ),
             Divider(color: theme.dividerColor.withOpacity(0.5)),
             const SizedBox(height: 8),
-
-            // ... O resto do seu widget (ListView.builder para os versículos e o botão "Marcar como Lido")
-            // permanece exatamente o mesmo.
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -381,8 +367,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 } else {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                        'Erro: Verso $verseNumber não encontrado nos dados do capítulo para esta seção.',
+                    child: Text('Erro: Verso $verseNumber não encontrado.',
                         style: TextStyle(color: theme.colorScheme.error)),
                   );
                 }
@@ -397,10 +382,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   onTap: () {
                     StoreProvider.of<AppState>(context, listen: false).dispatch(
                       ToggleSectionReadStatusAction(
-                        bookAbbrev: widget.bookAbbrev,
-                        sectionId: sectionId,
-                        markAsRead: !currentIsRead,
-                      ),
+                          bookAbbrev: widget.bookAbbrev,
+                          sectionId: _sectionIdForTracking,
+                          markAsRead: !currentIsRead),
                     );
                   },
                   borderRadius: BorderRadius.circular(20),
@@ -413,28 +397,24 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          currentIsRead
-                              ? Icons.check_circle
-                              : Icons.check_circle_outline,
-                          color: currentIsRead
-                              ? theme.primaryColor
-                              : theme.iconTheme.color?.withOpacity(0.8),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          currentIsRead ? "Lido" : "Marcar como Lido",
-                          style: TextStyle(
+                            currentIsRead
+                                ? Icons.check_circle
+                                : Icons.check_circle_outline,
                             color: currentIsRead
                                 ? theme.primaryColor
-                                : theme.textTheme.bodyMedium?.color
-                                    ?.withOpacity(0.9),
-                            fontSize: 13,
-                            fontWeight: currentIsRead
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
+                                : theme.iconTheme.color?.withOpacity(0.8),
+                            size: 20),
+                        const SizedBox(width: 6),
+                        Text(currentIsRead ? "Lido" : "Marcar como Lido",
+                            style: TextStyle(
+                                color: currentIsRead
+                                    ? theme.primaryColor
+                                    : theme.textTheme.bodyMedium?.color
+                                        ?.withOpacity(0.9),
+                                fontSize: 13,
+                                fontWeight: currentIsRead
+                                    ? FontWeight.bold
+                                    : FontWeight.normal)),
                       ],
                     ),
                   ),

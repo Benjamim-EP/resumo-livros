@@ -114,8 +114,6 @@ class _BiblePageState extends State<BiblePage> {
   String? selectedBook;
   int? selectedChapter;
 
-  final TtsManager _ttsManager = TtsManager();
-
   String? _filterSelectedTestament;
   String? _filterSelectedBookAbbrev;
   String? _filterSelectedContentType;
@@ -174,6 +172,14 @@ class _BiblePageState extends State<BiblePage> {
   final Map<String, GlobalKey> _sectionItemKeys =
       {}; // NOVO: Para armazenar GlobalKeys das seções
 
+  final TtsManager _ttsManager = TtsManager();
+// NOVOS ESTADOS PARA GERENCIAR A FILA E O PLAYER
+  final List<TtsQueueItem> _ttsQueue = [];
+  int _currentTtsQueueIndex = -1;
+  TtsPlayerState _currentPlayerState = TtsPlayerState.stopped;
+  String? _currentlyPlayingSectionId;
+  TtsContentType? _currentlyPlayingContentType;
+
   @override
   void initState() {
     _loadFontSizePreference();
@@ -182,6 +188,10 @@ class _BiblePageState extends State<BiblePage> {
     _loadInitialData();
     _scrollController1.addListener(_syncScrollFrom1To2);
     _scrollController2.addListener(_syncScrollFrom2To1);
+
+    _ttsManager.playerState.addListener(_onTtsStateChanged);
+    //_ttsManager.onComplete =
+    //_playNextInQueue; // Define o callback para continuar a fila
   }
 
   Future<void> _loadFontSizePreference() async {
@@ -192,130 +202,6 @@ class _BiblePageState extends State<BiblePage> {
       // para que os itens já renderizados (se houver) usem a nova fonte.
       _updateFutureBuilderKey();
     });
-  }
-
-  // >>> NOVA FUNÇÃO PARA GERAR A FILA DE LEITURA <<<
-  Future<void> _handlePlayRequest(
-      String startSectionId, TtsContentType contentType) async {
-    // Mostra um indicador de "preparando áudio" para o usuário
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(strokeWidth: 2),
-            SizedBox(width: 16),
-            Text("Preparando áudio..."),
-          ],
-        ),
-        duration: Duration(
-            seconds: 10), // Duração longa, será removida programaticamente
-      ),
-    );
-
-    try {
-      // Pega os dados atuais do capítulo
-      final chapterData = await BiblePageHelper.loadChapterDataComparison(
-        selectedBook!,
-        selectedChapter!,
-        selectedTranslation1,
-        null,
-      );
-
-      final List<Map<String, dynamic>> sections =
-          List<Map<String, dynamic>>.from(
-              chapterData['sectionStructure'] ?? []);
-      final dynamic verseData = chapterData['verseData']?[selectedTranslation1];
-
-      if (sections.isEmpty || verseData == null || verseData is! List<String>) {
-        ScaffoldMessenger.of(context)
-            .removeCurrentSnackBar(); // Remove a msg de "preparando"
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Não foi possível gerar o áudio.")));
-        return;
-      }
-
-      List<TtsQueueItem> queue = [];
-
-      // Itera sobre todas as seções para construir a fila completa
-      for (var section in sections) {
-        final List<int> verseNumbers =
-            (section['verses'] as List?)?.cast<int>() ?? [];
-        final String versesRangeForId = verseNumbers.isNotEmpty
-            ? (verseNumbers.length == 1
-                ? verseNumbers.first.toString()
-                : "${verseNumbers.first}-${verseNumbers.last}")
-            : "all";
-        final String currentSectionId =
-            "${selectedBook}_c${selectedChapter}_v$versesRangeForId";
-
-        // 1. Adiciona o título da seção à fila
-        final String sectionTitle = section['title'] ?? '';
-        if (sectionTitle.isNotEmpty) {
-          queue.add(TtsQueueItem(
-              sectionId: currentSectionId, textToSpeak: sectionTitle));
-        }
-
-        // 2. Adiciona cada versículo como um item separado na fila
-        for (int verseNum in verseNumbers) {
-          if (verseNum > 0 && verseNum <= verseData.length) {
-            final verseText = verseData[verseNum - 1];
-            // Adiciona "Versículo X" para clareza no áudio
-            queue.add(TtsQueueItem(
-                sectionId: currentSectionId,
-                textToSpeak: "Versículo $verseNum. $verseText"));
-          }
-        }
-
-        // 3. Se for modo estudo, busca e adiciona cada parágrafo do comentário
-        if (contentType == TtsContentType.versesAndCommentary) {
-          final String versesRangeStr = verseNumbers.isNotEmpty
-              ? (verseNumbers.length == 1
-                  ? verseNumbers.first.toString()
-                  : "${verseNumbers.first}-${verseNumbers.last}")
-              : "all_verses_in_section";
-
-          String abbrevForFirestore = selectedBook!;
-          if (selectedBook!.toLowerCase() == 'job') {
-            abbrevForFirestore = 'jó';
-          }
-          final commentaryDocId =
-              "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
-
-          final commentaryData =
-              await _firestoreService.getSectionCommentary(commentaryDocId);
-
-          if (commentaryData != null && commentaryData['commentary'] is List) {
-            final commentaryList = commentaryData['commentary'] as List;
-            if (commentaryList.isNotEmpty) {
-              // Adiciona uma introdução para o comentário
-              queue.add(TtsQueueItem(
-                  sectionId: currentSectionId,
-                  textToSpeak: "Comentário da seção."));
-
-              // Adiciona cada parágrafo do comentário como um item separado
-              for (var item in commentaryList) {
-                final text = (item as Map)['traducao']?.trim() ??
-                    (item as Map)['original']?.trim() ??
-                    '';
-                if (text.isNotEmpty) {
-                  queue.add(TtsQueueItem(
-                      sectionId: currentSectionId, textToSpeak: text));
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Remove a mensagem de "preparando" e inicia a fala
-      ScaffoldMessenger.of(context).removeCurrentSnackBar();
-      _ttsManager.speak(queue, startSectionId);
-    } catch (e) {
-      print("Erro em _handlePlayRequest: $e");
-      ScaffoldMessenger.of(context).removeCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Ocorreu um erro ao preparar o áudio.")));
-    }
   }
 
 // Nova função para salvar a preferência de tamanho da fonte
@@ -373,6 +259,10 @@ class _BiblePageState extends State<BiblePage> {
     _scrollController1.dispose();
     _scrollController2.dispose();
 
+    _ttsManager.playerState.removeListener(_onTtsStateChanged);
+    _ttsManager.onComplete = null;
+    _ttsManager.stop();
+
     if (_store != null) {
       final userState = _store!.state.userState;
       if (userState.userId != null) {
@@ -387,6 +277,162 @@ class _BiblePageState extends State<BiblePage> {
       }
     }
     super.dispose();
+  }
+
+  void _onTtsStateChanged() {
+    if (!mounted) return;
+    final newPlayerState = _ttsManager.playerState.value;
+    if (_currentPlayerState != newPlayerState) {
+      setState(() {
+        _currentPlayerState = newPlayerState;
+        // Se a reprodução parou completamente, limpa o ID da seção
+        if (newPlayerState == TtsPlayerState.stopped) {
+          _currentlyPlayingSectionId = null;
+          _currentlyPlayingContentType = null;
+        }
+      });
+    }
+  }
+
+  /// Limpa a fila e para a reprodução.
+  void _stopAndClearTtsQueue() {
+    _ttsManager.stop();
+    setState(() {
+      _ttsQueue.clear();
+      _currentTtsQueueIndex = -1;
+      _currentlyPlayingSectionId = null;
+      _currentlyPlayingContentType = null;
+    });
+  }
+
+  /// Lida com cliques nos botões de áudio do SectionItemWidget.
+  void _handlePlayRequest(String sectionId, TtsContentType contentType) {
+    final isPlayingThisExactItem = _currentlyPlayingSectionId == sectionId &&
+        _currentlyPlayingContentType == contentType;
+
+    switch (_currentPlayerState) {
+      case TtsPlayerState.stopped:
+        _startNewPlayback(sectionId, contentType);
+        break;
+      case TtsPlayerState.playing:
+        if (isPlayingThisExactItem) {
+          _ttsManager.pause();
+        } else {
+          // Se está tocando outra coisa, para e inicia a nova.
+          _startNewPlayback(sectionId, contentType);
+        }
+        break;
+      case TtsPlayerState.paused:
+        if (isPlayingThisExactItem) {
+          // Se o clique foi no mesmo item que está pausado, continua.
+          _ttsManager.restartCurrentItem();
+        } else {
+          // Se estava pausado e clicou em outro, inicia o novo.
+          _startNewPlayback(sectionId, contentType);
+        }
+        break;
+    }
+  }
+
+  void _startNewPlayback(
+      String startSectionId, TtsContentType contentType) async {
+    // Para qualquer reprodução anterior e limpa o estado visual.
+    await _ttsManager.stop();
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Preparando áudio..."), duration: Duration(seconds: 15)));
+
+    try {
+      final chapterData = await BiblePageHelper.loadChapterDataComparison(
+          selectedBook!, selectedChapter!, selectedTranslation1, null);
+      final List<Map<String, dynamic>> sections =
+          List.from(chapterData['sectionStructure'] ?? []);
+      final dynamic verseData = chapterData['verseData']?[selectedTranslation1];
+
+      if (sections.isEmpty || verseData == null || verseData is! List<String>) {
+        throw Exception("Dados do capítulo inválidos.");
+      }
+
+      List<TtsQueueItem> fullChapterQueue = []; // <<< NOME CORRETO DA VARIÁVEL
+
+      for (var section in sections) {
+        final List<int> verseNumbers =
+            (section['verses'] as List?)?.cast<int>() ?? [];
+        final String versesRangeForId = verseNumbers.isNotEmpty
+            ? (verseNumbers.length == 1
+                ? verseNumbers.first.toString()
+                : "${verseNumbers.first}-${verseNumbers.last}")
+            : "all";
+        final String currentSectionId =
+            "${selectedBook}_c${selectedChapter}_v$versesRangeForId";
+
+        final String sectionTitle = section['title'] ?? '';
+        if (sectionTitle.isNotEmpty) {
+          fullChapterQueue.add(TtsQueueItem(
+              sectionId: currentSectionId,
+              textToSpeak: sectionTitle)); // <<< USA fullChapterQueue
+        }
+
+        for (int verseNum in verseNumbers) {
+          if (verseNum > 0 && verseNum <= verseData.length) {
+            final verseText = verseData[verseNum - 1];
+            fullChapterQueue.add(TtsQueueItem(
+                sectionId: currentSectionId,
+                textToSpeak:
+                    "Versículo $verseNum. $verseText")); // <<< USA fullChapterQueue
+          }
+        }
+
+        if (contentType == TtsContentType.versesAndCommentary) {
+          final String versesRangeStr = verseNumbers.isNotEmpty
+              ? (verseNumbers.length == 1
+                  ? verseNumbers.first.toString()
+                  : "${verseNumbers.first}-${verseNumbers.last}")
+              : "all_verses_in_section";
+          String abbrevForFirestore = selectedBook!;
+          if (selectedBook!.toLowerCase() == 'job') {
+            abbrevForFirestore = 'jó';
+          }
+          final commentaryDocId =
+              "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
+          final commentaryData =
+              await _firestoreService.getSectionCommentary(commentaryDocId);
+          if (commentaryData != null && commentaryData['commentary'] is List) {
+            final commentaryList = commentaryData['commentary'] as List;
+            if (commentaryList.isNotEmpty) {
+              fullChapterQueue.add(TtsQueueItem(
+                  sectionId: currentSectionId,
+                  textToSpeak: "Comentário da seção."));
+              for (var item in commentaryList) {
+                final text = (item as Map)['traducao']?.trim() ??
+                    (item as Map)['original']?.trim() ??
+                    '';
+                if (text.isNotEmpty) {
+                  fullChapterQueue.add(TtsQueueItem(
+                      sectionId: currentSectionId,
+                      textToSpeak: text)); // <<< USA fullChapterQueue
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Atualiza o estado da UI e inicia a reprodução.
+      setState(() {
+        _currentlyPlayingSectionId = startSectionId;
+        _currentlyPlayingContentType = contentType;
+      });
+
+      // Passa a fila completa para o TtsManager, que vai gerenciá-la.
+      _ttsManager.speak(fullChapterQueue, startSectionId);
+    } catch (e) {
+      print("Erro em _startNewPlayback: $e");
+    } finally {
+      if (mounted) {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      }
+    }
   }
 
   Future<void> _loadCurrentChapterHebrewDataIfNeeded() async {
@@ -1156,6 +1202,20 @@ class _BiblePageState extends State<BiblePage> {
     _store!.dispatch(ClearBibleSearchFiltersAction());
   }
 
+  // >>> INÍCIO DA MODIFICAÇÃO 1/2: Função para o novo botão global <<<
+  /// Lida com os cliques no botão de áudio global na AppBar.
+  void _handleGlobalAudioControl() {
+    if (!mounted) return;
+
+    if (_currentPlayerState == TtsPlayerState.playing) {
+      _ttsManager.pause();
+    } else if (_currentPlayerState == TtsPlayerState.paused) {
+      // "restartCurrentItem" continuará a fala do item pausado.
+      _ttsManager.restartCurrentItem();
+    }
+  }
+  // >>> FIM DA MODIFICAÇÃO 1/2 <<<
+
   List<Widget> _buildAppBarActions(
       BuildContext context, ThemeData theme, _BiblePageViewModel viewModel) {
     Color defaultIconColor = theme.appBarTheme.actionsIconTheme?.color ??
@@ -1179,6 +1239,28 @@ class _BiblePageState extends State<BiblePage> {
     }
 
     List<Widget> actions = [];
+
+    // >>> INÍCIO DA MODIFICAÇÃO 2/2: Adiciona o botão de controle de áudio global <<<
+    // Este botão só aparece se o áudio estiver tocando ou pausado.
+    if (_currentPlayerState != TtsPlayerState.stopped) {
+      actions.add(
+        IconButton(
+          icon: Icon(
+            _currentPlayerState == TtsPlayerState.playing
+                ? Icons.pause_circle_outline_rounded // Ícone de pausa
+                : Icons.play_circle_outline_rounded, // Ícone de play
+            color: theme.colorScheme.secondary, // Cor de destaque
+            size: 28, // Tamanho um pouco maior
+          ),
+          tooltip: _currentPlayerState == TtsPlayerState.playing
+              ? "Pausar Leitura"
+              : "Continuar Leitura",
+          onPressed:
+              _handleGlobalAudioControl, // Chama a nova função de controle
+        ),
+      );
+    }
+    // >>> FIM DA MODIFICAÇÃO 2/2 <<<
 
     if (_isSemanticSearchActive) {
       // Ações quando a busca semântica está ATIVA
@@ -2653,8 +2735,11 @@ class _BiblePageState extends State<BiblePage> {
                 hebrewInterlinearSectionData: hebrewDataForThisSection,
                 greekInterlinearSectionData: greekDataForThisSection,
                 fontSizeMultiplier: fontSizeMultiplier,
-                isContinuousPlayActive: true,
+                //isContinuousPlayActive: true,
                 onPlayRequest: _handlePlayRequest,
+                currentPlayerState: _currentPlayerState,
+                currentlyPlayingSectionId: _currentlyPlayingSectionId,
+                currentlyPlayingContentType: _currentlyPlayingContentType,
               );
             } else if (primaryTranslationVerseData != null &&
                 (primaryTranslationVerseData as List).isNotEmpty) {
