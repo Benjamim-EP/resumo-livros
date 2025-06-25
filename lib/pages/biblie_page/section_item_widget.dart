@@ -114,7 +114,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       });
     } else {
       // Se está PARADO, inicia a reprodução.
-      _ttsManager.isContinuousPlayEnabled = widget.isContinuousPlayActive;
+      //_ttsManager.isContinuousPlayEnabled = widget.isContinuousPlayActive;
       setState(() {
         _currentlyPlayingType = contentType;
       });

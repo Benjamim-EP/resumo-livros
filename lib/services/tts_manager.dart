@@ -1,7 +1,10 @@
 // lib/services/tts_manager.dart
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum TtsContentType { versesOnly, versesAndCommentary }
 
@@ -10,6 +13,8 @@ class TtsQueueItem {
   final String textToSpeak;
   TtsQueueItem({required this.sectionId, required this.textToSpeak});
 }
+
+const String _ttsVoicePrefsKey = 'user_selected_tts_voice';
 
 enum TtsPlayerState { playing, stopped }
 
@@ -86,6 +91,7 @@ class TtsManager {
     _queue.clear();
 
     // Se o modo contínuo não estiver ativo, a fila terá apenas o item inicial.
+    isContinuousPlayEnabled = true;
     if (!isContinuousPlayEnabled) {
       final startItem = itemsToPlay.firstWhere(
           (item) => item.sectionId == startSectionId,
@@ -110,5 +116,61 @@ class TtsManager {
   Future<void> stop() async {
     await _flutterTts.stop();
     _stopAndClear();
+  }
+
+  // --- MÉTODOS DE GERENCIAMENTO DE VOZ ---
+  Future<void> _loadAndSetVoice() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedVoiceJsonString = prefs.getString(_ttsVoicePrefsKey);
+
+      if (savedVoiceJsonString != null) {
+        final savedVoiceMap =
+            Map<String, String>.from(json.decode(savedVoiceJsonString));
+        await _flutterTts.setVoice(savedVoiceMap);
+        print("TTS Manager: Voz salva '${savedVoiceMap['name']}' aplicada.");
+      } else {
+        await _flutterTts.setLanguage("pt-BR");
+        print(
+            "TTS Manager: Nenhuma voz salva encontrada. Usando idioma padrão pt-BR.");
+      }
+    } catch (e) {
+      print("TTS Manager: Erro ao carregar/definir voz: $e");
+      await _flutterTts.setLanguage("pt-BR");
+    }
+  }
+
+  Future<List<Map<dynamic, dynamic>>> getAvailableVoices() async {
+    try {
+      var voices = await _flutterTts.getVoices;
+      if (voices is List) {
+        return voices
+            .where((voice) =>
+                voice is Map &&
+                voice['locale'] != null &&
+                voice['locale'].toString().toLowerCase().contains('pt-br'))
+            .map((voice) => voice as Map<dynamic, dynamic>)
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print("TTS Manager: Erro ao obter vozes: $e");
+      return [];
+    }
+  }
+
+  Future<void> setVoice(Map<dynamic, dynamic> voice) async {
+    try {
+      final Map<String, String> voiceToSet = voice.map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      );
+      await _flutterTts.setVoice(voiceToSet);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_ttsVoicePrefsKey, json.encode(voiceToSet));
+      print("TTS Manager: Voz '${voice['name']}' definida e salva.");
+    } catch (e) {
+      print("TTS Manager: Erro ao definir a voz: $e");
+    }
   }
 }

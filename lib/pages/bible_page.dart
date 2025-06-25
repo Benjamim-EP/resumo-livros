@@ -114,7 +114,6 @@ class _BiblePageState extends State<BiblePage> {
   String? selectedBook;
   int? selectedChapter;
 
-  bool _isContinuousPlayActive = false;
   final TtsManager _ttsManager = TtsManager();
 
   String? _filterSelectedTestament;
@@ -612,6 +611,61 @@ class _BiblePageState extends State<BiblePage> {
       _recordHistory(book,
           chapter); // _recordHistory já tem uma guarda interna, mas agora será chamado com menos frequência.
     }
+  }
+
+  Future<void> _showVoiceSelectionDialog() async {
+    final theme = Theme.of(context);
+    final availableVoices = await _ttsManager.getAvailableVoices();
+    if (!mounted) return;
+    if (availableVoices.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Nenhuma voz em Português (Brasil) encontrada.")));
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: theme.dialogBackgroundColor,
+          title: Text("Selecionar Voz",
+              style: TextStyle(color: theme.colorScheme.onSurface)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableVoices.length,
+              itemBuilder: (context, index) {
+                final voice = availableVoices[index];
+                final voiceName =
+                    voice['name'] as String? ?? 'Voz Desconhecida';
+                final displayName = voiceName
+                    .split('#')
+                    .last
+                    .replaceAll('_', ' ')
+                    .replaceFirst('-', ' ');
+                return ListTile(
+                  title: Text(displayName,
+                      style: TextStyle(color: theme.colorScheme.onSurface)),
+                  onTap: () {
+                    _ttsManager.setVoice(voice);
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text("Voz alterada para: $displayName")));
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text("Cancelar",
+                  style: TextStyle(color: theme.colorScheme.primary)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _toggleItemExpansionInBiblePage(
@@ -1279,28 +1333,10 @@ class _BiblePageState extends State<BiblePage> {
               // >>> ADICIONE O BOTÃO DE TOGGLE PARA LEITURA CONTÍNUA AQUI <<<
               if (!_isSemanticSearchActive) // Mostra apenas se não estiver em modo de busca
                 IconButton(
-                  icon: Icon(
-                    _isContinuousPlayActive
-                        ? Icons.playlist_play_rounded
-                        : Icons.playlist_add_check_rounded,
-                    color: _isContinuousPlayActive
-                        ? theme.colorScheme.secondary
-                        : theme.iconTheme.color,
-                  ),
-                  tooltip: _isContinuousPlayActive
-                      ? "Desativar Leitura Contínua"
-                      : "Ativar Leitura Contínua",
-                  onPressed: () {
-                    setState(() {
-                      _isContinuousPlayActive = !_isContinuousPlayActive;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(_isContinuousPlayActive
-                          ? "Modo de leitura contínua ativado."
-                          : "Modo de leitura contínua desativado."),
-                      duration: const Duration(seconds: 2),
-                    ));
-                  },
+                  icon: Icon(Icons.record_voice_over_outlined,
+                      color: theme.iconTheme.color),
+                  tooltip: "Alterar Voz",
+                  onPressed: _showVoiceSelectionDialog,
                 ),
               ..._buildAppBarActions(context, theme, viewModel),
             ],
@@ -2617,7 +2653,7 @@ class _BiblePageState extends State<BiblePage> {
                 hebrewInterlinearSectionData: hebrewDataForThisSection,
                 greekInterlinearSectionData: greekDataForThisSection,
                 fontSizeMultiplier: fontSizeMultiplier,
-                isContinuousPlayActive: _isContinuousPlayActive,
+                isContinuousPlayActive: true,
                 onPlayRequest: _handlePlayRequest,
               );
             } else if (primaryTranslationVerseData != null &&
