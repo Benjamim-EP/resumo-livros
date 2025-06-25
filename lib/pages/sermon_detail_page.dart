@@ -7,7 +7,7 @@ import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
-import 'package:septima_biblia/services/tts_manager.dart'; // Importa o serviço de TTS
+import 'package:septima_biblia/services/tts_manager.dart';
 
 // Modelo de dados para o sermão
 class Sermon {
@@ -113,7 +113,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
 
   final FirestoreService _firestoreService = FirestoreService();
   final TtsManager _ttsManager = TtsManager();
-  bool _isSermonPlaying = false;
+  TtsPlayerState _sermonPlayerState = TtsPlayerState.stopped;
 
   @override
   void initState() {
@@ -126,7 +126,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   void dispose() {
     _ttsManager.playerState.removeListener(_onTtsStateChanged);
     _ttsManager.stop();
-    // Tenta mostrar um intersticial ao sair da tela
     interstitialManager.tryShowInterstitial(
         fromScreen: "SermonDetailPage_Dispose");
     super.dispose();
@@ -134,20 +133,34 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
 
   void _onTtsStateChanged() {
     if (!mounted) return;
-    final isPlaying = _ttsManager.playerState.value == TtsPlayerState.playing;
-    if (_isSermonPlaying != isPlaying) {
+    final newPlayerState = _ttsManager.playerState.value;
+    if (_sermonPlayerState != newPlayerState) {
       setState(() {
-        _isSermonPlaying = isPlaying;
+        _sermonPlayerState = newPlayerState;
       });
     }
   }
 
-  void _handlePlayStopSermon() async {
-    if (_isSermonPlaying) {
-      _ttsManager.stop();
-      return;
+  /// Lida com os cliques no botão de áudio (play, pause, resume).
+  void _handleAudioControl() {
+    switch (_sermonPlayerState) {
+      case TtsPlayerState.stopped:
+        // Se está parado, inicia uma nova leitura.
+        _startSermonPlayback();
+        break;
+      case TtsPlayerState.playing:
+        // Se está tocando, pausa.
+        _ttsManager.pause();
+        break;
+      case TtsPlayerState.paused:
+        // Se está pausado, continua.
+        _ttsManager.resume(); // <<< USA O MÉTODO RESUME CORRETO
+        break;
     }
+  }
 
+  /// Constrói a fila de áudio e inicia a reprodução do sermão.
+  void _startSermonPlayback() async {
     if (_sermonDataFromFirestore == null) return;
 
     final sermon = _sermonDataFromFirestore!;
@@ -172,18 +185,21 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
           textToSpeak: "Passagem principal: $ttsFriendlyReference."));
     }
 
-    // 3. Texto dos Versículos
+    // 3. Texto dos Versículos (CORRIGIDO)
     if (_loadedMainScriptureVerses != null &&
         _loadedMainScriptureVerses!.isNotEmpty) {
       // >>> INÍCIO DA CORREÇÃO <<<
       final versesTextOnly = _loadedMainScriptureVerses!.map((verseWithNumber) {
-        // Lógica mais segura para remover o número inicial
-        final parts =
-            verseWithNumber.split(RegExp(r'\s+')); // Divide em todos os espaços
-        return parts.length > 1
-            ? parts.sublist(1).join(' ')
-            : verseWithNumber; // Retorna o texto após o número
-      }).join(" "); // Junta com espaço para soar como uma única passagem
+        // Lógica robusta para remover o número inicial.
+        // Encontra o primeiro espaço. Todo o resto é o texto do versículo.
+        final firstSpaceIndex = verseWithNumber.indexOf(' ');
+        if (firstSpaceIndex != -1) {
+          return verseWithNumber.substring(firstSpaceIndex + 1);
+        }
+        // Se não houver espaço (improvável, mas seguro), retorna a string original.
+        return verseWithNumber;
+      }).join(
+          " "); // Junta todos os versículos com um espaço para uma leitura fluida.
       // >>> FIM DA CORREÇÃO <<<
 
       if (versesTextOnly.trim().isNotEmpty) {
@@ -199,50 +215,52 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       }
     }
 
-    // Inicia a reprodução
+    // A leitura do sermão é sempre contínua.
+    //_ttsManager.isContinuousPlayEnabled = true; // Removido, pois é o padrão agora.
     _ttsManager.speak(queue, sermonId);
+  }
+
+  IconData _getAudioIcon() {
+    // O ícone para pausado e parado agora é o mesmo (play).
+    if (_sermonPlayerState == TtsPlayerState.playing) {
+      return Icons.pause_circle_outline;
+    }
+    return Icons.play_circle_outline;
+  }
+
+  String _getAudioTooltip() {
+    switch (_sermonPlayerState) {
+      case TtsPlayerState.playing:
+        return "Pausar Leitura";
+      case TtsPlayerState.paused:
+        return "Continuar Leitura"; // <<< CORRIGIDO
+      case TtsPlayerState.stopped:
+        return "Ouvir Sermão";
+    }
   }
 
   Future<void> _loadSermonDataFromFirestore() async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _isLoadingMainScripture = false;
-      _loadedMainScriptureVerses = null;
-    });
-
+    setState(() => _isLoading = true);
     try {
       final sermonMap = await _firestoreService
           .getSermonDetailsFromFirestore(widget.sermonGeneratedId);
-      if (mounted) {
-        if (sermonMap != null) {
-          final sermonData =
-              Sermon.fromJson(sermonMap, widget.sermonGeneratedId);
-          setState(() {
-            _sermonDataFromFirestore = sermonData;
-            _isLoading = false;
-          });
-          if (sermonData.mainScripturePassageAbbreviated != null &&
-              sermonData.mainScripturePassageAbbreviated!.isNotEmpty) {
-            _loadMainScripture(sermonData.mainScripturePassageAbbreviated!);
-          }
-        } else {
-          setState(() {
-            _error = "Sermão não encontrado (ID: ${widget.sermonGeneratedId}).";
-            _isLoading = false;
-          });
+      if (mounted && sermonMap != null) {
+        final sermonData = Sermon.fromJson(sermonMap, widget.sermonGeneratedId);
+        setState(() => _sermonDataFromFirestore = sermonData);
+        if (sermonData.mainScripturePassageAbbreviated != null &&
+            sermonData.mainScripturePassageAbbreviated!.isNotEmpty) {
+          await _loadMainScripture(sermonData.mainScripturePassageAbbreviated!);
         }
+      } else if (mounted) {
+        setState(() => _error =
+            "Sermão não encontrado (ID: ${widget.sermonGeneratedId}).");
       }
     } catch (e, s) {
-      print("Erro ao carregar dados do sermão do Firestore: $e");
-      print("Stack trace: $s");
-      if (mounted) {
-        setState(() {
-          _error = "Falha ao carregar o sermão. Verifique sua conexão.";
-          _isLoading = false;
-        });
-      }
+      print("Erro ao carregar dados do sermão: $e\n$s");
+      if (mounted) setState(() => _error = "Falha ao carregar o sermão.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -252,40 +270,28 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     try {
       final verses =
           await BiblePageHelper.loadVersesFromReference(reference, "nvi");
-      if (mounted) {
-        setState(() {
-          _loadedMainScriptureVerses = verses;
-          _isLoadingMainScripture = false;
-        });
-      }
+      if (mounted) setState(() => _loadedMainScriptureVerses = verses);
     } catch (e) {
-      print("Erro ao carregar escritura principal do sermão ($reference): $e");
-      if (mounted) {
-        setState(() {
-          _loadedMainScriptureVerses = [
-            "Erro ao carregar versículos para: $reference"
-          ];
-          _isLoadingMainScripture = false;
-        });
-      }
+      print("Erro ao carregar escritura principal: $e");
+      if (mounted)
+        setState(() =>
+            _loadedMainScriptureVerses = ["Erro ao carregar: $reference"]);
+    } finally {
+      if (mounted) setState(() => _isLoadingMainScripture = false);
     }
   }
 
   void _increaseFontSize() {
     if (_currentFontSize < MAX_FONT_SIZE) {
-      setState(() {
-        _currentFontSize =
-            (_currentFontSize + FONT_STEP).clamp(MIN_FONT_SIZE, MAX_FONT_SIZE);
-      });
+      setState(() => _currentFontSize =
+          (_currentFontSize + FONT_STEP).clamp(MIN_FONT_SIZE, MAX_FONT_SIZE));
     }
   }
 
   void _decreaseFontSize() {
     if (_currentFontSize > MIN_FONT_SIZE) {
-      setState(() {
-        _currentFontSize =
-            (_currentFontSize - FONT_STEP).clamp(MIN_FONT_SIZE, MAX_FONT_SIZE);
-      });
+      setState(() => _currentFontSize =
+          (_currentFontSize - FONT_STEP).clamp(MIN_FONT_SIZE, MAX_FONT_SIZE));
     }
   }
 
@@ -312,18 +318,17 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         actions: [
-          if (_sermonDataFromFirestore != null)
+          if (!_isLoading && _error == null)
             IconButton(
               icon: Icon(
-                _isSermonPlaying
-                    ? Icons.stop_circle_outlined
-                    : Icons.play_circle_outline,
-                color: _isSermonPlaying
+                _getAudioIcon(),
+                size: 26, // Tamanho um pouco maior para destaque
+                color: _sermonPlayerState == TtsPlayerState.playing
                     ? theme.colorScheme.secondary
                     : theme.appBarTheme.actionsIconTheme?.color,
               ),
-              tooltip: _isSermonPlaying ? "Parar Leitura" : "Ouvir Sermão",
-              onPressed: _handlePlayStopSermon,
+              tooltip: _getAudioTooltip(),
+              onPressed: _handleAudioControl,
             ),
           if (_sermonDataFromFirestore != null)
             IconButton(
@@ -335,25 +340,21 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
             icon: const Icon(Icons.format_size_outlined),
             tooltip: "Tamanho da Fonte",
             onSelected: (value) {
-              if (value == 'increase') {
+              if (value == 'increase')
                 _increaseFontSize();
-              } else if (value == 'decrease') {
-                _decreaseFontSize();
-              }
+              else if (value == 'decrease') _decreaseFontSize();
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
               const PopupMenuItem<String>(
-                value: 'increase',
-                child: ListTile(
-                    leading: Icon(Icons.text_increase),
-                    title: Text('Aumentar Fonte')),
-              ),
+                  value: 'increase',
+                  child: ListTile(
+                      leading: Icon(Icons.text_increase),
+                      title: Text('Aumentar Fonte'))),
               const PopupMenuItem<String>(
-                value: 'decrease',
-                child: ListTile(
-                    leading: Icon(Icons.text_decrease),
-                    title: Text('Diminuir Fonte')),
-              ),
+                  value: 'decrease',
+                  child: ListTile(
+                      leading: Icon(Icons.text_decrease),
+                      title: Text('Diminuir Fonte'))),
             ],
           ),
         ],
