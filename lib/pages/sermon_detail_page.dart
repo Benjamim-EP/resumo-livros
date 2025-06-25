@@ -226,7 +226,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       case TtsPlayerState.playing:
         return Icons.pause_circle_outline;
       case TtsPlayerState.paused:
-        return Icons.replay_circle_filled_outlined; // Ícone de Replay
+        return Icons.play_circle_outline; // Ícone de Replay
       case TtsPlayerState.stopped:
         return Icons.play_circle_outline;
     }
@@ -328,7 +328,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                 _getAudioIcon(),
                 size: 26, // Tamanho um pouco maior para destaque
                 color: _sermonPlayerState == TtsPlayerState.playing
-                    ? theme.colorScheme.secondary
+                    ? theme.colorScheme.primary
                     : theme.appBarTheme.actionsIconTheme?.color,
               ),
               tooltip: _getAudioTooltip(),
