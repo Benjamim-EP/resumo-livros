@@ -62,14 +62,16 @@ class TtsManager {
     _flutterTts.setPitch(1.0);
 
     _flutterTts.setStartHandler(() {
-      playerState.value = TtsPlayerState.playing;
+      // Somente muda para 'playing' se não estiver já nesse estado (evita loops com restart)
+      if (playerState.value != TtsPlayerState.playing) {
+        playerState.value = TtsPlayerState.playing;
+      }
       onStart?.call();
     });
 
     _flutterTts.setCompletionHandler(() {
       // Se a fala terminou naturalmente (não foi pausada), avança na fila.
       if (playerState.value != TtsPlayerState.paused) {
-        // A leitura é sempre contínua, então sempre tentamos o próximo item.
         if (_currentQueueIndex < _queue.length - 1) {
           _playNextInQueue();
         } else {
@@ -117,7 +119,6 @@ class TtsManager {
       return;
     }
 
-    // A fila interna sempre conterá os itens da seção clicada em diante.
     _queue.addAll(itemsToPlay.sublist(startIndex));
 
     _currentQueueIndex = -1;
@@ -135,23 +136,22 @@ class TtsManager {
     if (playerState.value == TtsPlayerState.playing) {
       var result = await _flutterTts.pause();
       if (result == 1) {
+        // 1 indica sucesso
         playerState.value = TtsPlayerState.paused;
         print("TTS Manager: Fala pausada.");
       }
     }
   }
 
-  /// Continua a fala a partir de onde parou.
-  Future<void> resume() async {
-    if (playerState.value == TtsPlayerState.paused) {
-      // Atualiza o estado ANTES de chamar o speak, pois o startHandler
-      // não será chamado ao continuar uma fala.
+  /// REINICIA a fala do item atual da fila.
+  Future<void> restartCurrentItem() async {
+    if (_currentQueueIndex >= 0 && _currentQueueIndex < _queue.length) {
+      final currentItem = _queue[_currentQueueIndex];
+      // Atualiza o estado manualmente para refletir a ação de tocar
       playerState.value = TtsPlayerState.playing;
-
-      // Chamamos speak com uma string vazia. Isso "acorda" o motor
-      // e o faz continuar de onde parou na fala anterior.
-      await _flutterTts.speak('');
-      print("TTS Manager: Fala continuada (resume).");
+      // Chama speak com o texto do item atual, reiniciando-o.
+      await _flutterTts.speak(currentItem.textToSpeak);
+      print("TTS Manager: Reiniciando item atual da fila.");
     }
   }
 

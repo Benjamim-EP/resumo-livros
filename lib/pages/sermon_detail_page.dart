@@ -145,7 +145,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   void _handleAudioControl() {
     switch (_sermonPlayerState) {
       case TtsPlayerState.stopped:
-        // Se está parado, inicia uma nova leitura.
+        // Se está parado, inicia uma nova leitura do começo.
         _startSermonPlayback();
         break;
       case TtsPlayerState.playing:
@@ -153,8 +153,8 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         _ttsManager.pause();
         break;
       case TtsPlayerState.paused:
-        // Se está pausado, continua.
-        _ttsManager.resume(); // <<< USA O MÉTODO RESUME CORRETO
+        // Se está pausado, REINICIA a fala do item atual.
+        _ttsManager.restartCurrentItem();
         break;
     }
   }
@@ -220,12 +220,16 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     _ttsManager.speak(queue, sermonId);
   }
 
+  // O ícone para "paused" agora será um ícone de "restart" ou "replay" para ser mais claro.
   IconData _getAudioIcon() {
-    // O ícone para pausado e parado agora é o mesmo (play).
-    if (_sermonPlayerState == TtsPlayerState.playing) {
-      return Icons.pause_circle_outline;
+    switch (_sermonPlayerState) {
+      case TtsPlayerState.playing:
+        return Icons.pause_circle_outline;
+      case TtsPlayerState.paused:
+        return Icons.replay_circle_filled_outlined; // Ícone de Replay
+      case TtsPlayerState.stopped:
+        return Icons.play_circle_outline;
     }
-    return Icons.play_circle_outline;
   }
 
   String _getAudioTooltip() {
@@ -233,7 +237,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       case TtsPlayerState.playing:
         return "Pausar Leitura";
       case TtsPlayerState.paused:
-        return "Continuar Leitura"; // <<< CORRIGIDO
+        return "Continuar do Início do Parágrafo"; // Tooltip mais claro
       case TtsPlayerState.stopped:
         return "Ouvir Sermão";
     }
