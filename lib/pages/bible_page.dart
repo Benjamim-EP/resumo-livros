@@ -354,31 +354,23 @@ class _BiblePageState extends State<BiblePage> {
 
       List<TtsQueueItem> fullChapterQueue = [];
 
-      // >>> INÍCIO DA NOVA LÓGICA DE QUEBRA E LIMPEZA <<<
       List<String> splitTextIntoSentences(String text) {
-        // 1. Sanitizar o texto: remove múltiplos espaços/quebras de linha e caracteres problemáticos.
         String sanitizedText = text
-            .replaceAll(RegExp(r'\s{2,}', multiLine: true),
-                ' ') // Remove espaços extras
-            .replaceAll(
-                RegExp(r'\n'), ' ') // Substitui quebras de linha por espaço
+            .replaceAll(RegExp(r'\s{2,}', multiLine: true), ' ')
+            .replaceAll(RegExp(r'\n'), ' ')
             .trim();
 
         if (sanitizedText.isEmpty) {
           return [];
         }
 
-        // 2. Quebra o texto em sentenças usando pontuações como delimitadores.
-        // A regex (?<=[.?!]) significa "olhar para trás e encontrar um ponto, ? ou !", mantendo o delimitador.
         List<String> sentences = sanitizedText.split(RegExp(r'(?<=[.?!])\s*'));
 
-        // 3. Garante que nenhuma sentença seja excessivamente longa (caso de fallback)
         final List<String> finalChunks = [];
-        const int maxLength = 3500; // Reduzido para margem de segurança extra
+        const int maxLength = 3500;
 
         for (var sentence in sentences) {
           if (sentence.length > maxLength) {
-            // Se uma "sentença" for muito longa, quebra ela em pedaços menores.
             for (var i = 0; i < sentence.length; i += maxLength) {
               final end = (i + maxLength > sentence.length)
                   ? sentence.length
@@ -389,10 +381,8 @@ class _BiblePageState extends State<BiblePage> {
             finalChunks.add(sentence);
           }
         }
-
         return finalChunks;
       }
-      // >>> FIM DA NOVA LÓGICA DE QUEBRA E LIMPEZA <<<
 
       for (var section in sections) {
         final List<int> verseNumbers =
@@ -411,14 +401,26 @@ class _BiblePageState extends State<BiblePage> {
               sectionId: currentSectionId, textToSpeak: sectionTitle));
         }
 
-        for (int verseNum in verseNumbers) {
+        // >>> INÍCIO DA LÓGICA MODIFICADA PARA VERSÍCULOS <<<
+        for (int i = 0; i < verseNumbers.length; i++) {
+          int verseNum = verseNumbers[i];
           if (verseNum > 0 && verseNum <= verseData.length) {
             final verseText = verseData[verseNum - 1];
+            String textToSpeak;
+
+            // Se for o primeiro versículo da seção (i == 0), adiciona "Versículo".
+            if (i == 0) {
+              textToSpeak = "Versículo $verseNum. $verseText";
+            } else {
+              // Para os demais, apenas o número.
+              textToSpeak = "$verseNum. $verseText";
+            }
+
             fullChapterQueue.add(TtsQueueItem(
-                sectionId: currentSectionId,
-                textToSpeak: "Versículo $verseNum. $verseText"));
+                sectionId: currentSectionId, textToSpeak: textToSpeak));
           }
         }
+        // >>> FIM DA LÓGICA MODIFICADA PARA VERSÍCULOS <<<
 
         if (contentType == TtsContentType.versesAndCommentary) {
           final String versesRangeStr = verseNumbers.isNotEmpty
@@ -448,35 +450,20 @@ class _BiblePageState extends State<BiblePage> {
                 if (text.isNotEmpty) {
                   final textSentences = splitTextIntoSentences(text);
                   for (var sentence in textSentences) {
-                    // >>> INÍCIO DA NOVA LÓGICA DE FILTRAGEM <<<
-
                     String trimmedSentence = sentence.trim();
-
-                    // Regex para identificar marcadores de lista simples (números ou romanos com ponto).
-                    // Ex: "1.", "2.", "VI.", "IV."
-                    // ^ e $ garantem que a string inteira corresponde ao padrão.
                     final RegExp listMarkerRegex =
                         RegExp(r'^(?:\d+|[IVXLCDM]+)\.$');
-
-                    // Regex para identificar referências bíblicas.
-                    // Uma versão simplificada para ver se a string se parece com uma referência.
                     final RegExp bibleRefRegex = RegExp(r'[A-Za-z]+\s*\d+:\d+');
 
-                    // SÓ ignora a sentença se ela for APENAS um marcador de lista
-                    // E NÃO se parecer com uma referência bíblica.
                     if (listMarkerRegex.hasMatch(trimmedSentence) &&
                         !bibleRefRegex.hasMatch(trimmedSentence)) {
-                      // É um marcador como "1." ou "VI.". Pula este item.
                       print(
                           "TTS Queue: Ignorando marcador de lista: '$trimmedSentence'");
                       continue;
                     }
 
-                    // Se passou no filtro, adiciona à fila.
                     fullChapterQueue.add(TtsQueueItem(
                         sectionId: currentSectionId, textToSpeak: sentence));
-
-                    // >>> FIM DA NOVA LÓGICA DE FILTRAGEM <<<
                   }
                 }
               }
@@ -485,20 +472,17 @@ class _BiblePageState extends State<BiblePage> {
         }
       }
 
-      // Adiciona um log para depurar o conteúdo da fila
       print("TTS Queue gerada com ${fullChapterQueue.length} itens.");
       for (int i = 0; i < fullChapterQueue.length; i++) {
         print(
             "Item $i (${fullChapterQueue[i].sectionId}): '${fullChapterQueue[i].textToSpeak}'");
       }
 
-      // Atualiza o estado da UI e inicia a reprodução.
       setState(() {
         _currentlyPlayingSectionId = startSectionId;
         _currentlyPlayingContentType = contentType;
       });
 
-      // Passa a fila completa para o TtsManager, que vai gerenciá-la.
       _ttsManager.speak(fullChapterQueue, startSectionId);
     } catch (e) {
       print("Erro em _startNewPlayback: $e");
