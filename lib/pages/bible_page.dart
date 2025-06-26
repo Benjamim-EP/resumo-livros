@@ -27,7 +27,6 @@ import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart'
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
-// import 'package:septima_biblia/services/tts_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -353,7 +352,47 @@ class _BiblePageState extends State<BiblePage> {
         throw Exception("Dados do capítulo inválidos.");
       }
 
-      List<TtsQueueItem> fullChapterQueue = []; // <<< NOME CORRETO DA VARIÁVEL
+      List<TtsQueueItem> fullChapterQueue = [];
+
+      // >>> INÍCIO DA NOVA LÓGICA DE QUEBRA E LIMPEZA <<<
+      List<String> splitTextIntoSentences(String text) {
+        // 1. Sanitizar o texto: remove múltiplos espaços/quebras de linha e caracteres problemáticos.
+        String sanitizedText = text
+            .replaceAll(RegExp(r'\s{2,}', multiLine: true),
+                ' ') // Remove espaços extras
+            .replaceAll(
+                RegExp(r'\n'), ' ') // Substitui quebras de linha por espaço
+            .trim();
+
+        if (sanitizedText.isEmpty) {
+          return [];
+        }
+
+        // 2. Quebra o texto em sentenças usando pontuações como delimitadores.
+        // A regex (?<=[.?!]) significa "olhar para trás e encontrar um ponto, ? ou !", mantendo o delimitador.
+        List<String> sentences = sanitizedText.split(RegExp(r'(?<=[.?!])\s*'));
+
+        // 3. Garante que nenhuma sentença seja excessivamente longa (caso de fallback)
+        final List<String> finalChunks = [];
+        const int maxLength = 3500; // Reduzido para margem de segurança extra
+
+        for (var sentence in sentences) {
+          if (sentence.length > maxLength) {
+            // Se uma "sentença" for muito longa, quebra ela em pedaços menores.
+            for (var i = 0; i < sentence.length; i += maxLength) {
+              final end = (i + maxLength > sentence.length)
+                  ? sentence.length
+                  : i + maxLength;
+              finalChunks.add(sentence.substring(i, end));
+            }
+          } else if (sentence.trim().isNotEmpty) {
+            finalChunks.add(sentence);
+          }
+        }
+
+        return finalChunks;
+      }
+      // >>> FIM DA NOVA LÓGICA DE QUEBRA E LIMPEZA <<<
 
       for (var section in sections) {
         final List<int> verseNumbers =
@@ -369,8 +408,7 @@ class _BiblePageState extends State<BiblePage> {
         final String sectionTitle = section['title'] ?? '';
         if (sectionTitle.isNotEmpty) {
           fullChapterQueue.add(TtsQueueItem(
-              sectionId: currentSectionId,
-              textToSpeak: sectionTitle)); // <<< USA fullChapterQueue
+              sectionId: currentSectionId, textToSpeak: sectionTitle));
         }
 
         for (int verseNum in verseNumbers) {
@@ -378,8 +416,7 @@ class _BiblePageState extends State<BiblePage> {
             final verseText = verseData[verseNum - 1];
             fullChapterQueue.add(TtsQueueItem(
                 sectionId: currentSectionId,
-                textToSpeak:
-                    "Versículo $verseNum. $verseText")); // <<< USA fullChapterQueue
+                textToSpeak: "Versículo $verseNum. $verseText"));
           }
         }
 
@@ -403,19 +440,56 @@ class _BiblePageState extends State<BiblePage> {
               fullChapterQueue.add(TtsQueueItem(
                   sectionId: currentSectionId,
                   textToSpeak: "Comentário da seção."));
+
               for (var item in commentaryList) {
                 final text = (item as Map)['traducao']?.trim() ??
                     (item as Map)['original']?.trim() ??
                     '';
                 if (text.isNotEmpty) {
-                  fullChapterQueue.add(TtsQueueItem(
-                      sectionId: currentSectionId,
-                      textToSpeak: text)); // <<< USA fullChapterQueue
+                  final textSentences = splitTextIntoSentences(text);
+                  for (var sentence in textSentences) {
+                    // >>> INÍCIO DA NOVA LÓGICA DE FILTRAGEM <<<
+
+                    String trimmedSentence = sentence.trim();
+
+                    // Regex para identificar marcadores de lista simples (números ou romanos com ponto).
+                    // Ex: "1.", "2.", "VI.", "IV."
+                    // ^ e $ garantem que a string inteira corresponde ao padrão.
+                    final RegExp listMarkerRegex =
+                        RegExp(r'^(?:\d+|[IVXLCDM]+)\.$');
+
+                    // Regex para identificar referências bíblicas.
+                    // Uma versão simplificada para ver se a string se parece com uma referência.
+                    final RegExp bibleRefRegex = RegExp(r'[A-Za-z]+\s*\d+:\d+');
+
+                    // SÓ ignora a sentença se ela for APENAS um marcador de lista
+                    // E NÃO se parecer com uma referência bíblica.
+                    if (listMarkerRegex.hasMatch(trimmedSentence) &&
+                        !bibleRefRegex.hasMatch(trimmedSentence)) {
+                      // É um marcador como "1." ou "VI.". Pula este item.
+                      print(
+                          "TTS Queue: Ignorando marcador de lista: '$trimmedSentence'");
+                      continue;
+                    }
+
+                    // Se passou no filtro, adiciona à fila.
+                    fullChapterQueue.add(TtsQueueItem(
+                        sectionId: currentSectionId, textToSpeak: sentence));
+
+                    // >>> FIM DA NOVA LÓGICA DE FILTRAGEM <<<
+                  }
                 }
               }
             }
           }
         }
+      }
+
+      // Adiciona um log para depurar o conteúdo da fila
+      print("TTS Queue gerada com ${fullChapterQueue.length} itens.");
+      for (int i = 0; i < fullChapterQueue.length; i++) {
+        print(
+            "Item $i (${fullChapterQueue[i].sectionId}): '${fullChapterQueue[i].textToSpeak}'");
       }
 
       // Atualiza o estado da UI e inicia a reprodução.

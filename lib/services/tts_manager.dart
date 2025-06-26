@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:septima_biblia/consts/bible_constants.dart'; // >>> 1. IMPORTAR CONSTANTES
 import 'package:shared_preferences/shared_preferences.dart';
 
 // --- Enums e Classes de Dados ---
@@ -46,6 +47,65 @@ class TtsManager {
   Function(String)? onError;
   Function()? onStart;
   Function()? onComplete;
+
+  // >>> INÍCIO DA MODIFICAÇÃO 1/3: Função de pré-processamento de texto <<<
+
+  /// Pré-processa um texto, convertendo referências bíblicas em formato falável.
+  /// Ex: "Gn 3:2-5" se torna "Gênesis, capítulo 3, versículos 2 a 5".
+  String _preprocessTextForTts(String text) {
+    // Regex para encontrar referências como: 1Jo 1:9, Gn 3:2-5, Sl 119:105, 2 Co 5:17
+    // A regex foi aprimorada para ser mais precisa
+    final RegExp bibleRefRegex = RegExp(
+      r'\b([1-3]?\s*[a-zA-ZçÇéÉáÁúÚíÍóÓâÂêÊôÔãÃõÕ]+)\s+(\d+)(?::(\d+(?:-\d+)?))?\b',
+      caseSensitive: false,
+    );
+
+    String processedText = text.replaceAllMapped(bibleRefRegex, (match) {
+      String bookAbbrevRaw =
+          match.group(1)!.trim().toLowerCase().replaceAll(' ', '');
+      String chapter = match.group(2)!;
+      String? verses = match.group(3); // Pode ser nulo, ex: "Gn 1"
+
+      // Trata abreviações comuns que podem não estar no mapa, ex: "jo" vs "jó"
+      if (bookAbbrevRaw == 'jo' && text.toLowerCase().contains('jó')) {
+        bookAbbrevRaw = 'job';
+      }
+
+      String bookFullName =
+          ABBREV_TO_FULL_NAME_MAP[bookAbbrevRaw] ?? match.group(1)!;
+
+      if (verses != null) {
+        if (verses.contains('-')) {
+          final verseParts = verses.split('-');
+          return '$bookFullName, capítulo $chapter, versículos ${verseParts[0]} a ${verseParts[1]}';
+        } else {
+          return '$bookFullName, capítulo $chapter, versículo $verses';
+        }
+      } else {
+        return '$bookFullName, capítulo $chapter';
+      }
+    });
+
+    // Caso especial: se a string INTEIRA era só uma referência, adicione contexto.
+    // Ex: "2co 6:14" se torna "Referência: 2 Coríntios..."
+    final isOnlyReference = bibleRefRegex.allMatches(text.trim()).length == 1 &&
+        bibleRefRegex.firstMatch(text.trim())?.group(0) == text.trim();
+
+    if (isOnlyReference) {
+      // Remove a vírgula final se houver
+      if (processedText.endsWith(', ')) {
+        processedText = processedText.substring(0, processedText.length - 2);
+      }
+      return 'Referência: $processedText.';
+    }
+
+    // Adiciona uma pequena pausa após a referência processada para melhorar a fluidez.
+    processedText = processedText.replaceAllMapped(
+        RegExp(r'(versículos? \d+(?: a \d+)?)'),
+        (match) => '${match.group(0)!}, ');
+
+    return processedText;
+  }
 
   void _initTts() async {
     if (Platform.isAndroid) {
@@ -149,8 +209,11 @@ class TtsManager {
       final currentItem = _queue[_currentQueueIndex];
       // Atualiza o estado manualmente para refletir a ação de tocar
       playerState.value = TtsPlayerState.playing;
+      // >>> INÍCIO DA MODIFICAÇÃO 3/3: Pré-processa o texto aqui também <<<
+      final processedText = _preprocessTextForTts(currentItem.textToSpeak);
       // Chama speak com o texto do item atual, reiniciando-o.
-      await _flutterTts.speak(currentItem.textToSpeak);
+      await _flutterTts.speak(processedText);
+      // >>> FIM DA MODIFICAÇÃO 3/3 <<<
       print("TTS Manager: Reiniciando item atual da fila.");
     }
   }
