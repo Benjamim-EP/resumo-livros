@@ -264,7 +264,7 @@ class _LibraryPageState extends State<LibraryPage> {
         crossAxisSpacing: 16.0, // Espaçamento horizontal entre os cards
         mainAxisSpacing: 16.0, // Espaçamento vertical entre os cards
         childAspectRatio:
-            2 / 3, // Proporção largura/altura definida para 2/3 (retrato)
+            0.7, // Proporção largura/altura definida para 2/3 (retrato)
         children: libraryItems.map((itemData) {
           return ResourceCard(
             title: itemData['title'] as String,

@@ -1,6 +1,7 @@
 // lib/pages/library_page/church_history_volume_page.dart
 import 'package:flutter/material.dart';
-import 'package:septima_biblia/models/church_history_model.dart'; // Importa o modelo
+import 'package:septima_biblia/models/church_history_model.dart';
+import 'package:septima_biblia/services/tts_manager.dart'; // >>> 1. Importar o TtsManager
 
 class ChurchHistoryVolumePage extends StatefulWidget {
   final ChurchHistoryVolume volume;
@@ -16,22 +17,133 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // >>> INÍCIO DA MODIFICAÇÃO 1/4: Adicionar estado e instância do TTS <<<
+  final TtsManager _ttsManager = TtsManager();
+  TtsPlayerState _playerState = TtsPlayerState.stopped;
+  // >>> FIM DA MODIFICAÇÃO 1/4 <<<
+
+  @override
+  void initState() {
+    super.initState();
+    // >>> INÍCIO DA MODIFICAÇÃO 2/4: Adicionar listener <<<
+    _ttsManager.playerState.addListener(_onTtsStateChanged);
+    // >>> FIM DA MODIFICAÇÃO 2/4 <<<
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
+    // >>> INÍCIO DA MODIFICAÇÃO 3/4: Parar TTS e remover listener <<<
+    _ttsManager.playerState.removeListener(_onTtsStateChanged);
+    _ttsManager.stop(); // Garante que o áudio pare ao sair da página
+    // >>> FIM DA MODIFICAÇÃO 3/4 <<<
     super.dispose();
   }
+
+  // >>> INÍCIO DA MODIFICAÇÃO 4/4: Funções de controle do TTS <<<
+
+  /// Atualiza o estado da UI quando o estado do player TTS muda.
+  void _onTtsStateChanged() {
+    if (!mounted) return;
+    if (_playerState != _ttsManager.playerState.value) {
+      setState(() {
+        _playerState = _ttsManager.playerState.value;
+      });
+    }
+  }
+
+  /// Constrói a fila de áudio para o capítulo atual e inicia a reprodução.
+  void _startChapterPlayback() {
+    if (widget.volume.chapters.isEmpty) return;
+
+    final chapter = widget.volume.chapters[_currentPage];
+    final List<TtsQueueItem> queue = [];
+
+    // Adiciona o título do capítulo à fila
+    queue.add(TtsQueueItem(
+      sectionId: 'title_$_currentPage',
+      textToSpeak: "Capítulo. ${chapter.title}",
+    ));
+
+    // Adiciona cada parágrafo do conteúdo à fila
+    for (int i = 0; i < chapter.content.length; i++) {
+      final paragraph = chapter.content[i];
+      if (paragraph.trim().isNotEmpty) {
+        queue.add(TtsQueueItem(
+          sectionId: 'paragraph_${_currentPage}_$i',
+          textToSpeak: paragraph,
+        ));
+      }
+    }
+
+    if (queue.isNotEmpty) {
+      // Usa o ID do primeiro item como ponto de partida
+      _ttsManager.speak(queue, queue.first.sectionId);
+    }
+  }
+
+  /// Lida com os cliques no botão de controle de áudio na AppBar.
+  void _handleAudioControl() {
+    switch (_playerState) {
+      case TtsPlayerState.stopped:
+        _startChapterPlayback();
+        break;
+      case TtsPlayerState.playing:
+        _ttsManager.pause();
+        break;
+      case TtsPlayerState.paused:
+        _ttsManager.restartCurrentItem();
+        break;
+    }
+  }
+
+  /// Retorna o ícone apropriado para o botão de áudio.
+  IconData _getAudioIcon() {
+    switch (_playerState) {
+      case TtsPlayerState.playing:
+        return Icons.pause_circle_outline;
+      case TtsPlayerState.paused:
+        return Icons
+            .play_circle_outline; // Ícone de play para indicar "Continuar"
+      case TtsPlayerState.stopped:
+        return Icons.play_circle_outline;
+    }
+  }
+
+  /// Retorna o tooltip apropriado para o botão de áudio.
+  String _getAudioTooltip() {
+    switch (_playerState) {
+      case TtsPlayerState.playing:
+        return "Pausar Leitura";
+      case TtsPlayerState.paused:
+        return "Continuar Leitura";
+      case TtsPlayerState.stopped:
+        return "Ouvir Capítulo";
+    }
+  }
+  // >>> FIM DA MODIFICAÇÃO 4/4 <<<
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final chapter = widget.volume.chapters[_currentPage];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.volume.title, overflow: TextOverflow.ellipsis),
         backgroundColor: theme.appBarTheme.backgroundColor,
         actions: [
+          // >>> Ícone de TTS adicionado aqui <<<
+          IconButton(
+            icon: Icon(
+              _getAudioIcon(),
+              color: _playerState == TtsPlayerState.playing
+                  ? theme.colorScheme.secondary
+                  : theme.iconTheme.color,
+              size: 28,
+            ),
+            tooltip: _getAudioTooltip(),
+            onPressed: _handleAudioControl,
+          ),
           IconButton(
             icon: const Icon(Icons.menu),
             tooltip: "Índice de Capítulos",
@@ -45,6 +157,8 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
         onPageChanged: (index) {
           setState(() {
             _currentPage = index;
+            // Para a reprodução de áudio se o usuário mudar de capítulo manualmente
+            _ttsManager.stop();
           });
         },
         itemBuilder: (context, index) {
