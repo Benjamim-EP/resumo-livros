@@ -4,15 +4,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
-import 'package:septima_biblia/components/login_required.dart';
+
+import 'package:septima_biblia/pages/biblie_page/bible_navigation_controls.dart'; // <<< NOVO IMPORT
+import 'package:septima_biblia/pages/biblie_page/bible_options_bar.dart'; // <<< NOVO IMPORT
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_search_filter_bar.dart';
-import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_semantic_search_view.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
-import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
-import 'package:septima_biblia/pages/biblie_page/utils.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -21,20 +20,16 @@ import 'package:redux/redux.dart';
 import 'package:flutter/foundation.dart';
 import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
-// ignore: unused_import
-import 'package:septima_biblia/pages/biblie_page/bible_search_results_page.dart'
-    show StringExtension;
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+
+// ... (todo o código de _BiblePageViewModel e _BibleContentViewModel permanece o mesmo) ...
 
 class _BiblePageViewModel {
   final String? initialBook;
   final int? initialBibleChapter;
-  // REMOVIDOS: lastReadBookAbbrev, lastReadChapter, userId, pendingWritesCount
-  // Eles não são necessários para a lógica de navegação inicial e causam reconstruções desnecessárias.
 
   _BiblePageViewModel({
     this.initialBook,
@@ -42,7 +37,6 @@ class _BiblePageViewModel {
   });
 
   static _BiblePageViewModel fromStore(Store<AppState> store) {
-    // Agora o ViewModel só se importa com a INTENÇÃO de navegação.
     return _BiblePageViewModel(
       initialBook: store.state.userState.initialBibleBook,
       initialBibleChapter: store.state.userState.initialBibleChapter,
@@ -109,6 +103,8 @@ class BiblePage extends StatefulWidget {
 }
 
 class _BiblePageState extends State<BiblePage> {
+  // ... (todo o estado de _BiblePageState permanece o mesmo) ...
+
   Map<String, dynamic>? booksMap;
   String? selectedBook;
   int? selectedChapter;
@@ -191,6 +187,15 @@ class _BiblePageState extends State<BiblePage> {
     _ttsManager.playerState.addListener(_onTtsStateChanged);
     //_ttsManager.onComplete =
     //_playNextInQueue; // Define o callback para continuar a fila
+  }
+
+  void _navigateToVerseFromSearch(String bookAbbrev, int chapter) {
+    if (mounted) {
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(SetInitialBibleLocationAction(bookAbbrev, chapter));
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(RequestBottomNavChangeAction(1));
+    }
   }
 
   Future<void> _loadFontSizePreference() async {
@@ -1260,7 +1265,6 @@ class _BiblePageState extends State<BiblePage> {
     _store!.dispatch(ClearBibleSearchFiltersAction());
   }
 
-  // >>> INÍCIO DA MODIFICAÇÃO 1/2: Função para o novo botão global <<<
   /// Lida com os cliques no botão de áudio global na AppBar.
   void _handleGlobalAudioControl() {
     if (!mounted) return;
@@ -1272,7 +1276,6 @@ class _BiblePageState extends State<BiblePage> {
       _ttsManager.restartCurrentItem();
     }
   }
-  // >>> FIM DA MODIFICAÇÃO 1/2 <<<
 
   List<Widget> _buildAppBarActions(
       BuildContext context, ThemeData theme, _BiblePageViewModel viewModel) {
@@ -1298,7 +1301,6 @@ class _BiblePageState extends State<BiblePage> {
 
     List<Widget> actions = [];
 
-    // >>> INÍCIO DA MODIFICAÇÃO 2/2: Adiciona o botão de controle de áudio global <<<
     // Este botão só aparece se o áudio estiver tocando ou pausado.
     if (_currentPlayerState != TtsPlayerState.stopped) {
       actions.add(
@@ -1318,7 +1320,6 @@ class _BiblePageState extends State<BiblePage> {
         ),
       );
     }
-    // >>> FIM DA MODIFICAÇÃO 2/2 <<<
 
     if (_isSemanticSearchActive) {
       // Ações quando a busca semântica está ATIVA
@@ -1387,1184 +1388,10 @@ class _BiblePageState extends State<BiblePage> {
     return actions;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return StoreConnector<AppState, _BiblePageViewModel>(
-      converter: (store) => _BiblePageViewModel.fromStore(store),
-      onInit: (store) {
-        _store = store;
-        if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_hasProcessedInitialNavigation) {
-              _processIntentOrInitialLoad(_BiblePageViewModel.fromStore(store));
-            }
-          });
-        }
-        _loadUserDataIfNeeded(context);
-
-        final initialFilters = store.state.bibleSearchState.activeFilters;
-        if (_filterSelectedTestament != initialFilters['testamento'] ||
-            _filterSelectedBookAbbrev != initialFilters['livro_curto'] ||
-            _filterSelectedContentType != initialFilters['tipo']) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _filterSelectedTestament =
-                    initialFilters['testamento'] as String?;
-                _filterSelectedBookAbbrev =
-                    initialFilters['livro_curto'] as String?;
-                _filterSelectedContentType = initialFilters['tipo'] as String?;
-              });
-            }
-          });
-        }
-      },
-      builder: (context, viewModel) {
-        if (booksMap == null || _bookVariationsMap.isEmpty) {
-          return Scaffold(
-              appBar: AppBar(title: const Text('Bíblia')),
-              body: Center(
-                  child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary)));
-        }
-        if (selectedBook == null || selectedChapter == null) {
-          if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && !_hasProcessedInitialNavigation) {
-                _processIntentOrInitialLoad(viewModel);
-              }
-            });
-          }
-          return Scaffold(
-              appBar: AppBar(title: const Text('Bíblia')),
-              body: Center(
-                  child: Text("Carregando Bíblia...",
-                      style: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color))));
-        }
-
-        // Determina o título da AppBar
-        String appBarTitleText; // Removida inicialização aqui
-        if (_isSemanticSearchActive) {
-          appBarTitleText = "Busca na Bíblia";
-        } else {
-          appBarTitleText = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
-          if (_isFocusModeActive) {
-            // No modo foco, o título já inclui o capítulo se não for busca semântica
-            if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
-          } else if (_isCompareModeActive) {
-            appBarTitleText = 'Comparar Traduções';
-          }
-          // Se não for foco nem comparação, e não for busca semântica, o título já está correto
-          // (nome do livro), e o capítulo pode ser adicionado se desejado.
-          // Se a barra de opções extras não estiver visível, podemos adicionar o capítulo ao título.
-          else if (!_showExtraOptions && selectedChapter != null) {
-            appBarTitleText += ' $selectedChapter';
-          }
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(appBarTitleText),
-            leading: _isFocusModeActive ? const SizedBox.shrink() : null,
-            actions: [
-              // >>> ADICIONE O BOTÃO DE TOGGLE PARA LEITURA CONTÍNUA AQUI <<<
-              if (!_isSemanticSearchActive) // Mostra apenas se não estiver em modo de busca
-                IconButton(
-                  icon: Icon(Icons.record_voice_over_outlined,
-                      color: theme.iconTheme.color),
-                  tooltip: "Alterar Voz",
-                  onPressed: _showVoiceSelectionDialog,
-                ),
-              ..._buildAppBarActions(context, theme, viewModel),
-            ],
-          ),
-          body: PageStorage(
-            bucket: _pageStorageBucket,
-            child: Column(
-              children: [
-                if (_isSemanticSearchActive && !_isFocusModeActive)
-                  _buildSemanticSearchTextField(theme),
-                if (_isSemanticSearchActive && !_isFocusModeActive)
-                  _buildSemanticSearchFilterWidgets(theme),
-                if (_showExtraOptions &&
-                    !_isSemanticSearchActive &&
-                    !_isFocusModeActive)
-                  _buildExtraOptionsBar(theme),
-                Expanded(
-                  child: (selectedBook != null &&
-                          selectedChapter != null &&
-                          _selectedBookSlug != null &&
-                          !_isSemanticSearchActive)
-                      ? FutureBuilder<Map<String, dynamic>>(
-                          key: _futureBuilderKey,
-                          future: BiblePageHelper.loadChapterDataComparison(
-                              selectedBook!, // selectedBook não será nulo neste ponto da lógica do build
-                              selectedChapter!, // selectedChapter não será nulo neste ponto
-                              selectedTranslation1,
-                              _isCompareModeActive
-                                  ? selectedTranslation2
-                                  : null),
-                          builder: (context, snapshot) {
-                            // ----- INÍCIO DOS LOGS DETALHADOS -----
-                            print(
-                                "-----------------------------------------------------");
-                            print(
-                                "BiblePage FutureBuilder - Início do Builder");
-                            print("  Key: $_futureBuilderKey");
-                            print(
-                                "  Selected Book: $selectedBook, Chapter: $selectedChapter, Translation1: $selectedTranslation1, Translation2: $selectedTranslation2, CompareMode: $_isCompareModeActive");
-                            print(
-                                "  ConnectionState: ${snapshot.connectionState}");
-
-                            if (snapshot.hasError) {
-                              print(
-                                  "  ERRO NO FUTUREBUILDER: ${snapshot.error}");
-                              print(
-                                  "  STACKTRACE DO ERRO: ${snapshot.stackTrace}");
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: SingleChildScrollView(
-                                    // Para permitir scroll se a mensagem de erro for longa
-                                    child: Text(
-                                      'ERRO AO CARREGAR CAPÍTULO $selectedBook $selectedChapter:\n${snapshot.error}\n\n${snapshot.stackTrace}',
-                                      style: TextStyle(
-                                          color: theme.colorScheme.error,
-                                          fontSize: 14),
-                                      textAlign: TextAlign.left,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              print("  FutureBuilder: Aguardando dados...");
-                              return Center(
-                                  child: CircularProgressIndicator(
-                                      color: theme.colorScheme.primary));
-                            }
-
-                            if (!snapshot.hasData || snapshot.data == null) {
-                              print(
-                                  "  FutureBuilder: Sem dados (snapshot.hasData é false ou snapshot.data é null).");
-                              return Center(
-                                child: Text(
-                                  'Nenhum dado bíblico encontrado para $selectedBook $selectedChapter.',
-                                  style: TextStyle(
-                                      color: theme.textTheme.bodyMedium?.color,
-                                      fontSize: 16),
-                                  textAlign: TextAlign.center,
-                                ),
-                              );
-                            }
-
-                            if (snapshot.data!.isEmpty) {
-                              print(
-                                  "  FutureBuilder: Dados recebidos, mas o mapa retornado está vazio.");
-                              return Center(
-                                child: Text(
-                                  'Os dados do capítulo $selectedBook $selectedChapter estão vazios ou não foram encontrados corretamente.',
-                                  style: TextStyle(
-                                      color: theme.textTheme.bodyMedium?.color,
-                                      fontSize: 16),
-                                  textAlign: TextAlign.center,
-                                ),
-                              );
-                            }
-
-                            print(
-                                "  FutureBuilder: Dados carregados com sucesso. Conteúdo parcial do snapshot.data: ${snapshot.data.toString().substring(0, (snapshot.data.toString().length > 300 ? 300 : snapshot.data.toString().length))}..."); // Log inicial dos dados
-
-                            // ----- FIM DOS LOGS DETALHADOS -----
-
-                            final chapterData = snapshot
-                                .data!; // Agora sabemos que não é nulo e não está vazio
-                            final List<Map<String, dynamic>> sections =
-                                List<Map<String, dynamic>>.from(
-                                    chapterData['sectionStructure'] ?? []);
-                            final Map<String, dynamic> verseDataMap =
-                                Map<String, dynamic>.from(
-                                    chapterData['verseData'] ?? {});
-
-                            final dynamic primaryTranslationVerseData =
-                                verseDataMap[selectedTranslation1];
-                            final dynamic comparisonTranslationVerseData =
-                                (_isCompareModeActive &&
-                                        selectedTranslation2 != null)
-                                    ? verseDataMap[selectedTranslation2!]
-                                    : null;
-
-                            bool isCurrentTranslation1PrimaryHebrew =
-                                selectedTranslation1 == 'hebrew_original';
-                            bool isCurrentTranslation1PrimaryGreek =
-                                selectedTranslation1 == 'greek_interlinear';
-
-                            bool primaryDataMissing = false;
-                            if (isCurrentTranslation1PrimaryHebrew ||
-                                isCurrentTranslation1PrimaryGreek) {
-                              primaryDataMissing =
-                                  (primaryTranslationVerseData == null ||
-                                      (primaryTranslationVerseData is List &&
-                                          primaryTranslationVerseData.isEmpty));
-                            } else {
-                              primaryDataMissing =
-                                  (primaryTranslationVerseData == null ||
-                                      (primaryTranslationVerseData is List &&
-                                          primaryTranslationVerseData.isEmpty));
-                            }
-
-                            if (primaryDataMissing) {
-                              print(
-                                  "  FutureBuilder: primaryDataMissing é true para a tradução principal '$selectedTranslation1'. VerseData: $primaryTranslationVerseData");
-                              return Center(
-                                  child: Text(
-                                'Conteúdo do capítulo não encontrado para a tradução $selectedTranslation1.',
-                                style: TextStyle(
-                                    color: theme.textTheme.bodyMedium?.color,
-                                    fontSize: 16),
-                                textAlign: TextAlign.center,
-                              ));
-                            }
-
-                            print(
-                                "  FutureBuilder: Dados válidos. Chamando DelayedLoading/buildSingleViewContent.");
-                            print(
-                                "-----------------------------------------------------");
-
-                            return DelayedLoading(
-                              loading:
-                                  false, // O FutureBuilder já gerenciou o estado de carregamento.
-                              // Se você tiver um loading interno no DelayedLoading que dependa do snapshot, ajuste.
-                              delay: const Duration(milliseconds: 50),
-                              loadingIndicator: Center(
-                                  child: CircularProgressIndicator(
-                                      color: theme.colorScheme.primary)),
-                              child: () {
-                                print(
-                                    "  DelayedLoading Child: Construindo conteúdo da Bíblia...");
-                                dynamic hebrewDataForInterlinearView;
-                                if (_showHebrewInterlinear &&
-                                    _currentChapterHebrewData != null &&
-                                    _currentChapterHebrewData!['book'] ==
-                                        selectedBook &&
-                                    _currentChapterHebrewData!['chapter'] ==
-                                        selectedChapter) {
-                                  hebrewDataForInterlinearView =
-                                      _currentChapterHebrewData!['data'];
-                                }
-
-                                dynamic greekDataForInterlinearView;
-                                if (_showGreekInterlinear &&
-                                    _currentChapterGreekData != null &&
-                                    _currentChapterGreekData!['book'] ==
-                                        selectedBook &&
-                                    _currentChapterGreekData!['chapter'] ==
-                                        selectedChapter) {
-                                  greekDataForInterlinearView =
-                                      _currentChapterGreekData!['data'];
-                                }
-
-                                if (!_isCompareModeActive) {
-                                  return _buildSingleViewContent(
-                                    theme,
-                                    sections,
-                                    primaryTranslationVerseData,
-                                    isCurrentTranslation1PrimaryHebrew,
-                                    isCurrentTranslation1PrimaryGreek,
-                                    hebrewDataForInterlinearView,
-                                    greekDataForInterlinearView,
-                                    _currentFontSizeMultiplier,
-                                  );
-                                } else {
-                                  if (comparisonTranslationVerseData == null ||
-                                      (comparisonTranslationVerseData is List &&
-                                              comparisonTranslationVerseData
-                                                  .isEmpty) &&
-                                          selectedTranslation2 != null) {
-                                    print(
-                                        "  DelayedLoading Child (Compare Mode): Dados da tradução de comparação ($selectedTranslation2) ausentes ou vazios.");
-                                    return Center(
-                                        child: Text(
-                                      'Tradução de comparação "$selectedTranslation2" não encontrada para este capítulo.',
-                                      style: TextStyle(
-                                          color: theme.colorScheme.error,
-                                          fontSize: 16),
-                                      textAlign: TextAlign.center,
-                                    ));
-                                  }
-                                  final list1Data = primaryTranslationVerseData
-                                      as List; // Assumindo que não é nulo e é lista
-                                  final list2Data =
-                                      comparisonTranslationVerseData
-                                          as List?; // Pode ser nulo ou lista
-
-                                  return Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                          child: _buildComparisonColumn(
-                                              context,
-                                              sections,
-                                              list1Data,
-                                              _scrollController1,
-                                              selectedTranslation1,
-                                              isHebrew:
-                                                  isCurrentTranslation1PrimaryHebrew,
-                                              isGreek:
-                                                  isCurrentTranslation1PrimaryGreek,
-                                              fontSizeMultiplier:
-                                                  _currentFontSizeMultiplier,
-                                              listViewKey: PageStorageKey<
-                                                      String>(
-                                                  '$selectedBook-$selectedChapter-$selectedTranslation1-compareView'))),
-                                      VerticalDivider(
-                                          width: 1,
-                                          color: theme.dividerColor
-                                              .withOpacity(0.5),
-                                          thickness: 0.5),
-                                      Expanded(
-                                          child: _buildComparisonColumn(
-                                              context,
-                                              sections,
-                                              list2Data ??
-                                                  [], // Passa lista vazia se nulo
-                                              _scrollController2,
-                                              selectedTranslation2!, // Não será nulo se _isCompareModeActive e comparisonTranslationVerseData não for nulo
-                                              isHebrew: selectedTranslation2 ==
-                                                  'hebrew_original',
-                                              isGreek: selectedTranslation2 ==
-                                                  'greek_interlinear',
-                                              fontSizeMultiplier:
-                                                  _currentFontSizeMultiplier,
-                                              listViewKey: PageStorageKey<
-                                                      String>(
-                                                  '$selectedBook-$selectedChapter-$selectedTranslation2-compareView'))),
-                                    ],
-                                  );
-                                }
-                              },
-                            );
-                          },
-                        )
-                      : (_isSemanticSearchActive &&
-                              !_isFocusModeActive) // Se ESTIVER em modo de busca semântica
-                          ? StoreConnector<AppState, BibleSearchState>(
-                              converter: (store) =>
-                                  store.state.bibleSearchState,
-                              distinct:
-                                  true, // Evita reconstruções desnecessárias se o searchState não mudar
-                              onInit: (store) {
-                                if (store.state.bibleSearchState.searchHistory
-                                        .isEmpty &&
-                                    !store.state.bibleSearchState
-                                        .isLoadingHistory) {
-                                  print(
-                                      "BiblePage (Search Mode): Disparando LoadSearchHistoryAction no onInit.");
-                                  store.dispatch(LoadSearchHistoryAction());
-                                }
-                              },
-                              builder: (context, searchState) {
-                                final theme = Theme.of(
-                                    context); // Pega o tema aqui para usar nos widgets filhos
-
-                                // 1. Se está carregando uma NOVA busca (isLoading é true E currentQuery foi definido)
-                                if (searchState.isLoading &&
-                                    searchState.currentQuery.isNotEmpty) {
-                                  print(
-                                      "BiblePage Semantic Search: Mostrando loader para nova busca ativa (Query: '${searchState.currentQuery}').");
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                }
-
-                                // 2. Se houve um erro na busca (e não está mais carregando)
-                                if (!searchState.isLoading &&
-                                    searchState.error != null) {
-                                  print(
-                                      "BiblePage Semantic Search: Mostrando erro: ${searchState.error}");
-                                  return Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Text(
-                                          "Erro na busca: ${searchState.error}",
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                              color: theme.colorScheme.error)),
-                                    ),
-                                  );
-                                }
-
-                                // 3. Se houver resultados da busca ATUAL, mostra eles
-                                if (searchState.results.isNotEmpty) {
-                                  print(
-                                      "BiblePage Semantic Search: Mostrando ${searchState.results.length} resultados da busca para '${searchState.currentQuery}'.");
-                                  return ListView.builder(
-                                    padding: const EdgeInsets.all(8.0),
-                                    itemCount: searchState.results.length,
-                                    itemBuilder: (context, index) {
-                                      final item = searchState.results[index];
-                                      final itemId = item['id'] as String? ??
-                                          'unknown_id_$index';
-                                      Map<String, dynamic> metadata = {};
-                                      final rawMetadata = item['metadata'];
-                                      if (rawMetadata is Map) {
-                                        metadata = Map<String, dynamic>.from(
-                                            rawMetadata.map((key, value) =>
-                                                MapEntry(
-                                                    key.toString(), value)));
-                                      }
-
-                                      final tipoResultado =
-                                          metadata['tipo'] as String?;
-                                      String? commentaryTitle =
-                                          metadata['titulo_comentario']
-                                              as String?;
-                                      final reference =
-                                          "${metadata['livro_completo'] ?? metadata['livro_curto'] ?? '?'} ${metadata['capitulo'] ?? '?'}:${metadata['versiculos'] ?? '?'}";
-                                      final score = item['score'] as double?;
-                                      final bool isExpanded =
-                                          _expandedItemId == itemId;
-
-                                      String previewContent =
-                                          "Toque para ver detalhes";
-                                      if (tipoResultado ==
-                                          'biblia_comentario_secao') {
-                                        previewContent = commentaryTitle ??
-                                            "Ver comentário...";
-                                      } else if (tipoResultado ==
-                                          'biblia_versiculos') {
-                                        previewContent = "Ver versículos...";
-                                      }
-
-                                      return Card(
-                                        elevation: 2,
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 6.0),
-                                        color: theme.cardColor,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10)),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            ListTile(
-                                              title: Text(reference,
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: theme.textTheme
-                                                          .titleLarge?.color)),
-                                              subtitle: Text(previewContent,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: TextStyle(
-                                                      color: theme.textTheme
-                                                          .bodyMedium?.color
-                                                          ?.withOpacity(0.7))),
-                                              trailing: Icon(
-                                                  isExpanded
-                                                      ? Icons.expand_less
-                                                      : Icons.expand_more,
-                                                  color: theme.iconTheme.color),
-                                              onTap: () =>
-                                                  _toggleItemExpansionInBiblePage(
-                                                      metadata, itemId),
-                                            ),
-                                            if (isExpanded)
-                                              AnimatedSize(
-                                                duration: const Duration(
-                                                    milliseconds: 300),
-                                                curve: Curves.easeInOut,
-                                                child: Container(
-                                                  width: double.infinity,
-                                                  color: theme.colorScheme
-                                                      .surfaceVariant
-                                                      .withOpacity(0.1),
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 16.0,
-                                                      vertical: 12.0),
-                                                  child:
-                                                      _isLoadingExpandedContent
-                                                          ? const Center(
-                                                              child: Padding(
-                                                                  padding:
-                                                                      EdgeInsets
-                                                                          .all(
-                                                                              8.0),
-                                                                  child: SizedBox(
-                                                                      height:
-                                                                          20,
-                                                                      width: 20,
-                                                                      child: CircularProgressIndicator(
-                                                                          strokeWidth:
-                                                                              2.5))))
-                                                          : (_loadedExpandedContent !=
-                                                                      null &&
-                                                                  _loadedExpandedContent!
-                                                                      .isNotEmpty
-                                                              ? MarkdownBody(
-                                                                  data:
-                                                                      _loadedExpandedContent!,
-                                                                  selectable:
-                                                                      true,
-                                                                  styleSheet: MarkdownStyleSheet
-                                                                          .fromTheme(
-                                                                              theme)
-                                                                      .copyWith(
-                                                                    p: theme.textTheme.bodyMedium?.copyWith(
-                                                                        fontSize:
-                                                                            14 *
-                                                                                _currentFontSizeMultiplier,
-                                                                        height:
-                                                                            1.5,
-                                                                        color: theme
-                                                                            .colorScheme
-                                                                            .onSurfaceVariant),
-                                                                    strong: TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .bold,
-                                                                        color: theme
-                                                                            .colorScheme
-                                                                            .onSurfaceVariant),
-                                                                    blockSpacing:
-                                                                        8.0,
-                                                                  ),
-                                                                )
-                                                              : Text(
-                                                                  "Conteúdo não disponível ou não pôde ser carregado.",
-                                                                  style: TextStyle(
-                                                                      color: theme
-                                                                          .colorScheme
-                                                                          .onSurfaceVariant
-                                                                          .withOpacity(
-                                                                              0.7)))),
-                                                ),
-                                              ),
-                                            if (isExpanded &&
-                                                !_isLoadingExpandedContent &&
-                                                _loadedExpandedContent != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    right: 8.0,
-                                                    top: 4.0,
-                                                    bottom: 8.0),
-                                                child: Align(
-                                                  alignment:
-                                                      Alignment.centerRight,
-                                                  child: TextButton.icon(
-                                                    icon: Icon(Icons.menu_book,
-                                                        size: 18,
-                                                        color: theme.colorScheme
-                                                            .primary),
-                                                    label: Text(
-                                                        "Abrir na Bíblia",
-                                                        style: TextStyle(
-                                                            fontSize: 12,
-                                                            color: theme
-                                                                .colorScheme
-                                                                .primary,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w500)),
-                                                    style: TextButton.styleFrom(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 6),
-                                                      tapTargetSize:
-                                                          MaterialTapTargetSize
-                                                              .shrinkWrap,
-                                                    ),
-                                                    onPressed: () {
-                                                      final bookAbbrevNav =
-                                                          metadata[
-                                                                  'livro_curto']
-                                                              as String?;
-                                                      final chapterStrNav =
-                                                          metadata['capitulo']
-                                                              ?.toString();
-                                                      int? chapterIntNav;
-                                                      if (chapterStrNav != null)
-                                                        chapterIntNav =
-                                                            int.tryParse(
-                                                                chapterStrNav);
-
-                                                      if (bookAbbrevNav !=
-                                                              null &&
-                                                          chapterIntNav !=
-                                                              null) {
-                                                        StoreProvider.of<
-                                                                    AppState>(
-                                                                context,
-                                                                listen: false)
-                                                            .dispatch(SetInitialBibleLocationAction(
-                                                                bookAbbrevNav,
-                                                                chapterIntNav));
-                                                        StoreProvider.of<
-                                                                    AppState>(
-                                                                context,
-                                                                listen: false)
-                                                            .dispatch(
-                                                                RequestBottomNavChangeAction(
-                                                                    1));
-                                                      } else {
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(
-                                                                const SnackBar(
-                                                                    content: Text(
-                                                                        'Não foi possível abrir na Bíblia. Dados incompletos.')));
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
-                                              ),
-                                            if (score != null && !isExpanded)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 16.0,
-                                                    bottom: 8.0,
-                                                    top: 0),
-                                                child: Text(
-                                                    "Similaridade: ${score.toStringAsFixed(3)}",
-                                                    style: TextStyle(
-                                                        fontSize: 10,
-                                                        color:
-                                                            Colors.grey[600])),
-                                              ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-
-                                // 4. Se NÃO há query ATIVA (campo de busca vazio) E HÁ histórico, mostra o histórico
-                                if (searchState.currentQuery.isEmpty &&
-                                    searchState.searchHistory.isNotEmpty) {
-                                  print(
-                                      "BiblePage Semantic Search: Mostrando histórico de ${searchState.searchHistory.length} buscas.");
-                                  return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 12.0),
-                                        child: Text(
-                                            "Histórico de Buscas Recentes:",
-                                            style: theme.textTheme.titleMedium
-                                                ?.copyWith(
-                                                    color: theme
-                                                        .colorScheme.onSurface
-                                                        .withOpacity(0.9))),
-                                      ),
-                                      Expanded(
-                                        child: ListView.builder(
-                                          itemCount:
-                                              searchState.searchHistory.length,
-                                          itemBuilder: (context, index) {
-                                            final historyEntry = searchState
-                                                .searchHistory[index];
-                                            final String query =
-                                                historyEntry['query']
-                                                        as String? ??
-                                                    'Busca inválida';
-                                            final String? timestampStr =
-                                                historyEntry['timestamp']
-                                                    as String?;
-                                            final DateTime? timestamp =
-                                                timestampStr != null
-                                                    ? DateTime.tryParse(
-                                                        timestampStr)
-                                                    : null;
-
-                                            return ListTile(
-                                              leading: Icon(Icons.history,
-                                                  color: theme.iconTheme.color
-                                                      ?.withOpacity(0.6)),
-                                              title: Text(query,
-                                                  style: theme
-                                                      .textTheme.bodyLarge),
-                                              subtitle: timestamp != null
-                                                  ? Text(
-                                                      DateFormat(
-                                                              'dd/MM/yy HH:mm')
-                                                          .format(timestamp
-                                                              .toLocal()),
-                                                      style: theme
-                                                          .textTheme.bodySmall)
-                                                  : null,
-                                              trailing: Icon(
-                                                  Icons
-                                                      .arrow_forward_ios_rounded,
-                                                  size: 16,
-                                                  color: theme.iconTheme.color
-                                                      ?.withOpacity(0.5)),
-                                              onTap: () {
-                                                _semanticQueryController.text =
-                                                    query;
-                                                StoreProvider.of<AppState>(
-                                                        context,
-                                                        listen: false)
-                                                    .dispatch(
-                                                        ViewSearchFromHistoryAction(
-                                                            historyEntry));
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }
-
-                                // 5. Se houve uma busca ATIVA mas não encontrou resultados (e não está carregando)
-                                if (!searchState.isLoading &&
-                                    searchState.results.isEmpty &&
-                                    searchState.currentQuery.isNotEmpty) {
-                                  print(
-                                      "BiblePage Semantic Search: Nenhum resultado para '${searchState.currentQuery}'.");
-                                  return Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Text(
-                                        "Nenhum resultado encontrado para '${searchState.currentQuery}' com os filtros aplicados.",
-                                        textAlign: TextAlign.center,
-                                        style: theme.textTheme.bodyMedium,
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                // 6. Mensagem padrão (campo de busca vazio e sem histórico, ou carregando histórico)
-                                print(
-                                    "BiblePage Semantic Search: Exibindo mensagem padrão/carregando histórico (isLoadingHistory: ${searchState.isLoadingHistory}).");
-                                return Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Text(
-                                      searchState.isLoadingHistory
-                                          ? "Carregando histórico..."
-                                          : "Digite sua busca acima e pressione o ícone de lupa para pesquisar. Seu histórico aparecerá aqui.",
-                                      style: TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                          color: theme
-                                              .textTheme.bodyMedium?.color
-                                              ?.withOpacity(0.7)),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                          : const SizedBox.shrink(),
-                ),
-                Visibility(
-                    visible: !_isFocusModeActive &&
-                        !_isSemanticSearchActive &&
-                        !_showExtraOptions,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0, vertical: 12.0),
-                      child: Row(children: [
-                        IconButton(
-                            icon: Icon(Icons.chevron_left,
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.7),
-                                size: 32),
-                            onPressed: _previousChapter,
-                            tooltip: "Capítulo Anterior",
-                            splashRadius: 24),
-                        Expanded(
-                            flex: 3,
-                            child: UtilsBiblePage.buildBookDropdown(
-                                context: context,
-                                selectedBook: selectedBook,
-                                booksMap: booksMap,
-                                onChanged: (value) {
-                                  if (mounted && value != null)
-                                    _navigateToChapter(value, 1);
-                                },
-                                iconColor: theme.colorScheme.onSurface
-                                    .withOpacity(0.7),
-                                textColor: theme.colorScheme.onSurface,
-                                backgroundColor:
-                                    theme.cardColor.withOpacity(0.15))),
-                        const SizedBox(width: 8),
-                        if (selectedBook != null)
-                          Expanded(
-                              flex: 2,
-                              child: UtilsBiblePage.buildChapterDropdown(
-                                  context: context,
-                                  selectedChapter: selectedChapter,
-                                  booksMap: booksMap,
-                                  selectedBook: selectedBook,
-                                  onChanged: (value) {
-                                    if (mounted &&
-                                        value != null &&
-                                        selectedBook != null) {
-                                      _navigateToChapter(selectedBook!, value);
-                                    }
-                                  },
-                                  iconColor: theme.colorScheme.onSurface
-                                      .withOpacity(0.7),
-                                  textColor: theme.colorScheme.onSurface,
-                                  backgroundColor:
-                                      theme.cardColor.withOpacity(0.15))),
-                        IconButton(
-                            icon: Icon(Icons.chevron_right,
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.7),
-                                size: 32),
-                            onPressed: _nextChapter,
-                            tooltip: "Próximo Capítulo",
-                            splashRadius: 24),
-                      ]),
-                    )),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildExtraOptionsBar(ThemeData theme) {
-    bool isCurrentTranslation1PrimaryHebrew =
-        selectedTranslation1 == 'hebrew_original';
-    bool isCurrentTranslation1PrimaryGreek =
-        selectedTranslation1 == 'greek_interlinear';
-
-    bool canShowHebrewToggle =
-        booksMap?[selectedBook]?['testament'] == 'Antigo' &&
-            !isCurrentTranslation1PrimaryHebrew &&
-            !_isCompareModeActive;
-
-    bool canShowGreekToggle = booksMap?[selectedBook]?['testament'] == 'Novo' &&
-        !isCurrentTranslation1PrimaryGreek &&
-        !_isCompareModeActive;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      decoration: BoxDecoration(
-        color: theme.cardColor.withOpacity(0.1),
-        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8.0, // Espaçamento horizontal entre os botões
-        runSpacing:
-            4.0, // Espaçamento vertical entre as linhas de botões (se quebrar)
-        children: [
-          // Botão para selecionar a Tradução 1
-          ElevatedButton.icon(
-            icon: const Icon(Icons.translate, size: 18),
-            label: Text(selectedTranslation1.toUpperCase(),
-                style: const TextStyle(fontSize: 12)),
-            onPressed: () {
-              // <<< MODIFICAR ESTE onPressed
-              BiblePageWidgets.showTranslationSelection(
-                context: context,
-                selectedTranslation: selectedTranslation1,
-                onTranslationSelected: (value) {
-                  if (mounted && value != selectedTranslation2) {
-                    // >>> INÍCIO DA MODIFICAÇÃO <<<
-                    interstitialManager
-                        .tryShowInterstitial(
-                            fromScreen:
-                                "BiblePage_ChangeTranslation1_To_$value")
-                        .then((_) {
-                      if (mounted) {
-                        setState(() {
-                          selectedTranslation1 = value;
-                          if ((value == 'hebrew_original' &&
-                                  selectedTranslation2 == 'hebrew_original') ||
-                              (value == 'greek_interlinear' &&
-                                  selectedTranslation2 ==
-                                      'greek_interlinear')) {
-                            selectedTranslation2 =
-                                (value == 'nvi' || value == 'acf')
-                                    ? 'aa'
-                                    : 'nvi';
-                          }
-                          _updateFutureBuilderKey();
-                          if (value == 'hebrew_original' &&
-                              _showHebrewInterlinear)
-                            _showHebrewInterlinear = false;
-                          if (value == 'greek_interlinear' &&
-                              _showGreekInterlinear)
-                            _showGreekInterlinear = false;
-                        });
-                      }
-                    });
-                    // >>> FIM DA MODIFICAÇÃO <<<
-                  }
-                },
-                currentSelectedBookAbbrev: selectedBook,
-                booksMap: booksMap,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: theme.cardColor,
-                foregroundColor: theme.textTheme.bodyLarge?.color,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                elevation: 1),
-          ),
-
-          // Botão para selecionar a Tradução 2 (se estiver no modo de comparação)
-          if (_isCompareModeActive)
-            ElevatedButton.icon(
-              icon: const Icon(Icons.translate, size: 18),
-              label: Text(selectedTranslation2?.toUpperCase() ?? '...',
-                  style: const TextStyle(fontSize: 12)),
-              onPressed: () {
-                // <<< MODIFICAR ESTE onPressed
-                BiblePageWidgets.showTranslationSelection(
-                  context: context,
-                  selectedTranslation: selectedTranslation2 ?? 'acf',
-                  onTranslationSelected: (value) {
-                    if (mounted && value != selectedTranslation1) {
-                      // >>> INÍCIO DA MODIFICAÇÃO <<<
-                      interstitialManager
-                          .tryShowInterstitial(
-                              fromScreen:
-                                  "BiblePage_ChangeTranslation2_To_$value")
-                          .then((_) {
-                        if (mounted) {
-                          setState(() {
-                            selectedTranslation2 = value;
-                            _updateFutureBuilderKey();
-                          });
-                        }
-                      });
-                      // >>> FIM DA MODIFICAÇÃO <<<
-                    }
-                  },
-                  currentSelectedBookAbbrev: selectedBook,
-                  booksMap: booksMap,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.cardColor,
-                  foregroundColor: theme.textTheme.bodyLarge?.color,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  elevation: 1),
-            ),
-
-          // Botão de Estudos
-          ElevatedButton.icon(
-            icon: const Icon(Icons.school_outlined, size: 18),
-            label: const Text("Estudos", style: TextStyle(fontSize: 12)),
-            onPressed: () {
-              if (mounted) {
-                interstitialManager
-                    .tryShowInterstitial(fromScreen: "BiblePage_To_StudyHub")
-                    .then((_) {
-                  // Certifique-se que o contexto ainda é válido se a operação for assíncrona
-                  if (mounted) {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const StudyHubPage()));
-                  }
-                });
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: theme.cardColor,
-                foregroundColor: theme.textTheme.bodyLarge?.color,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                elevation: 1),
-          ),
-
-          // Botão Modo Foco
-          IconButton(
-            icon: Icon(
-                _isFocusModeActive ? Icons.fullscreen_exit : Icons.fullscreen,
-                size: 22),
-            tooltip: _isFocusModeActive ? "Sair do Modo Foco" : "Modo Leitura",
-            onPressed: () {
-              if (mounted) {
-                setState(() => _isFocusModeActive = !_isFocusModeActive);
-                _updateFutureBuilderKey(); // Atualiza a chave para reconstruir a UI se necessário
-              }
-            },
-            color: _isFocusModeActive
-                ? theme.colorScheme.secondary
-                : theme.iconTheme.color,
-            splashRadius: 20,
-          ),
-
-          // Botão Modo Comparação
-          IconButton(
-            icon: Icon(
-                _isCompareModeActive
-                    ? Icons.compare_arrows // Ícone preenchido quando ativo
-                    : Icons
-                        .compare_arrows_outlined, // Ícone contornado quando inativo
-                size: 22),
-            tooltip: _isCompareModeActive
-                ? "Desativar Comparação"
-                : "Comparar Traduções",
-            onPressed: () {
-              if (mounted) {
-                setState(() {
-                  _isCompareModeActive = !_isCompareModeActive;
-                  // Se ativou comparação e as duas traduções são iguais, muda a segunda
-                  if (_isCompareModeActive &&
-                      selectedTranslation1 == selectedTranslation2) {
-                    selectedTranslation2 =
-                        (selectedTranslation1 == 'nvi') ? 'acf' : 'nvi';
-                  }
-                  // Se desativou comparação, remove a segunda tradução
-                  if (!_isCompareModeActive) {
-                    selectedTranslation2 = null;
-                  }
-                  // Se o modo interlinear estava ativo e agora estamos comparando, desativa o interlinear
-                  // (a menos que queira permitir interlinear em uma das colunas de comparação)
-                  if (_isCompareModeActive) {
-                    if (_showHebrewInterlinear &&
-                        selectedTranslation1 == 'hebrew_original') {
-                      // Não faz nada, pois o hebraico original já é uma das traduções principais
-                    } else if (_showHebrewInterlinear) {
-                      _showHebrewInterlinear = false;
-                    }
-                    if (_showGreekInterlinear &&
-                        selectedTranslation1 == 'greek_interlinear') {
-                      // Não faz nada
-                    } else if (_showGreekInterlinear) {
-                      _showGreekInterlinear = false;
-                    }
-                  }
-                  _updateFutureBuilderKey();
-                });
-              }
-            },
-            color: _isCompareModeActive
-                ? theme.colorScheme.secondary // Cor de destaque quando ativo
-                : theme.iconTheme.color,
-            splashRadius: 20,
-          ),
-
-          // Botão Toggle Hebraico Interlinear
-          if (canShowHebrewToggle)
-            IconButton(
-              icon: Icon(
-                  _showHebrewInterlinear
-                      ? Icons.font_download_off_outlined // Ícone quando ativo
-                      : Icons.font_download_outlined, // Ícone quando inativo
-                  size: 22),
-              tooltip: _showHebrewInterlinear
-                  ? "Ocultar Hebraico Interlinear"
-                  : "Mostrar Hebraico Interlinear",
-              onPressed: () {
-                if (!_showHebrewInterlinear) {
-                  // Se está prestes a se tornar true
-                  interstitialManager.tryShowInterstitial(
-                      fromScreen: "BiblePage_ToggleHebrewInterlinear");
-                }
-                setState(() {
-                  _showHebrewInterlinear = !_showHebrewInterlinear;
-                  if (_showHebrewInterlinear) {
-                    _showGreekInterlinear =
-                        false; // Desativa o grego se o hebraico for ativado
-                    _loadCurrentChapterHebrewDataIfNeeded();
-                  } else {
-                    _currentChapterHebrewData =
-                        null; // Limpa os dados se desativado
-                  }
-                  _updateFutureBuilderKey();
-                });
-              },
-              color: _showHebrewInterlinear
-                  ? theme.colorScheme.secondary // Cor de destaque quando ativo
-                  : theme.iconTheme.color,
-              splashRadius: 20,
-            ),
-
-          // Botão Toggle Grego Interlinear
-          if (canShowGreekToggle)
-            IconButton(
-              icon: Icon(
-                  _showGreekInterlinear
-                      ? Icons.font_download_off_outlined // Ícone quando ativo
-                      : Icons.font_download_outlined, // Ícone quando inativo
-                  size: 22),
-              tooltip: _showGreekInterlinear
-                  ? "Ocultar Grego Interlinear"
-                  : "Mostrar Grego Interlinear",
-              onPressed: () {
-                if (!_showGreekInterlinear) {
-                  // Se está prestes a se tornar true
-                  interstitialManager.tryShowInterstitial(
-                      fromScreen: "BiblePage_ToggleGreekInterlinear");
-                }
-                setState(() {
-                  _showGreekInterlinear = !_showGreekInterlinear;
-                  if (_showGreekInterlinear) {
-                    _showHebrewInterlinear =
-                        false; // Desativa o hebraico se o grego for ativado
-                    _loadCurrentChapterGreekDataIfNeeded();
-                  } else {
-                    _currentChapterGreekData =
-                        null; // Limpa os dados se desativado
-                  }
-                  _updateFutureBuilderKey();
-                });
-              },
-              color: _showGreekInterlinear
-                  ? theme.colorScheme.secondary // Cor de destaque quando ativo
-                  : theme.iconTheme.color,
-              splashRadius: 20,
-            ),
-          // --- NOVOS BOTÕES PARA TAMANHO DA FONTE ---
-          IconButton(
-            icon: Icon(Icons.text_decrease_outlined, size: 22),
-            tooltip: "Diminuir Fonte",
-            onPressed: _currentFontSizeMultiplier > MIN_FONT_MULTIPLIER
-                ? _decreaseFontSize
-                : null, // Desabilita se no mínimo
-            color: _currentFontSizeMultiplier > MIN_FONT_MULTIPLIER
-                ? theme.iconTheme.color
-                : theme.disabledColor,
-            splashRadius: 20,
-          ),
-          // Exibir o multiplicador atual (opcional, para feedback)
-          // Text("${(_currentFontSizeMultiplier * 100).toInt()}%", style: TextStyle(fontSize: 12, color: theme.textTheme.bodySmall?.color)),
-          IconButton(
-            icon: Icon(Icons.text_increase_outlined, size: 22),
-            tooltip: "Aumentar Fonte",
-            onPressed: _currentFontSizeMultiplier < MAX_FONT_MULTIPLIER
-                ? _increaseFontSize
-                : null, // Desabilita se no máximo
-            color: _currentFontSizeMultiplier < MAX_FONT_MULTIPLIER
-                ? theme.iconTheme.color
-                : theme.disabledColor,
-            splashRadius: 20,
-          ),
-        ],
-      ),
-    );
-  }
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  // FUNÇÃO REMOVIDA
+  // Widget _buildExtraOptionsBar(ThemeData theme) { ... }
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   Widget _buildSemanticSearchTextField(ThemeData theme) {
     return Padding(
@@ -2671,6 +1498,490 @@ class _BiblePageState extends State<BiblePage> {
       onClearFilters: () {
         // Esta função é chamada quando o botão de limpar dentro da barra é tocado
         _clearFiltersInReduxAndResetLocal(); // Sua função existente na BiblePage
+      },
+    );
+  }
+
+  // ... (o restante do arquivo bible_page.dart, incluindo _buildSingleViewContent, build, etc., permanece o mesmo)
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return StoreConnector<AppState, _BiblePageViewModel>(
+      converter: (store) => _BiblePageViewModel.fromStore(store),
+      onInit: (store) {
+        _store = store;
+        if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_hasProcessedInitialNavigation) {
+              _processIntentOrInitialLoad(_BiblePageViewModel.fromStore(store));
+            }
+          });
+        }
+        _loadUserDataIfNeeded(context);
+
+        final initialFilters = store.state.bibleSearchState.activeFilters;
+        if (_filterSelectedTestament != initialFilters['testamento'] ||
+            _filterSelectedBookAbbrev != initialFilters['livro_curto'] ||
+            _filterSelectedContentType != initialFilters['tipo']) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _filterSelectedTestament =
+                    initialFilters['testamento'] as String?;
+                _filterSelectedBookAbbrev =
+                    initialFilters['livro_curto'] as String?;
+                _filterSelectedContentType = initialFilters['tipo'] as String?;
+              });
+            }
+          });
+        }
+      },
+      builder: (context, viewModel) {
+        if (booksMap == null || _bookVariationsMap.isEmpty) {
+          return Scaffold(
+              appBar: AppBar(title: const Text('Bíblia')),
+              body: Center(
+                  child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary)));
+        }
+        if (selectedBook == null || selectedChapter == null) {
+          if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_hasProcessedInitialNavigation) {
+                _processIntentOrInitialLoad(viewModel);
+              }
+            });
+          }
+          return Scaffold(
+              appBar: AppBar(title: const Text('Bíblia')),
+              body: Center(
+                  child: Text("Carregando Bíblia...",
+                      style: TextStyle(
+                          color: theme.textTheme.bodyMedium?.color))));
+        }
+
+        // Determina o título da AppBar
+        String appBarTitleText; // Removida inicialização aqui
+        if (_isSemanticSearchActive) {
+          appBarTitleText = "Busca na Bíblia";
+        } else {
+          appBarTitleText = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
+          if (_isFocusModeActive) {
+            // No modo foco, o título já inclui o capítulo se não for busca semântica
+            if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
+          } else if (_isCompareModeActive) {
+            appBarTitleText = 'Comparar Traduções';
+          }
+          // Se não for foco nem comparação, e não for busca semântica, o título já está correto
+          // (nome do livro), e o capítulo pode ser adicionado se desejado.
+          // Se a barra de opções extras não estiver visível, podemos adicionar o capítulo ao título.
+          else if (!_showExtraOptions && selectedChapter != null) {
+            appBarTitleText += ' $selectedChapter';
+          }
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(appBarTitleText),
+            leading: _isFocusModeActive ? const SizedBox.shrink() : null,
+            actions: [
+              // >>> ADICIONE O BOTÃO DE TOGGLE PARA LEITURA CONTÍNUA AQUI <<<
+              if (!_isSemanticSearchActive) // Mostra apenas se não estiver em modo de busca
+                IconButton(
+                  icon: Icon(Icons.record_voice_over_outlined,
+                      color: theme.iconTheme.color),
+                  tooltip: "Alterar Voz",
+                  onPressed: _showVoiceSelectionDialog,
+                ),
+              ..._buildAppBarActions(context, theme, viewModel),
+            ],
+          ),
+          body: PageStorage(
+            bucket: _pageStorageBucket,
+            child: Column(
+              children: [
+                if (_isSemanticSearchActive && !_isFocusModeActive)
+                  _buildSemanticSearchTextField(theme),
+                if (_isSemanticSearchActive && !_isFocusModeActive)
+                  _buildSemanticSearchFilterWidgets(theme),
+
+                // >>> INÍCIO DA MODIFICAÇÃO: Uso do novo widget <<<
+                if (_showExtraOptions &&
+                    !_isSemanticSearchActive &&
+                    !_isFocusModeActive)
+                  BibleOptionsBar(
+                    selectedTranslation1: selectedTranslation1,
+                    selectedTranslation2: selectedTranslation2,
+                    selectedBook: selectedBook,
+                    booksMap: booksMap,
+                    isCompareModeActive: _isCompareModeActive,
+                    isFocusModeActive: _isFocusModeActive,
+                    showHebrewInterlinear: _showHebrewInterlinear,
+                    showGreekInterlinear: _showGreekInterlinear,
+                    currentFontSizeMultiplier: _currentFontSizeMultiplier,
+                    minFontMultiplier: MIN_FONT_MULTIPLIER,
+                    maxFontMultiplier: MAX_FONT_MULTIPLIER,
+                    onTranslation1Changed: (value) {
+                      if (mounted && value != selectedTranslation2) {
+                        interstitialManager
+                            .tryShowInterstitial(
+                                fromScreen:
+                                    "BiblePage_ChangeTranslation1_To_$value")
+                            .then((_) {
+                          if (mounted) {
+                            setState(() {
+                              selectedTranslation1 = value;
+                              if ((value == 'hebrew_original' &&
+                                      selectedTranslation2 ==
+                                          'hebrew_original') ||
+                                  (value == 'greek_interlinear' &&
+                                      selectedTranslation2 ==
+                                          'greek_interlinear')) {
+                                selectedTranslation2 =
+                                    (value == 'nvi' || value == 'acf')
+                                        ? 'aa'
+                                        : 'nvi';
+                              }
+                              _updateFutureBuilderKey();
+                              if (value == 'hebrew_original' &&
+                                  _showHebrewInterlinear)
+                                _showHebrewInterlinear = false;
+                              if (value == 'greek_interlinear' &&
+                                  _showGreekInterlinear)
+                                _showGreekInterlinear = false;
+                            });
+                          }
+                        });
+                      }
+                    },
+                    onTranslation2Changed: (value) {
+                      if (mounted && value != selectedTranslation1) {
+                        interstitialManager
+                            .tryShowInterstitial(
+                                fromScreen:
+                                    "BiblePage_ChangeTranslation2_To_$value")
+                            .then((_) {
+                          if (mounted) {
+                            setState(() {
+                              selectedTranslation2 = value;
+                              _updateFutureBuilderKey();
+                            });
+                          }
+                        });
+                      }
+                    },
+                    onToggleCompareMode: () {
+                      if (mounted) {
+                        setState(() {
+                          _isCompareModeActive = !_isCompareModeActive;
+                          if (_isCompareModeActive &&
+                              selectedTranslation1 == selectedTranslation2) {
+                            selectedTranslation2 =
+                                (selectedTranslation1 == 'nvi') ? 'acf' : 'nvi';
+                          }
+                          if (!_isCompareModeActive) {
+                            selectedTranslation2 = null;
+                          }
+                          if (_isCompareModeActive) {
+                            if (_showHebrewInterlinear)
+                              _showHebrewInterlinear = false;
+                            if (_showGreekInterlinear)
+                              _showGreekInterlinear = false;
+                          }
+                          _updateFutureBuilderKey();
+                        });
+                      }
+                    },
+                    onToggleFocusMode: () {
+                      if (mounted) {
+                        setState(
+                            () => _isFocusModeActive = !_isFocusModeActive);
+                        _updateFutureBuilderKey();
+                      }
+                    },
+                    onToggleHebrewInterlinear: () {
+                      if (!_showHebrewInterlinear) {
+                        interstitialManager.tryShowInterstitial(
+                            fromScreen: "BiblePage_ToggleHebrewInterlinear");
+                      }
+                      setState(() {
+                        _showHebrewInterlinear = !_showHebrewInterlinear;
+                        if (_showHebrewInterlinear) {
+                          _showGreekInterlinear = false;
+                          _loadCurrentChapterHebrewDataIfNeeded();
+                        } else {
+                          _currentChapterHebrewData = null;
+                        }
+                        _updateFutureBuilderKey();
+                      });
+                    },
+                    onToggleGreekInterlinear: () {
+                      if (!_showGreekInterlinear) {
+                        interstitialManager.tryShowInterstitial(
+                            fromScreen: "BiblePage_ToggleGreekInterlinear");
+                      }
+                      setState(() {
+                        _showGreekInterlinear = !_showGreekInterlinear;
+                        if (_showGreekInterlinear) {
+                          _showHebrewInterlinear = false;
+                          _loadCurrentChapterGreekDataIfNeeded();
+                        } else {
+                          _currentChapterGreekData = null;
+                        }
+                        _updateFutureBuilderKey();
+                      });
+                    },
+                    onIncreaseFontSize: _increaseFontSize,
+                    onDecreaseFontSize: _decreaseFontSize,
+                  ),
+                // >>> FIM DA MODIFICAÇÃO <<<
+
+                Expanded(
+                  child: (_isSemanticSearchActive && !_isFocusModeActive)
+                      // Se a busca semântica está ativa, mostra a UI de busca
+                      ? BibleSemanticSearchView(
+                          onToggleItemExpansion:
+                              _toggleItemExpansionInBiblePage,
+                          onNavigateToVerse: _navigateToVerseFromSearch,
+                          expandedItemId: _expandedItemId,
+                          isLoadingExpandedContent: _isLoadingExpandedContent,
+                          loadedExpandedContent: _loadedExpandedContent,
+                          fontSizeMultiplier: _currentFontSizeMultiplier,
+                        )
+                      // Senão, mostra a UI de leitura da Bíblia
+                      : (selectedBook != null &&
+                              selectedChapter != null &&
+                              _selectedBookSlug != null)
+                          ? FutureBuilder<Map<String, dynamic>>(
+                              key: _futureBuilderKey,
+                              future: BiblePageHelper.loadChapterDataComparison(
+                                  selectedBook!,
+                                  selectedChapter!,
+                                  selectedTranslation1,
+                                  _isCompareModeActive
+                                      ? selectedTranslation2
+                                      : null),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return Center(
+                                      child: CircularProgressIndicator(
+                                          color: theme.colorScheme.primary));
+                                }
+
+                                if (snapshot.hasError) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: SingleChildScrollView(
+                                        child: Text(
+                                          'ERRO AO CARREGAR CAPÍTULO $selectedBook $selectedChapter:\n${snapshot.error}\n\n${snapshot.stackTrace}',
+                                          style: TextStyle(
+                                              color: theme.colorScheme.error,
+                                              fontSize: 14),
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                if (!snapshot.hasData ||
+                                    snapshot.data == null ||
+                                    snapshot.data!.isEmpty) {
+                                  return Center(
+                                    child: Text(
+                                      'Nenhum dado bíblico encontrado para $selectedBook $selectedChapter.',
+                                      style: TextStyle(
+                                          color:
+                                              theme.textTheme.bodyMedium?.color,
+                                          fontSize: 16),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  );
+                                }
+
+                                final chapterData = snapshot.data!;
+                                final List<Map<String, dynamic>> sections =
+                                    List<Map<String, dynamic>>.from(
+                                        chapterData['sectionStructure'] ?? []);
+                                final Map<String, dynamic> verseDataMap =
+                                    Map<String, dynamic>.from(
+                                        chapterData['verseData'] ?? {});
+
+                                final dynamic primaryTranslationVerseData =
+                                    verseDataMap[selectedTranslation1];
+
+                                bool primaryDataMissing =
+                                    (primaryTranslationVerseData == null ||
+                                        (primaryTranslationVerseData is List &&
+                                            primaryTranslationVerseData
+                                                .isEmpty));
+
+                                if (primaryDataMissing) {
+                                  return Center(
+                                      child: Text(
+                                    'Conteúdo do capítulo não encontrado para a tradução $selectedTranslation1.',
+                                    style: TextStyle(
+                                        color:
+                                            theme.textTheme.bodyMedium?.color,
+                                        fontSize: 16),
+                                    textAlign: TextAlign.center,
+                                  ));
+                                }
+
+                                // Usando DelayedLoading para evitar um "salto" na UI
+                                return DelayedLoading(
+                                  loading: false,
+                                  delay: const Duration(milliseconds: 50),
+                                  loadingIndicator: Center(
+                                      child: CircularProgressIndicator(
+                                          color: theme.colorScheme.primary)),
+                                  child: () {
+                                    dynamic hebrewDataForInterlinearView;
+                                    if (_showHebrewInterlinear &&
+                                        _currentChapterHebrewData != null &&
+                                        _currentChapterHebrewData!['book'] ==
+                                            selectedBook &&
+                                        _currentChapterHebrewData!['chapter'] ==
+                                            selectedChapter) {
+                                      hebrewDataForInterlinearView =
+                                          _currentChapterHebrewData!['data'];
+                                    }
+
+                                    dynamic greekDataForInterlinearView;
+                                    if (_showGreekInterlinear &&
+                                        _currentChapterGreekData != null &&
+                                        _currentChapterGreekData!['book'] ==
+                                            selectedBook &&
+                                        _currentChapterGreekData!['chapter'] ==
+                                            selectedChapter) {
+                                      greekDataForInterlinearView =
+                                          _currentChapterGreekData!['data'];
+                                    }
+
+                                    if (!_isCompareModeActive) {
+                                      return _buildSingleViewContent(
+                                        theme,
+                                        sections,
+                                        primaryTranslationVerseData,
+                                        selectedTranslation1 ==
+                                            'hebrew_original',
+                                        selectedTranslation1 ==
+                                            'greek_interlinear',
+                                        hebrewDataForInterlinearView,
+                                        greekDataForInterlinearView,
+                                        _currentFontSizeMultiplier,
+                                      );
+                                    } else {
+                                      final dynamic
+                                          comparisonTranslationVerseData =
+                                          (_isCompareModeActive &&
+                                                  selectedTranslation2 != null)
+                                              ? verseDataMap[
+                                                  selectedTranslation2!]
+                                              : null;
+                                      if (comparisonTranslationVerseData ==
+                                              null ||
+                                          (comparisonTranslationVerseData
+                                                      is List &&
+                                                  comparisonTranslationVerseData
+                                                      .isEmpty) &&
+                                              selectedTranslation2 != null) {
+                                        return Center(
+                                            child: Text(
+                                          'Tradução de comparação "$selectedTranslation2" não encontrada para este capítulo.',
+                                          style: TextStyle(
+                                              color: theme.colorScheme.error,
+                                              fontSize: 16),
+                                          textAlign: TextAlign.center,
+                                        ));
+                                      }
+                                      return Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                              child: _buildComparisonColumn(
+                                                  context,
+                                                  sections,
+                                                  primaryTranslationVerseData
+                                                      as List,
+                                                  _scrollController1,
+                                                  selectedTranslation1,
+                                                  isHebrew:
+                                                      selectedTranslation1 ==
+                                                          'hebrew_original',
+                                                  isGreek:
+                                                      selectedTranslation1 ==
+                                                          'greek_interlinear',
+                                                  fontSizeMultiplier:
+                                                      _currentFontSizeMultiplier,
+                                                  listViewKey: PageStorageKey<
+                                                          String>(
+                                                      '$selectedBook-$selectedChapter-$selectedTranslation1-compareView'))),
+                                          VerticalDivider(
+                                              width: 1,
+                                              color: theme.dividerColor
+                                                  .withOpacity(0.5),
+                                              thickness: 0.5),
+                                          Expanded(
+                                              child: _buildComparisonColumn(
+                                                  context,
+                                                  sections,
+                                                  (comparisonTranslationVerseData
+                                                          as List?) ??
+                                                      [],
+                                                  _scrollController2,
+                                                  selectedTranslation2!,
+                                                  isHebrew:
+                                                      selectedTranslation2 ==
+                                                          'hebrew_original',
+                                                  isGreek:
+                                                      selectedTranslation2 ==
+                                                          'greek_interlinear',
+                                                  fontSizeMultiplier:
+                                                      _currentFontSizeMultiplier,
+                                                  listViewKey: PageStorageKey<
+                                                          String>(
+                                                      '$selectedBook-$selectedChapter-$selectedTranslation2-compareView'))),
+                                        ],
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            )
+                          : const SizedBox.shrink(),
+                ),
+                // >>> INÍCIO DA MODIFICAÇÃO: Uso do novo widget <<<
+                Visibility(
+                  visible: !_isFocusModeActive &&
+                      !_isSemanticSearchActive &&
+                      !_showExtraOptions,
+                  child: BibleNavigationControls(
+                    selectedBook: selectedBook,
+                    selectedChapter: selectedChapter,
+                    booksMap: booksMap,
+                    onPreviousChapter: _previousChapter,
+                    onNextChapter: _nextChapter,
+                    onBookChanged: (value) {
+                      if (mounted && value != null)
+                        _navigateToChapter(value, 1);
+                    },
+                    onChapterChanged: (value) {
+                      if (mounted && value != null && selectedBook != null) {
+                        _navigateToChapter(selectedBook!, value);
+                      }
+                    },
+                  ),
+                ),
+                // >>> FIM DA MODIFICAÇÃO <<<
+              ],
+            ),
+          ),
+        );
       },
     );
   }
