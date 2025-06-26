@@ -1,6 +1,9 @@
 // lib/pages/library_page.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
+// >>> INÍCIO DA MODIFICAÇÃO 1/2: Importar a nova página <<<
+import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
+// >>> FIM DA MODIFICAÇÃO 1/2 <<<
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
 // Importe suas páginas de destino
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
@@ -173,6 +176,27 @@ class _LibraryPageState extends State<LibraryPage> {
             });
           },
         },
+        // >>> INÍCIO DA MODIFICAÇÃO 2/2: Adicionar novo item <<<
+        {
+          'title': "História da Igreja",
+          'description': "",
+          'icon': Icons.history_edu_outlined,
+          'coverImagePath': 'assets/covers/historia_igreja.webp',
+          'onTap': () {
+            interstitialManager
+                .tryShowInterstitial(fromScreen: "LibraryPage_To_ChurchHistory")
+                .then((_) {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const ChurchHistoryIndexPage()),
+                );
+              }
+            });
+          },
+        },
+        // >>> FIM DA MODIFICAÇÃO 2/2 <<<
         {
           'title': "Estudos Bíblicos Rápidos",
           'description': "",
@@ -228,54 +252,6 @@ class _LibraryPageState extends State<LibraryPage> {
             });
           },
         },
-        // {
-        //   'title': "Cursos (Em Breve)",
-        //   'description':
-        //       "Cursos estruturados sobre teologia, vida cristã e mais.",
-        //   'icon': Icons.school_outlined,
-        //   'coverImagePath': null, // 'assets/covers/courses_cover.webp'
-        //   'onTap': () {
-        //     ScaffoldMessenger.of(context).showSnackBar(
-        //       const SnackBar(content: Text('Cursos (Em breve!)')),
-        //     );
-        //   },
-        // },
-        // {
-        //   'title': "Biografias (Em Breve)",
-        //   'description':
-        //       "Conheça a vida de grandes homens e mulheres de fé que marcaram a história.",
-        //   'icon': Icons.person_search_outlined,
-        //   'coverImagePath': null, // 'assets/covers/biographies_cover.webp'
-        //   'onTap': () {
-        //     ScaffoldMessenger.of(context).showSnackBar(
-        //       const SnackBar(content: Text('Biografias (Em breve!)')),
-        //     );
-        //   },
-        // },
-        // {
-        //   'title': "Recursos Adicionais",
-        //   'description':
-        //       "Ferramentas, dicionários e outros materiais para auxiliar seu estudo.",
-        //   'icon': Icons.extension_outlined,
-        //   'coverImagePath': null,
-        //   'onTap': () {
-        //     ScaffoldMessenger.of(context).showSnackBar(
-        //       const SnackBar(content: Text('Recursos Adicionais (Em breve!)')),
-        //     );
-        //   },
-        // },
-        // {
-        //   'title': "Mapas Bíblicos (Em Breve)",
-        //   'description':
-        //       "Explore os locais da Bíblia com mapas interativos e informações.",
-        //   'icon': Icons.map_outlined,
-        //   'coverImagePath': null,
-        //   'onTap': () {
-        //     ScaffoldMessenger.of(context).showSnackBar(
-        //       const SnackBar(content: Text('Mapas Bíblicos (Em breve!)')),
-        //     );
-        //   },
-        // },
       ];
 
   @override
@@ -288,9 +264,7 @@ class _LibraryPageState extends State<LibraryPage> {
         crossAxisSpacing: 16.0, // Espaçamento horizontal entre os cards
         mainAxisSpacing: 16.0, // Espaçamento vertical entre os cards
         childAspectRatio:
-            0.7, // Proporção largura/altura dos cards (ajuste fino aqui)
-        // Valores comuns: 1.0 (quadrado), 2/3 (retrato), 3/2 (paisagem)
-        // Para imagem de fundo e texto, um valor menor que 1 (ex: 0.7 a 0.9) pode ficar bom.
+            2 / 3, // Proporção largura/altura definida para 2/3 (retrato)
         children: libraryItems.map((itemData) {
           return ResourceCard(
             title: itemData['title'] as String,
