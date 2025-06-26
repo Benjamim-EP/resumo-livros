@@ -99,7 +99,7 @@ class ResourceCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: theme.textTheme.titleSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         shadows: [
@@ -159,7 +159,7 @@ class _LibraryPageState extends State<LibraryPage> {
   List<Map<String, dynamic>> get libraryItems => [
         {
           'title': "Sermões de C.H. Spurgeon",
-          'description': "3000+ de Sermôes",
+          'description': "",
           'icon': Icons.campaign_outlined,
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'onTap': () {
