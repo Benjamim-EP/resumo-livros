@@ -3,6 +3,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
+import 'package:septima_biblia/models/highlight_item_model.dart';
+import 'package:septima_biblia/pages/user_page/highlight_item_card.dart';
 import 'package:septima_biblia/pages/user_page/user_diary_page.dart';
 import '../components/avatar/profile_picture.dart';
 import '../components/user/user_info.dart';
@@ -18,6 +20,7 @@ import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart'; // Para BibleBookProgressData
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:septima_biblia/consts/bible_constants.dart'; // Para CANONICAL_BOOK_ORDER
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum HighlightType { verses, comments }
 
@@ -32,7 +35,6 @@ class _UserPageState extends State<UserPage> {
   Map<String, dynamic>? _localBooksMap;
   bool _isLoadingBooksMap = true;
   String _selectedTab = 'Progresso';
-  HighlightType _selectedHighlightType = HighlightType.verses;
   bool _showAllBookProgress =
       false; // NOVO: Para controlar a expansão da lista de progresso por livro
 
@@ -41,6 +43,8 @@ class _UserPageState extends State<UserPage> {
   final TextEditingController _tagSearchController = TextEditingController();
   String _tagSearchQuery = '';
   Timer? _debounce;
+
+  HighlightType? _selectedHighlightType = null;
 
   final List<String> _availableTabs = const [
     'Progresso',
@@ -715,22 +719,27 @@ class _UserPageState extends State<UserPage> {
       case 'Destaques':
         return Column(
           children: [
+            // Botões de filtro: Todos, Versículos, Comentários
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: SegmentedButton<HighlightType>(
-                segments: const <ButtonSegment<HighlightType>>[
-                  ButtonSegment<HighlightType>(
-                      value: HighlightType.verses,
+              child: SegmentedButton<HighlightType?>(
+                segments: const <ButtonSegment<HighlightType?>>[
+                  ButtonSegment<HighlightType?>(
+                      value: null, // null representa "Todos"
+                      label: Text('Todos'),
+                      icon: Icon(Icons.list_alt_rounded)),
+                  ButtonSegment<HighlightType?>(
+                      value: HighlightType.verses, // Corrigido para o plural
                       label: Text('Versículos'),
                       icon: Icon(Icons.menu_book)),
-                  ButtonSegment<HighlightType>(
-                      value: HighlightType.comments,
+                  ButtonSegment<HighlightType?>(
+                      value: HighlightType.comments, // Corrigido para o plural
                       label: Text('Comentários'),
                       icon: Icon(Icons.comment_bank_outlined)),
                 ],
-                selected: <HighlightType>{_selectedHighlightType},
-                onSelectionChanged: (Set<HighlightType> newSelection) {
+                selected: <HighlightType?>{_selectedHighlightType},
+                onSelectionChanged: (Set<HighlightType?> newSelection) {
                   if (mounted) {
                     setState(() => _selectedHighlightType = newSelection.first);
                   }
@@ -743,6 +752,8 @@ class _UserPageState extends State<UserPage> {
                 ),
               ),
             ),
+
+            // Barra de pesquisa por tags
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 12.0),
               child: TextField(
@@ -774,202 +785,61 @@ class _UserPageState extends State<UserPage> {
                 ),
               ),
             ),
+
+            // Lista de destaques filtrada
             Expanded(
               child: StoreConnector<AppState, _HighlightsViewModel>(
                 converter: (store) => _HighlightsViewModel.fromStore(store),
-                builder: (context, highlightsVm) {
-                  // --- LÓGICA DE FILTRAGEM PARA VERSÍCULOS ---
-                  if (_selectedHighlightType == HighlightType.verses) {
-                    final allHighlights =
-                        highlightsVm.userVerseHighlights.entries.toList();
+                builder: (context, vm) {
+                  // Lógica de filtragem unificada
+                  List<HighlightItem> displayedHighlights = vm.allHighlights;
 
-                    final List<MapEntry<String, Map<String, dynamic>>>
-                        displayedHighlights;
-
-                    if (_tagSearchQuery.isEmpty) {
-                      displayedHighlights = allHighlights;
-                    } else {
-                      final query = _tagSearchQuery.toLowerCase();
-                      displayedHighlights = allHighlights.where((entry) {
-                        final List<String> tags =
-                            List<String>.from(entry.value['tags'] ?? []);
-                        return tags
-                            .any((tag) => tag.toLowerCase().contains(query));
-                      }).toList();
-                    }
-
-                    if (displayedHighlights.isEmpty) {
-                      return Center(
-                          child: Text(_tagSearchQuery.isEmpty
-                              ? "Nenhum versículo destacado ainda."
-                              : "Nenhum destaque encontrado para a tag '$_tagSearchQuery'."));
-                    }
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
-                      itemCount: displayedHighlights.length,
-                      itemBuilder: (context, index) {
-                        final entry = displayedHighlights[index];
-                        final verseId = entry.key;
-                        final highlightData = entry.value;
-                        final String? colorHex =
-                            highlightData['color'] as String?;
-                        final List<String> tags =
-                            List<String>.from(highlightData['tags'] ?? []);
-
-                        if (colorHex == null) return const SizedBox.shrink();
-
-                        final colorForIndicator = Color(
-                            int.parse(colorHex.replaceFirst('#', '0xff')));
-
-                        final parts = verseId.split('_');
-                        String referenceText = verseId;
-                        if (parts.length == 3 &&
-                            _localBooksMap != null &&
-                            _localBooksMap!.containsKey(parts[0])) {
-                          final bookData = _localBooksMap![parts[0]];
-                          referenceText =
-                              "${bookData?['nome'] ?? parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
-                        } else if (parts.length == 3) {
-                          referenceText =
-                              "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
-                        }
-
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4.0),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 10.0),
-                            leading: Container(
-                                width: 10,
-                                height: double.infinity,
-                                decoration: BoxDecoration(
-                                    color: colorForIndicator,
-                                    borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(10),
-                                        bottomLeft: Radius.circular(10)))),
-                            title: Text(referenceText,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 15)),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                FutureBuilder<String>(
-                                  future: BiblePageHelper.loadSingleVerseText(
-                                      verseId, 'nvi'),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting)
-                                      return Text("Carregando...",
-                                          style: TextStyle(
-                                              color: theme
-                                                  .textTheme.bodySmall?.color,
-                                              fontSize: 12));
-                                    if (snapshot.hasError ||
-                                        !snapshot.hasData ||
-                                        snapshot.data!.isEmpty)
-                                      return Text("Texto indisponível",
-                                          style: TextStyle(
-                                              color: theme.colorScheme.error
-                                                  .withOpacity(0.7),
-                                              fontSize: 12));
-                                    return Padding(
-                                        padding:
-                                            const EdgeInsets.only(top: 4.0),
-                                        child: Text(snapshot.data!,
-                                            style: TextStyle(
-                                                color: theme.textTheme
-                                                    .bodyMedium?.color,
-                                                fontSize: 13.5,
-                                                height: 1.4),
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis));
-                                  },
-                                ),
-                                if (tags.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 4.0,
-                                    runSpacing: 4.0,
-                                    children: tags
-                                        .map((tag) => Chip(
-                                              label: Text(tag,
-                                                  style: const TextStyle(
-                                                      fontSize: 10)),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 4,
-                                                      vertical: 0),
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                            ))
-                                        .toList(),
-                                  )
-                                ]
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: Icon(Icons.delete_outline,
-                                  color:
-                                      theme.colorScheme.error.withOpacity(0.7),
-                                  size: 22),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              tooltip: "Remover Destaque",
-                              onPressed: () {
-                                if (mounted) {
-                                  StoreProvider.of<AppState>(context,
-                                          listen: false)
-                                      .dispatch(ToggleHighlightAction(verseId));
-                                }
-                              },
-                            ),
-                            onTap: () => _navigateToBibleVerseAndTab(verseId),
-                          ),
-                        );
-                      },
-                    );
+                  // 1. Filtra por tipo (versículo/comentário/todos)
+                  if (_selectedHighlightType != null) {
+                    displayedHighlights = displayedHighlights
+                        .where((item) => item.type == _selectedHighlightType)
+                        .toList();
                   }
-                  // --- LÓGICA DE FILTRAGEM PARA COMENTÁRIOS ---
-                  else {
-                    final allHighlights = highlightsVm.userCommentHighlights;
 
-                    final List<Map<String, dynamic>> displayedHighlights;
-
-                    if (_tagSearchQuery.isEmpty) {
-                      displayedHighlights = allHighlights;
-                    } else {
-                      final query = _tagSearchQuery.toLowerCase();
-                      displayedHighlights = allHighlights.where((highlight) {
-                        final List<String> tags =
-                            List<String>.from(highlight['tags'] ?? []);
-                        return tags
-                            .any((tag) => tag.toLowerCase().contains(query));
-                      }).toList();
-                    }
-
-                    if (displayedHighlights.isEmpty) {
-                      return Center(
-                          child: Text(_tagSearchQuery.isEmpty
-                              ? "Nenhum comentário marcado ainda."
-                              : "Nenhum destaque encontrado para a tag '$_tagSearchQuery'."));
-                    }
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
-                      itemCount: displayedHighlights.length,
-                      itemBuilder: (context, index) =>
-                          _buildCommentHighlightCard(
-                              displayedHighlights[index], context, theme),
-                    );
+                  // 2. Filtra por tag
+                  if (_tagSearchQuery.isNotEmpty) {
+                    final query = _tagSearchQuery.toLowerCase();
+                    displayedHighlights = displayedHighlights.where((item) {
+                      return item.tags
+                          .any((tag) => tag.toLowerCase().contains(query));
+                    }).toList();
                   }
+
+                  // Mensagem de "Nenhum item"
+                  if (displayedHighlights.isEmpty) {
+                    return Center(
+                        child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Text(
+                        _tagSearchQuery.isEmpty
+                            ? "Nenhum destaque encontrado."
+                            : "Nenhum destaque com a tag '$_tagSearchQuery' encontrado.",
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.textTheme.bodyMedium?.color
+                                ?.withOpacity(0.7)),
+                      ),
+                    ));
+                  }
+
+                  // Constrói a lista com o novo card unificado
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    itemCount: displayedHighlights.length,
+                    itemBuilder: (context, index) {
+                      final item = displayedHighlights[index];
+                      return HighlightItemCard(
+                        item: item,
+                        onNavigateToVerse: _navigateToBibleVerseAndTab,
+                      );
+                    },
+                  );
                 },
               ),
             ),
@@ -1500,33 +1370,74 @@ class _UserPageViewModel {
 }
 
 class _HighlightsViewModel {
-  // O tipo de userVerseHighlights foi atualizado para corresponder ao UserState
-  final Map<String, Map<String, dynamic>> userVerseHighlights;
-  final List<Map<String, dynamic>> userCommentHighlights;
+  // A ViewModel agora expõe uma única lista de itens unificados
+  final List<HighlightItem> allHighlights;
+  final bool isLoading;
 
-  _HighlightsViewModel({
-    required this.userVerseHighlights,
-    required this.userCommentHighlights,
-  });
+  _HighlightsViewModel({required this.allHighlights, required this.isLoading});
 
   static _HighlightsViewModel fromStore(Store<AppState> store) {
+    List<HighlightItem> combinedList = [];
+
+    // 1. Processa os destaques de versículos
+    store.state.userState.userHighlights.forEach((verseId, highlightData) {
+      // Constrói a referência de forma segura
+      final parts = verseId.split('_');
+      String referenceText = verseId;
+      if (parts.length == 3) {
+        // Supondo que você tenha uma forma de obter o nome completo do livro
+        // Se não, podemos buscar isso no futuro ou usar a abreviação
+        referenceText = "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+      }
+
+      combinedList.add(
+        HighlightItem(
+          id: verseId,
+          type: HighlightItemType.verse,
+          referenceText: referenceText,
+          // O preview do conteúdo será carregado de forma assíncrona na UI
+          contentPreview: "Carregando texto do versículo...",
+          tags: List<String>.from(highlightData['tags'] ?? []),
+          colorHex: highlightData['color'] as String?,
+          originalData: {'verseId': verseId}, // Guarda o ID para navegação
+        ),
+      );
+    });
+
+    // 2. Processa os destaques de comentários
+    store.state.userState.userCommentHighlights.forEach((commentData) {
+      combinedList.add(
+        HighlightItem(
+          id: commentData['id'] as String? ?? '',
+          type: HighlightItemType.comment,
+          referenceText:
+              commentData['verseReferenceText'] ?? 'Referência desconhecida',
+          contentPreview:
+              commentData['selectedSnippet'] ?? 'Trecho indisponível',
+          tags: List<String>.from(commentData['tags'] ?? []),
+          colorHex:
+              commentData['color'] as String?, // Usamos a cor fixa que salvamos
+          originalData: commentData, // Guarda o mapa inteiro para ações
+        ),
+      );
+    });
+
+    // 3. Ordena a lista combinada pela data (se disponível), mais recentes primeiro
+    // Assumimos que ambos os tipos de destaque têm um campo 'timestamp'
+    combinedList.sort((a, b) {
+      final timestampA = a.originalData['timestamp'] as Timestamp?;
+      final timestampB = b.originalData['timestamp'] as Timestamp?;
+      if (timestampA == null && timestampB == null) return 0;
+      if (timestampA == null) return 1;
+      if (timestampB == null) return -1;
+      return timestampB.compareTo(timestampA); // Mais recente primeiro
+    });
+
     return _HighlightsViewModel(
-      userVerseHighlights: store.state.userState.userHighlights,
-      userCommentHighlights: store.state.userState.userCommentHighlights,
+      allHighlights: combinedList,
+      isLoading: false, // Adicionar um estado de loading se necessário
     );
   }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _HighlightsViewModel &&
-          runtimeType == other.runtimeType &&
-          mapEquals(userVerseHighlights, other.userVerseHighlights) &&
-          listEquals(userCommentHighlights, other.userCommentHighlights);
-
-  @override
-  int get hashCode =>
-      userVerseHighlights.hashCode ^ userCommentHighlights.hashCode;
 }
 
 class _UserProgressViewModel {
