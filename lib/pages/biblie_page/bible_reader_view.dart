@@ -6,12 +6,12 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
-import 'package:flutter/foundation.dart'; // Para mapEquals e setEquals
+import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
 
-// ViewModel para o conteúdo, vivendo agora junto com seu widget.
 class _BibleContentViewModel {
-  final Map<String, String> userHighlights;
+  // >>> TIPO CORRIGIDO AQUI <<<
+  final Map<String, Map<String, dynamic>> userHighlights;
   final Map<String, String> userNotes;
   final Set<String> readSectionsForCurrentBook;
 
@@ -252,12 +252,10 @@ class _BibleReaderViewState extends State<BibleReaderView> {
               right: 16.0,
               bottom: 16.0,
               top: widget.isFocusMode ? 8.0 : 0.0),
-          // Se não houver seções, renderiza versículo por versículo
           itemCount: sections.isNotEmpty
               ? sections.length
               : (primaryTranslationVerseData as List?)?.length ?? 0,
           itemBuilder: (context, index) {
-            // Se houver seções, renderiza um SectionItemWidget
             if (sections.isNotEmpty) {
               final section = sections[index];
               final List<int> verseNumbersInSection =
@@ -269,8 +267,6 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                       : "${verseNumbersInSection.first}-${verseNumbersInSection.last}")
                   : "all_verses_in_section_${index}";
 
-              // >>> INÍCIO DA CORREÇÃO <<<
-              // Filtra os dados interlineares para corresponder apenas aos versículos desta seção.
               List<List<Map<String, String>>>? hebrewDataForThisSection;
               if (widget.showHebrewInterlinear &&
                   !(widget.selectedTranslation1 == 'hebrew_original') &&
@@ -302,7 +298,6 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                       .toList();
                 }
               }
-              // >>> FIM DA CORREÇÃO <<<
 
               return SectionItemWidget(
                 sectionTitle: section['title'] ?? 'Seção Desconhecida',
@@ -323,19 +318,15 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                     !(widget.selectedTranslation1 == 'hebrew_original'),
                 showGreekInterlinear: widget.showGreekInterlinear &&
                     !(widget.selectedTranslation1 == 'greek_interlinear'),
-                hebrewInterlinearSectionData:
-                    hebrewDataForThisSection, // Passa a lista filtrada
-                greekInterlinearSectionData:
-                    greekDataForThisSection, // Passa a lista filtrada
+                hebrewInterlinearSectionData: hebrewDataForThisSection,
+                greekInterlinearSectionData: greekDataForThisSection,
                 fontSizeMultiplier: widget.fontSizeMultiplier,
                 onPlayRequest: widget.onPlayRequest,
                 currentPlayerState: widget.currentPlayerState,
                 currentlyPlayingSectionId: widget.currentlyPlayingSectionId,
                 currentlyPlayingContentType: widget.currentlyPlayingContentType,
               );
-            }
-            // Se não houver seções, renderiza versículo por versículo (lógica de fallback)
-            else {
+            } else {
               final verseNumber = index + 1;
               return BiblePageWidgets.buildVerseItem(
                 key: ValueKey(
@@ -351,10 +342,8 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 isHebrew: widget.selectedTranslation1 == 'hebrew_original',
                 isGreekInterlinear:
                     widget.selectedTranslation1 == 'greek_interlinear',
-                showHebrewInterlinear:
-                    false, // Não aplicável na visão verso a verso
-                showGreekInterlinear:
-                    false, // Não aplicável na visão verso a verso
+                showHebrewInterlinear: false,
+                showGreekInterlinear: false,
               );
             }
           },

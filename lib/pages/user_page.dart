@@ -733,9 +733,24 @@ class _UserPageState extends State<UserPage> {
                       itemBuilder: (context, index) {
                         final entry = highlightList[index];
                         final verseId = entry.key;
-                        final colorHex = entry.value;
+
+                        // >>> INÍCIO DA CORREÇÃO <<<
+                        // O valor (entry.value) agora é um mapa.
+                        final highlightData = entry.value;
+                        final String? colorHex =
+                            highlightData['color'] as String?;
+                        final List<String> tags =
+                            List<String>.from(highlightData['tags'] ?? []);
+
+                        // Se não houver cor por algum motivo, não renderiza o card.
+                        if (colorHex == null) {
+                          return const SizedBox.shrink();
+                        }
+
                         final colorForIndicator = Color(
                             int.parse(colorHex.replaceFirst('#', '0xff')));
+                        // >>> FIM DA CORREÇÃO <<<
+
                         final parts = verseId.split('_');
                         String referenceText = verseId;
                         if (parts.length == 3 &&
@@ -748,6 +763,7 @@ class _UserPageState extends State<UserPage> {
                           referenceText =
                               "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
                         }
+
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 4.0),
                           shape: RoundedRectangleBorder(
@@ -766,39 +782,68 @@ class _UserPageState extends State<UserPage> {
                             title: Text(referenceText,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 15)),
-                            subtitle: FutureBuilder<String>(
-                              future: BiblePageHelper.loadSingleVerseText(
-                                  verseId, 'nvi'),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return Text("Carregando texto...",
-                                      style: TextStyle(
-                                          color:
-                                              theme.textTheme.bodySmall?.color,
-                                          fontSize: 12));
-                                }
-                                if (snapshot.hasError ||
-                                    !snapshot.hasData ||
-                                    snapshot.data!.isEmpty) {
-                                  return Text("Texto indisponível",
-                                      style: TextStyle(
-                                          color: theme.colorScheme.error
-                                              .withOpacity(0.7),
-                                          fontSize: 12));
-                                }
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(snapshot.data!,
-                                      style: TextStyle(
-                                          color:
-                                              theme.textTheme.bodyMedium?.color,
-                                          fontSize: 13.5,
-                                          height: 1.4),
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis),
-                                );
-                              },
+                            subtitle: Column(
+                              // Envolve em uma coluna para adicionar as tags
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                FutureBuilder<String>(
+                                  future: BiblePageHelper.loadSingleVerseText(
+                                      verseId, 'nvi'),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return Text("Carregando texto...",
+                                          style: TextStyle(
+                                              color: theme
+                                                  .textTheme.bodySmall?.color,
+                                              fontSize: 12));
+                                    }
+                                    if (snapshot.hasError ||
+                                        !snapshot.hasData ||
+                                        snapshot.data!.isEmpty) {
+                                      return Text("Texto indisponível",
+                                          style: TextStyle(
+                                              color: theme.colorScheme.error
+                                                  .withOpacity(0.7),
+                                              fontSize: 12));
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(snapshot.data!,
+                                          style: TextStyle(
+                                              color: theme
+                                                  .textTheme.bodyMedium?.color,
+                                              fontSize: 13.5,
+                                              height: 1.4),
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis),
+                                    );
+                                  },
+                                ),
+                                if (tags.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 4.0,
+                                    runSpacing: 4.0,
+                                    children: tags
+                                        .map((tag) => Chip(
+                                              label: Text(tag,
+                                                  style: const TextStyle(
+                                                      fontSize: 10)),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 4,
+                                                      vertical: 0),
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                            ))
+                                        .toList(),
+                                  )
+                                ]
+                              ],
                             ),
                             trailing: IconButton(
                               icon: Icon(Icons.delete_outline,
@@ -1369,7 +1414,8 @@ class _UserPageViewModel {
 }
 
 class _HighlightsViewModel {
-  final Map<String, String> userVerseHighlights;
+  // O tipo de userVerseHighlights foi atualizado para corresponder ao UserState
+  final Map<String, Map<String, dynamic>> userVerseHighlights;
   final List<Map<String, dynamic>> userCommentHighlights;
 
   _HighlightsViewModel({

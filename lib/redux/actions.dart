@@ -437,15 +437,38 @@ class SendMessageFailureAction {
 class LoadUserHighlightsAction {}
 
 class UserHighlightsLoadedAction {
-  final Map<String, String> highlights;
+  final Map<String, Map<String, dynamic>> highlights; // <<< TIPO ATUALIZADO
   UserHighlightsLoadedAction(this.highlights);
 }
 
 class ToggleHighlightAction {
-  // Uma única ação para adicionar/remover/mudar cor
   final String verseId;
-  final String? colorHex; // null para remover, cor para adicionar/mudar
-  ToggleHighlightAction(this.verseId, {this.colorHex});
+  final String? colorHex;
+  // >>> NOVO PARÂMETRO <<<
+  final List<String>? tags;
+
+  ToggleHighlightAction(this.verseId, {this.colorHex, this.tags});
+}
+
+// Disparada pela UI para carregar todas as tags do usuário
+class LoadUserTagsAction {}
+
+// Despachada pelo middleware após carregar as tags do Firestore
+class UserTagsLoadedAction {
+  final List<String> tags;
+  UserTagsLoadedAction(this.tags);
+}
+
+// Ação interna do middleware para garantir que uma tag exista no Firestore
+class EnsureUserTagExistsAction {
+  final String tagName;
+  EnsureUserTagExistsAction(this.tagName);
+}
+
+class AddCommentHighlightAction {
+  // Esta já recebe um Map, então só precisamos garantir que o Map contenha o campo 'tags'
+  final Map<String, dynamic> commentHighlightData;
+  AddCommentHighlightAction(this.commentHighlightData);
 }
 
 // Note Actions
@@ -505,11 +528,6 @@ class LoadUserCommentHighlightsAction {}
 class UserCommentHighlightsLoadedAction {
   final List<Map<String, dynamic>> commentHighlights;
   UserCommentHighlightsLoadedAction(this.commentHighlights);
-}
-
-class AddCommentHighlightAction {
-  final Map<String, dynamic> commentHighlightData;
-  AddCommentHighlightAction(this.commentHighlightData);
 }
 
 class RemoveCommentHighlightAction {

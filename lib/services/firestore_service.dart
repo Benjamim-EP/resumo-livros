@@ -37,6 +37,66 @@ class FirestoreService {
     }
   }
 
+  Future<List<String>> loadUserTags(String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('userTags')
+          .orderBy('createdAt',
+              descending: true) // Opcional: ordenar pelas mais recentes
+          .get();
+
+      // O nome da tag está no ID do documento.
+      return snapshot.docs.map((doc) => doc.id).toList();
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao carregar as tags do usuário $userId: $e");
+      return []; // Retorna lista vazia em caso de erro.
+    }
+  }
+
+  /// Garante que uma tag exista na coleção de tags do usuário.
+  /// Se não existir, cria. Se existir, pode (opcionalmente) incrementar um contador.
+  Future<void> ensureUserTagExists(String userId, String tagName) async {
+    if (tagName.trim().isEmpty) return;
+
+    // Normaliza o nome da tag para ser usado como ID do documento (evita problemas com caracteres especiais)
+    final String tagId = tagName.toLowerCase().replaceAll(RegExp(r'\s+'), '-');
+
+    final tagDocRef =
+        _db.collection('users').doc(userId).collection('userTags').doc(tagId);
+
+    try {
+      // Usamos uma transação para garantir a atomicidade da operação (verificar e escrever)
+      await _db.runTransaction((transaction) async {
+        final docSnapshot = await transaction.get(tagDocRef);
+
+        if (!docSnapshot.exists) {
+          // Se a tag não existe, cria o documento
+          transaction.set(tagDocRef, {
+            'name': tagName, // Salva o nome original para exibição
+            'createdAt': FieldValue.serverTimestamp(),
+            'count': 1,
+          });
+          print(
+              "FirestoreService: Tag '$tagName' criada para o usuário $userId.");
+        } else {
+          // Se a tag já existe, incrementa o contador
+          transaction.update(tagDocRef, {
+            'count': FieldValue.increment(1),
+          });
+          print(
+              "FirestoreService: Contador da tag '$tagName' incrementado para o usuário $userId.");
+        }
+      });
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao garantir a existência da tag '$tagName' para $userId: $e");
+      rethrow;
+    }
+  }
+
   Future<void> updateUserCoinsAndAdStats(
     String userId,
     int newCoinAmount,
@@ -103,14 +163,12 @@ class FirestoreService {
   Future<DocumentReference> addCommentHighlight(
       String userId, Map<String, dynamic> highlightData) async {
     try {
-      final dataWithTimestamp = {
+      final dataWithTimestampAndTags = {
         ...highlightData,
+        'tags': highlightData['tags'] ?? [], // Garante que o campo exista
         'timestamp': highlightData['timestamp'] ?? FieldValue.serverTimestamp(),
       };
-      // Primeiro, garante que o documento pai /userCommentHighlights/{userId} exista.
-      // Se ele não for criado explicitamente, a primeira escrita na subcoleção pode ser problemática
-      // ou o documento pai pode não aparecer no console do Firestore até que tenha campos.
-      // Uma forma simples é fazer um set com merge: true no documento pai.
+
       await _db.collection('userCommentHighlights').doc(userId).set(
           {'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
 
@@ -118,9 +176,7 @@ class FirestoreService {
           .collection('userCommentHighlights')
           .doc(userId)
           .collection('highlights')
-          .add(dataWithTimestamp);
-      print(
-          "FirestoreService: Destaque de comentário adicionado com ID: ${docRef.id} para usuário $userId");
+          .add(dataWithTimestampAndTags);
       return docRef;
     } catch (e) {
       print(
@@ -779,11 +835,9 @@ class FirestoreService {
   // --- Highlight Methods ---
 
   /// Salva ou atualiza um destaque de versículo.
-  Future<void> saveHighlight(
-      String userId, String verseId, String colorHex) async {
+  Future<void> saveHighlight(String userId, String verseId, String colorHex,
+      {List<String>? tags}) async {
     try {
-      // verseId aqui é, por exemplo, "gn_1_1"
-      // Garante que o documento pai /userVerseHighlights/{userId} exista.
       await _db.collection('userVerseHighlights').doc(userId).set(
           {'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
 
@@ -791,14 +845,12 @@ class FirestoreService {
           .collection('userVerseHighlights')
           .doc(userId)
           .collection('highlights')
-          .doc(verseId) // Usa verseId como ID do documento do destaque
+          .doc(verseId)
           .set({
-        // 'verseId': verseId, // Não precisa repetir, já é o ID do doc
         'color': colorHex,
+        'tags': tags ?? [],
         'timestamp': FieldValue.serverTimestamp(),
       });
-      print(
-          "FirestoreService: Destaque de versículo $verseId salvo para $userId");
     } catch (e) {
       print(
           "FirestoreService: Erro ao salvar destaque $verseId para $userId: $e");
@@ -815,8 +867,6 @@ class FirestoreService {
           .collection('highlights')
           .doc(verseId)
           .delete();
-      print(
-          "FirestoreService: Destaque de versículo $verseId removido para $userId");
     } catch (e) {
       print(
           "FirestoreService: Erro ao remover destaque $verseId para $userId: $e");
@@ -824,17 +874,19 @@ class FirestoreService {
     }
   }
 
-  Future<Map<String, String>> loadUserHighlights(String userId) async {
+  Future<Map<String, Map<String, dynamic>>> loadUserHighlights(
+      String userId) async {
     try {
       final snapshot = await _db
           .collection('userVerseHighlights')
           .doc(userId)
           .collection('highlights')
           .get();
-      Map<String, String> highlights = {};
+
+      Map<String, Map<String, dynamic>> highlights = {};
       for (var doc in snapshot.docs) {
-        highlights[doc.id] =
-            doc.data()['color'] as String; // doc.id é o verseId
+        // Agora, pegamos todos os dados do documento, não apenas a cor.
+        highlights[doc.id] = doc.data();
       }
       return highlights;
     } catch (e) {

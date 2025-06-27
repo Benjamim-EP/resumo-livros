@@ -1,10 +1,11 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/pages/biblie_page/tag_editor_dialog.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/saveVerseDialog.dart';
-import 'package:septima_biblia/pages/biblie_page/highlight_color_picker_modal.dart';
 import 'package:septima_biblia/pages/biblie_page/note_editor_modal.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 
@@ -433,7 +434,9 @@ class BiblePageWidgets {
     required String? selectedBook,
     required int? selectedChapter,
     required BuildContext context,
-    required Map<String, String> userHighlights,
+    // >>> INÍCIO DA CORREÇÃO 1/3: Atualizar o tipo do parâmetro <<<
+    required Map<String, Map<String, dynamic>> userHighlights,
+    // >>> FIM DA CORREÇÃO 1/3 <<<
     required Map<String, String> userNotes,
     required double fontSizeMultiplier,
     bool isHebrew = false,
@@ -445,7 +448,14 @@ class BiblePageWidgets {
   }) {
     final theme = Theme.of(context);
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
-    final String? currentHighlightColorHex = userHighlights[verseId];
+
+    // >>> INÍCIO DA CORREÇÃO 2/3: Atualizar como os dados são lidos <<<
+    final Map<String, dynamic>? currentHighlightData =
+        userHighlights[verseId]; // Pega o mapa inteiro do destaque
+    final String? currentHighlightColorHex = currentHighlightData?['color']
+        as String?; // Pega a cor de dentro do mapa
+    // >>> FIM DA CORREÇÃO 2/3 <<<
+
     final bool hasNote = userNotes.containsKey(verseId);
     final backgroundColor = currentHighlightColorHex != null
         ? Color(int.parse(currentHighlightColorHex.replaceFirst('#', '0xff')))
@@ -577,13 +587,18 @@ class BiblePageWidgets {
       );
     }
 
+    // A lógica de obter os dados foi movida para o topo da função
+    // para estar disponível tanto para a decoração quanto para o `onLongPress`.
+
     return GestureDetector(
       key: key,
       onLongPress: () {
+        // >>> INÍCIO DA CORREÇÃO 3/3: A chamada aqui já está correta <<<
         _showVerseOptionsModal(
           context,
           verseId,
           currentHighlightColorHex,
+          currentHighlightData,
           userNotes[verseId],
           selectedBook!,
           selectedChapter!,
@@ -640,6 +655,7 @@ class BiblePageWidgets {
     BuildContext context,
     String verseId,
     String? currentHighlightColor,
+    Map<String, dynamic>? currentHighlightData,
     String? currentNote,
     String bookAbbrev,
     int chapter,
@@ -708,26 +724,37 @@ class BiblePageWidgets {
                                 : theme.iconTheme.color?.withOpacity(0.8)),
                         title: Text(
                             currentHighlightColor != null
-                                ? "Mudar/Remover Destaque"
+                                ? "Editar Destaque/Tags"
                                 : "Destacar Versículo",
                             style: TextStyle(
                                 color: theme.colorScheme.onSurface,
                                 fontSize: 15)),
-                        onTap: () {
+                        onTap: () async {
+                          // 1. Fecha o modal de opções
                           Navigator.pop(modalContext);
-                          showDialog(
-                            context: context,
-                            builder: (_) => HighlightColorPickerModal(
-                                initialColor: currentHighlightColor,
-                                onColorSelected: (selectedColor) {
-                                  store.dispatch(ToggleHighlightAction(verseId,
-                                      colorHex: selectedColor));
-                                },
-                                onRemoveHighlight: () {
-                                  store
-                                      .dispatch(ToggleHighlightAction(verseId));
-                                }),
+
+                          // 2. Chama o NOVO diálogo unificado
+                          final result = await showDialog<HighlightResult?>(
+                            context: context, // Usa o context da página
+                            builder: (_) => HighlightEditorDialog(
+                              initialColor: currentHighlightColor,
+                              initialTags: List<String>.from(
+                                  currentHighlightData?['tags'] ?? []),
+                            ),
                           );
+
+                          // 3. Processa o resultado do diálogo unificado
+                          if (result == null) return; // Usuário cancelou
+
+                          if (result.shouldRemove) {
+                            store.dispatch(ToggleHighlightAction(verseId));
+                          } else if (result.colorHex != null) {
+                            store.dispatch(ToggleHighlightAction(
+                              verseId,
+                              colorHex: result.colorHex,
+                              tags: result.tags,
+                            ));
+                          }
                         },
                       ),
                       ListTile(
@@ -767,8 +794,8 @@ class BiblePageWidgets {
                                   color: theme.colorScheme.error,
                                   fontSize: 15)),
                           onTap: () {
-                            store.dispatch(DeleteNoteAction(verseId));
                             Navigator.pop(modalContext);
+                            store.dispatch(DeleteNoteAction(verseId));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Nota removida.'),

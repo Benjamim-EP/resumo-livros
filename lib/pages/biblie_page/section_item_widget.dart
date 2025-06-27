@@ -17,7 +17,7 @@ class SectionItemWidget extends StatefulWidget {
   final String bookAbbrev;
   final int chapterNumber;
   final String versesRangeStr;
-  final Map<String, String> userHighlights;
+  final Map<String, Map<String, dynamic>> userHighlights; // <<< TIPO CORRIGIDO
   final Map<String, String> userNotes;
   final bool isHebrew;
   final bool isGreekInterlinear;
@@ -27,12 +27,7 @@ class SectionItemWidget extends StatefulWidget {
   final List<List<Map<String, String>>>? hebrewInterlinearSectionData;
   final List<List<Map<String, String>>>? greekInterlinearSectionData;
   final double fontSizeMultiplier;
-
-  // Propriedades para a funcionalidade de TTS
-  final Function(String startSectionId, TtsContentType contentType)
-      onPlayRequest;
-
-  // Parâmetros de estado recebidos da BiblePage para UI do player
+  final Function(String, TtsContentType) onPlayRequest;
   final TtsPlayerState currentPlayerState;
   final String? currentlyPlayingSectionId;
   final TtsContentType? currentlyPlayingContentType;
@@ -46,7 +41,7 @@ class SectionItemWidget extends StatefulWidget {
     required this.bookAbbrev,
     required this.chapterNumber,
     required this.versesRangeStr,
-    required this.userHighlights,
+    required this.userHighlights, // <<< TIPO CORRIGIDO
     required this.userNotes,
     this.isHebrew = false,
     this.isGreekInterlinear = false,
@@ -74,25 +69,12 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   @override
   bool get wantKeepAlive => true;
 
-  @override
-  void initState() {
-    super.initState();
-    // Nenhum listener de TTS aqui, pois o estado é gerenciado pela BiblePage.
-  }
-
-  @override
-  void dispose() {
-    // Nenhum listener para remover.
-    super.dispose();
-  }
-
   String get _sectionIdForTracking {
     final range =
         widget.versesRangeStr.isNotEmpty ? widget.versesRangeStr : "all";
     return "${widget.bookAbbrev}_c${widget.chapterNumber}_v$range";
   }
 
-  /// Apenas reporta o clique para a BiblePage.
   void _handlePlayRequest(TtsContentType contentType) {
     widget.onPlayRequest(_sectionIdForTracking, contentType);
   }
@@ -101,44 +83,36 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     final range = widget.versesRangeStr.isNotEmpty
         ? widget.versesRangeStr
         : "all_verses_in_section";
-    String abbrevForFirestore = widget.bookAbbrev;
-    if (widget.bookAbbrev.toLowerCase() == 'job') {
-      abbrevForFirestore = 'jó';
-    }
+    String abbrevForFirestore =
+        widget.bookAbbrev.toLowerCase() == 'job' ? 'jó' : widget.bookAbbrev;
     return "${abbrevForFirestore}_c${widget.chapterNumber}_v$range";
   }
 
   Future<void> _showCommentary(BuildContext context) async {
     if (!mounted) return;
     setState(() => _isLoadingCommentary = true);
-
     final commentaryData =
         await _firestoreService.getSectionCommentary(_commentaryDocId);
-
     String bookFullName = widget.bookAbbrev.toUpperCase();
     try {
       final booksMap = await BiblePageHelper.loadBooksMap();
       if (booksMap.containsKey(widget.bookAbbrev)) {
         bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
       }
-    } catch (e) {
-      print("Erro ao carregar nome do livro: $e");
-    }
+    } catch (e) {/* ignored */}
 
     if (mounted) {
       setState(() => _isLoadingCommentary = false);
-      final List<Map<String, dynamic>> commentaryItems =
-          (commentaryData != null && commentaryData['commentary'] is List)
-              ? List<Map<String, dynamic>>.from(commentaryData['commentary'])
-              : const [];
-
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => SectionCommentaryModal(
           sectionTitle: commentaryData?['title'] ?? widget.sectionTitle,
-          commentaryItems: commentaryItems,
+          commentaryItems: (commentaryData?['commentary'] as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           bookAbbrev: widget.bookAbbrev,
           bookSlug: widget.bookSlug,
           bookName: bookFullName,
@@ -152,22 +126,17 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Necessário para AutomaticKeepAliveClientMixin
+    super.build(context);
     final theme = Theme.of(context);
     final bool currentIsRead = widget.isRead;
-
-    // --- Lógica para determinar o estado dos botões desta seção ---
     final bool isThisSectionTheCurrentOne =
         widget.currentlyPlayingSectionId == _sectionIdForTracking;
     final TtsPlayerState playerState = widget.currentPlayerState;
     final TtsContentType? playingType = widget.currentlyPlayingContentType;
-
     final Color defaultIconColor =
         theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
-    final Color activeIconColor =
-        theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
+    final Color activeIconColor = theme.colorScheme.secondary;
 
-    // --- Lógica para o botão de OUVIR VERSÍCULOS ---
     IconData versesIcon = Icons.play_circle_outline;
     Color versesIconColor = defaultIconColor;
     String versesTooltip = "Ouvir Versículos";
@@ -179,23 +148,21 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         versesIconColor = activeIconColor;
         versesTooltip = "Pausar Leitura";
       } else if (playerState == TtsPlayerState.paused) {
-        versesIcon = Icons
-            .play_circle_outline; // Ícone de "Play" para indicar "Continuar"
+        versesIcon = Icons.play_circle_outline;
         versesIconColor = activeIconColor;
         versesTooltip = "Continuar Leitura";
       }
     }
 
-    // --- Lógica para o botão de OUVIR ESTUDO ---
-    IconData studyIcon = Icons.play_circle_outline;
-    Color studyIconColor = Color.fromRGBO(205, 231, 190, 1);
+    IconData studyIcon = Icons.headset_mic_outlined;
+    Color studyIconColor = defaultIconColor;
     String studyTooltip = "Ouvir Estudo (Versículos e Comentários)";
 
     if (isThisSectionTheCurrentOne &&
         playingType == TtsContentType.versesAndCommentary) {
       if (playerState == TtsPlayerState.playing) {
         studyIcon = Icons.pause_circle_outline;
-        studyIconColor = const Color.fromRGBO(205, 231, 190, 1);
+        studyIconColor = activeIconColor;
         studyTooltip = "Pausar Leitura";
       } else if (playerState == TtsPlayerState.paused) {
         studyIcon = Icons.play_circle_outline;
@@ -225,37 +192,25 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      widget.sectionTitle,
-                      style: TextStyle(
-                          color: currentIsRead
-                              ? theme.primaryColor
-                              : theme.colorScheme.primary,
-                          fontSize: 18 * widget.fontSizeMultiplier,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-
-                // Botão "Ouvir Versículos" com a nova lógica de UI
+                    child: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(widget.sectionTitle,
+                            style: TextStyle(
+                                color: currentIsRead
+                                    ? theme.primaryColor
+                                    : theme.colorScheme.primary,
+                                fontSize: 18 * widget.fontSizeMultiplier,
+                                fontWeight: FontWeight.bold)))),
                 IconButton(
-                  icon: Icon(versesIcon, color: versesIconColor, size: 26),
-                  tooltip: versesTooltip,
-                  onPressed: () =>
-                      _handlePlayRequest(TtsContentType.versesOnly),
-                ),
-
-                // Botão "Ouvir Estudo" com a nova lógica de UI
+                    icon: Icon(versesIcon, color: versesIconColor, size: 26),
+                    tooltip: versesTooltip,
+                    onPressed: () =>
+                        _handlePlayRequest(TtsContentType.versesOnly)),
                 IconButton(
-                  icon: Icon(studyIcon, color: studyIconColor, size: 24),
-                  tooltip: studyTooltip,
-                  onPressed: () =>
-                      _handlePlayRequest(TtsContentType.versesAndCommentary),
-                ),
-
-                // Botão "Ver Comentário"
+                    icon: Icon(studyIcon, color: studyIconColor, size: 24),
+                    tooltip: studyTooltip,
+                    onPressed: () =>
+                        _handlePlayRequest(TtsContentType.versesAndCommentary)),
                 if (_isLoadingCommentary)
                   const SizedBox(
                       width: 40,
@@ -267,11 +222,10 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                                   CircularProgressIndicator(strokeWidth: 2))))
                 else
                   IconButton(
-                    icon: Icon(Icons.comment_outlined,
-                        color: defaultIconColor, size: 22),
-                    tooltip: "Ver Comentário da Seção",
-                    onPressed: () => _showCommentary(context),
-                  ),
+                      icon: Icon(Icons.comment_outlined,
+                          color: defaultIconColor, size: 22),
+                      tooltip: "Ver Comentário da Seção",
+                      onPressed: () => _showCommentary(context)),
               ],
             ),
             Divider(color: theme.dividerColor.withOpacity(0.5)),
@@ -286,67 +240,32 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 List<Map<String, String>>? hebrewDataForThisVerse;
                 List<Map<String, String>>? greekDataForThisVerse;
 
-                if (widget.isGreekInterlinear) {
-                  if (widget.allVerseDataInChapter
-                          is List<List<Map<String, String>>> &&
-                      verseNumber > 0 &&
-                      verseNumber <=
-                          (widget.allVerseDataInChapter as List).length) {
-                    mainTranslationVerseDataItem = (widget.allVerseDataInChapter
-                        as List<List<Map<String, String>>>)[verseNumber - 1];
-                  }
-                } else if (widget.isHebrew) {
-                  if (widget.allVerseDataInChapter
-                          is List<List<Map<String, String>>> &&
-                      verseNumber > 0 &&
-                      verseNumber <=
-                          (widget.allVerseDataInChapter as List).length) {
-                    mainTranslationVerseDataItem = (widget.allVerseDataInChapter
-                        as List<List<Map<String, String>>>)[verseNumber - 1];
-                  }
-                } else {
-                  if (widget.allVerseDataInChapter is List<String> &&
-                      verseNumber > 0 &&
-                      verseNumber <=
-                          (widget.allVerseDataInChapter as List).length) {
-                    mainTranslationVerseDataItem = (widget.allVerseDataInChapter
-                        as List<String>)[verseNumber - 1];
-                  }
+                if (widget.allVerseDataInChapter is List &&
+                    verseNumber > 0 &&
+                    verseNumber <=
+                        (widget.allVerseDataInChapter as List).length) {
+                  mainTranslationVerseDataItem =
+                      (widget.allVerseDataInChapter as List)[verseNumber - 1];
                 }
 
                 if (widget.showHebrewInterlinear &&
-                    !widget.isHebrew &&
                     widget.hebrewInterlinearSectionData != null &&
                     indexInSecao <
                         widget.hebrewInterlinearSectionData!.length) {
                   hebrewDataForThisVerse =
                       widget.hebrewInterlinearSectionData![indexInSecao];
                 }
-
                 if (widget.showGreekInterlinear &&
-                    !widget.isGreekInterlinear &&
                     widget.greekInterlinearSectionData != null &&
                     indexInSecao < widget.greekInterlinearSectionData!.length) {
                   greekDataForThisVerse =
                       widget.greekInterlinearSectionData![indexInSecao];
                 }
 
-                String verseKeySuffix = widget.isHebrew
-                    ? "hebrew"
-                    : (widget.isGreekInterlinear ? "greek" : "other");
-                if (widget.showHebrewInterlinear &&
-                    hebrewDataForThisVerse != null) {
-                  verseKeySuffix += "_heb_interlinear";
-                }
-                if (widget.showGreekInterlinear &&
-                    greekDataForThisVerse != null) {
-                  verseKeySuffix += "_grk_interlinear";
-                }
-
                 if (mainTranslationVerseDataItem != null) {
                   return BiblePageWidgets.buildVerseItem(
                     key: ValueKey<String>(
-                        '${widget.bookAbbrev}_${widget.chapterNumber}_${verseNumber}_$verseKeySuffix'),
+                        '${widget.bookAbbrev}_${widget.chapterNumber}_${verseNumber}'),
                     verseNumber: verseNumber,
                     verseData: mainTranslationVerseDataItem,
                     selectedBook: widget.bookAbbrev,
@@ -366,10 +285,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   );
                 } else {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text('Erro: Verso $verseNumber não encontrado.',
-                        style: TextStyle(color: theme.colorScheme.error)),
-                  );
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Text('Erro: Verso $verseNumber não encontrado.',
+                          style: TextStyle(color: theme.colorScheme.error)));
                 }
               },
             ),

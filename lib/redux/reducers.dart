@@ -191,8 +191,7 @@ class UserState {
   final List<Map<String, dynamic>> userDiaries;
 
   // Campos para dados que agora vêm de coleções separadas, mas mantidos no UserState para a UI
-  final Map<String, String>
-      userHighlights; // Destaques de versículos bíblicos <verseId, colorHex>
+  final Map<String, Map<String, dynamic>> userHighlights;
   final Map<String, String>
       userNotes; // Notas de versículos bíblicos <verseId, noteText>
   final List<Map<String, dynamic>>
@@ -234,6 +233,8 @@ class UserState {
   final int adsWatchedIn6HourWindow;
 
   final bool isGuestUser; // NOVO
+
+  final List<String> allUserTags;
 
   UserState({
     this.userId,
@@ -279,6 +280,7 @@ class UserState {
     this.adsWatchedIn6HourWindow = 0,
     this.isGuestUser = false,
     this.initialBibleSectionIdToScrollTo, // NOVO
+    this.allUserTags = const [],
   });
 
   UserState copyWith({
@@ -298,7 +300,7 @@ class UserState {
     List<Map<String, dynamic>>? userRoutes,
     // Map<String, List<Map<String, dynamic>>>? verseSaves,
     List<Map<String, dynamic>>? userDiaries,
-    Map<String, String>? userHighlights,
+    Map<String, Map<String, dynamic>>? userHighlights,
     Map<String, String>? userNotes,
     List<Map<String, dynamic>>? userCommentHighlights,
     String? initialBibleBook,
@@ -332,6 +334,7 @@ class UserState {
     int? adsWatchedIn6HourWindow,
     bool? isGuestUser, // NOVO
     String? initialBibleSectionIdToScrollTo, // NOVO
+    List<String>? allUserTags, // <<< NOVO PARÂMETRO
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -517,9 +520,9 @@ UserState userReducer(UserState state, dynamic action) {
   // Destaques de Versículos Bíblicos
   else if (action is UserHighlightsLoadedAction) {
     return state.copyWith(userHighlights: action.highlights);
+  } else if (action is UserTagsLoadedAction) {
+    return state.copyWith(allUserTags: action.tags);
   }
-  // ToggleHighlightAction é tratada pelo middleware, que depois despacha LoadUserHighlightsAction.
-
   // Notas de Versículos Bíblicos
   else if (action is UserNotesLoadedAction) {
     return state.copyWith(userNotes: action.notes);
