@@ -1,4 +1,6 @@
 // lib/pages/user_page.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
 import 'package:septima_biblia/pages/user_page/user_diary_page.dart';
@@ -36,6 +38,9 @@ class _UserPageState extends State<UserPage> {
 
   bool _initialProgressLoadDispatched =
       false; // Flag para controlar o despacho da ação
+  final TextEditingController _tagSearchController = TextEditingController();
+  String _tagSearchQuery = '';
+  Timer? _debounce;
 
   final List<String> _availableTabs = const [
     'Progresso',
@@ -49,6 +54,30 @@ class _UserPageState extends State<UserPage> {
   void initState() {
     super.initState();
     _loadLocalBooksMap();
+
+    _tagSearchController.addListener(() {
+      // Se já houver um timer rodando, cancele-o.
+      if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+      // Inicie um novo timer.
+      _debounce = Timer(const Duration(milliseconds: 400), () {
+        // Esta parte do código só será executada 400ms depois que o usuário parar de digitar.
+        if (mounted && _tagSearchController.text != _tagSearchQuery) {
+          setState(() {
+            _tagSearchQuery = _tagSearchController.text;
+          });
+        }
+      });
+    });
+
+    @override
+    void dispose() {
+      // >>> INÍCIO DA MODIFICAÇÃO 3/3: Cancelar o debounce no dispose <<<
+      _debounce?.cancel();
+      // >>> FIM DA MODIFICAÇÃO 3/3 <<<
+      _tagSearchController.dispose();
+      super.dispose();
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -714,42 +743,85 @@ class _UserPageState extends State<UserPage> {
                 ),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 12.0),
+              child: TextField(
+                controller: _tagSearchController,
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                decoration: InputDecoration(
+                  hintText: 'Pesquisar destaques por tag...',
+                  prefixIcon: Icon(Icons.label_outline, color: theme.hintColor),
+                  suffixIcon: _tagSearchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _tagSearchController.clear();
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25.0),
+                    borderSide: BorderSide(color: theme.dividerColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25.0),
+                    borderSide: BorderSide(
+                        color: theme.colorScheme.primary, width: 1.5),
+                  ),
+                ),
+              ),
+            ),
             Expanded(
               child: StoreConnector<AppState, _HighlightsViewModel>(
                 converter: (store) => _HighlightsViewModel.fromStore(store),
                 builder: (context, highlightsVm) {
+                  // --- LÓGICA DE FILTRAGEM PARA VERSÍCULOS ---
                   if (_selectedHighlightType == HighlightType.verses) {
-                    final highlights = highlightsVm.userVerseHighlights;
-                    if (highlights.isEmpty) {
-                      return const Center(
-                          child: Text("Nenhum versículo destacado ainda.",
-                              style: TextStyle(fontSize: 16)));
+                    final allHighlights =
+                        highlightsVm.userVerseHighlights.entries.toList();
+
+                    final List<MapEntry<String, Map<String, dynamic>>>
+                        displayedHighlights;
+
+                    if (_tagSearchQuery.isEmpty) {
+                      displayedHighlights = allHighlights;
+                    } else {
+                      final query = _tagSearchQuery.toLowerCase();
+                      displayedHighlights = allHighlights.where((entry) {
+                        final List<String> tags =
+                            List<String>.from(entry.value['tags'] ?? []);
+                        return tags
+                            .any((tag) => tag.toLowerCase().contains(query));
+                      }).toList();
                     }
-                    final highlightList = highlights.entries.toList();
+
+                    if (displayedHighlights.isEmpty) {
+                      return Center(
+                          child: Text(_tagSearchQuery.isEmpty
+                              ? "Nenhum versículo destacado ainda."
+                              : "Nenhum destaque encontrado para a tag '$_tagSearchQuery'."));
+                    }
+
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16.0, vertical: 8.0),
-                      itemCount: highlightList.length,
+                      itemCount: displayedHighlights.length,
                       itemBuilder: (context, index) {
-                        final entry = highlightList[index];
+                        final entry = displayedHighlights[index];
                         final verseId = entry.key;
-
-                        // >>> INÍCIO DA CORREÇÃO <<<
-                        // O valor (entry.value) agora é um mapa.
                         final highlightData = entry.value;
                         final String? colorHex =
                             highlightData['color'] as String?;
                         final List<String> tags =
                             List<String>.from(highlightData['tags'] ?? []);
 
-                        // Se não houver cor por algum motivo, não renderiza o card.
-                        if (colorHex == null) {
-                          return const SizedBox.shrink();
-                        }
+                        if (colorHex == null) return const SizedBox.shrink();
 
                         final colorForIndicator = Color(
                             int.parse(colorHex.replaceFirst('#', '0xff')));
-                        // >>> FIM DA CORREÇÃO <<<
 
                         final parts = verseId.split('_');
                         String referenceText = verseId;
@@ -783,7 +855,6 @@ class _UserPageState extends State<UserPage> {
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 15)),
                             subtitle: Column(
-                              // Envolve em uma coluna para adicionar as tags
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 FutureBuilder<String>(
@@ -791,33 +862,31 @@ class _UserPageState extends State<UserPage> {
                                       verseId, 'nvi'),
                                   builder: (context, snapshot) {
                                     if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return Text("Carregando texto...",
+                                        ConnectionState.waiting)
+                                      return Text("Carregando...",
                                           style: TextStyle(
                                               color: theme
                                                   .textTheme.bodySmall?.color,
                                               fontSize: 12));
-                                    }
                                     if (snapshot.hasError ||
                                         !snapshot.hasData ||
-                                        snapshot.data!.isEmpty) {
+                                        snapshot.data!.isEmpty)
                                       return Text("Texto indisponível",
                                           style: TextStyle(
                                               color: theme.colorScheme.error
                                                   .withOpacity(0.7),
                                               fontSize: 12));
-                                    }
                                     return Padding(
-                                      padding: const EdgeInsets.only(top: 4.0),
-                                      child: Text(snapshot.data!,
-                                          style: TextStyle(
-                                              color: theme
-                                                  .textTheme.bodyMedium?.color,
-                                              fontSize: 13.5,
-                                              height: 1.4),
-                                          maxLines: 3,
-                                          overflow: TextOverflow.ellipsis),
-                                    );
+                                        padding:
+                                            const EdgeInsets.only(top: 4.0),
+                                        child: Text(snapshot.data!,
+                                            style: TextStyle(
+                                                color: theme.textTheme
+                                                    .bodyMedium?.color,
+                                                fontSize: 13.5,
+                                                height: 1.4),
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis));
                                   },
                                 ),
                                 if (tags.isNotEmpty) ...[
@@ -866,22 +935,39 @@ class _UserPageState extends State<UserPage> {
                         );
                       },
                     );
-                  } else {
-                    // Comments
-                    final commentHighlights =
-                        highlightsVm.userCommentHighlights;
-                    if (commentHighlights.isEmpty) {
-                      return const Center(
-                          child: Text("Nenhum comentário marcado ainda.",
-                              style: TextStyle(fontSize: 16)));
+                  }
+                  // --- LÓGICA DE FILTRAGEM PARA COMENTÁRIOS ---
+                  else {
+                    final allHighlights = highlightsVm.userCommentHighlights;
+
+                    final List<Map<String, dynamic>> displayedHighlights;
+
+                    if (_tagSearchQuery.isEmpty) {
+                      displayedHighlights = allHighlights;
+                    } else {
+                      final query = _tagSearchQuery.toLowerCase();
+                      displayedHighlights = allHighlights.where((highlight) {
+                        final List<String> tags =
+                            List<String>.from(highlight['tags'] ?? []);
+                        return tags
+                            .any((tag) => tag.toLowerCase().contains(query));
+                      }).toList();
                     }
+
+                    if (displayedHighlights.isEmpty) {
+                      return Center(
+                          child: Text(_tagSearchQuery.isEmpty
+                              ? "Nenhum comentário marcado ainda."
+                              : "Nenhum destaque encontrado para a tag '$_tagSearchQuery'."));
+                    }
+
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16.0, vertical: 8.0),
-                      itemCount: commentHighlights.length,
+                      itemCount: displayedHighlights.length,
                       itemBuilder: (context, index) =>
                           _buildCommentHighlightCard(
-                              commentHighlights[index], context, theme),
+                              displayedHighlights[index], context, theme),
                     );
                   }
                 },
