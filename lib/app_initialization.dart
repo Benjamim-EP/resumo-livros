@@ -12,7 +12,6 @@ class AppInitialization {
           "resumo-livros", // Certifique-se que este nome é intencional e consistente se você tiver múltiplos projetos Firebase. Se não, pode remover o parâmetro `name`.
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    Stripe.publishableKey = stripePublishableKey;
     // MobileAds.instance.initialize(); // REMOVIDO - Esta era a inicialização do AdMob
 
     // A documentação do Start.io sugere que a inicialização principal ocorre
