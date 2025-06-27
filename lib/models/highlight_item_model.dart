@@ -1,19 +1,17 @@
 // lib/models/highlight_item_model.dart
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import para Timestamp
 
-enum HighlightItemType { verse, comment }
+// >>> MUDANÇA AQUI <<<
+enum HighlightItemType { verse, literature }
 
 class HighlightItem {
-  final String
-      id; // Pode ser o verseId ou o ID do documento de destaque do comentário
+  final String id;
   final HighlightItemType type;
-  final String
-      referenceText; // Ex: "Gênesis 1:1" ou "Comentário em Gênesis 1:1-5"
-  final String
-      contentPreview; // O texto do versículo ou o trecho destacado do comentário
+  final String referenceText;
+  final String contentPreview;
   final List<String> tags;
-  final String? colorHex; // Nulo para destaques de comentários
-  final Map<String, dynamic>
-      originalData; // Guarda o mapa original para ações como navegação
+  final String? colorHex;
+  final Map<String, dynamic> originalData;
 
   HighlightItem({
     required this.id,

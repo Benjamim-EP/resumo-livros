@@ -5,6 +5,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/pages/user_page/comment_highlight_detail_dialog.dart'; // <<< NOVO IMPORT
 
 class HighlightItemCard extends StatelessWidget {
   final HighlightItem item;
@@ -16,12 +17,32 @@ class HighlightItemCard extends StatelessWidget {
     required this.onNavigateToVerse,
   });
 
+  // >>> INÍCIO DA MODIFICAÇÃO: Nova função de handle <<<
+  void _handleTap(BuildContext context) {
+    if (item.type == HighlightItemType.verse) {
+      onNavigateToVerse(item.id);
+    } else if (item.type == HighlightItemType.literature) {
+      showDialog(
+        context: context,
+        builder: (_) => CommentHighlightDetailDialog(
+          referenceText: item.referenceText,
+          fullCommentText: item.originalData['fullCommentText'] ??
+              'Texto completo não disponível.',
+          selectedSnippet: item.contentPreview,
+          highlightColor: item.colorHex != null
+              ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
+              : Colors.amber, // Cor padrão
+        ),
+      );
+    }
+  }
+  // >>> FIM DA MODIFICAÇÃO <<<
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isVerse = item.type == HighlightItemType.verse;
 
-    // Define a cor. Para comentários, usamos uma cor âmbar fixa.
     final Color indicatorColor = item.colorHex != null
         ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
         : Colors.amber.shade700;
@@ -35,36 +56,60 @@ class HighlightItemCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: isVerse ? () => onNavigateToVerse(item.id) : null,
+        // >>> MODIFICAÇÃO AQUI <<<
+        onTap: () => _handleTap(context),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Linha do Título com Ícone e Referência
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
                     isVerse ? Icons.menu_book_outlined : Icons.comment_outlined,
                     color: indicatorColor,
-                    size: 20,
+                    size: 22,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      item.referenceText,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: indicatorColor,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2.0),
+                      child: Text(
+                        item.referenceText,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: indicatorColor,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(Icons.delete_outline,
+                        color: theme.colorScheme.error.withOpacity(0.7),
+                        size: 22),
+                    tooltip: "Remover Destaque",
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      final store =
+                          StoreProvider.of<AppState>(context, listen: false);
+                      if (isVerse) {
+                        store.dispatch(ToggleHighlightAction(item.id));
+                      } else {
+                        store.dispatch(RemoveCommentHighlightAction(item.id));
+                      }
+                    },
+                  ),
                 ],
               ),
-              const SizedBox(height: 8),
-
-              // Conteúdo (Preview do comentário ou texto do versículo carregado)
+              const SizedBox(height: 10),
+              Divider(height: 1, color: theme.dividerColor.withOpacity(0.2)),
+              const SizedBox(height: 10),
               isVerse
                   ? FutureBuilder<String>(
                       future:
@@ -91,10 +136,8 @@ class HighlightItemCard extends StatelessWidget {
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
-
-              // Tags
               if (item.tags.isNotEmpty) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Wrap(
                   spacing: 6.0,
                   runSpacing: 4.0,
@@ -107,31 +150,13 @@ class HighlightItemCard extends StatelessWidget {
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
+                            backgroundColor: theme
+                                .colorScheme.secondaryContainer
+                                .withOpacity(0.5),
                           ))
                       .toList(),
                 )
               ],
-
-              // Botão de Remoção
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: Icon(Icons.delete_outline,
-                      color: theme.colorScheme.error.withOpacity(0.7),
-                      size: 22),
-                  tooltip: "Remover Destaque",
-                  onPressed: () {
-                    final store =
-                        StoreProvider.of<AppState>(context, listen: false);
-                    if (isVerse) {
-                      store.dispatch(ToggleHighlightAction(item.id));
-                    } else {
-                      store.dispatch(RemoveCommentHighlightAction(item.id));
-                    }
-                  },
-                ),
-              ),
             ],
           ),
         ),

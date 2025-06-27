@@ -22,7 +22,7 @@ import 'package:percent_indicator/percent_indicator.dart';
 import 'package:septima_biblia/consts/bible_constants.dart'; // Para CANONICAL_BOOK_ORDER
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum HighlightType { verses, comments }
+enum HighlightType { verse, literature }
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -719,24 +719,31 @@ class _UserPageState extends State<UserPage> {
       case 'Destaques':
         return Column(
           children: [
-            // Botões de filtro: Todos, Versículos, Comentários
+            // Botões de filtro atualizados
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                  const EdgeInsets.symmetric(horizontal: 9.0, vertical: 10.0),
               child: SegmentedButton<HighlightType?>(
+                // >>> INÍCIO DA MODIFICAÇÃO <<<
                 segments: const <ButtonSegment<HighlightType?>>[
                   ButtonSegment<HighlightType?>(
-                      value: null, // null representa "Todos"
-                      label: Text('Todos'),
-                      icon: Icon(Icons.list_alt_rounded)),
+                    value: null, // Todos
+                    // Label removido para economizar espaço
+                    icon: Icon(Icons.list_alt_rounded),
+                    tooltip: "Mostrar Todos os Destaques",
+                  ),
                   ButtonSegment<HighlightType?>(
-                      value: HighlightType.verses, // Corrigido para o plural
-                      label: Text('Versículos'),
-                      icon: Icon(Icons.menu_book)),
+                    value: HighlightType.verse,
+                    // Label removido
+                    icon: Icon(Icons.menu_book),
+                    tooltip: "Mostrar Apenas Versículos",
+                  ),
                   ButtonSegment<HighlightType?>(
-                      value: HighlightType.comments, // Corrigido para o plural
-                      label: Text('Comentários'),
-                      icon: Icon(Icons.comment_bank_outlined)),
+                    value: HighlightType.literature,
+                    // Label removido
+                    icon: Icon(Icons.import_contacts_outlined),
+                    tooltip: "Mostrar Apenas Literatura",
+                  ),
                 ],
                 selected: <HighlightType?>{_selectedHighlightType},
                 onSelectionChanged: (Set<HighlightType?> newSelection) {
@@ -753,7 +760,7 @@ class _UserPageState extends State<UserPage> {
               ),
             ),
 
-            // Barra de pesquisa por tags
+            // Barra de pesquisa (permanece a mesma)
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 12.0),
               child: TextField(
@@ -786,32 +793,42 @@ class _UserPageState extends State<UserPage> {
               ),
             ),
 
-            // Lista de destaques filtrada
+            // Lista de destaques com a LÓGICA DE FILTRAGEM CORRIGIDA
             Expanded(
               child: StoreConnector<AppState, _HighlightsViewModel>(
-                converter: (store) => _HighlightsViewModel.fromStore(store),
+                converter: (store) =>
+                    _HighlightsViewModel.fromStore(store, _localBooksMap),
                 builder: (context, vm) {
-                  // Lógica de filtragem unificada
-                  List<HighlightItem> displayedHighlights = vm.allHighlights;
+                  // Inicia com a lista completa
+                  List<HighlightItem> filteredList = vm.allHighlights;
 
-                  // 1. Filtra por tipo (versículo/comentário/todos)
-                  if (_selectedHighlightType != null) {
-                    displayedHighlights = displayedHighlights
-                        .where((item) => item.type == _selectedHighlightType)
+                  // 1. Filtra por tipo (versículo/literatura) PRIMEIRO
+                  if (_selectedHighlightType == HighlightType.verse) {
+                    filteredList = vm.allHighlights
+                        .where((item) => item.type == HighlightItemType.verse)
                         .toList();
+                  } else if (_selectedHighlightType ==
+                      HighlightType.literature) {
+                    filteredList = vm.allHighlights
+                        .where(
+                            (item) => item.type == HighlightItemType.literature)
+                        .toList();
+                  } else {
+                    // Se _selectedHighlightType for null (Todos), começa com a lista completa
+                    filteredList = vm.allHighlights;
                   }
 
-                  // 2. Filtra por tag
+                  // 2. Filtra por TAG na lista JÁ filtrada por tipo
                   if (_tagSearchQuery.isNotEmpty) {
                     final query = _tagSearchQuery.toLowerCase();
-                    displayedHighlights = displayedHighlights.where((item) {
+                    filteredList = filteredList.where((item) {
                       return item.tags
                           .any((tag) => tag.toLowerCase().contains(query));
                     }).toList();
                   }
 
                   // Mensagem de "Nenhum item"
-                  if (displayedHighlights.isEmpty) {
+                  if (filteredList.isEmpty) {
                     return Center(
                         child: Padding(
                       padding: const EdgeInsets.all(24.0),
@@ -827,13 +844,13 @@ class _UserPageState extends State<UserPage> {
                     ));
                   }
 
-                  // Constrói a lista com o novo card unificado
+                  // Constrói a lista com os itens filtrados
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16.0, vertical: 8.0),
-                    itemCount: displayedHighlights.length,
+                    itemCount: filteredList.length,
                     itemBuilder: (context, index) {
-                      final item = displayedHighlights[index];
+                      final item = filteredList[index];
                       return HighlightItemCard(
                         item: item,
                         onNavigateToVerse: _navigateToBibleVerseAndTab,
@@ -1376,17 +1393,23 @@ class _HighlightsViewModel {
 
   _HighlightsViewModel({required this.allHighlights, required this.isLoading});
 
-  static _HighlightsViewModel fromStore(Store<AppState> store) {
+  static _HighlightsViewModel fromStore(
+      Store<AppState> store, Map<String, dynamic>? booksMap) {
     List<HighlightItem> combinedList = [];
 
-    // 1. Processa os destaques de versículos
+    // 1. Processa os destaques de versículos bíblicos
     store.state.userState.userHighlights.forEach((verseId, highlightData) {
-      // Constrói a referência de forma segura
       final parts = verseId.split('_');
-      String referenceText = verseId;
-      if (parts.length == 3) {
-        // Supondo que você tenha uma forma de obter o nome completo do livro
-        // Se não, podemos buscar isso no futuro ou usar a abreviação
+      String referenceText = verseId; // Fallback
+
+      // >>> LÓGICA DE TRADUÇÃO DO NOME DO LIVRO <<<
+      if (parts.length == 3 &&
+          booksMap != null &&
+          booksMap.containsKey(parts[0])) {
+        final bookData = booksMap[parts[0]];
+        final bookName = bookData?['nome'] ?? parts[0].toUpperCase();
+        referenceText = "$bookName ${parts[1]}:${parts[2]}";
+      } else if (parts.length == 3) {
         referenceText = "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
       }
 
@@ -1394,48 +1417,57 @@ class _HighlightsViewModel {
         HighlightItem(
           id: verseId,
           type: HighlightItemType.verse,
-          referenceText: referenceText,
-          // O preview do conteúdo será carregado de forma assíncrona na UI
+          referenceText: referenceText, // <<< USA O NOME COMPLETO
           contentPreview: "Carregando texto do versículo...",
           tags: List<String>.from(highlightData['tags'] ?? []),
           colorHex: highlightData['color'] as String?,
-          originalData: {'verseId': verseId}, // Guarda o ID para navegação
+          originalData: {'verseId': verseId, ...highlightData},
         ),
       );
     });
 
-    // 2. Processa os destaques de comentários
+    // 2. Processa os destaques de literatura
     store.state.userState.userCommentHighlights.forEach((commentData) {
+      // >>> LÓGICA PARA IDENTIFICAR A FONTE <<<
+      String sourceIdentifier = "Comentário"; // Padrão
+      // Aqui você pode adicionar lógica para identificar a fonte.
+      // Por exemplo, se você salvar o nome do livro/autor no 'commentData'.
+      // Vamos assumir por enquanto que 'verseReferenceText' já contém a informação.
+      // Ex: "Comentário de Matthew Henry em Gênesis 1:1-5"
+      // Se não, você precisaria adicionar mais metadados ao salvar o destaque.
+
+      String referenceText =
+          commentData['verseReferenceText'] ?? 'Referência desconhecida';
+
       combinedList.add(
         HighlightItem(
           id: commentData['id'] as String? ?? '',
-          type: HighlightItemType.comment,
+          type: HighlightItemType.literature,
           referenceText:
-              commentData['verseReferenceText'] ?? 'Referência desconhecida',
+              referenceText, // <<< USA O TEXTO DE REFERÊNCIA JÁ SALVO
           contentPreview:
               commentData['selectedSnippet'] ?? 'Trecho indisponível',
           tags: List<String>.from(commentData['tags'] ?? []),
-          colorHex:
-              commentData['color'] as String?, // Usamos a cor fixa que salvamos
-          originalData: commentData, // Guarda o mapa inteiro para ações
+          colorHex: commentData['color'] as String? ?? "#FFA07A",
+          originalData: commentData,
         ),
       );
     });
 
-    // 3. Ordena a lista combinada pela data (se disponível), mais recentes primeiro
-    // Assumimos que ambos os tipos de destaque têm um campo 'timestamp'
+    // 3. Ordena a lista combinada pela data do timestamp
     combinedList.sort((a, b) {
       final timestampA = a.originalData['timestamp'] as Timestamp?;
       final timestampB = b.originalData['timestamp'] as Timestamp?;
+
       if (timestampA == null && timestampB == null) return 0;
       if (timestampA == null) return 1;
       if (timestampB == null) return -1;
-      return timestampB.compareTo(timestampA); // Mais recente primeiro
+      return timestampB.compareTo(timestampA);
     });
 
     return _HighlightsViewModel(
       allHighlights: combinedList,
-      isLoading: false, // Adicionar um estado de loading se necessário
+      isLoading: false,
     );
   }
 }
