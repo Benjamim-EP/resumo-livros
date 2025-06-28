@@ -1,31 +1,53 @@
 // lib/pages/library_page.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
-// >>> INÍCIO DA MODIFICAÇÃO 1/2: Importar a nova página <<<
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
-// >>> FIM DA MODIFICAÇÃO 1/2 <<<
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
-// Importe suas páginas de destino
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
-import 'package:septima_biblia/services/interstitial_manager.dart'; // Reutilizando para Estudos Temáticos
+import 'package:septima_biblia/services/interstitial_manager.dart';
 
 class ResourceCard extends StatelessWidget {
   final String title;
   final String description;
-  final IconData? icon; // Ícone é opcional se a imagem for fornecida
-  final String? coverImagePath; // Caminho para imagem local nos assets
+  final String author;
+  final String pageCount;
+  final String? coverImagePath;
   final VoidCallback onTap;
 
   const ResourceCard({
     super.key,
     required this.title,
     required this.description,
-    this.icon,
+    required this.author,
+    required this.pageCount,
     this.coverImagePath,
     required this.onTap,
-  }) : assert(icon != null || coverImagePath != null,
-            'Deve ser fornecido um ícone ou um caminho de imagem de capa.');
+  });
+
+  // Widget auxiliar para as linhas de informação (agora mais simples)
+  Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.9)),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,111 +56,98 @@ class ResourceCard extends StatelessWidget {
         coverImagePath != null && coverImagePath!.isNotEmpty;
 
     return Card(
-      elevation: 5,
+      elevation: 4,
       margin: const EdgeInsets.all(0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15)), // Bordas mais arredondadas
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          alignment: Alignment.bottomLeft,
+        borderRadius: BorderRadius.circular(15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Camada 1: Imagem de Fundo (ou ícone se não houver imagem)
-            Positioned.fill(
-              child: hasCoverImage
-                  ? Image.asset(
-                      coverImagePath!,
-                      fit: BoxFit.fill,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color:
-                              theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                          child: Center(
-                              child: Icon(icon ?? Icons.broken_image,
-                                  size: 60,
-                                  color: theme.colorScheme.primary
-                                      .withOpacity(0.7))),
-                        );
-                      },
-                    )
-                  : Container(
-                      color:
-                          theme.colorScheme.primaryContainer.withOpacity(0.3),
-                      child: Center(
-                          child: Icon(icon!,
-                              size: 60, color: theme.colorScheme.primary)),
-                    ),
-            ),
-
-            // Camada 2: Overlay Escuro (Gradiente para legibilidade do texto)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.75), // Mais escuro na base
-                      Colors.black.withOpacity(0.55),
-                      Colors.black.withOpacity(0.1),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    stops: const [0.0, 0.4, 0.7, 1.0],
-                  ),
-                ),
-              ),
-            ),
-
-            // Camada 3: Conteúdo de Texto
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // --- Parte 1: Imagem (com mais espaço) ---
+            // Usando Expanded para que a imagem ocupe o máximo de espaço possível na Column
+            Expanded(
+              flex: 3, // Dando mais peso para a imagem
+              child: Stack(
+                alignment: Alignment.bottomLeft,
                 children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
+                  Positioned.fill(
+                    child: hasCoverImage
+                        ? Image.asset(
+                            coverImagePath!,
+                            // >>> MUDANÇA 1/3: Mantém a proporção e cobre a área <<<
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                                color: theme.colorScheme.surfaceVariant),
+                          )
+                        : Container(color: theme.colorScheme.primaryContainer),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.85),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        stops: const [0.0, 0.8],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    left: 12,
+                    right: 12,
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                         shadows: [
-                          Shadow(
-                            offset: const Offset(0.0, 1.0),
-                            blurRadius: 3.0,
-                            color: Colors.black.withOpacity(0.6),
-                          ),
-                        ]),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (description.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.90),
-                          shadows: [
-                            Shadow(
-                              offset: const Offset(0.0, 1.0),
-                              blurRadius: 2.0,
-                              color: Colors.black.withOpacity(0.6),
-                            ),
-                          ]),
-                      maxLines: 3, // Aumentado para caber mais descrição
+                          const Shadow(blurRadius: 3.0, color: Colors.black87)
+                        ],
+                      ),
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ]
+                  ),
+                  // O Chip de Categoria foi REMOVIDO
                 ],
               ),
             ),
-            // Camada 4: Ícone de seta (opcional)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Icon(Icons.arrow_forward_ios,
-                  color: Colors.white.withOpacity(0.6), size: 18),
-            )
+
+            // --- Parte 2: Detalhes em 3 Linhas ---
+            // Usando um flex menor para garantir que a imagem tenha mais espaço
+            Expanded(
+              flex: 2, // Menos peso para a área de texto
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceEvenly, // Distribui o espaço
+                  children: [
+                    // Linha 1: Descrição
+                    Text(
+                      description,
+                      style: theme.textTheme.bodySmall?.copyWith(height: 1.3),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Divider(height: 12, thickness: 0.5),
+                    // Linha 2: Autor
+                    _buildInfoRow(context, Icons.person_outline, author),
+                    // Linha 3: Páginas
+                    _buildInfoRow(context, Icons.menu_book_outlined, pageCount),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -154,33 +163,36 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
-  // Lista de itens para a biblioteca
-  // Cada item é um Map para configurar o ResourceCard
+  // Dados atualizados sem a chave 'category'
   List<Map<String, dynamic>> get libraryItems => [
         {
-          'title': "Sermões de C.H. Spurgeon",
-          'description': "",
-          'icon': Icons.campaign_outlined,
+          'title': "Sermões de Spurgeon",
+          'description':
+              "Uma vasta coleção dos sermões do 'Príncipe dos Pregadores'.",
+          'author': 'C.H. Spurgeon',
+          'pageCount': '+3000 sermões / +20000 páginas',
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'onTap': () {
-            // Tenta mostrar o anúncio ANTES de navegar
             interstitialManager
                 .tryShowInterstitial(
                     fromScreen: "LibraryPage_To_SpurgeonSermons")
                 .then((_) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const SpurgeonSermonsIndexPage()),
-              );
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SpurgeonSermonsIndexPage()),
+                );
+              }
             });
           },
         },
-        // >>> INÍCIO DA MODIFICAÇÃO 2/2: Adicionar novo item <<<
         {
           'title': "História da Igreja",
-          'description': "",
-          'icon': Icons.history_edu_outlined,
+          'description':
+              "A jornada da igreja cristã desde os apóstolos até a era moderna.",
+          'author': 'Philip Schaff',
+          'pageCount': '8 volumes / +5000 páginas',
           'coverImagePath': 'assets/covers/historia_igreja.webp',
           'onTap': () {
             interstitialManager
@@ -196,13 +208,13 @@ class _LibraryPageState extends State<LibraryPage> {
             });
           },
         },
-        // >>> FIM DA MODIFICAÇÃO 2/2 <<<
         {
-          'title': "Estudos Bíblicos Rápidos",
-          'description': "",
-          'icon': Icons.menu_book_outlined,
-          'coverImagePath':
-              'assets/covers/estudos_tematicos_cover.webp', // Ou uma imagem genérica para estudos: 'assets/covers/study_cover.webp'
+          'title': "Estudos Rápidos",
+          'description':
+              "Guias e rotas de estudo temáticos para aprofundar seu conhecimento.",
+          'author': 'Séptima',
+          'pageCount': '10+ estudos',
+          'coverImagePath': 'assets/covers/estudos_tematicos_cover.webp',
           'onTap': () {
             Navigator.push(
               context,
@@ -212,18 +224,16 @@ class _LibraryPageState extends State<LibraryPage> {
         },
         {
           'title': "Linha do Tempo Bíblica",
-          'description': "",
-          'icon': Icons
-              .timeline_outlined, // Ou um ícone que represente melhor uma linha do tempo
-          'coverImagePath':
-              'assets/covers/timeline_cover.webp', // Ou null se não tiver imagem
+          'description':
+              "Contextualize os eventos bíblicos com a história mundial.",
+          'author': 'Septima',
+          'pageCount': 'Interativo',
+          'coverImagePath': 'assets/covers/timeline_cover.webp',
           'onTap': () {
-            // Tenta mostrar um anúncio ANTES de navegar
             interstitialManager
                 .tryShowInterstitial(fromScreen: "LibraryPage_To_BibleTimeline")
                 .then((_) {
               if (mounted) {
-                // Garante que o widget ainda está montado
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -235,9 +245,10 @@ class _LibraryPageState extends State<LibraryPage> {
         },
         {
           'title': "Promessas da Bíblia",
-          'description': "",
-          'icon': Icons
-              .verified_user_outlined, // Ou outro ícone como Icons.star_outline
+          'description':
+              "Um compêndio de promessas divinas organizadas por tema.",
+          'author': 'Samuel Clarke',
+          'pageCount': '+800 promessas',
           'coverImagePath': 'assets/covers/promessas_cover.webp',
           'onTap': () {
             interstitialManager
@@ -256,24 +267,28 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    // O AppBar é gerenciado pela MainAppScreen, então não é necessário aqui.
     return Scaffold(
-      body: GridView.count(
-        padding: const EdgeInsets.all(16.0), // Padding ao redor da grade
-        crossAxisCount: 2, // Número de colunas
-        crossAxisSpacing: 16.0, // Espaçamento horizontal entre os cards
-        mainAxisSpacing: 16.0, // Espaçamento vertical entre os cards
-        childAspectRatio:
-            0.7, // Proporção largura/altura definida para 2/3 (retrato)
-        children: libraryItems.map((itemData) {
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16.0),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16.0,
+          mainAxisSpacing: 16.0,
+          // >>> MUDANÇA 2/3: AJUSTE DA PROPORÇÃO PARA DEIXAR OS CARDS MAIS ALTOS <<<
+          childAspectRatio: 0.45,
+        ),
+        itemCount: libraryItems.length,
+        itemBuilder: (context, index) {
+          final itemData = libraryItems[index];
           return ResourceCard(
             title: itemData['title'] as String,
             description: itemData['description'] as String,
-            icon: itemData['icon'] as IconData?,
+            author: itemData['author'] as String,
+            pageCount: itemData['pageCount'] as String,
             coverImagePath: itemData['coverImagePath'] as String?,
             onTap: itemData['onTap'] as VoidCallback,
           );
-        }).toList(),
+        },
       ),
     );
   }
