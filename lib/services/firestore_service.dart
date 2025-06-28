@@ -1422,26 +1422,32 @@ class FirestoreService {
         .collection('entries')
         .doc(entryId);
 
+    // >>> INÍCIO DA CORREÇÃO <<<
+    // Usamos Timestamp.now() que gera o timestamp no cliente, o que é permitido em arrayUnion.
     final newPrayerPoint = {
       'text': prayerText,
       'answered': false,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': Timestamp.now(), // <-- MUDANÇA ESSENCIAL AQUI
     };
+    // >>> FIM DA CORREÇÃO <<<
 
     try {
-      // Usa update com FieldValue.arrayUnion para adicionar ao array
+      // Tenta adicionar o novo pedido ao array 'prayerPoints' existente.
       await docRef.update({
         'prayerPoints': FieldValue.arrayUnion([newPrayerPoint])
       });
     } catch (e) {
-      // Se o documento ou o campo 'prayerPoints' não existir, cria-o primeiro
+      // Se a atualização falhar (provavelmente porque o documento ou o array não existem),
+      // cria o documento com o novo pedido de oração.
       if (e is FirebaseException && e.code == 'not-found') {
         await docRef.set({
           'prayerPoints': [newPrayerPoint],
           'date': Timestamp.fromDate(date),
-          'lastUpdated': FieldValue.serverTimestamp(),
+          'lastUpdated': FieldValue
+              .serverTimestamp(), // serverTimestamp é permitido aqui em 'set'.
         }, SetOptions(merge: true));
       } else {
+        // Se for outro erro, relança para depuração.
         print(
             "FirestoreService: Erro ao adicionar pedido de oração para $entryId: $e");
         rethrow;
@@ -1473,6 +1479,26 @@ class FirestoreService {
     } catch (e) {
       print(
           "FirestoreService: Erro ao atualizar pedido de oração para $entryId: $e");
+      rethrow;
+    }
+  }
+
+  /// Remove um pedido de oração.
+  Future<void> removePrayerPoint(String userId, DateTime date,
+      Map<String, dynamic> prayerPointToRemove) async {
+    final String entryId = DateFormat('yyyy-MM-dd').format(date);
+    final docRef = _db
+        .collection('diaries')
+        .doc(userId)
+        .collection('entries')
+        .doc(entryId);
+
+    try {
+      await docRef.update({
+        'prayerPoints': FieldValue.arrayRemove([prayerPointToRemove])
+      });
+    } catch (e) {
+      print("FirestoreService: Erro ao remover pedido de oração: $e");
       rethrow;
     }
   }
