@@ -7,11 +7,13 @@ import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import './app_initialization.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:intl/date_symbol_data_local.dart'; // <<< GARANTA QUE SEJA ESTE IMPORT
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('pt_BR');
   await AppInitialization.init();
   store.dispatch(LoadSavedThemeAction());
   store.dispatch(LoadPendingBibleProgressAction());

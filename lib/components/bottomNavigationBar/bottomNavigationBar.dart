@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart'; // Para mapEquals em _MainAppScreenViewModel
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
+import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/user_page.dart';
@@ -120,7 +121,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       _buildTabNavigator(_userNavigatorKey, const UserPage()),
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
       const LibraryPage(),
-      //const _UnderConstructionPlaceholder(pageTitle: "Chat IA"),
+      const DevotionalDiaryPage(),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -267,8 +268,8 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return "Bíblia";
       case 2:
         return "Biblioteca";
-      //case 3:
-      //return "Chat IA";
+      case 3:
+        return "Diário";
       default:
         return "Septima";
     }
@@ -486,8 +487,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     BottomNavigationBarItem(
                         icon: Icon(Icons.local_library_outlined),
                         label: 'Biblioteca'),
-                    // BottomNavigationBarItem(
-                    //     icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+                    BottomNavigationBarItem(
+                        // <<< NOVO ITEM AQUI
+                        icon: Icon(Icons.edit_note_outlined),
+                        label: 'Diário'),
                   ],
                 ),
               ],
