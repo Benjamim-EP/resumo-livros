@@ -1,5 +1,6 @@
 // redux/store.dart
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/redux/middleware/backend_validation_middleware.dart';
 import 'package:septima_biblia/redux/middleware/bible_progress_middleware.dart';
 import 'package:septima_biblia/redux/middleware/firestore_sync_middleware.dart';
 import 'package:septima_biblia/redux/middleware/metadata_middleware.dart';
@@ -130,6 +131,7 @@ final Store<AppState> store = Store<AppState>(
     ...createMetadataMiddleware(),
     ...createFirestoreSyncMiddleware(), // NOVO
     ...createSermonSearchMiddleware(),
+    ...createBackendValidationMiddleware(),
   ],
 );
 
