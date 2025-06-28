@@ -1,25 +1,29 @@
 // lib/components/bottomNavigationBar/bottomNavigationBar.dart
 
-import 'package:flutter/foundation.dart'; // Para mapEquals em _MainAppScreenViewModel
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
+import 'package:septima_biblia/components/login_required.dart'; // Importação que estava faltando na sua versão original
 import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/user_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
-import 'package:flutter_redux/flutter_redux.dart';
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/middleware/ad_middleware.dart';
+import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/ad_helper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:async';
-import 'package:redux/redux.dart';
-import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
-import 'package:septima_biblia/redux/reducers.dart';
-import 'package:septima_biblia/services/interstitial_manager.dart'; // Para AppThemeOption
+import 'package:septima_biblia/services/interstitial_manager.dart';
+// >>> INÍCIO DO NOVO IMPORT <<<
+import 'package:septima_biblia/services/notification_service.dart';
+// >>> FIM DO NOVO IMPORT <<<
 
 // ViewModel para o StoreConnector das moedas (como antes)
 class _UserCoinsViewModel {
@@ -60,40 +64,6 @@ class _UserCoinsViewModel {
   int get hashCode => userCoins.hashCode ^ isPremium.hashCode;
 }
 
-// Widget placeholder (como antes)
-class _UnderConstructionPlaceholder extends StatelessWidget {
-  final String pageTitle;
-  const _UnderConstructionPlaceholder({super.key, required this.pageTitle});
-
-  @override
-  Widget build(BuildContext context) {
-    // ... (implementação como antes)
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.construction,
-                size: 80, color: Theme.of(context).colorScheme.secondary),
-            const SizedBox(height: 20),
-            Text(
-              'A seção "$pageTitle" está em construção!',
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Volte em breve para novidades.',
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class MainAppScreen extends StatefulWidget {
   const MainAppScreen({super.key});
   @override
@@ -112,10 +82,23 @@ class _MainAppScreenState extends State<MainAppScreen> {
   StreamSubscription? _userDocSubscription;
   bool _isPremiumFromState = false;
 
+  // >>> INÍCIO DA NOVA VARIÁVEL DE CONTROLE <<<
+  // Garante que o agendamento só aconteça uma vez por sessão.
+  static bool _notificationsInitialized = false;
+  // >>> FIM DA NOVA VARIÁVEL DE CONTROLE <<<
+
   @override
   void initState() {
     super.initState();
     _setupUserListener();
+
+    // >>> INÍCIO DO NOVO BLOCO DE CÓDIGO <<<
+    // Agenda as notificações aqui, de forma segura, apenas uma vez.
+    if (!_notificationsInitialized) {
+      _scheduleNotifications();
+      _notificationsInitialized = true;
+    }
+    // >>> FIM DO NOVO BLOCO DE CÓDIGO <<<
 
     _pages = [
       _buildTabNavigator(_userNavigatorKey, const UserPage()),
@@ -129,30 +112,22 @@ class _MainAppScreenState extends State<MainAppScreen> {
         final storeInstance =
             StoreProvider.of<AppState>(context, listen: false);
 
-        // >>> INÍCIO DA MODIFICAÇÃO <<<
         int initialTargetIndexFromRedux =
-            storeInstance.state.userState.targetBottomNavIndex ??
-                -1; // -1 se nulo
+            storeInstance.state.userState.targetBottomNavIndex ?? -1;
         final bool isGuest = storeInstance.state.userState.isGuestUser;
 
-        int newInitialIndex = 0; // Padrão é a UserPage (índice 0)
+        int newInitialIndex = 0;
 
         if (isGuest) {
-          // Se for convidado, e não houver uma navegação específica solicitada pelo Redux,
-          // vai para a BiblePage (índice 1).
-          // Se houver uma navegação específica (ex: vindo da StartScreen), respeita ela.
           newInitialIndex = (initialTargetIndexFromRedux != -1)
               ? initialTargetIndexFromRedux
               : 1;
         } else if (initialTargetIndexFromRedux != -1) {
-          // Se for usuário logado e houver uma navegação específica, usa ela.
           newInitialIndex = initialTargetIndexFromRedux;
         }
-        // Se for usuário logado e não houver navegação específica, `newInitialIndex` permanece 0 (UserPage).
 
-        // Garante que o índice calculado seja válido.
         if (newInitialIndex < 0 || newInitialIndex >= _pages.length) {
-          newInitialIndex = isGuest ? 1 : 0; // Fallback seguro
+          newInitialIndex = isGuest ? 1 : 0;
         }
 
         if (newInitialIndex != _selectedIndex) {
@@ -164,13 +139,29 @@ class _MainAppScreenState extends State<MainAppScreen> {
         if (initialTargetIndexFromRedux != -1) {
           storeInstance.dispatch(ClearTargetBottomNavAction());
         }
-        // >>> FIM DA MODIFICAÇÃO <<<
 
         final initialViewModel = _UserCoinsViewModel.fromStore(storeInstance);
         _updatePremiumUI(initialViewModel.isPremium);
       }
     });
   }
+
+  // >>> INÍCIO DA NOVA FUNÇÃO <<<
+  /// Agenda as notificações diárias de forma segura.
+  Future<void> _scheduleNotifications() async {
+    try {
+      print("MainAppScreen: Tentando agendar notificações...");
+      final NotificationService notificationService = NotificationService();
+      await notificationService.init(); // Inicializa o serviço
+      await notificationService
+          .scheduleDailyDevotionals(); // Agenda as notificações
+      print("MainAppScreen: Notificações agendadas com sucesso.");
+    } catch (e) {
+      print("MainAppScreen: Erro ao agendar notificações: $e");
+      // Não trava o app, apenas loga o erro.
+    }
+  }
+  // >>> FIM DA NOVA FUNÇÃO <<<
 
   @override
   void dispose() {
@@ -245,7 +236,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       case 1:
         return _bibleNavigatorKey;
       default:
-        return null; // Para LibraryPage e Chat, se não tiverem GlobalKey
+        return null;
     }
   }
 
@@ -282,7 +273,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
     return 0;
   }
 
-  // Função para obter o próximo tema na sequência
   AppThemeOption _getNextTheme(AppThemeOption currentTheme) {
     final themes = AppThemeOption.values;
     final currentIndex = themes.indexOf(currentTheme);
@@ -290,30 +280,27 @@ class _MainAppScreenState extends State<MainAppScreen> {
     return themes[nextIndex];
   }
 
-  // Função para obter o ícone do tema atual
   IconData _getThemeIcon(AppThemeOption currentTheme) {
     switch (currentTheme) {
       case AppThemeOption.green:
-        return Icons.eco_outlined; // Ícone para tema verde
+        return Icons.eco_outlined;
       case AppThemeOption.septimaDark:
-        return Icons.nightlight_round; // Ícone para tema escuro
+        return Icons.nightlight_round;
       case AppThemeOption.septimaLight:
-        return Icons.wb_sunny_outlined; // Ícone para tema claro
+        return Icons.wb_sunny_outlined;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final storeInstance = StoreProvider.of<AppState>(context, listen: false);
-    final ThemeData currentThemeData =
-        Theme.of(context); // Pega o ThemeData atual uma vez
+    final ThemeData currentThemeData = Theme.of(context);
 
     return StoreConnector<AppState, _MainAppScreenViewModel>(
       converter: (store) => _MainAppScreenViewModel.fromStore(store),
       onDidChange: (previousViewModel, newViewModel) {
         if (!mounted) return;
         if (newViewModel != null && previousViewModel != newViewModel) {
-          // Adicionado null check para newViewModel
           _updatePremiumUI(newViewModel.isPremium);
 
           if (newViewModel.targetBottomNavIndex != null) {
@@ -330,10 +317,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
         }
       },
       builder: (context, mainScreenViewModel) {
-        // Se mainScreenViewModel for nulo (pode acontecer brevemente durante a inicialização do StoreConnector),
-        // retorna um placeholder ou um widget de carregamento simples.
         if (mainScreenViewModel == null) {
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
 
         final AppThemeOption currentThemeOptionFromRedux =
@@ -348,7 +334,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
                 IconButton(
                   icon: Icon(_getThemeIcon(currentThemeOptionFromRedux)),
                   tooltip: 'Mudar Tema',
-                  // A cor do ícone será herdada do actionsIconTheme da AppBarTheme do tema atual
                   onPressed: () {
                     final nextTheme =
                         _getNextTheme(currentThemeOptionFromRedux);
@@ -368,8 +353,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                         children: [
                           Icon(
                             Icons.monetization_on,
-                            color: currentThemeData.colorScheme
-                                .primary, // Usa cor primária do tema
+                            color: currentThemeData.colorScheme.primary,
                             size: 22,
                           ),
                           const SizedBox(width: 4),
@@ -378,7 +362,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
-                              // Usa a cor do título da AppBar para consistência
                               color: currentThemeData
                                       .appBarTheme.titleTextStyle?.color ??
                                   currentThemeData.colorScheme.onPrimary,
@@ -388,8 +371,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                             IconButton(
                               icon: Icon(
                                 Icons.add_circle_outline,
-                                color: currentThemeData.colorScheme
-                                    .primary, // Usa cor primária do tema
+                                color: currentThemeData.colorScheme.primary,
                                 size: 24,
                               ),
                               tooltip: 'Ganhar Moedas',
@@ -403,7 +385,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                               padding: const EdgeInsets.only(left: 8.0),
                               child: Icon(Icons.check_circle,
                                   color: currentThemeData.colorScheme.primary
-                                      .withOpacity(0.7), // Um pouco mais suave
+                                      .withOpacity(0.7),
                                   size: 22),
                             ),
                         ],
@@ -423,7 +405,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
                 BottomNavigationBar(
                   type: BottomNavigationBarType.fixed,
                   currentIndex: _selectedIndex,
-                  // As cores dos itens da BottomNavigationBar são definidas no AppTheme
                   onTap: (index) {
                     if (mounted) {
                       if (storeInstance.state.userState.isGuestUser &&
@@ -435,25 +416,18 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
                       int previousIndex = _selectedIndex;
 
-                      // >>> INÍCIO DA MODIFICAÇÃO <<<
-                      // Se o usuário está mudando para uma ABA DIFERENTE
                       if (previousIndex != index) {
-                        // Tenta mostrar um anúncio ANTES de mudar a aba.
-                        // O `then` garante que a mudança de aba ocorra DEPOIS que o anúncio
-                        // for tentado (e possivelmente fechado).
                         interstitialManager
                             .tryShowInterstitial(
                                 fromScreen:
                                     "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
                             .then((_) {
-                          // Garante que o widget ainda está montado após o futuro do anúncio
                           if (mounted) {
                             setState(() {
                               _selectedIndex = index;
                             });
 
                             if (previousIndex == 1 && index != 1) {
-                              // Saindo da BiblePage
                               final userState = storeInstance.state.userState;
                               if (userState.userId != null) {
                                 final pendingToAdd =
@@ -470,13 +444,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
                           }
                         });
                       } else {
-                        // Se o usuário tocou na mesma aba, apenas atualiza o estado (sem anúncio)
-                        // Embora, geralmente, tocar na mesma aba não faz nada visualmente aqui.
                         setState(() {
                           _selectedIndex = index;
                         });
                       }
-                      // >>> FIM DA MODIFICAÇÃO <<<
                     }
                   },
                   items: const [
@@ -488,9 +459,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                         icon: Icon(Icons.local_library_outlined),
                         label: 'Biblioteca'),
                     BottomNavigationBarItem(
-                        // <<< NOVO ITEM AQUI
-                        icon: Icon(Icons.edit_note_outlined),
-                        label: 'Diário'),
+                        icon: Icon(Icons.edit_note_outlined), label: 'Diário'),
                   ],
                 ),
               ],
@@ -502,18 +471,17 @@ class _MainAppScreenState extends State<MainAppScreen> {
   }
 }
 
-// ViewModel para MainAppScreen (modificado para incluir themeOption)
 class _MainAppScreenViewModel {
   final Map<String, dynamic>? userDetails;
   final int? targetBottomNavIndex;
   final bool isPremium;
-  final AppThemeOption activeThemeOption; // NOVO
+  final AppThemeOption activeThemeOption;
 
   _MainAppScreenViewModel({
     this.userDetails,
     this.targetBottomNavIndex,
     required this.isPremium,
-    required this.activeThemeOption, // NOVO
+    required this.activeThemeOption,
   });
 
   static _MainAppScreenViewModel fromStore(Store<AppState> store) {
@@ -534,8 +502,7 @@ class _MainAppScreenViewModel {
       userDetails: userDetails,
       targetBottomNavIndex: store.state.userState.targetBottomNavIndex,
       isPremium: premiumStatus,
-      activeThemeOption:
-          store.state.themeState.activeThemeOption, // NOVO: Pega do ThemeState
+      activeThemeOption: store.state.themeState.activeThemeOption,
     );
   }
 
@@ -544,49 +511,15 @@ class _MainAppScreenViewModel {
       identical(this, other) ||
       other is _MainAppScreenViewModel &&
           runtimeType == other.runtimeType &&
-          mapEquals(userDetails,
-              other.userDetails) && // Use mapEquals de foundation.dart
+          mapEquals(userDetails, other.userDetails) &&
           targetBottomNavIndex == other.targetBottomNavIndex &&
           isPremium == other.isPremium &&
-          activeThemeOption == other.activeThemeOption; // NOVO
+          activeThemeOption == other.activeThemeOption;
 
   @override
   int get hashCode =>
-      userDetails.hashCode ^ // Use a hashCode do mapa diretamente
+      userDetails.hashCode ^
       targetBottomNavIndex.hashCode ^
       isPremium.hashCode ^
-      activeThemeOption.hashCode; // NOVO
-}
-
-// Função showLoginRequiredDialog (como antes)
-void showLoginRequiredDialog(BuildContext context,
-    {String featureName = "esta funcionalidade"}) {
-  // ... (implementação como antes)
-  showDialog(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      backgroundColor: Theme.of(dialogContext).dialogBackgroundColor,
-      title: const Text("Login Necessário"),
-      content: Text(
-          "Para acessar $featureName, por favor, faça login ou crie uma conta."),
-      actions: [
-        TextButton(
-          child: const Text("Cancelar"),
-          onPressed: () => Navigator.of(dialogContext).pop(),
-        ),
-        TextButton(
-          child: const Text("Login / Cadastrar"),
-          onPressed: () {
-            Navigator.of(dialogContext).pop();
-            final store = StoreProvider.of<AppState>(context, listen: false);
-            if (store.state.userState.isGuestUser) {
-              store.dispatch(UserExitedGuestModeAction());
-            }
-            Navigator.of(context, rootNavigator: true)
-                .pushNamedAndRemoveUntil('/login', (route) => false);
-          },
-        ),
-      ],
-    ),
-  );
+      activeThemeOption.hashCode;
 }

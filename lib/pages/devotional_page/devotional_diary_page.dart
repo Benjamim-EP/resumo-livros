@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/pages/devotional_page/daily_devotional_view.dart';
+// >>> INÍCIO DO NOVO IMPORT <<<
+import 'package:septima_biblia/services/notification_service.dart';
+// >>> FIM DO NOVO IMPORT <<<
 
 class DevotionalDiaryPage extends StatefulWidget {
   const DevotionalDiaryPage({super.key});
@@ -81,6 +84,25 @@ class _DevotionalDiaryPageState extends State<DevotionalDiaryPage> {
           return DailyDevotionalView(date: dateForPage);
         },
       ),
+      // // >>> INÍCIO DA MODIFICAÇÃO: Adicionando o botão de teste <<<
+      // floatingActionButton: FloatingActionButton.extended(
+      //   onPressed: () {
+      //     // Chama a função de teste do nosso serviço
+      //     NotificationService().scheduleTestNotification();
+
+      //     // Mostra um feedback visual para o usuário
+      //     ScaffoldMessenger.of(context).showSnackBar(
+      //       const SnackBar(
+      //         content: Text('Notificação de teste agendada para 5 segundos.'),
+      //         duration: Duration(seconds: 3),
+      //       ),
+      //     );
+      //   },
+      //   icon: const Icon(Icons.notification_add_outlined),
+      //   label: const Text("Testar Notif."),
+      //   tooltip: "Agendar uma notificação de teste para 5 segundos no futuro.",
+      // ),
+      // // >>> FIM DA MODIFICAÇÃO <<<
     );
   }
 }
