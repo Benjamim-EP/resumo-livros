@@ -54,6 +54,8 @@ dependencies:
   in_app_purchase_android: ^0.4.0
   startapp_sdk: ^1.0.1
   flutter_launcher_icons: ^0.14.4
+  flutter_local_notifications: ^17.1.2 
+  timezone: ^0.9.3 # Add this line
 
 dev_dependencies:
   flutter_test:

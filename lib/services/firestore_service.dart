@@ -1363,4 +1363,117 @@ class FirestoreService {
       return null;
     }
   }
+
+  // Busca a entrada do diário para uma data específica.
+  /// A data é formatada como 'YYYY-MM-DD' para ser o ID do documento.
+  Future<Map<String, dynamic>?> getDiaryEntry(
+      String userId, DateTime date) async {
+    final String entryId = DateFormat('yyyy-MM-dd').format(date);
+    try {
+      final docSnapshot = await _db
+          .collection('diaries')
+          .doc(userId)
+          .collection('entries')
+          .doc(entryId)
+          .get();
+
+      if (docSnapshot.exists) {
+        return docSnapshot.data();
+      }
+      return null; // Retorna nulo se não houver entrada para este dia
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao buscar entrada do diário para $entryId: $e");
+      return null;
+    }
+  }
+
+  /// Salva ou atualiza o texto do diário para uma data específica.
+  Future<void> updateJournalText(
+      String userId, DateTime date, String text) async {
+    final String entryId = DateFormat('yyyy-MM-dd').format(date);
+    final docRef = _db
+        .collection('diaries')
+        .doc(userId)
+        .collection('entries')
+        .doc(entryId);
+
+    try {
+      // Usa set com merge:true para criar o documento se não existir
+      await docRef.set({
+        'journalText': text,
+        'date': Timestamp.fromDate(date),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao atualizar o texto do diário para $entryId: $e");
+      rethrow;
+    }
+  }
+
+  /// Adiciona um novo pedido de oração para uma data específica.
+  Future<void> addPrayerPoint(
+      String userId, DateTime date, String prayerText) async {
+    final String entryId = DateFormat('yyyy-MM-dd').format(date);
+    final docRef = _db
+        .collection('diaries')
+        .doc(userId)
+        .collection('entries')
+        .doc(entryId);
+
+    final newPrayerPoint = {
+      'text': prayerText,
+      'answered': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      // Usa update com FieldValue.arrayUnion para adicionar ao array
+      await docRef.update({
+        'prayerPoints': FieldValue.arrayUnion([newPrayerPoint])
+      });
+    } catch (e) {
+      // Se o documento ou o campo 'prayerPoints' não existir, cria-o primeiro
+      if (e is FirebaseException && e.code == 'not-found') {
+        await docRef.set({
+          'prayerPoints': [newPrayerPoint],
+          'date': Timestamp.fromDate(date),
+          'lastUpdated': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        print(
+            "FirestoreService: Erro ao adicionar pedido de oração para $entryId: $e");
+        rethrow;
+      }
+    }
+  }
+
+  /// Atualiza o status de um pedido de oração.
+  /// Isso é mais complexo, pois requer ler, modificar e reescrever o array inteiro.
+  Future<void> updatePrayerPoint(String userId, DateTime date, int prayerIndex,
+      Map<String, dynamic> updatedPrayerData) async {
+    final String entryId = DateFormat('yyyy-MM-dd').format(date);
+    final docRef = _db
+        .collection('diaries')
+        .doc(userId)
+        .collection('entries')
+        .doc(entryId);
+
+    try {
+      final doc = await docRef.get();
+      if (doc.exists) {
+        List<dynamic> prayerPoints =
+            List.from(doc.data()?['prayerPoints'] ?? []);
+        if (prayerIndex >= 0 && prayerIndex < prayerPoints.length) {
+          prayerPoints[prayerIndex] = updatedPrayerData;
+          await docRef.update({'prayerPoints': prayerPoints});
+        }
+      }
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao atualizar pedido de oração para $entryId: $e");
+      rethrow;
+    }
+  }
 }
