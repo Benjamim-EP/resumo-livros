@@ -7,6 +7,7 @@ import 'package:septima_biblia/pages/library_page/church_history_index_page.dart
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
+import 'package:septima_biblia/pages/library_page/turretin_elenctic_theology/turretin_index_page.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -224,7 +225,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'author': 'C.H. Spurgeon',
           'pageCount': '+3000 sermões / +20000 páginas',
           'isFullyPremium': false,
-          'hasPremiumFeature': true,
+          'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'destinationPage': const SpurgeonSermonsIndexPage(),
         },
@@ -249,6 +250,17 @@ class _LibraryPageState extends State<LibraryPage> {
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/historia_igreja.webp',
           'destinationPage': const ChurchHistoryIndexPage(),
+        },
+        {
+          'title': "Institutos de Teologia Elenctica",
+          'description': "A obra monumental da teologia sistemática reformada.",
+          'author': 'Francis Turretin',
+          'pageCount': '3 volumes / +2000 páginas',
+          'isFullyPremium': false, // Totalmente premium
+          'hasPremiumFeature': false,
+          'coverImagePath':
+              'assets/covers/turretin_cover.webp', // Crie uma capa para ele!
+          'destinationPage': const TurretinIndexPage(),
         },
         {
           'title': "Estudos Rápidos",
