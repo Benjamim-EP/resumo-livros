@@ -192,6 +192,7 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16.0),
@@ -207,38 +208,58 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
               return const Text("Devocional não encontrado para esta data.");
             }
             final readings = snapshot.data!;
+            final morningReading = readings[0];
+            final eveningReading = readings[1];
+
             final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
             final currentHour = DateTime.now().hour;
-            const eveningStartHour = 18;
+            const eveningStartHour = 20;
 
+            // Lista para construir os widgets de devocional
             List<Widget> devotionalWidgets = [];
+
+            // >>> INÍCIO DA LÓGICA DE EXIBIÇÃO CORRIGIDA <<<
+
             if (isToday) {
+              // É o dia de hoje
               if (currentHour < eveningStartHour) {
+                // ANTES das 18h: mostra SÓ o da manhã
                 devotionalWidgets.add(DevotionalCard(
-                    reading: readings[0],
+                    reading: morningReading,
                     isRead: false,
                     onMarkAsRead: () {},
                     onPlay: () {}));
               } else {
+                // A PARTIR das 18h: mostra AMBOS
                 devotionalWidgets.add(DevotionalCard(
-                    reading: readings[1],
+                    reading: morningReading,
+                    isRead: false,
+                    onMarkAsRead: () {},
+                    onPlay: () {}));
+                devotionalWidgets.add(const SizedBox(height: 8));
+                devotionalWidgets.add(DevotionalCard(
+                    reading: eveningReading,
                     isRead: false,
                     onMarkAsRead: () {},
                     onPlay: () {}));
               }
             } else {
+              // NÃO é o dia de hoje (passado ou futuro): mostra AMBOS
               devotionalWidgets.add(DevotionalCard(
-                  reading: readings[0],
+                  reading: morningReading,
                   isRead: false,
                   onMarkAsRead: () {},
                   onPlay: () {}));
               devotionalWidgets.add(const SizedBox(height: 8));
               devotionalWidgets.add(DevotionalCard(
-                  reading: readings[1],
+                  reading: eveningReading,
                   isRead: false,
                   onMarkAsRead: () {},
                   onPlay: () {}));
             }
+
+            // >>> FIM DA LÓGICA DE EXIBIÇÃO CORRIGIDA <<<
+
             return Column(children: devotionalWidgets);
           },
         ),
