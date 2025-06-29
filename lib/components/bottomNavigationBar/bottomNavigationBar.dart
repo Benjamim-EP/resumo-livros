@@ -11,6 +11,7 @@ import 'package:septima_biblia/components/login_required.dart'; // Importação 
 import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/user_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
@@ -393,6 +394,35 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     );
                   },
                 ),
+                // >>> NOVO BOTÃO PREMIUM <<<
+                StoreConnector<AppState, bool>(
+                  converter: (store) =>
+                      _UserCoinsViewModel.fromStore(store).isPremium,
+                  builder: (context, isPremium) {
+                    if (isPremium) {
+                      // Se o usuário é premium, mostra um ícone de agradecimento ou nada
+                      return const Padding(
+                        padding: EdgeInsets.only(right: 8.0),
+                        child: Icon(Icons.verified_user_outlined,
+                            color: Colors.amber),
+                      );
+                    }
+                    // Se não for premium, mostra o botão para assinar
+                    return IconButton(
+                      icon: const Icon(Icons.workspace_premium_outlined),
+                      tooltip: 'Torne-se Premium',
+                      onPressed: () {
+                        // Navega para a página de seleção de assinatura
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const SubscriptionSelectionPage()),
+                        );
+                      },
+                    );
+                  },
+                ),
               ],
             ),
             body: IndexedStack(
@@ -405,61 +435,91 @@ class _MainAppScreenState extends State<MainAppScreen> {
                 BottomNavigationBar(
                   type: BottomNavigationBarType.fixed,
                   currentIndex: _selectedIndex,
+                  // As cores já são definidas pelo tema do app
                   onTap: (index) {
-                    if (mounted) {
-                      if (storeInstance.state.userState.isGuestUser &&
-                          index == 0) {
-                        showLoginRequiredDialog(context,
-                            featureName: "seu perfil");
-                        return;
+                    if (!mounted) return;
+
+                    // 1. Verifica se é um convidado tentando acessar a página de usuário
+                    if (storeInstance.state.userState.isGuestUser &&
+                        index == 0) {
+                      showLoginRequiredDialog(context,
+                          featureName: "seu perfil");
+                      return;
+                    }
+
+                    int previousIndex = _selectedIndex;
+
+                    // 2. Só executa a lógica se a aba selecionada for diferente da atual
+                    if (previousIndex != index) {
+                      // >>> INÍCIO DA MODIFICAÇÃO: LÓGICA DE ANÚNCIOS <<<
+                      final bool isPremium =
+                          _UserCoinsViewModel.fromStore(storeInstance)
+                              .isPremium;
+
+                      // Função para navegar, para não repetir código
+                      void navigateToNewTab() {
+                        if (mounted) {
+                          setState(() {
+                            _selectedIndex = index;
+                          });
+
+                          // Sincroniza o progresso da Bíblia ao sair da aba
+                          if (previousIndex == 1 && index != 1) {
+                            final userState = storeInstance.state.userState;
+                            if (userState.userId != null) {
+                              final pendingToAdd =
+                                  userState.pendingSectionsToAdd;
+                              final pendingToRemove =
+                                  userState.pendingSectionsToRemove;
+                              if (pendingToAdd.isNotEmpty ||
+                                  pendingToRemove.isNotEmpty) {
+                                storeInstance.dispatch(
+                                    ProcessPendingBibleProgressAction());
+                              }
+                            }
+                          }
+                        }
                       }
 
-                      int previousIndex = _selectedIndex;
-
-                      if (previousIndex != index) {
+                      // Se o usuário NÃO for premium, tenta mostrar o anúncio antes de navegar
+                      if (!isPremium) {
                         interstitialManager
                             .tryShowInterstitial(
                                 fromScreen:
                                     "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
                             .then((_) {
-                          if (mounted) {
-                            setState(() {
-                              _selectedIndex = index;
-                            });
-
-                            if (previousIndex == 1 && index != 1) {
-                              final userState = storeInstance.state.userState;
-                              if (userState.userId != null) {
-                                final pendingToAdd =
-                                    userState.pendingSectionsToAdd;
-                                final pendingToRemove =
-                                    userState.pendingSectionsToRemove;
-                                if (pendingToAdd.isNotEmpty ||
-                                    pendingToRemove.isNotEmpty) {
-                                  storeInstance.dispatch(
-                                      ProcessPendingBibleProgressAction());
-                                }
-                              }
-                            }
-                          }
+                          // Navega DEPOIS que a tentativa de anúncio terminar
+                          navigateToNewTab();
                         });
                       } else {
-                        setState(() {
-                          _selectedIndex = index;
-                        });
+                        // Se for premium, navega instantaneamente
+                        print("Usuário premium, pulando anúncio intersticial.");
+                        navigateToNewTab();
                       }
+                      // >>> FIM DA MODIFICAÇÃO <<<
+                    } else {
+                      // Se o usuário tocou na mesma aba, não faz nada
+                      // ou você pode adicionar uma lógica de "voltar ao topo" aqui se desejar.
+                      return;
                     }
                   },
                   items: const [
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.account_circle), label: 'Usuário'),
+                      icon: Icon(Icons.account_circle),
+                      label: 'Usuário',
+                    ),
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.book_outlined), label: 'Bíblia'),
+                      icon: Icon(Icons.book_outlined),
+                      label: 'Bíblia',
+                    ),
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.local_library_outlined),
-                        label: 'Biblioteca'),
+                      icon: Icon(Icons.local_library_outlined),
+                      label: 'Biblioteca',
+                    ),
                     BottomNavigationBarItem(
-                        icon: Icon(Icons.edit_note_outlined), label: 'Diário'),
+                      icon: Icon(Icons.edit_note_outlined),
+                      label: 'Diário',
+                    ),
                   ],
                 ),
               ],

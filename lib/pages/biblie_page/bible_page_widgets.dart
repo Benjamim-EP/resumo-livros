@@ -8,41 +8,92 @@ import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/saveVerseDialog.dart';
 import 'package:septima_biblia/pages/biblie_page/note_editor_modal.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 
 class BiblePageWidgets {
+  // >>> INÍCIO DA CORREÇÃO 2/4: Adicionando os parâmetros que faltavam <<<
+  static void _showPremiumDialog(BuildContext context) {
+    // Fecha o modal de seleção de tradução que está aberto
+    Navigator.pop(context);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'Acesso às línguas originais (Hebraico e Grego) é um recurso exclusivo para assinantes Premium.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Agora não')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop(); // Fecha o diálogo
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget buildTranslationButton({
+    required BuildContext context,
     required String translationKey,
     required String translationLabel,
     required String selectedTranslation,
     required VoidCallback onPressed,
-    required BuildContext context,
+    bool isPremiumFeature = false,
+    bool isPremiumUser = false,
   }) {
     final theme = Theme.of(context);
     final isSelected = selectedTranslation == translationKey;
+
+    Color buttonColor = isSelected
+        ? theme.colorScheme.primary
+        : theme.cardColor.withOpacity(0.7);
+    Color textColor = isSelected
+        ? theme.colorScheme.onPrimary
+        : theme.textTheme.bodyLarge?.color ?? Colors.white;
+
+    Widget buttonChild = Text(
+      translationLabel,
+      style: const TextStyle(fontSize: 12),
+      textAlign: TextAlign.center,
+    );
+
+    if (isPremiumFeature && !isPremiumUser) {
+      buttonChild = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock, size: 12, color: textColor.withOpacity(0.7)),
+          const SizedBox(width: 4),
+          Text(translationLabel, style: const TextStyle(fontSize: 12)),
+        ],
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected
-              ? theme.colorScheme.primary
-              : theme.cardColor.withOpacity(0.7),
-          foregroundColor: isSelected
-              ? theme.colorScheme.onPrimary
-              : theme.textTheme.bodyLarge?.color,
+          backgroundColor: buttonColor,
+          foregroundColor: textColor,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
+            side: isPremiumFeature && !isSelected
+                ? BorderSide(color: Colors.amber.shade600, width: 1.5)
+                : BorderSide.none,
           ),
           minimumSize: const Size(80, 40),
         ),
-        child: Text(
-          translationLabel,
-          style: const TextStyle(
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
+        child: buttonChild,
       ),
     );
   }
@@ -53,10 +104,11 @@ class BiblePageWidgets {
     required Function(String) onTranslationSelected,
     required String? currentSelectedBookAbbrev,
     required Map<String, dynamic>? booksMap,
+    required bool isPremium,
   }) {
     final theme = Theme.of(context);
-    bool showHebrewOption = false;
-    bool showGreekOption = false;
+    bool isOldTestament = false;
+    bool isNewTestament = false;
 
     if (currentSelectedBookAbbrev != null &&
         booksMap != null &&
@@ -64,96 +116,86 @@ class BiblePageWidgets {
       final bookData =
           booksMap[currentSelectedBookAbbrev] as Map<String, dynamic>?;
       if (bookData != null) {
-        if (bookData['testament'] == 'Antigo') {
-          showHebrewOption = true;
-        } else if (bookData['testament'] == 'Novo') {
-          showGreekOption = true;
-        }
+        if (bookData['testament'] == 'Antigo')
+          isOldTestament = true;
+        else if (bookData['testament'] == 'Novo') isNewTestament = true;
       }
     }
 
     List<Widget> translationButtons = [
       buildTranslationButton(
-        context: context,
-        translationKey: 'nvi',
-        translationLabel: 'NVI',
-        selectedTranslation: selectedTranslation,
-        onPressed: () {
-          onTranslationSelected('nvi');
-          Navigator.pop(context);
-        },
-      ),
+          context: context,
+          translationKey: 'nvi',
+          translationLabel: 'NVI',
+          selectedTranslation: selectedTranslation,
+          onPressed: () {
+            onTranslationSelected('nvi');
+            Navigator.pop(context);
+          }),
       buildTranslationButton(
-        context: context,
-        translationKey: 'aa',
-        translationLabel: 'AA',
-        selectedTranslation: selectedTranslation,
-        onPressed: () {
-          onTranslationSelected('aa');
-          Navigator.pop(context);
-        },
-      ),
+          context: context,
+          translationKey: 'aa',
+          translationLabel: 'AA',
+          selectedTranslation: selectedTranslation,
+          onPressed: () {
+            onTranslationSelected('aa');
+            Navigator.pop(context);
+          }),
       buildTranslationButton(
-        context: context,
-        translationKey: 'acf',
-        translationLabel: 'ACF',
-        selectedTranslation: selectedTranslation,
-        onPressed: () {
-          onTranslationSelected('acf');
-          Navigator.pop(context);
-        },
-      ),
+          context: context,
+          translationKey: 'acf',
+          translationLabel: 'ACF',
+          selectedTranslation: selectedTranslation,
+          onPressed: () {
+            onTranslationSelected('acf');
+            Navigator.pop(context);
+          }),
     ];
 
-    if (showHebrewOption) {
-      translationButtons.add(
-        buildTranslationButton(
-          context: context,
-          translationKey: 'hebrew_original',
-          translationLabel: 'Hebraico (Orig.)',
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected('hebrew_original');
-            Navigator.pop(context);
-          },
-        ),
-      );
+    if (isOldTestament) {
+      translationButtons.add(buildTranslationButton(
+        context: context,
+        translationKey: 'hebrew_original',
+        translationLabel: 'Hebraico (Orig.)',
+        selectedTranslation: selectedTranslation,
+        onPressed: () => isPremium
+            ? onTranslationSelected('hebrew_original')
+            : _showPremiumDialog(context),
+        isPremiumFeature: true,
+        isPremiumUser: isPremium,
+      ));
     }
 
-    if (showGreekOption) {
-      translationButtons.add(
-        buildTranslationButton(
-          context: context,
-          translationKey: 'greek_interlinear',
-          translationLabel: 'Grego (Interlinear)',
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected('greek_interlinear');
-            Navigator.pop(context);
-          },
-        ),
-      );
+    if (isNewTestament) {
+      translationButtons.add(buildTranslationButton(
+        context: context,
+        translationKey: 'greek_interlinear',
+        translationLabel: 'Grego (Interlinear)',
+        selectedTranslation: selectedTranslation,
+        onPressed: () => isPremium
+            ? onTranslationSelected('greek_interlinear')
+            : _showPremiumDialog(context),
+        isPremiumFeature: true,
+        isPremiumUser: isPremium,
+      ));
     }
 
     showModalBottomSheet(
       context: context,
       backgroundColor: theme.dialogBackgroundColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (BuildContext modalContext) {
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                "Escolha a Tradução",
-                style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
-              ),
+              Text("Escolha a Tradução",
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8.0,

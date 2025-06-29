@@ -17,7 +17,7 @@ List<Middleware<AppState>> createBackendValidationMiddleware() {
     NextDispatcher next,
   ) async {
     next(
-        action); // Passa a ação para o reducer, que deve marcar o status como "pendingValidation"
+        action); // Passa a ação para o reducer, que marca o status como "pendingValidation"
 
     final purchaseDetails = action.purchaseDetails;
     print(
@@ -50,6 +50,8 @@ List<Middleware<AppState>> createBackendValidationMiddleware() {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Assinatura ativada com sucesso!')),
         );
+        // Opcional: fechar a página de compra após o sucesso
+        Navigator.of(context).pop();
       }
     } on FirebaseFunctionsException catch (e) {
       print(

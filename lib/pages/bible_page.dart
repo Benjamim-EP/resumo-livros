@@ -10,6 +10,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_reader_view.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_semantic_search_view.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_search_filter_bar.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
@@ -343,6 +344,13 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Future<void> _loadCurrentChapterHebrewDataIfNeeded() async {
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    if (!isPremium) {
+      // Se não for premium, zera os dados e não faz nada.
+      if (mounted) setState(() => _currentChapterHebrewData = null);
+      return;
+    }
     if (selectedBook != null &&
         selectedChapter != null &&
         _showHebrewInterlinear &&
@@ -368,6 +376,12 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   Future<void> _loadCurrentChapterGreekDataIfNeeded() async {
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    if (!isPremium) {
+      if (mounted) setState(() => _currentChapterGreekData = null);
+      return;
+    }
     if (selectedBook != null &&
         selectedChapter != null &&
         _showGreekInterlinear &&
@@ -1036,6 +1050,10 @@ class _BiblePageState extends State<BiblePage> {
         _loadUserDataIfNeeded(context);
       },
       builder: (context, viewModel) {
+        final subscriptionState =
+            StoreProvider.of<AppState>(context).state.subscriptionState;
+        final bool isUserPremium =
+            subscriptionState.status == SubscriptionStatus.premiumActive;
         if (booksMap == null || _bookVariationsMap.isEmpty) {
           return Scaffold(
               appBar: AppBar(title: const Text('Bíblia')),
@@ -1111,6 +1129,7 @@ class _BiblePageState extends State<BiblePage> {
                     currentFontSizeMultiplier: _currentFontSizeMultiplier,
                     minFontMultiplier: MIN_FONT_MULTIPLIER,
                     maxFontMultiplier: MAX_FONT_MULTIPLIER,
+                    isPremium: isUserPremium, // <<< PASSA O VALOR AQUI
                     onTranslation1Changed: (value) {
                       if (mounted && value != selectedTranslation2) {
                         interstitialManager

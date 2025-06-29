@@ -9,12 +9,10 @@ import 'package:septima_biblia/redux/actions/payment_actions.dart';
 class SubscriptionSelectionPage extends StatelessWidget {
   const SubscriptionSelectionPage({super.key});
 
-  // Defina seus Product IDs do Google Play Console aqui
   static const String googlePlayMonthlyProductId =
-      "seu_id_mensal_google_play"; // Ex: "premium_monthly_v1"
+      "premium_monthly_v1"; // Use o ID real do seu plano mensal
   static const String googlePlayQuarterlyProductId =
-      "seu_id_trimestral_google_play"; // Ex: "premium_quarterly_v1"
-  // Adicione outros IDs de produto se necessário
+      "premium_quarterly_v1"; // Use o ID real do seu plano trimestral
 
   @override
   Widget build(BuildContext context) {

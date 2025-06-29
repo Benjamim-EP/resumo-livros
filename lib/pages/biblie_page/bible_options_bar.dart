@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 
 class BibleOptionsBar extends StatelessWidget {
@@ -16,6 +17,7 @@ class BibleOptionsBar extends StatelessWidget {
   final double currentFontSizeMultiplier;
   final double minFontMultiplier;
   final double maxFontMultiplier;
+  final bool isPremium; // Parâmetro para verificar o status de premium
 
   final Function(String) onTranslation1Changed;
   final Function(String) onTranslation2Changed;
@@ -39,6 +41,7 @@ class BibleOptionsBar extends StatelessWidget {
     required this.currentFontSizeMultiplier,
     required this.minFontMultiplier,
     required this.maxFontMultiplier,
+    required this.isPremium, // Adicionado ao construtor
     required this.onTranslation1Changed,
     required this.onTranslation2Changed,
     required this.onToggleCompareMode,
@@ -49,9 +52,38 @@ class BibleOptionsBar extends StatelessWidget {
     required this.onDecreaseFontSize,
   });
 
+  // Função para mostrar o diálogo de assinatura premium
+  void _showPremiumDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'O estudo com Hebraico e Grego Interlinear é exclusivo para assinantes Premium. Desbloqueie este e outros recursos!'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Agora não')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop(); // Fecha o diálogo
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final Color premiumIconColor = const Color.fromRGBO(255, 178, 44, 1);
+
     bool canShowHebrewToggle =
         booksMap?[selectedBook]?['testament'] == 'Antigo' &&
             selectedTranslation1 != 'hebrew_original' &&
@@ -84,6 +116,7 @@ class BibleOptionsBar extends StatelessWidget {
                 onTranslationSelected: onTranslation1Changed,
                 currentSelectedBookAbbrev: selectedBook,
                 booksMap: booksMap,
+                isPremium: isPremium,
               );
             },
             style: ElevatedButton.styleFrom(
@@ -104,12 +137,12 @@ class BibleOptionsBar extends StatelessWidget {
                   style: const TextStyle(fontSize: 12)),
               onPressed: () {
                 BiblePageWidgets.showTranslationSelection(
-                  context: context,
-                  selectedTranslation: selectedTranslation2 ?? 'acf',
-                  onTranslationSelected: onTranslation2Changed,
-                  currentSelectedBookAbbrev: selectedBook,
-                  booksMap: booksMap,
-                );
+                    context: context,
+                    selectedTranslation: selectedTranslation2 ?? 'acf',
+                    onTranslationSelected: onTranslation2Changed,
+                    currentSelectedBookAbbrev: selectedBook,
+                    booksMap: booksMap,
+                    isPremium: isPremium);
               },
               style: ElevatedButton.styleFrom(
                   backgroundColor: theme.cardColor,
@@ -185,13 +218,19 @@ class BibleOptionsBar extends StatelessWidget {
                       ? Icons.font_download_off_outlined
                       : Icons.font_download_outlined,
                   size: 22),
-              tooltip: showHebrewInterlinear
-                  ? "Ocultar Hebraico Interlinear"
-                  : "Mostrar Hebraico Interlinear",
-              onPressed: onToggleHebrewInterlinear,
-              color: showHebrewInterlinear
-                  ? theme.colorScheme.secondary
-                  : theme.iconTheme.color,
+              tooltip: "Hebraico Interlinear (Premium)",
+              onPressed: () {
+                if (isPremium) {
+                  onToggleHebrewInterlinear();
+                } else {
+                  _showPremiumDialog(context);
+                }
+              },
+              color: isPremium
+                  ? (showHebrewInterlinear
+                      ? premiumIconColor
+                      : theme.iconTheme.color)
+                  : premiumIconColor.withOpacity(1),
               splashRadius: 20,
             ),
 
@@ -203,19 +242,25 @@ class BibleOptionsBar extends StatelessWidget {
                       ? Icons.font_download_off_outlined
                       : Icons.font_download_outlined,
                   size: 22),
-              tooltip: showGreekInterlinear
-                  ? "Ocultar Grego Interlinear"
-                  : "Mostrar Grego Interlinear",
-              onPressed: onToggleGreekInterlinear,
-              color: showGreekInterlinear
-                  ? theme.colorScheme.secondary
-                  : theme.iconTheme.color,
+              tooltip: "Grego Interlinear (Premium)",
+              onPressed: () {
+                if (isPremium) {
+                  onToggleGreekInterlinear();
+                } else {
+                  _showPremiumDialog(context);
+                }
+              },
+              color: isPremium
+                  ? (showGreekInterlinear
+                      ? premiumIconColor
+                      : theme.iconTheme.color)
+                  : premiumIconColor.withOpacity(1),
               splashRadius: 20,
             ),
 
           // Botões para Tamanho da Fonte
           IconButton(
-            icon: Icon(Icons.text_decrease_outlined, size: 22),
+            icon: const Icon(Icons.text_decrease_outlined, size: 22),
             tooltip: "Diminuir Fonte",
             onPressed: currentFontSizeMultiplier > minFontMultiplier
                 ? onDecreaseFontSize
@@ -226,7 +271,7 @@ class BibleOptionsBar extends StatelessWidget {
             splashRadius: 20,
           ),
           IconButton(
-            icon: Icon(Icons.text_increase_outlined, size: 22),
+            icon: const Icon(Icons.text_increase_outlined, size: 22),
             tooltip: "Aumentar Fonte",
             onPressed: currentFontSizeMultiplier < maxFontMultiplier
                 ? onIncreaseFontSize
