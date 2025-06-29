@@ -246,7 +246,7 @@ class _LibraryPageState extends State<LibraryPage> {
               "A jornada da igreja cristã desde os apóstolos até a era moderna.",
           'author': 'Philip Schaff',
           'pageCount': '8 volumes / +5000 páginas',
-          'isFullyPremium': true,
+          'isFullyPremium': false,
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/historia_igreja.webp',
           'destinationPage': const ChurchHistoryIndexPage(),

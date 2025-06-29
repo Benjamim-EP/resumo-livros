@@ -1,7 +1,9 @@
 // lib/pages/library_page/church_history_volume_page.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/models/church_history_model.dart';
-import 'package:septima_biblia/services/tts_manager.dart'; // >>> 1. Importar o TtsManager
+// >>> INÍCIO DA MUDANÇA 1/4: Importar o TtsManager <<<
+import 'package:septima_biblia/services/tts_manager.dart';
+// >>> FIM DA MUDANÇA 1/4 <<<
 
 class ChurchHistoryVolumePage extends StatefulWidget {
   final ChurchHistoryVolume volume;
@@ -17,30 +19,30 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // >>> INÍCIO DA MODIFICAÇÃO 1/4: Adicionar estado e instância do TTS <<<
+  // >>> INÍCIO DA MUDANÇA 2/4: Adicionar estado e instância do TTS <<<
   final TtsManager _ttsManager = TtsManager();
   TtsPlayerState _playerState = TtsPlayerState.stopped;
-  // >>> FIM DA MODIFICAÇÃO 1/4 <<<
+  // >>> FIM DA MUDANÇA 2/4 <<<
 
   @override
   void initState() {
     super.initState();
-    // >>> INÍCIO DA MODIFICAÇÃO 2/4: Adicionar listener <<<
+    // >>> INÍCIO DA MUDANÇA 3/4: Adicionar listener <<<
     _ttsManager.playerState.addListener(_onTtsStateChanged);
-    // >>> FIM DA MODIFICAÇÃO 2/4 <<<
+    // >>> FIM DA MUDANÇA 3/4 <<<
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    // >>> INÍCIO DA MODIFICAÇÃO 3/4: Parar TTS e remover listener <<<
+    // >>> INÍCIO DA MUDANÇA 4/4: Parar TTS e remover listener <<<
     _ttsManager.playerState.removeListener(_onTtsStateChanged);
     _ttsManager.stop(); // Garante que o áudio pare ao sair da página
-    // >>> FIM DA MODIFICAÇÃO 3/4 <<<
+    // >>> FIM DA MUDANÇA 4/4 <<<
     super.dispose();
   }
 
-  // >>> INÍCIO DA MODIFICAÇÃO 4/4: Funções de controle do TTS <<<
+  // >>> INÍCIO DAS NOVAS FUNÇÕES DE CONTROLE DE ÁUDIO <<<
 
   /// Atualiza o estado da UI quando o estado do player TTS muda.
   void _onTtsStateChanged() {
@@ -121,7 +123,7 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
         return "Ouvir Capítulo";
     }
   }
-  // >>> FIM DA MODIFICAÇÃO 4/4 <<<
+  // >>> FIM DAS NOVAS FUNÇÕES DE CONTROLE DE ÁUDIO <<<
 
   @override
   Widget build(BuildContext context) {
