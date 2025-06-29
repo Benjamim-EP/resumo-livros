@@ -1502,4 +1502,59 @@ class FirestoreService {
       rethrow;
     }
   }
+
+  /// Adiciona uma promessa selecionada a um diário específico.
+  Future<void> addPromiseToDiary(
+      String userId, DateTime date, Map<String, String> promise) async {
+    final String entryId = DateFormat('yyyy-MM-dd').format(date);
+    final docRef = _db
+        .collection('diaries')
+        .doc(userId)
+        .collection('entries')
+        .doc(entryId);
+
+    // O objeto 'promise' terá a forma {'text': '...', 'reference': '...'}
+    final Map<String, dynamic> promiseData = {
+      'text': promise['text'],
+      'reference': promise['reference'],
+      'addedAt': Timestamp.now(), // Timestamp do cliente
+    };
+
+    try {
+      await docRef.update({
+        'attachedPromises': FieldValue.arrayUnion([promiseData])
+      });
+    } catch (e) {
+      if (e is FirebaseException && e.code == 'not-found') {
+        await docRef.set({
+          'attachedPromises': [promiseData],
+          'date': Timestamp.fromDate(date),
+          'lastUpdated': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        print("FirestoreService: Erro ao adicionar promessa ao diário: $e");
+        rethrow;
+      }
+    }
+  }
+
+  /// Remove uma promessa de um diário específico.
+  Future<void> removePromiseFromDiary(String userId, DateTime date,
+      Map<String, dynamic> promiseToRemove) async {
+    final String entryId = DateFormat('yyyy-MM-dd').format(date);
+    final docRef = _db
+        .collection('diaries')
+        .doc(userId)
+        .collection('entries')
+        .doc(entryId);
+
+    try {
+      await docRef.update({
+        'attachedPromises': FieldValue.arrayRemove([promiseToRemove])
+      });
+    } catch (e) {
+      print("FirestoreService: Erro ao remover promessa do diário: $e");
+      rethrow;
+    }
+  }
 }

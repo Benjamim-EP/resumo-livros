@@ -8,11 +8,11 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/models/devotional_model.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_card.dart';
+import 'package:septima_biblia/pages/devotional_page/promise_search_modal.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 
 class DailyDevotionalView extends StatefulWidget {
   final DateTime date;
-
   const DailyDevotionalView({super.key, required this.date});
 
   @override
@@ -23,10 +23,11 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
   // Estado para os devocionais (Spurgeon)
   Future<List<DevotionalReading>>? _devotionalFuture;
 
-  // Estado para o diário e orações
+  // Estado para o diário e orações/promessas
   final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _journalController = TextEditingController();
   List<Map<String, dynamic>> _prayerPoints = [];
+  List<Map<String, dynamic>> _attachedPromises = [];
   bool _isLoadingDiary = true;
   Timer? _debounce;
   String? _userId;
@@ -37,12 +38,10 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
     _userId = FirebaseAuth.instance.currentUser?.uid;
     _loadAllDataForDate(widget.date);
 
-    // Debounce para salvar o diário automaticamente
+    // Debounce para salvar o diário automaticamente após o usuário parar de digitar
     _journalController.addListener(() {
       if (_debounce?.isActive ?? false) _debounce!.cancel();
-      _debounce = Timer(const Duration(seconds: 2), () {
-        _saveJournalEntry();
-      });
+      _debounce = Timer(const Duration(seconds: 2), _saveJournalEntry);
     });
   }
 
@@ -50,7 +49,7 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
   void didUpdateWidget(covariant DailyDevotionalView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!DateUtils.isSameDay(widget.date, oldWidget.date)) {
-      _saveJournalEntry();
+      _saveJournalEntry(); // Salva a entrada anterior antes de carregar a nova
       _loadAllDataForDate(widget.date);
     }
   }
@@ -62,6 +61,7 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
     super.dispose();
   }
 
+  // Carrega todos os dados (devocionais e diário) para a data especificada
   void _loadAllDataForDate(DateTime date) {
     setState(() {
       _devotionalFuture = _fetchDevotionalFor(date);
@@ -70,27 +70,31 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
     _loadDiaryData(date);
   }
 
+  // Carrega os dados do Firestore (diário, orações, promessas)
   Future<void> _loadDiaryData(DateTime date) async {
     if (_userId == null) {
       setState(() {
         _journalController.text = "Faça login para usar o diário.";
         _prayerPoints = [];
+        _attachedPromises = [];
         _isLoadingDiary = false;
       });
       return;
     }
-
     final entry = await _firestoreService.getDiaryEntry(_userId!, date);
     if (mounted) {
       setState(() {
         _journalController.text = entry?['journalText'] ?? '';
         _prayerPoints =
             List<Map<String, dynamic>>.from(entry?['prayerPoints'] ?? []);
+        _attachedPromises =
+            List<Map<String, dynamic>>.from(entry?['attachedPromises'] ?? []);
         _isLoadingDiary = false;
       });
     }
   }
 
+  // Salva o texto do diário no Firestore
   Future<void> _saveJournalEntry() async {
     if (_userId == null || !mounted) return;
     await _firestoreService.updateJournalText(
@@ -98,14 +102,12 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
     print("Diário salvo para ${widget.date}");
   }
 
-  // >>> INÍCIO DA CORREÇÃO 1/2: Renomeada e ajustada <<<
-  // Esta função é chamada pelo diálogo.
-  Future<void> _addNewPrayerPoint(String text) async {
+  // Funções para gerenciar Pedidos de Oração
+  Future<void> _addPrayerPoint(String text) async {
     if (_userId == null || text.trim().isEmpty) return;
     await _firestoreService.addPrayerPoint(_userId!, widget.date, text.trim());
-    _loadDiaryData(widget.date); // Recarrega para mostrar a nova oração
+    _loadDiaryData(widget.date);
   }
-  // >>> FIM DA CORREÇÃO 1/2 <<<
 
   Future<void> _updatePrayerPointStatus(int index, bool isAnswered) async {
     if (_userId == null) return;
@@ -119,7 +121,7 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
   Future<void> _removePrayerPoint(Map<String, dynamic> prayer) async {
     if (_userId == null) return;
     await _firestoreService.removePrayerPoint(_userId!, widget.date, prayer);
-    _loadDiaryData(widget.date); // Recarrega
+    _loadDiaryData(widget.date);
   }
 
   Future<void> _showAddPrayerDialog() async {
@@ -140,9 +142,7 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
               child: const Text("Cancelar")),
           TextButton(
             onPressed: () {
-              // >>> INÍCIO DA CORREÇÃO 2/2: Chamando a função correta <<<
-              _addNewPrayerPoint(prayerController.text);
-              // >>> FIM DA CORREÇÃO 2/2 <<<
+              _addPrayerPoint(prayerController.text);
               Navigator.pop(context);
             },
             child: const Text("Adicionar"),
@@ -152,48 +152,63 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
     );
   }
 
+  // Funções para gerenciar Promessas
+  Future<void> _addPromiseToDiary(Map<String, String> promise) async {
+    if (_userId == null) return;
+    await _firestoreService.addPromiseToDiary(_userId!, widget.date, promise);
+    _loadDiaryData(widget.date);
+  }
+
+  Future<void> _removePromiseFromDiary(Map<String, dynamic> promise) async {
+    if (_userId == null) return;
+    await _firestoreService.removePromiseFromDiary(
+        _userId!, widget.date, promise);
+    _loadDiaryData(widget.date);
+  }
+
+  void _showPromiseSearchModal() {
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) =>
+            PromiseSearchModal(onPromiseSelected: _addPromiseToDiary));
+  }
+
+  // Carrega os devocionais do JSON local
   Future<List<DevotionalReading>> _fetchDevotionalFor(DateTime date) async {
     final String jsonString = await rootBundle
         .loadString('assets/devotional/spurgeon_morning_evening.json');
     final List<dynamic> allMonths = json.decode(jsonString);
-
     String monthName = DateFormat('MMMM', 'pt_BR').format(date);
     monthName = monthName[0].toUpperCase() + monthName.substring(1);
     final dayOfMonth = date.day;
-
     final monthData = allMonths
         .firstWhere((m) => m['section_title'] == monthName, orElse: () => null);
-
     if (monthData == null) return [];
-
     final allReadings = (monthData['readings'] as List)
         .map((r) => DevotionalReading.fromJson(r))
         .toList();
-
     final morningReading = allReadings.firstWhere(
-      (r) => r.title.contains("Manhã, $dayOfMonth de"),
-      orElse: () => DevotionalReading(
-          title: 'Manhã',
-          content: ["Leitura da manhã não encontrada."],
-          scripturePassage: '',
-          scriptureVerse: ''),
-    );
-
+        (r) => r.title.contains("Manhã, $dayOfMonth de"),
+        orElse: () => DevotionalReading(
+            title: 'Manhã',
+            content: ["Leitura não encontrada."],
+            scripturePassage: '',
+            scriptureVerse: ''));
     final eveningReading = allReadings.firstWhere(
-      (r) => r.title.contains("Noite, $dayOfMonth de"),
-      orElse: () => DevotionalReading(
-          title: 'Noite',
-          content: ["Leitura da noite não encontrada."],
-          scripturePassage: '',
-          scriptureVerse: ''),
-    );
-
+        (r) => r.title.contains("Noite, $dayOfMonth de"),
+        orElse: () => DevotionalReading(
+            title: 'Noite',
+            content: ["Leitura não encontrada."],
+            scripturePassage: '',
+            scriptureVerse: ''));
     return [morningReading, eveningReading];
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
@@ -210,27 +225,20 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
             final readings = snapshot.data!;
             final morningReading = readings[0];
             final eveningReading = readings[1];
-
             final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
             final currentHour = DateTime.now().hour;
-            const eveningStartHour = 20;
+            const eveningStartHour = 18;
 
-            // Lista para construir os widgets de devocional
             List<Widget> devotionalWidgets = [];
 
-            // >>> INÍCIO DA LÓGICA DE EXIBIÇÃO CORRIGIDA <<<
-
             if (isToday) {
-              // É o dia de hoje
               if (currentHour < eveningStartHour) {
-                // ANTES das 18h: mostra SÓ o da manhã
                 devotionalWidgets.add(DevotionalCard(
                     reading: morningReading,
                     isRead: false,
                     onMarkAsRead: () {},
                     onPlay: () {}));
               } else {
-                // A PARTIR das 18h: mostra AMBOS
                 devotionalWidgets.add(DevotionalCard(
                     reading: morningReading,
                     isRead: false,
@@ -244,7 +252,6 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
                     onPlay: () {}));
               }
             } else {
-              // NÃO é o dia de hoje (passado ou futuro): mostra AMBOS
               devotionalWidgets.add(DevotionalCard(
                   reading: morningReading,
                   isRead: false,
@@ -258,18 +265,16 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
                   onPlay: () {}));
             }
 
-            // >>> FIM DA LÓGICA DE EXIBIÇÃO CORRIGIDA <<<
-
             return Column(children: devotionalWidgets);
           },
         ),
 
         const SizedBox(height: 24),
-        Divider(color: Theme.of(context).dividerColor.withOpacity(0.5)),
+        Divider(color: theme.dividerColor.withOpacity(0.5)),
         const SizedBox(height: 16),
 
         // --- SEÇÃO MEU DIÁRIO ---
-        Text("Meu Diário", style: Theme.of(context).textTheme.headlineSmall),
+        Text("Meu Diário", style: theme.textTheme.headlineSmall),
         const SizedBox(height: 12),
         if (_isLoadingDiary)
           const Center(child: CircularProgressIndicator())
@@ -284,63 +289,113 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
                   : "Faça login para usar esta função.",
               border: const OutlineInputBorder(),
               filled: true,
-              fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+              fillColor: theme.colorScheme.surface.withOpacity(0.5),
             ),
           ),
 
         const SizedBox(height: 24),
 
-        // --- SEÇÃO PEDIDOS DE ORAÇÃO ---
+        // --- SEÇÃO PEDIDOS DE ORAÇÃO E PROMESSAS ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Pedidos de Oração",
-                style: Theme.of(context).textTheme.headlineSmall),
+            Text("Orações e Promessas", style: theme.textTheme.headlineSmall),
             if (_userId != null)
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline),
-                tooltip: "Adicionar Pedido",
-                onPressed: _showAddPrayerDialog,
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle),
+                    tooltip: "Adicionar Pedido de Oração",
+                    onPressed: _showAddPrayerDialog,
+                    color: theme.colorScheme.primary,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.shield_outlined),
+                    tooltip: "Anexar Promessa",
+                    onPressed: _showPromiseSearchModal,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ],
               )
           ],
         ),
         const SizedBox(height: 8),
         if (_isLoadingDiary)
           const Center(child: CircularProgressIndicator())
-        else if (_prayerPoints.isEmpty)
-          const Text("Nenhum pedido de oração para hoje.",
+        else if (_prayerPoints.isEmpty && _attachedPromises.isEmpty)
+          const Text("Nenhum pedido de oração ou promessa para hoje.",
               style: TextStyle(fontStyle: FontStyle.italic))
         else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _prayerPoints.length,
-            itemBuilder: (context, index) {
-              final prayer = _prayerPoints[index];
-              final bool isAnswered = prayer['answered'] ?? false;
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 4.0),
-                child: ListTile(
-                  title: Text(
-                    prayer['text'] ?? 'Erro',
-                    style: TextStyle(
-                        decoration: isAnswered
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none),
-                  ),
-                  leading: Checkbox(
-                    value: isAnswered,
-                    onChanged: (value) =>
-                        _updatePrayerPointStatus(index, value!),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: Colors.redAccent),
-                    onPressed: () => _removePrayerPoint(prayer),
-                  ),
-                ),
-              );
-            },
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Lista de Pedidos de Oração
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _prayerPoints.length,
+                itemBuilder: (context, index) {
+                  final prayer = _prayerPoints[index];
+                  final bool isAnswered = prayer['answered'] ?? false;
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: ListTile(
+                      title: Text(
+                        prayer['text'] ?? 'Erro',
+                        style: TextStyle(
+                            decoration: isAnswered
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none),
+                      ),
+                      leading: Checkbox(
+                        value: isAnswered,
+                        onChanged: (value) =>
+                            _updatePrayerPointStatus(index, value!),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline,
+                            color: Colors.redAccent),
+                        onPressed: () => _removePrayerPoint(prayer),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              // Lista de Promessas Anexadas
+              if (_attachedPromises.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text("Promessas para Orar:",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _attachedPromises.length,
+                    itemBuilder: (context, index) {
+                      final promise = _attachedPromises[index];
+                      return Card(
+                        color: theme.colorScheme.secondaryContainer
+                            .withOpacity(0.5),
+                        margin: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: ListTile(
+                          leading: Icon(Icons.shield,
+                              color: theme.colorScheme.secondary),
+                          title: Text('"${promise['text']}"',
+                              style:
+                                  const TextStyle(fontStyle: FontStyle.italic)),
+                          subtitle: Text(promise['reference'],
+                              textAlign: TextAlign.right),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            tooltip: "Desanexar promessa",
+                            onPressed: () => _removePromiseFromDiary(promise),
+                          ),
+                        ),
+                      );
+                    }),
+              ]
+            ],
           )
       ],
     );
