@@ -7,6 +7,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/tts_manager.dart';
 
 // ViewModel para o StoreConnector
 class _CommentaryModalViewModel {
@@ -51,6 +52,90 @@ class SectionCommentaryModal extends StatefulWidget {
 
 class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
   bool _showOriginalText = false;
+  // >>> INÍCIO DA MUDANÇA 1/3: Adicionar estado e instância do TTS <<<
+  final TtsManager _ttsManager = TtsManager();
+  TtsPlayerState _playerState = TtsPlayerState.stopped;
+
+  @override
+  void initState() {
+    super.initState();
+    _ttsManager.playerState.addListener(_onTtsStateChanged);
+  }
+
+  @override
+  void dispose() {
+    _ttsManager.playerState.removeListener(_onTtsStateChanged);
+    _ttsManager.stop(); // Garante que o áudio pare ao fechar o modal
+    super.dispose();
+  }
+
+  // --- Funções de Controle de Áudio ---
+  void _onTtsStateChanged() {
+    if (mounted && _playerState != _ttsManager.playerState.value) {
+      setState(() => _playerState = _ttsManager.playerState.value);
+    }
+  }
+
+  void _startCommentaryPlayback() {
+    final List<TtsQueueItem> queue = [];
+    final String sectionId =
+        "commentary_${widget.bookSlug}_${widget.chapterNumber}_${widget.versesRangeStr}";
+
+    // Adiciona o título
+    queue.add(TtsQueueItem(
+        sectionId: sectionId,
+        textToSpeak: "Comentário sobre: ${widget.sectionTitle}"));
+
+    // Adiciona os parágrafos
+    final commentaryText = _getCombinedCommentaryText();
+    // Divide o texto em parágrafos (assumindo que são separados por duas quebras de linha)
+    final paragraphs = commentaryText.split(RegExp(r'\n\n+'));
+    for (var paragraph in paragraphs) {
+      if (paragraph.trim().isNotEmpty) {
+        queue.add(TtsQueueItem(sectionId: sectionId, textToSpeak: paragraph));
+      }
+    }
+
+    if (queue.isNotEmpty) {
+      _ttsManager.speak(queue, queue.first.sectionId);
+    }
+  }
+
+  void _handleAudioControl() {
+    switch (_playerState) {
+      case TtsPlayerState.stopped:
+        _startCommentaryPlayback();
+        break;
+      case TtsPlayerState.playing:
+        _ttsManager.pause();
+        break;
+      case TtsPlayerState.paused:
+        _ttsManager.restartCurrentItem();
+        break;
+    }
+  }
+
+  IconData _getAudioIcon() {
+    switch (_playerState) {
+      case TtsPlayerState.playing:
+        return Icons.pause_circle_outline;
+      case TtsPlayerState.paused:
+        return Icons.play_circle_outline;
+      default:
+        return Icons.play_circle_outline;
+    }
+  }
+
+  String _getAudioTooltip() {
+    switch (_playerState) {
+      case TtsPlayerState.playing:
+        return "Pausar Leitura";
+      case TtsPlayerState.paused:
+        return "Continuar Leitura";
+      default:
+        return "Ouvir Comentário";
+    }
+  }
 
   String get currentSectionIdForHighlights {
     return "${widget.bookSlug}_c${widget.chapterNumber}_v${widget.versesRangeStr}";
@@ -425,22 +510,47 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.translate_rounded,
-                            size: 24,
-                            color: _showOriginalText
-                                ? theme.colorScheme.primary
-                                : theme.iconTheme.color?.withOpacity(0.8),
-                          ),
-                          tooltip: _showOriginalText
-                              ? "Ver Tradução (PT)"
-                              : "Ver Original (EN)",
-                          onPressed: () => setState(
-                              () => _showOriginalText = !_showOriginalText),
-                          splashRadius: 22,
-                          padding: const EdgeInsets.all(10),
-                        )
+                        // >>> INÍCIO DA MUDANÇA 2/3: Adicionar os botões de controle <<<
+                        Row(
+                          children: [
+                            // Botão de Tradução
+                            IconButton(
+                              icon: Icon(
+                                Icons.translate_rounded,
+                                size: 24,
+                                color: _showOriginalText
+                                    ? theme.colorScheme.primary
+                                    : theme.iconTheme.color?.withOpacity(0.8),
+                              ),
+                              tooltip: _showOriginalText
+                                  ? "Ver Tradução (PT)"
+                                  : "Ver Original (EN)",
+                              onPressed: () {
+                                setState(() =>
+                                    _showOriginalText = !_showOriginalText);
+                                _ttsManager
+                                    .stop(); // Para a leitura se o idioma mudar
+                              },
+                              splashRadius: 22,
+                              padding: const EdgeInsets.all(10),
+                            ),
+                            // Botão de Leitura em Áudio
+                            IconButton(
+                              icon: Icon(
+                                _getAudioIcon(),
+                                color: _playerState == TtsPlayerState.playing
+                                    ? theme.colorScheme.secondary
+                                    : theme.iconTheme.color,
+                                size: 28,
+                              ),
+                              tooltip: _getAudioTooltip(),
+                              onPressed: _handleAudioControl,
+                              splashRadius: 22,
+                              padding: const EdgeInsets.all(10),
+                            ),
+                          ],
+                        ),
+                        // >>> FIM DA MUDANÇA 2/3 <<<
                       ],
                     ),
                   ),

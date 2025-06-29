@@ -90,6 +90,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   Future<void> _showCommentary(BuildContext context) async {
     if (!mounted) return;
+    TtsManager().stop();
     setState(() => _isLoadingCommentary = true);
     final commentaryData =
         await _firestoreService.getSectionCommentary(_commentaryDocId);
