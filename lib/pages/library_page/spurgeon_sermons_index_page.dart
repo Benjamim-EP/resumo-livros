@@ -1,19 +1,55 @@
-// lib/pages/spurgeon_sermons_index_page.dart
-import 'dart:convert';
+// lib/pages/library_page/spurgeon_sermons_index_page.dart
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart'; // Para DateFormat
+import 'package:intl/intl.dart';
+import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart'; // Para _UserCoinsViewModel
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
-import 'package:septima_biblia/pages/biblie_page/utils.dart'; // Para os Dropdowns
+import 'package:septima_biblia/pages/biblie_page/utils.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
 import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
-import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart'; // Para SermonSearchState
-import 'package:septima_biblia/redux/store.dart'; // Para AppState
+import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
+import 'package:redux/redux.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class _SermonsViewModel {
+  final bool isPremium;
+  final SermonSearchState sermonSearchState;
+
+  _SermonsViewModel({required this.isPremium, required this.sermonSearchState});
+
+  static _SermonsViewModel fromStore(Store<AppState> store) {
+    bool isCurrentlyPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    if (!isCurrentlyPremium) {
+      final userDetails = store.state.userState.userDetails;
+      if (userDetails != null) {
+        final status = userDetails['subscriptionStatus'] as String?;
+        final endDateTimestamp =
+            userDetails['subscriptionEndDate'] as Timestamp?;
+        if (status == 'active' &&
+            endDateTimestamp != null &&
+            endDateTimestamp.toDate().isAfter(DateTime.now())) {
+          isCurrentlyPremium = true;
+        }
+      }
+    }
+
+    return _SermonsViewModel(
+      isPremium: isCurrentlyPremium,
+      sermonSearchState: store.state.sermonSearchState,
+    );
+  }
+}
 
 class PreloadSermonItem {
   final String title;
@@ -57,7 +93,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   final TextEditingController _semanticSermonSearchController =
       TextEditingController();
   bool _isSemanticSearchModeActive = false;
-
   String? _expandedSermonResultId;
 
   @override
@@ -72,21 +107,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
         final store = StoreProvider.of<AppState>(context, listen: false);
         if (store.state.sermonSearchState.searchHistory.isEmpty &&
             !store.state.sermonSearchState.isLoadingHistory) {
-          print(
-              "SpurgeonSermonsIndexPage: Disparando LoadSermonSearchHistoryAction no initState.");
           store.dispatch(LoadSermonSearchHistoryAction());
         }
-      }
-    });
-  }
-
-  void _toggleSermonParagraphsExpansion(String sermonIdBase) {
-    if (!mounted) return;
-    setState(() {
-      if (_expandedSermonResultId == sermonIdBase) {
-        _expandedSermonResultId = null; // Recolhe se já estiver expandido
-      } else {
-        _expandedSermonResultId = sermonIdBase; // Expande o novo item
       }
     });
   }
@@ -100,6 +122,17 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     _semanticSermonSearchController.dispose();
     _localTitleSearchDebounce?.cancel();
     super.dispose();
+  }
+
+  void _toggleSermonParagraphsExpansion(String sermonIdBase) {
+    if (!mounted) return;
+    setState(() {
+      if (_expandedSermonResultId == sermonIdBase) {
+        _expandedSermonResultId = null;
+      } else {
+        _expandedSermonResultId = sermonIdBase;
+      }
+    });
   }
 
   Future<void> _loadInitialPreloadedData() async {
@@ -145,7 +178,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
         });
       }
     } catch (e, s) {
-      print("Erro ao carregar dados dos sermões (preload): $e\n$s");
       if (mounted) {
         setState(() {
           _errorPreload = "Falha ao carregar índice de sermões.";
@@ -297,9 +329,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   void _performSemanticSermonSearch() {
     final query = _semanticSermonSearchController.text.trim();
     if (query.isNotEmpty) {
-      StoreProvider.of<AppState>(context, listen: false).dispatch(
-        SearchSermonsAction(query: query),
-      );
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(SearchSermonsAction(query: query));
     } else {
       StoreProvider.of<AppState>(context, listen: false)
           .dispatch(ClearSermonSearchResultsAction());
@@ -324,236 +355,150 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isSemanticSearchModeActive
-            ? "Busca Inteligente de Sermões"
-            : "Sermões de C.H. Spurgeon"),
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        foregroundColor: theme.appBarTheme.foregroundColor,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 8.0),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: SvgPicture.asset(
-                    'assets/icons/buscasemantica.svg',
-                    colorFilter: ColorFilter.mode(
-                        _isSemanticSearchModeActive
-                            ? theme.colorScheme.primary
-                            : (theme.iconTheme.color?.withOpacity(0.7) ??
-                                theme.hintColor),
-                        BlendMode.srcIn),
-                    width: 24,
-                    height: 24,
-                  ),
-                  tooltip: _isSemanticSearchModeActive
-                      ? "Alternar para Lista/Filtros"
-                      : "Alternar para Busca Inteligente",
-                  onPressed: _toggleSemanticSearchMode,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _isSemanticSearchModeActive
-                        ? _semanticSermonSearchController
-                        : _localTitleSearchController,
-                    style: TextStyle(
-                        color: theme.textTheme.bodyLarge?.color,
-                        fontSize: 14.5),
-                    decoration: InputDecoration(
-                      hintText: _isSemanticSearchModeActive
-                          ? "Busca inteligente nos sermões..."
-                          : "Buscar por título na lista...",
-                      hintStyle: TextStyle(
-                          color: theme.hintColor.withOpacity(0.8),
-                          fontSize: 14),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.search_rounded,
-                            color: theme.iconTheme.color?.withOpacity(0.9),
-                            size: 24),
-                        tooltip: "Buscar",
-                        onPressed: _isSemanticSearchModeActive
-                            ? _performSemanticSermonSearch
-                            : () =>
-                                _applyLocalFiltersAndDisplayPreloadedSermons(),
-                      ),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                      filled: true,
-                      fillColor: theme.inputDecorationTheme.fillColor ??
-                          theme.cardColor.withOpacity(0.5),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25.0),
-                          borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25.0),
-                          borderSide: BorderSide(
-                              color: theme.dividerColor.withOpacity(0.3),
-                              width: 0.8)),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25.0),
-                          borderSide: BorderSide(
-                              color: theme.colorScheme.primary, width: 1.5)),
-                    ),
-                    onSubmitted: (_) => _isSemanticSearchModeActive
-                        ? _performSemanticSermonSearch()
-                        : _applyLocalFiltersAndDisplayPreloadedSermons(),
-                    textInputAction: TextInputAction.search,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!_isSemanticSearchModeActive) _buildFilterBarForPreload(theme),
-          Expanded(
-            child: StoreConnector<AppState, SermonSearchState>(
-              converter: (store) => store.state.sermonSearchState,
-              distinct: true, // Para evitar reconstruções desnecessárias
-              builder: (context, sermonSearchState) {
-                if (_isSemanticSearchModeActive) {
-                  // 1. Se está carregando uma NOVA busca
-                  if (sermonSearchState.isLoading &&
-                      sermonSearchState.currentSermonQuery.isNotEmpty) {
-                    print(
-                        "SpurgeonSermonsIndexPage: Mostrando loader para nova busca de sermões (Query: '${sermonSearchState.currentSermonQuery}').");
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  // 2. Se houve um erro na busca
-                  if (!sermonSearchState.isLoading &&
-                      sermonSearchState.error != null) {
-                    print(
-                        "SpurgeonSermonsIndexPage: Mostrando erro da busca de sermões: ${sermonSearchState.error}");
-                    return Center(
-                        child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                                "Erro na busca: ${sermonSearchState.error}",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color: theme.colorScheme.error))));
-                  }
-                  // 3. Se houver resultados da busca ATUAL de sermões
-                  if (sermonSearchState.sermonResults.isNotEmpty) {
-                    print(
-                        "SpurgeonSermonsIndexPage: Mostrando ${sermonSearchState.sermonResults.length} resultados da busca de sermões para '${sermonSearchState.currentSermonQuery}'.");
-                    return _buildSemanticSearchResultsList(
-                        theme, sermonSearchState.sermonResults);
-                  }
-                  // 4. Se NÃO há query ATIVA E HÁ histórico
-                  if (sermonSearchState.currentSermonQuery.isEmpty &&
-                      sermonSearchState.searchHistory.isNotEmpty) {
-                    print(
-                        "SpurgeonSermonsIndexPage: Mostrando histórico de ${sermonSearchState.searchHistory.length} buscas de sermões.");
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 12.0),
-                          child: Text("Histórico de Buscas de Sermões:",
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.9))),
-                        ),
-                        Expanded(
-                          child: ListView.builder(
-                            itemCount: sermonSearchState.searchHistory.length,
-                            itemBuilder: (context, index) {
-                              final historyEntry =
-                                  sermonSearchState.searchHistory[index];
-                              final String query =
-                                  historyEntry['query'] as String? ??
-                                      'Busca inválida';
-                              final String? timestampStr =
-                                  historyEntry['timestamp'] as String?;
-                              final DateTime? timestamp = timestampStr != null
-                                  ? DateTime.tryParse(timestampStr)
-                                  : null;
-
-                              return ListTile(
-                                leading: Icon(Icons.history,
-                                    color: theme.iconTheme.color
-                                        ?.withOpacity(0.6)),
-                                title: Text(query,
-                                    style: theme.textTheme.bodyLarge),
-                                subtitle: timestamp != null
-                                    ? Text(
-                                        DateFormat('dd/MM/yy HH:mm')
-                                            .format(timestamp.toLocal()),
-                                        style: theme.textTheme.bodySmall)
-                                    : null,
-                                trailing: Icon(Icons.arrow_forward_ios_rounded,
-                                    size: 16,
-                                    color: theme.iconTheme.color
-                                        ?.withOpacity(0.5)),
-                                onTap: () {
-                                  _semanticSermonSearchController.text = query;
-                                  StoreProvider.of<AppState>(context,
-                                          listen: false)
-                                      .dispatch(
-                                          ViewSermonSearchFromHistoryAction(
-                                              historyEntry));
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-                  // 5. Se houve uma busca ATIVA mas não encontrou resultados
-                  if (!sermonSearchState.isLoading &&
-                      sermonSearchState.sermonResults.isEmpty &&
-                      sermonSearchState.currentSermonQuery.isNotEmpty) {
-                    print(
-                        "SpurgeonSermonsIndexPage: Nenhum resultado para busca de sermões '${sermonSearchState.currentSermonQuery}'.");
-                    return Center(
-                        child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                                "Nenhum sermão encontrado para '${sermonSearchState.currentSermonQuery}'.",
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.bodyMedium)));
-                  }
-                  // 6. Mensagem padrão
-                  print(
-                      "SpurgeonSermonsIndexPage: Exibindo mensagem padrão/carregando histórico de sermões (isLoadingHistory: ${sermonSearchState.isLoadingHistory}).");
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        sermonSearchState.isLoadingHistory
-                            ? "Carregando histórico de sermões..."
-                            : "Digite algo para a busca inteligente de sermões. Seu histórico aparecerá aqui.",
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodySmall?.color
-                                ?.withOpacity(0.7)),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                } else {
-                  // Modo de lista pré-carregada
-                  return _buildPreloadedSermonsList(theme);
-                }
-              },
-            ),
+  void _showPremiumFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'Filtrar sermões por livro e capítulo é um recurso exclusivo para assinantes Premium.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Entendi')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterBarForPreload(ThemeData theme) {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return StoreConnector<AppState, _SermonsViewModel>(
+      converter: (store) => _SermonsViewModel.fromStore(store),
+      builder: (context, viewModel) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(_isSemanticSearchModeActive
+                ? "Busca Inteligente de Sermões"
+                : "Sermões de C.H. Spurgeon"),
+            backgroundColor: theme.appBarTheme.backgroundColor,
+            foregroundColor: theme.appBarTheme.foregroundColor,
+          ),
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 8.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: SvgPicture.asset(
+                        'assets/icons/buscasemantica.svg',
+                        colorFilter: ColorFilter.mode(
+                            _isSemanticSearchModeActive
+                                ? theme.colorScheme.primary
+                                : (theme.iconTheme.color?.withOpacity(0.7) ??
+                                    theme.hintColor),
+                            BlendMode.srcIn),
+                        width: 24,
+                        height: 24,
+                      ),
+                      tooltip: _isSemanticSearchModeActive
+                          ? "Alternar para Lista/Filtros"
+                          : "Alternar para Busca Inteligente",
+                      onPressed: _toggleSemanticSearchMode,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _isSemanticSearchModeActive
+                            ? _semanticSermonSearchController
+                            : _localTitleSearchController,
+                        style: TextStyle(
+                            color: theme.textTheme.bodyLarge?.color,
+                            fontSize: 14.5),
+                        decoration: InputDecoration(
+                          hintText: _isSemanticSearchModeActive
+                              ? "Busca inteligente nos sermões..."
+                              : "Buscar por título na lista...",
+                          hintStyle: TextStyle(
+                              color: theme.hintColor.withOpacity(0.8),
+                              fontSize: 14),
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.search_rounded,
+                                color: theme.iconTheme.color?.withOpacity(0.9),
+                                size: 24),
+                            tooltip: "Buscar",
+                            onPressed: _isSemanticSearchModeActive
+                                ? _performSemanticSermonSearch
+                                : () =>
+                                    _applyLocalFiltersAndDisplayPreloadedSermons(),
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          filled: true,
+                          fillColor: theme.inputDecorationTheme.fillColor ??
+                              theme.cardColor.withOpacity(0.5),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(25.0),
+                              borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(25.0),
+                              borderSide: BorderSide(
+                                  color: theme.dividerColor.withOpacity(0.3),
+                                  width: 0.8)),
+                          focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(25.0),
+                              borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 1.5)),
+                        ),
+                        onSubmitted: (_) => _isSemanticSearchModeActive
+                            ? _performSemanticSermonSearch()
+                            : _applyLocalFiltersAndDisplayPreloadedSermons(),
+                        textInputAction: TextInputAction.search,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!_isSemanticSearchModeActive)
+                _buildFilterBarForPreload(theme, viewModel.isPremium),
+              Expanded(
+                child: StoreConnector<AppState, SermonSearchState>(
+                  converter: (store) => store.state.sermonSearchState,
+                  distinct: true,
+                  builder: (context, sermonSearchState) {
+                    if (_isSemanticSearchModeActive) {
+                      return _buildSemanticSearchUI(theme, sermonSearchState);
+                    } else {
+                      return _buildPreloadedSermonsList(theme);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterBarForPreload(ThemeData theme, bool isPremium) {
+    final Color premiumFeatureColor = Colors.amber.shade700;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
       decoration: BoxDecoration(
@@ -562,65 +507,89 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
             bottom: BorderSide(
                 color: theme.dividerColor.withOpacity(0.2), width: 1)),
       ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            flex: 2,
-            child: UtilsBiblePage.buildBookDropdown(
-              context: context,
-              selectedBook: _selectedBookFilterLocal,
-              booksMap: _bibleBooksMap,
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedBookFilterLocal = newValue;
-                  _selectedChapterFilterLocal = null;
-                  _applyLocalFiltersAndDisplayPreloadedSermons();
-                });
-              },
-              backgroundColor:
-                  (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
-                      .withOpacity(0.4),
-              textColor: theme.textTheme.bodySmall?.color,
-              iconColor: theme.iconTheme.color?.withOpacity(0.6),
-            ),
+      child: AbsorbPointer(
+        absorbing: !isPremium,
+        child: GestureDetector(
+          onTap: () {
+            if (!isPremium) _showPremiumFilterDialog();
+          },
+          child: Row(
+            children: <Widget>[
+              if (!isPremium)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Icon(Icons.lock,
+                      size: 18, color: premiumFeatureColor.withOpacity(0.7)),
+                ),
+              Expanded(
+                flex: 2,
+                child: UtilsBiblePage.buildBookDropdown(
+                  context: context,
+                  selectedBook: _selectedBookFilterLocal,
+                  booksMap: _bibleBooksMap,
+                  onChanged: (String? newValue) {
+                    if (!isPremium) return;
+                    setState(() {
+                      _selectedBookFilterLocal = newValue;
+                      _selectedChapterFilterLocal = null;
+                      _applyLocalFiltersAndDisplayPreloadedSermons();
+                    });
+                  },
+                  backgroundColor:
+                      (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
+                          .withOpacity(0.4),
+                  textColor: isPremium
+                      ? theme.textTheme.bodySmall?.color
+                      : Colors.grey.withOpacity(0.5),
+                  iconColor: isPremium
+                      ? theme.iconTheme.color?.withOpacity(0.6)
+                      : Colors.grey.withOpacity(0.5),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: UtilsBiblePage.buildChapterDropdown(
+                  context: context,
+                  selectedChapter: _selectedChapterFilterLocal,
+                  booksMap: _bibleBooksMap,
+                  selectedBook: _selectedBookFilterLocal,
+                  onChanged: (int? newValue) {
+                    if (!isPremium) return;
+                    setState(() {
+                      _selectedChapterFilterLocal = newValue;
+                      _applyLocalFiltersAndDisplayPreloadedSermons();
+                    });
+                  },
+                  backgroundColor:
+                      (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
+                          .withOpacity(0.4),
+                  textColor: isPremium
+                      ? theme.textTheme.bodySmall?.color
+                      : Colors.grey.withOpacity(0.5),
+                  iconColor: isPremium
+                      ? theme.iconTheme.color?.withOpacity(0.6)
+                      : Colors.grey.withOpacity(0.5),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.filter_list_off_outlined,
+                    color: theme.iconTheme.color?.withOpacity(0.6), size: 22),
+                tooltip: "Limpar Filtros Livro/Cap.",
+                onPressed: () {
+                  _localTitleSearchController.clear();
+                  setState(() {
+                    _localTitleSearchTerm = "";
+                    _selectedBookFilterLocal = null;
+                    _selectedChapterFilterLocal = null;
+                    _applyLocalFiltersAndDisplayPreloadedSermons();
+                  });
+                },
+                splashRadius: 20,
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 1,
-            child: UtilsBiblePage.buildChapterDropdown(
-              context: context,
-              selectedChapter: _selectedChapterFilterLocal,
-              booksMap: _bibleBooksMap,
-              selectedBook: _selectedBookFilterLocal,
-              onChanged: (int? newValue) {
-                setState(() {
-                  _selectedChapterFilterLocal = newValue;
-                  _applyLocalFiltersAndDisplayPreloadedSermons();
-                });
-              },
-              backgroundColor:
-                  (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
-                      .withOpacity(0.4),
-              textColor: theme.textTheme.bodySmall?.color,
-              iconColor: theme.iconTheme.color?.withOpacity(0.6),
-            ),
-          ),
-          IconButton(
-            icon: Icon(Icons.filter_list_off_outlined,
-                color: theme.iconTheme.color?.withOpacity(0.6), size: 22),
-            tooltip: "Limpar Filtros Livro/Cap.",
-            onPressed: () {
-              _localTitleSearchController.clear();
-              setState(() {
-                _localTitleSearchTerm = "";
-                _selectedBookFilterLocal = null;
-                _selectedChapterFilterLocal = null;
-                _applyLocalFiltersAndDisplayPreloadedSermons();
-              });
-            },
-            splashRadius: 20,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -631,13 +600,12 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     }
     if (_errorPreload != null) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(_errorPreload!,
-              style: TextStyle(color: theme.colorScheme.error, fontSize: 16),
-              textAlign: TextAlign.center),
-        ),
-      );
+          child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(_errorPreload!,
+                  style:
+                      TextStyle(color: theme.colorScheme.error, fontSize: 16),
+                  textAlign: TextAlign.center)));
     }
     if (_displayedSermonsFromPreload.isEmpty) {
       String message = "Nenhum sermão para exibir.";
@@ -647,14 +615,13 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
         message = "Nenhum sermão encontrado para os filtros aplicados.";
       }
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7)),
-              textAlign: TextAlign.center),
-        ),
-      );
+          child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                      color:
+                          theme.textTheme.bodySmall?.color?.withOpacity(0.7)),
+                  textAlign: TextAlign.center)));
     }
 
     return ListView.builder(
@@ -671,8 +638,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
               : const SizedBox.shrink();
         }
         final sermonItem = _displayedSermonsFromPreload[index];
-        final String title = sermonItem.title;
-        final String generatedId = sermonItem.generatedId;
         final String bookName = _bibleBooksMap?[sermonItem.bookAbbrev]
                 ?['nome'] ??
             sermonItem.bookAbbrev.toUpperCase();
@@ -686,7 +651,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
           child: ListTile(
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            title: Text(title,
+            title: Text(sermonItem.title,
                 style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w500,
                     fontSize: 15,
@@ -700,30 +665,109 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
             ),
             trailing: Icon(Icons.arrow_forward_ios,
                 size: 14, color: theme.iconTheme.color?.withOpacity(0.6)),
-            onTap: () => _navigateToSermonDetail(generatedId, title),
+            onTap: () => _navigateToSermonDetail(
+                sermonItem.generatedId, sermonItem.title),
           ),
         );
       },
     );
   }
 
-  Widget _buildSemanticSearchResultsList(
-      ThemeData theme, List<Map<String, dynamic>> sermonResults) {
-    if (sermonResults.isEmpty) {
-      // Adiciona uma verificação para lista vazia, embora a lógica externa já deva cobrir
+  Widget _buildSemanticSearchUI(
+      ThemeData theme, SermonSearchState sermonSearchState) {
+    if (sermonSearchState.isLoading &&
+        sermonSearchState.currentSermonQuery.isNotEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (!sermonSearchState.isLoading && sermonSearchState.error != null) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            "Nenhum sermão encontrado para os critérios.",
-            style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7)),
-            textAlign: TextAlign.center,
+          child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text("Erro na busca: ${sermonSearchState.error}",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: theme.colorScheme.error))));
+    }
+    if (sermonSearchState.sermonResults.isNotEmpty) {
+      return _buildSemanticSearchResultsList(
+          theme, sermonSearchState.sermonResults);
+    }
+    if (sermonSearchState.currentSermonQuery.isEmpty &&
+        sermonSearchState.searchHistory.isNotEmpty) {
+      return _buildSearchHistoryList(theme, sermonSearchState.searchHistory);
+    }
+    if (!sermonSearchState.isLoading &&
+        sermonSearchState.sermonResults.isEmpty &&
+        sermonSearchState.currentSermonQuery.isNotEmpty) {
+      return Center(
+          child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                  "Nenhum sermão encontrado para '${sermonSearchState.currentSermonQuery}'.",
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium)));
+    }
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          sermonSearchState.isLoadingHistory
+              ? "Carregando histórico de sermões..."
+              : "Digite algo para a busca inteligente de sermões. Seu histórico aparecerá aqui.",
+          style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7)),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchHistoryList(
+      ThemeData theme, List<Map<String, dynamic>> history) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Text("Histórico de Buscas de Sermões:",
+              style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.9))),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: history.length,
+            itemBuilder: (context, index) {
+              final historyEntry = history[index];
+              final String query =
+                  historyEntry['query'] as String? ?? 'Busca inválida';
+              final DateTime? timestamp =
+                  DateTime.tryParse(historyEntry['timestamp'] as String? ?? '');
+              return ListTile(
+                leading: Icon(Icons.history,
+                    color: theme.iconTheme.color?.withOpacity(0.6)),
+                title: Text(query, style: theme.textTheme.bodyLarge),
+                subtitle: timestamp != null
+                    ? Text(
+                        DateFormat('dd/MM/yy HH:mm')
+                            .format(timestamp.toLocal()),
+                        style: theme.textTheme.bodySmall)
+                    : null,
+                trailing: Icon(Icons.arrow_forward_ios_rounded,
+                    size: 16, color: theme.iconTheme.color?.withOpacity(0.5)),
+                onTap: () {
+                  _semanticSermonSearchController.text = query;
+                  StoreProvider.of<AppState>(context, listen: false).dispatch(
+                      ViewSermonSearchFromHistoryAction(historyEntry));
+                },
+              );
+            },
           ),
         ),
-      );
-    }
+      ],
+    );
+  }
 
+  Widget _buildSemanticSearchResultsList(
+      ThemeData theme, List<Map<String, dynamic>> sermonResults) {
     return ListView.builder(
       padding: const EdgeInsets.all(8.0),
       itemCount: sermonResults.length,
@@ -737,17 +781,11 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
             sermonData['main_scripture_abbreviated'] as String? ?? 'N/A';
         final String preacher =
             sermonData['preacher'] as String? ?? 'C.H. Spurgeon';
-
-        final List<dynamic> relevantParagraphsRaw =
-            sermonData['relevant_paragraphs'] as List<dynamic>? ?? [];
-        final List<String> relevantParagraphsTexts = relevantParagraphsRaw
-            .map((p) => (p is Map && p['text_preview'] is String)
-                ? p['text_preview'] as String
-                : null)
-            .where((p) => p != null)
-            .cast<String>()
-            .toList();
-
+        final List<String> relevantParagraphsTexts =
+            (sermonData['relevant_paragraphs'] as List<dynamic>? ?? [])
+                .map((p) => p['text_preview'] as String? ?? '')
+                .where((p) => p.isNotEmpty)
+                .toList();
         final bool isExpanded = _expandedSermonResultId == sermonIdBase;
 
         return Card(
@@ -761,93 +799,66 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  // Título do Sermão
-                  title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-
-                // >>> INÍCIO DA MODIFICAÇÃO: Mostrar Pregador E Preview dos Parágrafos <<<
-                Text(
-                  // Pregador
-                  "Por: $preacher",
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      // Usando bodySmall para menos destaque que o preview
-                      fontStyle: FontStyle.italic,
-                      fontSize: 11.5, // Um pouco menor
-                      color:
-                          theme.textTheme.bodySmall?.color?.withOpacity(0.75)),
-                ),
-
+                Text("Por: $preacher",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 11.5,
+                        color: theme.textTheme.bodySmall?.color
+                            ?.withOpacity(0.75))),
                 if (scripture.isNotEmpty && scripture != 'N/A') ...[
                   const SizedBox(height: 4),
-                  Text(
-                    // Passagem Principal
-                    "Passagem Principal: $scripture",
-                    style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 11.5, // Consistente com o pregador
-                        color: theme.colorScheme.secondary.withOpacity(0.9)),
-                  ),
+                  Text("Passagem Principal: $scripture",
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11.5,
+                          color: theme.colorScheme.secondary.withOpacity(0.9))),
                 ],
-
-                // Preview dos Trechos Relevantes (mesmo quando não expandido)
                 if (relevantParagraphsTexts.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
-                    // Pega o primeiro parágrafo relevante para o preview
-                    '"${relevantParagraphsTexts.first.length > 150 ? relevantParagraphsTexts.first.substring(0, 150) + "..." : relevantParagraphsTexts.first}"',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      height: 1.4,
-                      fontSize: 13, // Tamanho para o preview
-                      color: theme.colorScheme.onSurface.withOpacity(0.75),
-                      fontStyle: FontStyle.italic,
-                    ),
-                    maxLines: 3, // Limita o preview a 3 linhas
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                      '"${relevantParagraphsTexts.first.length > 150 ? relevantParagraphsTexts.first.substring(0, 150) + "..." : relevantParagraphsTexts.first}"',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.4,
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurface.withOpacity(0.75),
+                          fontStyle: FontStyle.italic),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis),
                 ],
-                // >>> FIM DA MODIFICAÇÃO <<<
-
-                const SizedBox(height: 10), // Espaço antes dos botões
-
-                // Botão para expandir/recolher parágrafos relevantes
+                const SizedBox(height: 10),
                 if (relevantParagraphsTexts.isNotEmpty)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       icon: Icon(
-                        isExpanded
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        size: 18,
-                        color: theme.colorScheme.secondary,
-                      ),
+                          isExpanded
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 18,
+                          color: theme.colorScheme.secondary),
                       label: Text(
-                        isExpanded
-                            ? "Ocultar Parágrafos"
-                            : "Ver Todos os Parágrafos (${relevantParagraphsTexts.length})",
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500),
-                      ),
+                          isExpanded
+                              ? "Ocultar Parágrafos"
+                              : "Ver Todos os Parágrafos (${relevantParagraphsTexts.length})",
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500)),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                       onPressed: () =>
                           _toggleSermonParagraphsExpansion(sermonIdBase),
                     ),
                   ),
-
-                // Exibição dos parágrafos expandidos (quando isExpanded é true)
                 if (isExpanded && relevantParagraphsTexts.isNotEmpty)
                   AnimatedSize(
                     duration: const Duration(milliseconds: 300),
@@ -869,45 +880,24 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                             .asMap()
                             .entries
                             .map((entry) {
-                          int pIndex = entry.key;
-                          String paragraphText = entry.value;
                           return Padding(
                             padding: EdgeInsets.only(
-                                bottom:
-                                    pIndex < relevantParagraphsTexts.length - 1
-                                        ? 12.0
-                                        : 0.0),
-                            child: SelectableText(
-                              paragraphText,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                height: 1.55,
-                                color: theme.colorScheme.onSurfaceVariant
-                                    .withOpacity(0.9),
-                              ),
-                              textAlign: TextAlign.justify,
-                            ),
+                                bottom: entry.key <
+                                        relevantParagraphsTexts.length - 1
+                                    ? 12.0
+                                    : 0.0),
+                            child: SelectableText(entry.value,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    height: 1.55,
+                                    color: theme.colorScheme.onSurfaceVariant
+                                        .withOpacity(0.9)),
+                                textAlign: TextAlign.justify),
                           );
                         }).toList(),
                       ),
                     ),
                   ),
-
-                if (relevantParagraphsTexts.isEmpty && isExpanded)
-                  Padding(
-                    // Mensagem se tentou expandir mas não há trechos (caso raro)
-                    padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-                    child: Text(
-                      "Nenhum trecho relevante destacado para este sermão.",
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withOpacity(0.6)),
-                    ),
-                  ),
-
-                // Espaçamento antes do botão "Ler Sermão Completo"
                 const SizedBox(height: 8),
-
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
@@ -921,9 +911,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                             horizontal: 10, vertical: 6),
                         textStyle: const TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w500)),
-                    onPressed: () {
-                      _navigateToSermonDetail(sermonIdBase, title);
-                    },
+                    onPressed: () =>
+                        _navigateToSermonDetail(sermonIdBase, title),
                   ),
                 ),
               ],

@@ -1,11 +1,49 @@
 // lib/pages/library_page.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
+import 'package:redux/redux.dart';
+
+// ViewModel simples para esta página
+class _LibraryViewModel {
+  final bool isPremium;
+
+  _LibraryViewModel({required this.isPremium});
+
+  static _LibraryViewModel fromStore(Store<AppState> store) {
+    // Lógica para determinar se o usuário é premium
+    // Esta lógica pode ser movida para um seletor mais robusto no futuro
+    final subscriptionState = store.state.subscriptionState;
+    bool isCurrentlyPremium =
+        subscriptionState.status == SubscriptionStatus.premiumActive;
+
+    // Fallback verificando os detalhes do usuário se a assinatura ainda não foi processada no estado
+    if (!isCurrentlyPremium) {
+      final userDetails = store.state.userState.userDetails;
+      if (userDetails != null) {
+        final status = userDetails['subscriptionStatus'] as String?;
+        final endDateTimestamp =
+            userDetails['subscriptionEndDate'] as Timestamp?;
+        if (status == 'active' &&
+            endDateTimestamp != null &&
+            endDateTimestamp.toDate().isAfter(DateTime.now())) {
+          isCurrentlyPremium = true;
+        }
+      }
+    }
+
+    return _LibraryViewModel(isPremium: isCurrentlyPremium);
+  }
+}
 
 class ResourceCard extends StatelessWidget {
   final String title;
@@ -15,6 +53,9 @@ class ResourceCard extends StatelessWidget {
   final String? coverImagePath;
   final VoidCallback onTap;
 
+  final bool isFullyPremium;
+  final bool hasPremiumFeature;
+
   const ResourceCard({
     super.key,
     required this.title,
@@ -23,9 +64,10 @@ class ResourceCard extends StatelessWidget {
     required this.pageCount,
     this.coverImagePath,
     required this.onTap,
+    this.isFullyPremium = false,
+    this.hasPremiumFeature = false,
   });
 
-  // Widget auxiliar para as linhas de informação (agora mais simples)
   Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
     final theme = Theme.of(context);
     return Row(
@@ -59,7 +101,11 @@ class ResourceCard extends StatelessWidget {
       elevation: 4,
       margin: const EdgeInsets.all(0),
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15)), // Bordas mais arredondadas
+        borderRadius: BorderRadius.circular(15),
+        side: isFullyPremium || hasPremiumFeature
+            ? BorderSide(color: Colors.amber.shade700, width: 1.5)
+            : BorderSide.none,
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -67,10 +113,8 @@ class ResourceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Parte 1: Imagem (com mais espaço) ---
-            // Usando Expanded para que a imagem ocupe o máximo de espaço possível na Column
             Expanded(
-              flex: 3, // Dando mais peso para a imagem
+              flex: 3,
               child: Stack(
                 alignment: Alignment.bottomLeft,
                 children: [
@@ -78,10 +122,10 @@ class ResourceCard extends StatelessWidget {
                     child: hasCoverImage
                         ? Image.asset(
                             coverImagePath!,
-                            // >>> MUDANÇA 1/3: Mantém a proporção e cobre a área <<<
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
-                                color: theme.colorScheme.surfaceVariant),
+                                color:
+                                    theme.colorScheme.surfaceContainerHighest),
                           )
                         : Container(color: theme.colorScheme.primaryContainer),
                   ),
@@ -116,23 +160,34 @@ class ResourceCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  // O Chip de Categoria foi REMOVIDO
+                  if (isFullyPremium || hasPremiumFeature)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Colors.amber.shade600,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-
-            // --- Parte 2: Detalhes em 3 Linhas ---
-            // Usando um flex menor para garantir que a imagem tenha mais espaço
             Expanded(
-              flex: 2, // Menos peso para a área de texto
+              flex: 2,
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceEvenly, // Distribui o espaço
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Linha 1: Descrição
                     Text(
                       description,
                       style: theme.textTheme.bodySmall?.copyWith(height: 1.3),
@@ -140,9 +195,7 @@ class ResourceCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Divider(height: 12, thickness: 0.5),
-                    // Linha 2: Autor
                     _buildInfoRow(context, Icons.person_outline, author),
-                    // Linha 3: Páginas
                     _buildInfoRow(context, Icons.menu_book_outlined, pageCount),
                   ],
                 ),
@@ -163,29 +216,17 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
-  // Dados atualizados sem a chave 'category'
   List<Map<String, dynamic>> get libraryItems => [
         {
-          'title': "Sermões de Spurgeon",
+          'title': "Sermões de C.H. Spurgeon",
           'description':
               "Uma vasta coleção dos sermões do 'Príncipe dos Pregadores'.",
           'author': 'C.H. Spurgeon',
           'pageCount': '+3000 sermões / +20000 páginas',
+          'isFullyPremium': false,
+          'hasPremiumFeature': true,
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
-          'onTap': () {
-            interstitialManager
-                .tryShowInterstitial(
-                    fromScreen: "LibraryPage_To_SpurgeonSermons")
-                .then((_) {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SpurgeonSermonsIndexPage()),
-                );
-              }
-            });
-          },
+          'destinationPage': const SpurgeonSermonsIndexPage(),
         },
         {
           'title': "História da Igreja",
@@ -193,20 +234,10 @@ class _LibraryPageState extends State<LibraryPage> {
               "A jornada da igreja cristã desde os apóstolos até a era moderna.",
           'author': 'Philip Schaff',
           'pageCount': '8 volumes / +5000 páginas',
+          'isFullyPremium': true,
+          'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/historia_igreja.webp',
-          'onTap': () {
-            interstitialManager
-                .tryShowInterstitial(fromScreen: "LibraryPage_To_ChurchHistory")
-                .then((_) {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const ChurchHistoryIndexPage()),
-                );
-              }
-            });
-          },
+          'destinationPage': const ChurchHistoryIndexPage(),
         },
         {
           'title': "Estudos Rápidos",
@@ -214,13 +245,10 @@ class _LibraryPageState extends State<LibraryPage> {
               "Guias e rotas de estudo temáticos para aprofundar seu conhecimento.",
           'author': 'Séptima',
           'pageCount': '10+ estudos',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/estudos_tematicos_cover.webp',
-          'onTap': () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const StudyHubPage()),
-            );
-          },
+          'destinationPage': const StudyHubPage(),
         },
         {
           'title': "Linha do Tempo Bíblica",
@@ -228,20 +256,10 @@ class _LibraryPageState extends State<LibraryPage> {
               "Contextualize os eventos bíblicos com a história mundial.",
           'author': 'Septima',
           'pageCount': 'Interativo',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/timeline_cover.webp',
-          'onTap': () {
-            interstitialManager
-                .tryShowInterstitial(fromScreen: "LibraryPage_To_BibleTimeline")
-                .then((_) {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const BibleTimelinePage()),
-                );
-              }
-            });
-          },
+          'destinationPage': const BibleTimelinePage(),
         },
         {
           'title': "Promessas da Bíblia",
@@ -249,44 +267,85 @@ class _LibraryPageState extends State<LibraryPage> {
               "Um compêndio de promessas divinas organizadas por tema.",
           'author': 'Samuel Clarke',
           'pageCount': '+800 promessas',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/promessas_cover.webp',
-          'onTap': () {
-            interstitialManager
-                .tryShowInterstitial(fromScreen: "LibraryPage_To_Promises")
-                .then((_) {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PromisesPage()),
-                );
-              }
-            });
-          },
+          'destinationPage': const PromisesPage(),
         },
       ];
+
+  void _showPremiumDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'Este recurso é exclusivo para assinantes Premium. Desbloqueie todo o conteúdo e funcionalidades!'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Agora não')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16.0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16.0,
-          mainAxisSpacing: 16.0,
-          // >>> MUDANÇA 2/3: AJUSTE DA PROPORÇÃO PARA DEIXAR OS CARDS MAIS ALTOS <<<
-          childAspectRatio: 0.45,
-        ),
-        itemCount: libraryItems.length,
-        itemBuilder: (context, index) {
-          final itemData = libraryItems[index];
-          return ResourceCard(
-            title: itemData['title'] as String,
-            description: itemData['description'] as String,
-            author: itemData['author'] as String,
-            pageCount: itemData['pageCount'] as String,
-            coverImagePath: itemData['coverImagePath'] as String?,
-            onTap: itemData['onTap'] as VoidCallback,
+      body: StoreConnector<AppState, _LibraryViewModel>(
+        converter: (store) => _LibraryViewModel.fromStore(store),
+        builder: (context, viewModel) {
+          return GridView.builder(
+            padding: const EdgeInsets.all(16.0),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16.0,
+              mainAxisSpacing: 16.0,
+              childAspectRatio: 0.45,
+            ),
+            itemCount: libraryItems.length,
+            itemBuilder: (context, index) {
+              final itemData = libraryItems[index];
+              final bool isFullyPremium = itemData['isFullyPremium'];
+
+              VoidCallback onTapAction = () {
+                if (isFullyPremium && !viewModel.isPremium) {
+                  _showPremiumDialog(context);
+                } else {
+                  if (!viewModel.isPremium) {
+                    interstitialManager.tryShowInterstitial(
+                        fromScreen: "Library_To_${itemData['title']}");
+                  }
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => itemData['destinationPage']),
+                  );
+                }
+              };
+
+              return ResourceCard(
+                title: itemData['title'],
+                description: itemData['description'],
+                author: itemData['author'],
+                pageCount: itemData['pageCount'],
+                coverImagePath: itemData['coverImagePath'],
+                isFullyPremium: isFullyPremium,
+                hasPremiumFeature: itemData['hasPremiumFeature'],
+                onTap: onTapAction,
+              );
+            },
           );
         },
       ),
