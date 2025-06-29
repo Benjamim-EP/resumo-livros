@@ -229,6 +229,17 @@ class _LibraryPageState extends State<LibraryPage> {
           'destinationPage': const SpurgeonSermonsIndexPage(),
         },
         {
+          'title': "Promessas da Bíblia",
+          'description':
+              "Um compêndio de promessas divinas organizadas por tema.",
+          'author': 'Samuel Clarke',
+          'pageCount': '+1500 promessas / 180 tópicos',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
+          'coverImagePath': 'assets/covers/promessas_cover.webp',
+          'destinationPage': const PromisesPage(),
+        },
+        {
           'title': "História da Igreja",
           'description':
               "A jornada da igreja cristã desde os apóstolos até a era moderna.",
@@ -260,17 +271,6 @@ class _LibraryPageState extends State<LibraryPage> {
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/timeline_cover.webp',
           'destinationPage': const BibleTimelinePage(),
-        },
-        {
-          'title': "Promessas da Bíblia",
-          'description':
-              "Um compêndio de promessas divinas organizadas por tema.",
-          'author': 'Samuel Clarke',
-          'pageCount': '+800 promessas',
-          'isFullyPremium': false,
-          'hasPremiumFeature': false,
-          'coverImagePath': 'assets/covers/promessas_cover.webp',
-          'destinationPage': const PromisesPage(),
         },
       ];
 
