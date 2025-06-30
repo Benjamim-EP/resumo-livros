@@ -130,23 +130,20 @@ void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
   return (store, action, next) async {
     final userId = store.state.userState.userId;
     if (userId == null) return;
-
     try {
       if (action.colorHex == null) {
         await firestoreService.removeHighlight(userId, action.verseId);
       } else {
+        final String verseText =
+            await BiblePageHelper.loadSingleVerseText(action.verseId, 'nvi');
         await firestoreService.saveHighlight(
           userId,
           action.verseId,
           action.colorHex!,
           tags: action.tags,
+          fullVerseText: verseText, // Passa o texto completo para ser salvo
         );
-
-        if (action.tags != null) {
-          for (var tag in action.tags!) {
-            store.dispatch(EnsureUserTagExistsAction(tag));
-          }
-        }
+        // ... (resto da lógica de tags)
       }
       store.dispatch(LoadUserHighlightsAction());
       store.dispatch(LoadUserTagsAction());

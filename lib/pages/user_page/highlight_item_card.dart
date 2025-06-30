@@ -21,76 +21,75 @@ class HighlightItemCard extends StatelessWidget {
   void _handleTap(BuildContext context) {
     final sourceType = item.originalData['sourceType'] as String?;
 
-    if (item.type == HighlightItemType.verse) {
-      // Navega para o versículo da Bíblia
-      onNavigateToVerse(item.id);
-    } else if (sourceType == 'sermon') {
-      // Navega para a página do Sermão
-      final sermonId = item.originalData['sourceId'] as String?;
-      final sermonTitle = item.originalData['sourceTitle'] as String?;
-      if (sermonId != null && sermonTitle != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SermonDetailPage(
-              sermonGeneratedId: sermonId,
-              sermonTitle: sermonTitle,
-              snippetToScrollTo: item.contentPreview,
+    // Ação só acontece para LITERATURA
+    if (item.type == HighlightItemType.literature) {
+      if (sourceType == 'sermon') {
+        // Navega para a página do Sermão
+        final sermonId = item.originalData['sourceId'] as String?;
+        final sermonTitle = item.originalData['sourceTitle'] as String?;
+        if (sermonId != null && sermonTitle != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SermonDetailPage(
+                sermonGeneratedId: sermonId,
+                sermonTitle: sermonTitle,
+                snippetToScrollTo: item.contentPreview,
+              ),
             ),
+          );
+        }
+      } else {
+        // Abre o diálogo para outros tipos de literatura
+        showDialog(
+          context: context,
+          builder: (_) => CommentHighlightDetailDialog(
+            referenceText: item.referenceText,
+            fullCommentText:
+                item.originalData['fullContext'] ?? 'Contexto não encontrado.',
+            selectedSnippet: item.contentPreview,
+            highlightColor: item.colorHex != null
+                ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
+                : Colors.amber,
           ),
         );
       }
-    } else {
-      // >>> CORREÇÃO: Para QUALQUER OUTRO tipo de literatura, abre o diálogo <<<
-      showDialog(
-        context: context,
-        builder: (_) => CommentHighlightDetailDialog(
-          referenceText: item.referenceText,
-          // Usa 'fullContext' que agora está sendo salvo corretamente
-          fullCommentText: item.originalData['fullContext'] ??
-              'Contexto não encontrado. Por favor, recrie este destaque.',
-          selectedSnippet: item.contentPreview,
-          highlightColor: item.colorHex != null
-              ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
-              : Colors.amber,
-        ),
-      );
     }
+    // Se for um versículo, não faz nada
   }
+
+  // Em: lib/pages/user_page/highlight_item_card.dart -> dentro da classe HighlightItemCard
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isVerse = item.type == HighlightItemType.verse;
-    final sourceType = item.originalData['sourceType'] as String?;
 
+    // Define a cor do indicador baseada no tipo e nos dados salvos
     final Color indicatorColor = item.colorHex != null
         ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
-        : Colors.amber.shade700;
+        : (isVerse
+            ? Colors.blue.shade700
+            : Colors.amber.shade700); // Cores padrão diferentes
 
-    (IconData, String) getSourceInfo() {
-      switch (sourceType) {
-        case 'sermon':
-          return (Icons.campaign_outlined, "Sermão de Spurgeon");
-        case 'church_history':
-          return (Icons.history_edu_outlined, "História da Igreja");
-        case 'turretin':
-          return (Icons.school_outlined, "Institutas de Turretin");
-        case 'bible_commentary':
-          return (Icons.comment_outlined, "Comentário Bíblico");
-        default:
-          return (Icons.menu_book_outlined, "Versículo Bíblico");
-      }
-    }
-
-    final sourceInfo = getSourceInfo();
-
-    // >>> CORREÇÃO DA REFERÊNCIA PARA COMENTÁRIOS <<<
-    String displayReference = item.referenceText;
-    if (sourceType == 'bible_commentary') {
-      // Se for um comentário bíblico, usa o campo que já tem a referência formatada.
-      displayReference =
-          item.originalData['verseReferenceText'] ?? item.referenceText;
+    // Lógica para determinar o ícone com base no tipo de fonte
+    final sourceType = item.originalData['sourceType'] as String?;
+    IconData sourceIcon;
+    switch (sourceType) {
+      case 'sermon':
+        sourceIcon = Icons.campaign_outlined;
+        break;
+      case 'church_history':
+        sourceIcon = Icons.history_edu_outlined;
+        break;
+      case 'turretin':
+        sourceIcon = Icons.school_outlined;
+        break;
+      case 'bible_commentary':
+        sourceIcon = Icons.comment_outlined;
+        break;
+      default: // Inclui HighlightItemType.verse
+        sourceIcon = Icons.menu_book_outlined;
     }
 
     return Card(
@@ -100,42 +99,35 @@ class HighlightItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: indicatorColor.withOpacity(0.5), width: 1),
       ),
+      // O InkWell fornece o efeito de toque, mas a ação onTap é condicional
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _handleTap(context),
+        // Se for um versículo, o onTap é nulo (desativado). Caso contrário, chama _handleTap.
+        onTap: isVerse ? null : () => _handleTap(context),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Linha superior com Ícone, Referência e Botão de Deletar
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(sourceInfo.$1, color: indicatorColor, size: 22),
+                  Icon(
+                    sourceIcon, // Usa o ícone determinado pela lógica acima
+                    color: indicatorColor,
+                    size: 22,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isVerse ? item.referenceText : displayReference,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: indicatorColor,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2.0),
-                          child: Text(
-                            sourceInfo.$2,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.textTheme.bodySmall?.color
-                                    ?.withOpacity(0.7)),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      item.referenceText,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: indicatorColor,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -162,32 +154,22 @@ class HighlightItemCard extends StatelessWidget {
               const SizedBox(height: 10),
               Divider(height: 1, color: theme.dividerColor.withOpacity(0.2)),
               const SizedBox(height: 10),
-              isVerse
-                  ? FutureBuilder<String>(
-                      future:
-                          BiblePageHelper.loadSingleVerseText(item.id, 'nvi'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Text("Carregando...",
-                              style: theme.textTheme.bodySmall);
-                        }
-                        return Text(
-                          snapshot.data ?? item.contentPreview,
-                          style:
-                              theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                    )
-                  : Text(
-                      '"${item.contentPreview}"',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(height: 1.5, fontStyle: FontStyle.italic),
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+
+              // Corpo do Card: exibe o texto completo do versículo ou o trecho da literatura
+              Text(
+                isVerse
+                    ? (item.originalData['fullVerseText'] ??
+                        'Carregando texto...')
+                    : '"${item.contentPreview}"',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.5,
+                  fontStyle: isVerse ? FontStyle.normal : FontStyle.italic,
+                ),
+                maxLines: isVerse ? 10 : 4, // Mais linhas para versículos
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              // Seção de Tags (se existirem)
               if (item.tags.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(

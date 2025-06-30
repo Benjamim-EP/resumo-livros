@@ -836,7 +836,8 @@ class FirestoreService {
 
   /// Salva ou atualiza um destaque de versículo.
   Future<void> saveHighlight(String userId, String verseId, String colorHex,
-      {List<String>? tags}) async {
+      {List<String>? tags, String? fullVerseText}) async {
+    // <<< ADICIONE O NOVO PARÂMETRO
     try {
       await _db.collection('userVerseHighlights').doc(userId).set(
           {'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
@@ -849,6 +850,8 @@ class FirestoreService {
           .set({
         'color': colorHex,
         'tags': tags ?? [],
+        'fullVerseText': fullVerseText ??
+            '[Texto não encontrado]', // <<< GARANTE QUE SEJA SALVO
         'timestamp': FieldValue.serverTimestamp(),
       });
     } catch (e) {
