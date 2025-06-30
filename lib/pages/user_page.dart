@@ -1402,7 +1402,7 @@ class _HighlightsViewModel {
       final parts = verseId.split('_');
       String referenceText = verseId; // Fallback
 
-      // >>> LÓGICA DE TRADUÇÃO DO NOME DO LIVRO <<<
+      // Tenta traduzir a abreviação do livro para o nome completo
       if (parts.length == 3 &&
           booksMap != null &&
           booksMap.containsKey(parts[0])) {
@@ -1417,8 +1417,9 @@ class _HighlightsViewModel {
         HighlightItem(
           id: verseId,
           type: HighlightItemType.verse,
-          referenceText: referenceText, // <<< USA O NOME COMPLETO
-          contentPreview: "Carregando texto do versículo...",
+          referenceText: referenceText, // Usa o nome completo do livro
+          contentPreview:
+              "Carregando texto do versículo...", // Será carregado depois
           tags: List<String>.from(highlightData['tags'] ?? []),
           colorHex: highlightData['color'] as String?,
           originalData: {'verseId': verseId, ...highlightData},
@@ -1426,25 +1427,42 @@ class _HighlightsViewModel {
       );
     });
 
-    // 2. Processa os destaques de literatura
+    // 2. Processa os destaques de literatura (comentários, sermões, etc.)
     store.state.userState.userCommentHighlights.forEach((commentData) {
-      // >>> LÓGICA PARA IDENTIFICAR A FONTE <<<
-      String sourceIdentifier = "Comentário"; // Padrão
-      // Aqui você pode adicionar lógica para identificar a fonte.
-      // Por exemplo, se você salvar o nome do livro/autor no 'commentData'.
-      // Vamos assumir por enquanto que 'verseReferenceText' já contém a informação.
-      // Ex: "Comentário de Matthew Henry em Gênesis 1:1-5"
-      // Se não, você precisaria adicionar mais metadados ao salvar o destaque.
+      // Cria um texto de referência mais descritivo e amigável
+      String referenceText;
+      final String sourceType =
+          commentData['sourceType'] as String? ?? 'literature';
+      final String sourceTitle =
+          commentData['sourceTitle'] as String? ?? 'Fonte desconhecida';
 
-      String referenceText =
-          commentData['verseReferenceText'] ?? 'Referência desconhecida';
+      switch (sourceType) {
+        case 'sermon':
+          // Limita o tamanho do título para não quebrar a UI
+          referenceText =
+              "Sermão: ${sourceTitle.length > 40 ? sourceTitle.substring(0, 40) + '...' : sourceTitle}";
+          break;
+        case 'church_history':
+          referenceText = "Hist. da Igreja: $sourceTitle";
+          break;
+        case 'turretin':
+          referenceText = "Institutas: $sourceTitle";
+          break;
+        case 'bible_commentary':
+          // Usa a referência do versículo associado ao comentário
+          referenceText =
+              commentData['verseReferenceText'] ?? 'Comentário Bíblico';
+          break;
+        default:
+          referenceText =
+              commentData['verseReferenceText'] ?? 'Referência desconhecida';
+      }
 
       combinedList.add(
         HighlightItem(
           id: commentData['id'] as String? ?? '',
           type: HighlightItemType.literature,
-          referenceText:
-              referenceText, // <<< USA O TEXTO DE REFERÊNCIA JÁ SALVO
+          referenceText: referenceText, // Usa o texto de referência formatado
           contentPreview:
               commentData['selectedSnippet'] ?? 'Trecho indisponível',
           tags: List<String>.from(commentData['tags'] ?? []),
@@ -1454,20 +1472,21 @@ class _HighlightsViewModel {
       );
     });
 
-    // 3. Ordena a lista combinada pela data do timestamp
+    // 3. Ordena a lista combinada pela data do timestamp, do mais recente para o mais antigo
     combinedList.sort((a, b) {
       final timestampA = a.originalData['timestamp'] as Timestamp?;
       final timestampB = b.originalData['timestamp'] as Timestamp?;
 
       if (timestampA == null && timestampB == null) return 0;
-      if (timestampA == null) return 1;
-      if (timestampB == null) return -1;
-      return timestampB.compareTo(timestampA);
+      if (timestampA == null) return 1; // Coloca itens sem timestamp no final
+      if (timestampB == null) return -1; // Coloca itens sem timestamp no final
+      return timestampB
+          .compareTo(timestampA); // Ordena do mais novo para o mais velho
     });
 
     return _HighlightsViewModel(
       allHighlights: combinedList,
-      isLoading: false,
+      isLoading: false, // Assumimos que o carregamento já terminou
     );
   }
 }

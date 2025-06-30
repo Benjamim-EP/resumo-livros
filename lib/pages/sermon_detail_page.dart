@@ -1,13 +1,16 @@
 // lib/pages/sermon_detail_page.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:septima_biblia/services/interstitial_manager.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:septima_biblia/services/firestore_service.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:redux/redux.dart';
 
 // Modelo de dados para o sermão
 class Sermon {
@@ -98,6 +101,19 @@ class SermonDetailPage extends StatefulWidget {
   State<SermonDetailPage> createState() => _SermonDetailPageState();
 }
 
+class _SermonViewModel {
+  final List<Map<String, dynamic>> highlights;
+  _SermonViewModel({required this.highlights});
+
+  static _SermonViewModel fromStore(Store<AppState> store, String sermonId) {
+    // Filtra apenas os destaques que pertencem a este sermão específico
+    final sermonHighlights = store.state.userState.userCommentHighlights
+        .where((h) => h['sourceId'] == sermonId)
+        .toList();
+    return _SermonViewModel(highlights: sermonHighlights);
+  }
+}
+
 class _SermonDetailPageState extends State<SermonDetailPage> {
   Sermon? _sermonDataFromFirestore;
   bool _isLoading = true;
@@ -114,6 +130,8 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final TtsManager _ttsManager = TtsManager();
   TtsPlayerState _sermonPlayerState = TtsPlayerState.stopped;
+
+  // O controller foi REMOVIDO pois não é necessário.
 
   @override
   void initState() {
@@ -132,13 +150,107 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   }
 
   void _onTtsStateChanged() {
-    if (!mounted) return;
-    final newPlayerState = _ttsManager.playerState.value;
-    if (_sermonPlayerState != newPlayerState) {
-      setState(() {
-        _sermonPlayerState = newPlayerState;
-      });
+    if (mounted) {
+      if (_sermonPlayerState != _ttsManager.playerState.value) {
+        setState(() => _sermonPlayerState = _ttsManager.playerState.value);
+      }
     }
+  }
+
+  void _handleHighlight(BuildContext context, String fullParagraph,
+      EditableTextState editableTextState) {
+    final TextSelection selection =
+        editableTextState.textEditingValue.selection;
+    if (selection.isCollapsed) return;
+
+    final selectedSnippet =
+        fullParagraph.substring(selection.start, selection.end);
+    _showHighlightEditor(context, selectedSnippet, fullParagraph);
+  }
+
+  Future<void> _showHighlightEditor(
+      BuildContext context, String snippet, String fullParagraph) async {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+
+    final result = await showDialog<HighlightResult?>(
+      context: context,
+      builder: (_) => const HighlightEditorDialog(
+        initialColor: "#FFA07A", // Cor padrão para destaques de literatura
+      ),
+    );
+
+    if (result == null || result.colorHex == null) return;
+
+    final highlightData = {
+      'selectedSnippet': snippet,
+      'fullContext': fullParagraph,
+      'sourceType': 'sermon',
+      'sourceTitle': widget.sermonTitle,
+      'sourceParentTitle':
+          _sermonDataFromFirestore?.mainScripturePassageAbbreviated ??
+              'Sermões de Spurgeon',
+      'sourceId': widget.sermonGeneratedId,
+      'color': result.colorHex,
+      'tags': result.tags,
+    };
+
+    store.dispatch(AddCommentHighlightAction(highlightData));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Destaque salvo!")),
+    );
+  }
+
+  // >>> NOVA FUNÇÃO HELPER PARA CONSTRUIR O TEXTO COM DESTAQUES <<<
+  List<TextSpan> _buildHighlightedParagraph(String paragraph,
+      List<Map<String, dynamic>> highlights, ThemeData theme) {
+    List<TextSpan> spans = [];
+    int lastEnd = 0;
+
+    // Encontra todos os trechos de destaque que estão neste parágrafo
+    List<Map<String, dynamic>> snippetsInParagraph = [];
+    for (var highlight in highlights) {
+      String snippet = highlight['selectedSnippet'] ?? '';
+      int startIndex = paragraph.indexOf(snippet);
+      if (startIndex != -1) {
+        snippetsInParagraph.add({
+          'start': startIndex,
+          'end': startIndex + snippet.length,
+          'color': highlight['color'] as String? ?? '#FFA07A',
+        });
+      }
+    }
+
+    // Ordena os trechos para evitar sobreposição incorreta
+    snippetsInParagraph.sort((a, b) => a['start'].compareTo(b['start']));
+
+    // Constrói os TextSpans
+    for (var snippetInfo in snippetsInParagraph) {
+      // Adiciona o texto normal antes do destaque
+      if (snippetInfo['start'] > lastEnd) {
+        spans.add(
+            TextSpan(text: paragraph.substring(lastEnd, snippetInfo['start'])));
+      }
+
+      // Adiciona o texto destacado com cor de fundo
+      spans.add(TextSpan(
+        text: paragraph.substring(snippetInfo['start'], snippetInfo['end']),
+        style: TextStyle(
+          backgroundColor: Color(int.parse(
+                  (snippetInfo['color'] as String).replaceFirst('#', '0xff')))
+              .withOpacity(0.35),
+        ),
+      ));
+
+      lastEnd = snippetInfo['end'];
+    }
+
+    // Adiciona o resto do texto após o último destaque
+    if (lastEnd < paragraph.length) {
+      spans.add(TextSpan(text: paragraph.substring(lastEnd)));
+    }
+
+    // Se nenhum destaque foi encontrado, retorna o parágrafo inteiro como um único TextSpan
+    return spans.isEmpty ? [TextSpan(text: paragraph)] : spans;
   }
 
   /// Lida com os cliques no botão de áudio (play, pause, resume).
@@ -313,7 +425,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -324,22 +435,18 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         actions: [
           if (!_isLoading && _error == null)
             IconButton(
-              icon: Icon(
-                _getAudioIcon(),
-                size: 26, // Tamanho um pouco maior para destaque
-                color: _sermonPlayerState == TtsPlayerState.playing
-                    ? theme.colorScheme.primary
-                    : theme.appBarTheme.actionsIconTheme?.color,
-              ),
-              tooltip: _getAudioTooltip(),
-              onPressed: _handleAudioControl,
-            ),
+                icon: Icon(_getAudioIcon(),
+                    size: 26,
+                    color: _sermonPlayerState == TtsPlayerState.playing
+                        ? theme.colorScheme.primary
+                        : theme.appBarTheme.actionsIconTheme?.color),
+                tooltip: _getAudioTooltip(),
+                onPressed: _handleAudioControl),
           if (_sermonDataFromFirestore != null)
             IconButton(
-              icon: const Icon(Icons.share_outlined),
-              tooltip: "Compartilhar Sermão",
-              onPressed: _shareSermon,
-            ),
+                icon: const Icon(Icons.share_outlined),
+                tooltip: "Compartilhar Sermão",
+                onPressed: _shareSermon),
           PopupMenuButton<String>(
             icon: const Icon(Icons.format_size_outlined),
             tooltip: "Tamanho da Fonte",
@@ -387,169 +494,212 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     final preacherName =
         sermon.preacher ?? details?['preacher'] as String? ?? 'C.H. Spurgeon';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (details != null) ...[
-            if (details['number_text'] != null &&
-                (details['number_text'] as String).isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(details['number_text'],
-                    style: theme.textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        fontSize: _currentFontSize * 0.8)),
-              ),
-            if (preacherName.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2.0),
-                child: Text("Pregador: $preacherName",
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+    // O corpo agora é envolvido por um StoreConnector para obter os destaques
+    return StoreConnector<AppState, _SermonViewModel>(
+      converter: (store) =>
+          _SermonViewModel.fromStore(store, widget.sermonGeneratedId),
+      builder: (context, viewModel) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Seção de Detalhes do Sermão (Número, Pregador, Data)
+              if (details != null) ...[
+                if (details['number_text'] != null &&
+                    (details['number_text'] as String).isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Text(details['number_text'],
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            fontSize: _currentFontSize * 0.8)),
+                  ),
+                if (preacherName.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2.0),
+                    child: Text("Pregador: $preacherName",
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                            fontSize: _currentFontSize * 0.9)),
+                  ),
+                if (details['delivery_info'] != null &&
+                    (details['delivery_info'] as String).isNotEmpty)
+                  Text(details['delivery_info'],
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(fontSize: _currentFontSize * 0.8)),
+                const SizedBox(height: 12),
+              ],
+
+              // Seção da Passagem Bíblica Principal
+              if (sermon.mainScripturePassageAbbreviated != null &&
+                  sermon.mainScripturePassageAbbreviated!.isNotEmpty) ...[
+                Text(
+                    "Passagem Principal: ${sermon.mainScripturePassageAbbreviated}",
+                    style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.bold,
                         fontSize: _currentFontSize * 0.9)),
+                const SizedBox(height: 4),
+              ],
+              if (_isLoadingMainScripture)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  child: Center(
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: theme.colorScheme.secondary)),
+                )
+              else if (_loadedMainScriptureVerses != null &&
+                  _loadedMainScriptureVerses!.isNotEmpty)
+                Card(
+                  elevation: 0,
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withOpacity(0.7),
+                  margin: const EdgeInsets.symmetric(vertical: 8.0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _loadedMainScriptureVerses!.map((verseText) {
+                        final parts = verseText.split(RegExp(r'\s+'));
+                        String verseNumDisplay = "";
+                        String textDisplay = verseText;
+                        if (parts.isNotEmpty &&
+                            int.tryParse(parts.first) != null) {
+                          verseNumDisplay = "${parts.first} ";
+                          textDisplay = parts.sublist(1).join(" ");
+                        }
+                        return Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: RichText(
+                              text: TextSpan(
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    height: 1.45,
+                                    fontSize: _currentFontSize * 0.95),
+                                children: <TextSpan>[
+                                  TextSpan(
+                                      text: verseNumDisplay,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  TextSpan(text: textDisplay),
+                                ],
+                              ),
+                            ));
+                      }).toList(),
+                    ),
+                  ),
+                )
+              else if (sermon.mainVerseQuoted != null &&
+                  sermon.mainVerseQuoted!.isNotEmpty)
+                Card(
+                  elevation: 0,
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withOpacity(0.7),
+                  margin: const EdgeInsets.symmetric(vertical: 8.0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Text(sermon.mainVerseQuoted!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            height: 1.4,
+                            fontSize: _currentFontSize * 0.95)),
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+              Text("Sermão:",
+                  style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                      fontSize: _currentFontSize * 1.1)),
+              const SizedBox(height: 8),
+
+              // Seção dos Parágrafos do Sermão com Destaques Visuais
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: sermon.paragraphsToDisplay.map((paragraph) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: SelectableText.rich(
+                      // Usando .rich para aceitar TextSpan
+                      TextSpan(
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontSize: _currentFontSize,
+                          height: 1.6,
+                        ),
+                        // A função helper constrói os spans com os destaques
+                        children: _buildHighlightedParagraph(
+                            paragraph, viewModel.highlights, theme),
+                      ),
+                      contextMenuBuilder: (context, editableTextState) {
+                        final List<ContextMenuButtonItem> buttonItems =
+                            editableTextState.contextMenuButtonItems;
+
+                        if (!editableTextState
+                            .textEditingValue.selection.isCollapsed) {
+                          buttonItems.insert(
+                            0,
+                            ContextMenuButtonItem(
+                              label: 'Destacar',
+                              onPressed: () {
+                                _handleHighlight(
+                                    context, paragraph, editableTextState);
+                                editableTextState.hideToolbar();
+                              },
+                            ),
+                          );
+                        }
+
+                        return AdaptiveTextSelectionToolbar.buttonItems(
+                          anchors: editableTextState.contextMenuAnchors,
+                          buttonItems: buttonItems,
+                        );
+                      },
+                      textAlign: TextAlign.justify,
+                    ),
+                  );
+                }).toList(),
               ),
-            if (details['delivery_info'] != null &&
-                (details['delivery_info'] as String).isNotEmpty)
-              Text(details['delivery_info'],
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(fontSize: _currentFontSize * 0.8)),
-            const SizedBox(height: 12),
-          ],
-          if (sermon.mainScripturePassageAbbreviated != null &&
-              sermon.mainScripturePassageAbbreviated!.isNotEmpty) ...[
-            Text(
-                "Passagem Principal: ${sermon.mainScripturePassageAbbreviated}",
-                style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.secondary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: _currentFontSize * 0.9)),
-            const SizedBox(height: 4),
-          ],
-          if (_isLoadingMainScripture)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: Center(
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2.5, color: theme.colorScheme.secondary)),
-            )
-          else if (_loadedMainScriptureVerses != null &&
-              _loadedMainScriptureVerses!.isNotEmpty)
-            Card(
-              elevation: 0,
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
-              margin: const EdgeInsets.symmetric(vertical: 8.0),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _loadedMainScriptureVerses!.map((verseText) {
-                    final parts = verseText.split(RegExp(r'\s+'));
-                    String verseNumDisplay = "";
-                    String textDisplay = verseText;
-                    if (parts.isNotEmpty && int.tryParse(parts.first) != null) {
-                      verseNumDisplay = "${parts.first} ";
-                      textDisplay = parts.sublist(1).join(" ");
-                    }
-                    return Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: RichText(
-                          text: TextSpan(
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                                fontStyle: FontStyle.italic,
-                                height: 1.45,
-                                fontSize: _currentFontSize * 0.95),
-                            children: <TextSpan>[
-                              TextSpan(
-                                  text: verseNumDisplay,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
-                              TextSpan(text: textDisplay),
-                            ],
-                          ),
-                        ));
+
+              // Seção de Outras Referências
+              if (sermon.embeddedScripturesAbbreviated != null &&
+                  sermon.embeddedScripturesAbbreviated!.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Divider(color: theme.dividerColor.withOpacity(0.5)),
+                const SizedBox(height: 12),
+                Text("Outras Referências Citadas:",
+                    style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: _currentFontSize * 0.9)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: sermon.embeddedScripturesAbbreviated!.map((ref) {
+                    return Chip(
+                      label: Text(ref,
+                          style: TextStyle(fontSize: _currentFontSize * 0.75)),
+                      backgroundColor:
+                          theme.colorScheme.secondaryContainer.withOpacity(0.7),
+                      labelStyle: TextStyle(
+                          color: theme.colorScheme.onSecondaryContainer),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                    );
                   }).toList(),
                 ),
-              ),
-            )
-          else if (sermon.mainVerseQuoted != null &&
-              sermon.mainVerseQuoted!.isNotEmpty)
-            Card(
-              elevation: 0,
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
-              margin: const EdgeInsets.symmetric(vertical: 8.0),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(sermon.mainVerseQuoted!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        height: 1.4,
-                        fontSize: _currentFontSize * 0.95)),
-              ),
-            ),
-          const SizedBox(height: 16),
-          Text("Sermão:",
-              style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.underline,
-                  fontSize: _currentFontSize * 1.1)),
-          const SizedBox(height: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: sermon.paragraphsToDisplay.map((paragraph) {
-              final spacedParagraph = "$paragraph\n";
-              return MarkdownBody(
-                data: spacedParagraph,
-                selectable: true,
-                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                  p: theme.textTheme.bodyLarge
-                      ?.copyWith(fontSize: _currentFontSize, height: 1.5),
-                  blockquoteDecoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
-                    border: Border(
-                        left: BorderSide(
-                            color: theme.colorScheme.secondary, width: 4)),
-                  ),
-                  blockquotePadding: const EdgeInsets.all(8),
-                ),
-              );
-            }).toList(),
+              ],
+              const SizedBox(height: 30),
+            ],
           ),
-          if (sermon.embeddedScripturesAbbreviated != null &&
-              sermon.embeddedScripturesAbbreviated!.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Divider(color: theme.dividerColor.withOpacity(0.5)),
-            const SizedBox(height: 12),
-            Text("Outras Referências Citadas:",
-                style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: _currentFontSize * 0.9)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 4.0,
-              children: sermon.embeddedScripturesAbbreviated!.map((ref) {
-                return Chip(
-                  label: Text(ref,
-                      style: TextStyle(fontSize: _currentFontSize * 0.75)),
-                  backgroundColor:
-                      theme.colorScheme.secondaryContainer.withOpacity(0.7),
-                  labelStyle:
-                      TextStyle(color: theme.colorScheme.onSecondaryContainer),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                );
-              }).toList(),
-            ),
-          ],
-          const SizedBox(height: 30),
-        ],
-      ),
+        );
+      },
     );
   }
 }
