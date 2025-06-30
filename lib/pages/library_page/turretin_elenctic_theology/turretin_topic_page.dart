@@ -1,12 +1,30 @@
 // lib/pages/library_page/turretin_elenctic_theology/turretin_topic_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/models/turretin_theology_model.dart';
+import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
+import 'package:redux/redux.dart';
+
+// ViewModel para conectar aos destaques do Redux
+class _TurretinViewModel {
+  final List<Map<String, dynamic>> highlights;
+  _TurretinViewModel({required this.highlights});
+
+  static _TurretinViewModel fromStore(
+      Store<AppState> store, String topicTitle) {
+    // Filtra para pegar apenas destaques deste tópico específico
+    final relevantHighlights = store.state.userState.userCommentHighlights
+        .where((h) => h['sourceParentTitle'] == topicTitle)
+        .toList();
+    return _TurretinViewModel(highlights: relevantHighlights);
+  }
+}
 
 class TurretinTopicPage extends StatefulWidget {
-  // Convertido para StatefulWidget
   final ElencticTopic topic;
-
   const TurretinTopicPage({super.key, required this.topic});
 
   @override
@@ -17,7 +35,6 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // Estado e instância do TTS
   final TtsManager _ttsManager = TtsManager();
   TtsPlayerState _playerState = TtsPlayerState.stopped;
 
@@ -36,47 +53,32 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
   }
 
   // --- Funções de Controle de Áudio ---
-
   void _onTtsStateChanged() {
-    if (!mounted) return;
-    if (_playerState != _ttsManager.playerState.value) {
-      setState(() {
-        _playerState = _ttsManager.playerState.value;
-      });
+    if (mounted && _playerState != _ttsManager.playerState.value) {
+      setState(() => _playerState = _ttsManager.playerState.value);
     }
   }
 
   void _startQuestionPlayback() {
     if (widget.topic.questions.isEmpty) return;
-
     final question = widget.topic.questions[_currentPage];
     final List<TtsQueueItem> queue = [];
 
-    // Adiciona o título da questão
     queue.add(TtsQueueItem(
-      sectionId: 'q_title_${_currentPage}',
-      textToSpeak: question.questionTitle,
-    ));
-
-    // Adiciona a declaração da questão, se houver
+        sectionId: 'q_title_${_currentPage}',
+        textToSpeak: question.questionTitle));
     if (question.questionStatement.isNotEmpty) {
       queue.add(TtsQueueItem(
-        sectionId: 'q_statement_${_currentPage}',
-        textToSpeak: question.questionStatement,
-      ));
+          sectionId: 'q_statement_${_currentPage}',
+          textToSpeak: question.questionStatement));
     }
-
-    // Adiciona cada parágrafo do conteúdo
     for (int i = 0; i < question.content.length; i++) {
-      final paragraph = question.content[i];
-      if (paragraph.trim().isNotEmpty) {
+      if (question.content[i].trim().isNotEmpty) {
         queue.add(TtsQueueItem(
-          sectionId: 'q_paragraph_${_currentPage}_$i',
-          textToSpeak: paragraph,
-        ));
+            sectionId: 'q_paragraph_${_currentPage}_$i',
+            textToSpeak: question.content[i]));
       }
     }
-
     if (queue.isNotEmpty) {
       _ttsManager.speak(queue, queue.first.sectionId);
     }
@@ -102,7 +104,7 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
         return Icons.pause_circle_outline;
       case TtsPlayerState.paused:
         return Icons.play_circle_outline;
-      case TtsPlayerState.stopped:
+      default:
         return Icons.play_circle_outline;
     }
   }
@@ -113,87 +115,212 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
         return "Pausar Leitura";
       case TtsPlayerState.paused:
         return "Continuar Leitura";
-      case TtsPlayerState.stopped:
+      default:
         return "Ouvir Questão";
     }
+  }
+
+  // --- Funções de Destaque ---
+  void _handleHighlight(BuildContext context, String fullParagraph,
+      String questionTitle, EditableTextState editableTextState) {
+    final selection = editableTextState.textEditingValue.selection;
+    if (selection.isCollapsed) return;
+    final selectedSnippet =
+        fullParagraph.substring(selection.start, selection.end);
+    _showHighlightEditor(
+        context, selectedSnippet, fullParagraph, questionTitle);
+  }
+
+  Future<void> _showHighlightEditor(BuildContext context, String snippet,
+      String fullParagraph, String questionTitle) async {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final result = await showDialog<HighlightResult?>(
+      context: context,
+      builder: (_) => const HighlightEditorDialog(
+          initialColor: "#ADD8E6"), // Cor azul para teologia
+    );
+
+    if (result == null || result.colorHex == null) return;
+
+    final highlightData = {
+      'selectedSnippet': snippet,
+      'fullContext': fullParagraph,
+      'sourceType': 'turretin',
+      'sourceTitle': questionTitle,
+      'sourceParentTitle': widget.topic.topicTitle,
+      'sourceId': "${widget.topic.topicTitle}_$questionTitle"
+          .replaceAll(' ', '_')
+          .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), ''),
+      'color': result.colorHex,
+      'tags': result.tags,
+    };
+
+    store.dispatch(AddCommentHighlightAction(highlightData));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Destaque salvo!")));
+  }
+
+  List<TextSpan> _buildHighlightedParagraph(String paragraph,
+      List<Map<String, dynamic>> highlights, ThemeData theme) {
+    if (highlights.isEmpty) return [TextSpan(text: paragraph)];
+    List<TextSpan> spans = [];
+    int lastEnd = 0;
+
+    List<Map<String, dynamic>> snippetsInParagraph = [];
+    for (var highlight in highlights) {
+      String snippet = highlight['selectedSnippet'] ?? '';
+      if (snippet.isEmpty) continue;
+      int startIndex = 0;
+      while (startIndex < paragraph.length) {
+        int pos = paragraph.indexOf(snippet, startIndex);
+        if (pos == -1) break;
+        snippetsInParagraph.add({
+          'start': pos,
+          'end': pos + snippet.length,
+          'color': highlight['color'] as String? ?? '#ADD8E6'
+        });
+        startIndex = pos + snippet.length;
+      }
+    }
+
+    if (snippetsInParagraph.isEmpty) return [TextSpan(text: paragraph)];
+    snippetsInParagraph.sort((a, b) => a['start'].compareTo(b['start']));
+
+    for (var snippetInfo in snippetsInParagraph) {
+      if (snippetInfo['start'] > lastEnd) {
+        spans.add(
+            TextSpan(text: paragraph.substring(lastEnd, snippetInfo['start'])));
+      }
+      spans.add(TextSpan(
+        text: paragraph.substring(snippetInfo['start'], snippetInfo['end']),
+        style: TextStyle(
+            backgroundColor: Color(int.parse(
+                    (snippetInfo['color'] as String).replaceFirst('#', '0xff')))
+                .withOpacity(0.35)),
+      ));
+      lastEnd = snippetInfo['end'];
+    }
+
+    if (lastEnd < paragraph.length) {
+      spans.add(TextSpan(text: paragraph.substring(lastEnd)));
+    }
+    return spans;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.topic.topicTitle, overflow: TextOverflow.ellipsis),
         actions: [
-          // Ícone de TTS
           IconButton(
-            icon: Icon(
-              _getAudioIcon(),
-              color: _playerState == TtsPlayerState.playing
-                  ? theme.colorScheme.secondary
-                  : theme.iconTheme.color,
-              size: 28,
-            ),
+            icon: Icon(_getAudioIcon(),
+                color: _playerState == TtsPlayerState.playing
+                    ? theme.colorScheme.secondary
+                    : theme.iconTheme.color,
+                size: 28),
             tooltip: _getAudioTooltip(),
             onPressed: _handleAudioControl,
           ),
         ],
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: widget.topic.questions.length,
-        onPageChanged: (index) {
-          setState(() {
-            _currentPage = index;
-            _ttsManager.stop(); // Para a leitura ao mudar de página
-          });
-        },
-        itemBuilder: (context, index) {
-          final question = widget.topic.questions[index];
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  question.questionTitle,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (question.questionStatement.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12.0),
-                    decoration: BoxDecoration(
-                        color:
-                            theme.colorScheme.surfaceVariant.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: theme.dividerColor)),
-                    child: Text(
-                      question.questionStatement,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: theme.textTheme.bodyLarge?.color
-                              ?.withOpacity(0.9)),
+      body: StoreConnector<AppState, _TurretinViewModel>(
+        converter: (store) =>
+            _TurretinViewModel.fromStore(store, widget.topic.topicTitle),
+        builder: (context, viewModel) {
+          return PageView.builder(
+            controller: _pageController,
+            itemCount: widget.topic.questions.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+                _ttsManager.stop();
+              });
+            },
+            itemBuilder: (context, index) {
+              final question = widget.topic.questions[index];
+              final questionHighlights = viewModel.highlights
+                  .where((h) => h['sourceTitle'] == question.questionTitle)
+                  .toList();
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      question.questionTitle,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold),
                     ),
-                  ),
-                ],
-                Divider(color: theme.dividerColor, height: 32),
-                ...question.content.map(
-                  (paragraph) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Text(
-                      paragraph,
-                      style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                      textAlign: TextAlign.justify,
-                    ),
-                  ),
+                    if (question.questionStatement.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color:
+                              theme.colorScheme.surfaceVariant.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: theme.dividerColor),
+                        ),
+                        child: Text(
+                          question.questionStatement,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                              fontStyle: FontStyle.italic,
+                              color: theme.textTheme.bodyLarge?.color
+                                  ?.withOpacity(0.9)),
+                        ),
+                      ),
+                    ],
+                    Divider(color: theme.dividerColor, height: 32),
+                    ...question.content
+                        .map((paragraph) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: SelectableText.rich(
+                                TextSpan(
+                                  style: theme.textTheme.bodyLarge
+                                      ?.copyWith(height: 1.6),
+                                  children: _buildHighlightedParagraph(
+                                      paragraph, questionHighlights, theme),
+                                ),
+                                contextMenuBuilder:
+                                    (context, editableTextState) {
+                                  final buttonItems =
+                                      editableTextState.contextMenuButtonItems;
+                                  if (!editableTextState
+                                      .textEditingValue.selection.isCollapsed) {
+                                    buttonItems.insert(
+                                      0,
+                                      ContextMenuButtonItem(
+                                        label: 'Destacar',
+                                        onPressed: () {
+                                          _handleHighlight(
+                                              context,
+                                              paragraph,
+                                              question.questionTitle,
+                                              editableTextState);
+                                          editableTextState.hideToolbar();
+                                        },
+                                      ),
+                                    );
+                                  }
+                                  return AdaptiveTextSelectionToolbar
+                                      .buttonItems(
+                                    anchors:
+                                        editableTextState.contextMenuAnchors,
+                                    buttonItems: buttonItems,
+                                  );
+                                },
+                                textAlign: TextAlign.justify,
+                              ),
+                            ))
+                        .toList(),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -214,9 +341,8 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
                     : null,
               ),
               Text(
-                'Questão ${_currentPage + 1} de ${widget.topic.questions.length}',
-                style: theme.textTheme.bodyMedium,
-              ),
+                  'Questão ${_currentPage + 1} de ${widget.topic.questions.length}',
+                  style: theme.textTheme.bodyMedium),
               IconButton(
                 icon: const Icon(Icons.arrow_forward_ios),
                 onPressed: _currentPage < widget.topic.questions.length - 1
