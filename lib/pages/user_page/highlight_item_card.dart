@@ -6,7 +6,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/redux/actions.dart';
-import 'package:septima_biblia/pages/user_page/comment_highlight_detail_dialog.dart'; // <<< NOVO IMPORT
+import 'package:septima_biblia/pages/user_page/comment_highlight_detail_dialog.dart';
 
 class HighlightItemCard extends StatelessWidget {
   final HighlightItem item;
@@ -18,65 +18,80 @@ class HighlightItemCard extends StatelessWidget {
     required this.onNavigateToVerse,
   });
 
-  // >>> INÍCIO DA MODIFICAÇÃO: Nova função de handle <<<
   void _handleTap(BuildContext context) {
+    final sourceType = item.originalData['sourceType'] as String?;
+
     if (item.type == HighlightItemType.verse) {
-      // Navega para o versículo da Bíblia (comportamento atual)
+      // Navega para o versículo da Bíblia
       onNavigateToVerse(item.id);
-    }
-    // >>> INÍCIO DA MUDANÇA <<<
-    else if (item.type == HighlightItemType.literature) {
-      final sourceType = item.originalData['sourceType'] as String?;
-
-      // Se for um sermão, navega para a página de detalhes do sermão
-      if (sourceType == 'sermon') {
-        final sermonId = item.originalData['sourceId'] as String?;
-        final sermonTitle = item.originalData['sourceTitle'] as String?;
-
-        if (sermonId != null && sermonTitle != null) {
-          // Importe a página se necessário
-          // import 'package:septima_biblia/pages/sermon_detail_page.dart';
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SermonDetailPage(
-                sermonGeneratedId: sermonId,
-                sermonTitle: sermonTitle,
-                // >>> PASSA O SNIPPET PARA O SCROLL <<<
-                snippetToScrollTo: item.contentPreview,
-              ),
+    } else if (sourceType == 'sermon') {
+      // Navega para a página do Sermão
+      final sermonId = item.originalData['sourceId'] as String?;
+      final sermonTitle = item.originalData['sourceTitle'] as String?;
+      if (sermonId != null && sermonTitle != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SermonDetailPage(
+              sermonGeneratedId: sermonId,
+              sermonTitle: sermonTitle,
+              snippetToScrollTo: item.contentPreview,
             ),
-          );
-        }
-      } else {
-        // Para outros tipos de literatura (Turretin, Comentários),
-        // abre o diálogo antigo como fallback.
-        showDialog(
-          context: context,
-          builder: (_) => CommentHighlightDetailDialog(
-            referenceText: item.referenceText,
-            fullCommentText: item.originalData['fullContext'] ??
-                'Texto completo não disponível.',
-            selectedSnippet: item.contentPreview,
-            highlightColor: item.colorHex != null
-                ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
-                : Colors.amber,
           ),
         );
       }
+    } else {
+      // >>> CORREÇÃO: Para QUALQUER OUTRO tipo de literatura, abre o diálogo <<<
+      showDialog(
+        context: context,
+        builder: (_) => CommentHighlightDetailDialog(
+          referenceText: item.referenceText,
+          // Usa 'fullContext' que agora está sendo salvo corretamente
+          fullCommentText: item.originalData['fullContext'] ??
+              'Contexto não encontrado. Por favor, recrie este destaque.',
+          selectedSnippet: item.contentPreview,
+          highlightColor: item.colorHex != null
+              ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
+              : Colors.amber,
+        ),
+      );
     }
-    // >>> FIM DA MUDANÇA <<<
   }
-  // >>> FIM DA MODIFICAÇÃO <<<
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isVerse = item.type == HighlightItemType.verse;
+    final sourceType = item.originalData['sourceType'] as String?;
 
     final Color indicatorColor = item.colorHex != null
         ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
         : Colors.amber.shade700;
+
+    (IconData, String) getSourceInfo() {
+      switch (sourceType) {
+        case 'sermon':
+          return (Icons.campaign_outlined, "Sermão de Spurgeon");
+        case 'church_history':
+          return (Icons.history_edu_outlined, "História da Igreja");
+        case 'turretin':
+          return (Icons.school_outlined, "Institutas de Turretin");
+        case 'bible_commentary':
+          return (Icons.comment_outlined, "Comentário Bíblico");
+        default:
+          return (Icons.menu_book_outlined, "Versículo Bíblico");
+      }
+    }
+
+    final sourceInfo = getSourceInfo();
+
+    // >>> CORREÇÃO DA REFERÊNCIA PARA COMENTÁRIOS <<<
+    String displayReference = item.referenceText;
+    if (sourceType == 'bible_commentary') {
+      // Se for um comentário bíblico, usa o campo que já tem a referência formatada.
+      displayReference =
+          item.originalData['verseReferenceText'] ?? item.referenceText;
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6.0),
@@ -87,7 +102,6 @@ class HighlightItemCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        // >>> MODIFICAÇÃO AQUI <<<
         onTap: () => _handleTap(context),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -97,24 +111,31 @@ class HighlightItemCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    isVerse ? Icons.menu_book_outlined : Icons.comment_outlined,
-                    color: indicatorColor,
-                    size: 22,
-                  ),
+                  Icon(sourceInfo.$1, color: indicatorColor, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
-                      child: Text(
-                        item.referenceText,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: indicatorColor,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isVerse ? item.referenceText : displayReference,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: indicatorColor,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2.0),
+                          child: Text(
+                            sourceInfo.$2,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.textTheme.bodySmall?.color
+                                    ?.withOpacity(0.7)),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),

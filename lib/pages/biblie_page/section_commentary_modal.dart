@@ -161,9 +161,11 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
 
   void _markSelectedCommentSnippet(
     BuildContext passedContext,
-    String fullCommentText,
+    String
+        fullCommentText, // Este é o parágrafo completo onde a seleção foi feita
     TextSelection selection,
   ) async {
+    // 1. Garante que há texto selecionado
     if (selection.isCollapsed) {
       final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
       if (scaffoldMessenger != null && mounted) {
@@ -176,58 +178,53 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       return;
     }
 
+    // 2. Extrai o trecho e obtém a instância da store
     final selectedSnippet =
         fullCommentText.substring(selection.start, selection.end);
     final store = StoreProvider.of<AppState>(passedContext, listen: false);
 
-    const String commentHighlightColor =
-        "#FFA07A"; // Cor fixa para destaques de comentários
-
+    // 3. Mostra o diálogo para o usuário escolher cor e adicionar tags
     final result = await showDialog<HighlightResult?>(
       context: passedContext,
-      builder: (_) => HighlightEditorDialog(
-        initialColor: commentHighlightColor, // Passa a cor fixa
-        initialTags: const [], // Sempre começa sem tags para um novo destaque
+      builder: (_) => const HighlightEditorDialog(
+        // Você pode definir uma cor padrão para destaques de literatura
+        initialColor: "#FFA07A",
+        initialTags: [],
       ),
     );
 
-    if (result == null) return; // Usuário cancelou
-
-    if (result.shouldRemove) {
-      // A lógica de remoção para destaques de comentários é diferente, pois eles têm IDs únicos.
-      // Por enquanto, não implementaremos a remoção a partir daqui para simplificar.
-      // O usuário removerá pela UserPage.
+    // 4. Se o usuário cancelou o diálogo, não faz nada
+    if (result == null || result.shouldRemove || result.colorHex == null)
       return;
-    }
 
-    if (result.colorHex != null) {
-      // Confirma que o usuário não cancelou a cor
-      final highlightData = {
-        'selectedSnippet': selectedSnippet,
-        'fullCommentText': fullCommentText,
-        'bookAbbrev': widget.bookAbbrev,
-        'bookName': widget.bookName,
-        'chapterNumber': widget.chapterNumber,
-        'sectionId': currentSectionIdForHighlights,
-        'sectionTitle': widget.sectionTitle,
-        'verseReferenceText':
-            "${widget.bookName} ${widget.chapterNumber} (Seção: ${widget.sectionTitle})",
-        'language': _showOriginalText ? 'en' : 'pt',
-        'color':
-            result.colorHex, // Usa a cor do resultado (que é a nossa cor fixa)
-        'tags': result.tags,
-      };
+    // 5. Constrói o objeto de dados do destaque, incluindo o 'fullContext'
+    final highlightData = {
+      'selectedSnippet': selectedSnippet,
+      'fullContext': fullCommentText, // <<< LINHA CRUCIAL CORRIGIDA/ADICIONADA
+      'bookAbbrev': widget.bookAbbrev,
+      'bookName': widget.bookName,
+      'chapterNumber': widget.chapterNumber,
+      'sectionId': currentSectionIdForHighlights,
+      'sectionTitle': widget.sectionTitle,
+      'verseReferenceText':
+          "${widget.bookName} ${widget.chapterNumber}:${widget.versesRangeStr} (Comentário)",
+      'sourceType': 'bible_commentary',
+      'language': _showOriginalText ? 'en' : 'pt',
+      'color': result.colorHex,
+      'tags': result.tags,
+    };
 
-      store.dispatch(AddCommentHighlightAction(highlightData));
+    // 6. Despacha a ação para salvar o destaque no Firestore
+    store.dispatch(AddCommentHighlightAction(highlightData));
 
-      final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
-      if (scaffoldMessenger != null && mounted) {
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(
-              content: Text("Trecho do comentário marcado!"),
-              duration: Duration(seconds: 2)),
-        );
-      }
+    // 7. Mostra um feedback visual de sucesso
+    final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
+    if (scaffoldMessenger != null && mounted) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+            content: Text("Trecho do comentário marcado!"),
+            duration: Duration(seconds: 2)),
+      );
     }
   }
 
