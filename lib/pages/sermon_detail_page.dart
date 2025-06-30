@@ -90,11 +90,13 @@ class Sermon {
 class SermonDetailPage extends StatefulWidget {
   final String sermonGeneratedId;
   final String sermonTitle;
+  final String? snippetToScrollTo; // <<< NOVO PARÂMETRO OPCIONAL
 
   const SermonDetailPage({
     super.key,
     required this.sermonGeneratedId,
     required this.sermonTitle,
+    this.snippetToScrollTo, // <<< ADICIONADO AO CONSTRUTOR
   });
 
   @override
@@ -130,13 +132,39 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final TtsManager _ttsManager = TtsManager();
   TtsPlayerState _sermonPlayerState = TtsPlayerState.stopped;
+  final Map<String, GlobalKey> _paragraphKeys = {};
 
   // O controller foi REMOVIDO pois não é necessário.
+  void _scrollToSnippet() {
+    if (widget.snippetToScrollTo == null) return;
+
+    // Procura a chave do parágrafo que contém o snippet
+    final keyEntry = _paragraphKeys.entries.firstWhere(
+      (entry) => entry.key.contains(widget.snippetToScrollTo!),
+      orElse: () => MapEntry('', GlobalKey()),
+    );
+
+    if (keyEntry.value.currentContext != null) {
+      // Espera um pouco para a UI renderizar antes de rolar
+      Future.delayed(const Duration(milliseconds: 300), () {
+        Scrollable.ensureVisible(
+          keyEntry.value.currentContext!,
+          duration: const Duration(milliseconds: 500),
+          alignment: 0.3, // Centraliza o destaque a 30% do topo da tela
+        );
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadSermonDataFromFirestore();
+    _loadSermonDataFromFirestore().then((_) {
+      // Chama a função de scroll DEPOIS que os dados do sermão forem carregados
+      if (mounted) {
+        _scrollToSnippet();
+      }
+    });
     _ttsManager.playerState.addListener(_onTtsStateChanged);
   }
 
@@ -493,7 +521,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     final details = sermon.sermonDetails;
     final preacherName =
         sermon.preacher ?? details?['preacher'] as String? ?? 'C.H. Spurgeon';
-
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSnippet());
     // O corpo agora é envolvido por um StoreConnector para obter os destaques
     return StoreConnector<AppState, _SermonViewModel>(
       converter: (store) =>
@@ -624,7 +652,10 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: sermon.paragraphsToDisplay.map((paragraph) {
+                  final key = GlobalKey();
+                  _paragraphKeys[paragraph] = key;
                   return Padding(
+                    key: key,
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: SelectableText.rich(
                       // Usando .rich para aceitar TextSpan

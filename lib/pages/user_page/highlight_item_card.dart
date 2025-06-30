@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:septima_biblia/models/highlight_item_model.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:septima_biblia/pages/sermon_detail_page.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/pages/user_page/comment_highlight_detail_dialog.dart'; // <<< NOVO IMPORT
@@ -20,21 +21,51 @@ class HighlightItemCard extends StatelessWidget {
   // >>> INÍCIO DA MODIFICAÇÃO: Nova função de handle <<<
   void _handleTap(BuildContext context) {
     if (item.type == HighlightItemType.verse) {
+      // Navega para o versículo da Bíblia (comportamento atual)
       onNavigateToVerse(item.id);
-    } else if (item.type == HighlightItemType.literature) {
-      showDialog(
-        context: context,
-        builder: (_) => CommentHighlightDetailDialog(
-          referenceText: item.referenceText,
-          fullCommentText: item.originalData['fullCommentText'] ??
-              'Texto completo não disponível.',
-          selectedSnippet: item.contentPreview,
-          highlightColor: item.colorHex != null
-              ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
-              : Colors.amber, // Cor padrão
-        ),
-      );
     }
+    // >>> INÍCIO DA MUDANÇA <<<
+    else if (item.type == HighlightItemType.literature) {
+      final sourceType = item.originalData['sourceType'] as String?;
+
+      // Se for um sermão, navega para a página de detalhes do sermão
+      if (sourceType == 'sermon') {
+        final sermonId = item.originalData['sourceId'] as String?;
+        final sermonTitle = item.originalData['sourceTitle'] as String?;
+
+        if (sermonId != null && sermonTitle != null) {
+          // Importe a página se necessário
+          // import 'package:septima_biblia/pages/sermon_detail_page.dart';
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SermonDetailPage(
+                sermonGeneratedId: sermonId,
+                sermonTitle: sermonTitle,
+                // >>> PASSA O SNIPPET PARA O SCROLL <<<
+                snippetToScrollTo: item.contentPreview,
+              ),
+            ),
+          );
+        }
+      } else {
+        // Para outros tipos de literatura (Turretin, Comentários),
+        // abre o diálogo antigo como fallback.
+        showDialog(
+          context: context,
+          builder: (_) => CommentHighlightDetailDialog(
+            referenceText: item.referenceText,
+            fullCommentText: item.originalData['fullContext'] ??
+                'Texto completo não disponível.',
+            selectedSnippet: item.contentPreview,
+            highlightColor: item.colorHex != null
+                ? Color(int.parse(item.colorHex!.replaceFirst('#', '0xff')))
+                : Colors.amber,
+          ),
+        );
+      }
+    }
+    // >>> FIM DA MUDANÇA <<<
   }
   // >>> FIM DA MODIFICAÇÃO <<<
 
