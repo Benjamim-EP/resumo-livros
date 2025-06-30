@@ -134,9 +134,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         widget.currentlyPlayingSectionId == _sectionIdForTracking;
     final TtsPlayerState playerState = widget.currentPlayerState;
     final TtsContentType? playingType = widget.currentlyPlayingContentType;
-    final Color defaultIconColor =
-        theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
-    final Color activeIconColor = theme.colorScheme.secondary;
+    final Color defaultIconColor = const Color.fromARGB(255, 253, 242, 242);
+    final Color activeIconColor = const Color.fromARGB(255, 253, 242, 242);
+    // #theme.colorScheme.secondary;
 
     IconData versesIcon = Icons.play_circle_outline;
     Color versesIconColor = defaultIconColor;
@@ -207,11 +207,11 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     tooltip: versesTooltip,
                     onPressed: () =>
                         _handlePlayRequest(TtsContentType.versesOnly)),
-                IconButton(
-                    icon: Icon(studyIcon, color: studyIconColor, size: 24),
-                    tooltip: studyTooltip,
-                    onPressed: () =>
-                        _handlePlayRequest(TtsContentType.versesAndCommentary)),
+                // IconButton(
+                //     icon: Icon(studyIcon, color: studyIconColor, size: 24),
+                //     tooltip: studyTooltip,
+                //     onPressed: () =>
+                //         _handlePlayRequest(TtsContentType.versesAndCommentary)),
                 if (_isLoadingCommentary)
                   const SizedBox(
                       width: 40,

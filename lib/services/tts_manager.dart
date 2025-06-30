@@ -20,6 +20,11 @@ enum TtsPlayerState { playing, stopped, paused }
 
 // --- Chave de Persistência ---
 const String _ttsVoicePrefsKey = 'user_selected_tts_voice';
+const Map<String, String> _voiceDisplayNames = {
+  'pt-br-x-afs-local': 'Voz Masculina 1 (Offline)',
+  'pt-br-x-pte-local': 'Voz Feminina 1 (Offline)',
+  'pt-br-x-ptd-local': 'Voz Masculina 2 (Offline)',
+};
 
 /// Gerencia a funcionalidade de Text-to-Speech (TTS) para todo o aplicativo.
 ///
@@ -244,13 +249,15 @@ class TtsManager {
     try {
       var voices = await _flutterTts.getVoices;
       if (voices is List) {
+        // --- INÍCIO DA MODIFICAÇÃO: Filtrar apenas as vozes desejadas ---
         return voices
             .where((voice) =>
                 voice is Map &&
-                voice['locale'] != null &&
-                voice['locale'].toString().toLowerCase().contains('pt-br'))
+                // A chave da verificação agora é se o nome técnico da voz está no nosso mapa
+                _voiceDisplayNames.containsKey(voice['name']))
             .map((voice) => voice as Map<dynamic, dynamic>)
             .toList();
+        // --- FIM DA MODIFICAÇÃO ---
       }
       return [];
     } catch (e) {
@@ -258,6 +265,14 @@ class TtsManager {
       return [];
     }
   }
+
+  // --- INÍCIO DA NOVA ADIÇÃO: Função para obter o nome amigável ---
+  /// Retorna o nome amigável para uma voz, ou o nome original se não houver mapeamento.
+  String getVoiceDisplayName(String? rawVoiceName) {
+    if (rawVoiceName == null) return 'Voz Desconhecida';
+    return _voiceDisplayNames[rawVoiceName] ?? rawVoiceName;
+  }
+  // --- FIM DA NOVA ADIÇÃO ---
 
   Future<void> setVoice(Map<dynamic, dynamic> voice) async {
     try {

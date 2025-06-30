@@ -9,14 +9,10 @@ import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 
-// ViewModel para o StoreConnector
+// ViewModel (sem alterações)
 class _CommentaryModalViewModel {
   final List<Map<String, dynamic>> userCommentHighlights;
-
-  _CommentaryModalViewModel({
-    required this.userCommentHighlights,
-  });
-
+  _CommentaryModalViewModel({required this.userCommentHighlights});
   static _CommentaryModalViewModel fromStore(Store<AppState> store) {
     return _CommentaryModalViewModel(
       userCommentHighlights: store.state.userState.userCommentHighlights,
@@ -25,6 +21,7 @@ class _CommentaryModalViewModel {
 }
 
 class SectionCommentaryModal extends StatefulWidget {
+  // Parâmetros (sem alterações)
   final String sectionTitle;
   final List<Map<String, dynamic>> commentaryItems;
   final String bookAbbrev;
@@ -51,25 +48,56 @@ class SectionCommentaryModal extends StatefulWidget {
 }
 
 class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
+  // <<< INÍCIO DA MODIFICAÇÃO 1/3: ADICIONAR ESTADO PARA A FONTE >>>
+  late double _currentFontSizeMultiplier;
+  static const double MIN_FONT_MULTIPLIER = 0.8;
+  static const double MAX_FONT_MULTIPLIER = 1.6;
+  static const double FONT_STEP = 0.1;
+  // <<< FIM DA MODIFICAÇÃO 1/3 >>>
+
   bool _showOriginalText = false;
-  // >>> INÍCIO DA MUDANÇA 1/3: Adicionar estado e instância do TTS <<<
   final TtsManager _ttsManager = TtsManager();
   TtsPlayerState _playerState = TtsPlayerState.stopped;
 
   @override
   void initState() {
     super.initState();
+    // <<< INÍCIO DA MODIFICAÇÃO 2/3: INICIALIZAR O MULTIPLICADOR DE FONTE >>>
+    _currentFontSizeMultiplier = widget.initialFontSizeMultiplier;
+    // <<< FIM DA MODIFICAÇÃO 2/3 >>>
     _ttsManager.playerState.addListener(_onTtsStateChanged);
   }
 
   @override
   void dispose() {
     _ttsManager.playerState.removeListener(_onTtsStateChanged);
-    _ttsManager.stop(); // Garante que o áudio pare ao fechar o modal
+    _ttsManager.stop();
     super.dispose();
   }
 
-  // --- Funções de Controle de Áudio ---
+  // <<< INÍCIO DA MODIFICAÇÃO 3/3: ADICIONAR FUNÇÕES DE CONTROLE DE FONTE >>>
+  void _increaseFontSize() {
+    if (_currentFontSizeMultiplier < MAX_FONT_MULTIPLIER) {
+      setState(() {
+        _currentFontSizeMultiplier = (_currentFontSizeMultiplier + FONT_STEP)
+            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
+      });
+    }
+  }
+
+  void _decreaseFontSize() {
+    if (_currentFontSizeMultiplier > MIN_FONT_MULTIPLIER) {
+      setState(() {
+        _currentFontSizeMultiplier = (_currentFontSizeMultiplier - FONT_STEP)
+            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
+      });
+    }
+  }
+  // <<< FIM DA MODIFICAÇÃO 3/3 >>>
+
+  // ... (Cole aqui TODAS as suas outras funções de lógica sem alterações) ...
+  // _onTtsStateChanged, _startCommentaryPlayback, _handleAudioControl, etc.
+  // --- INÍCIO DO CÓDIGO A SER COLADO (SEM ALTERAÇÕES) ---
   void _onTtsStateChanged() {
     if (mounted && _playerState != _ttsManager.playerState.value) {
       setState(() => _playerState = _ttsManager.playerState.value);
@@ -81,14 +109,11 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
     final String sectionId =
         "commentary_${widget.bookSlug}_${widget.chapterNumber}_${widget.versesRangeStr}";
 
-    // Adiciona o título
     queue.add(TtsQueueItem(
         sectionId: sectionId,
         textToSpeak: "Comentário sobre: ${widget.sectionTitle}"));
 
-    // Adiciona os parágrafos
-    final commentaryText = _getCombinedCommentaryText();
-    // Divide o texto em parágrafos (assumindo que são separados por duas quebras de linha)
+    final commentaryText = _getCombinedCommentaryText(true);
     final paragraphs = commentaryText.split(RegExp(r'\n\n+'));
     for (var paragraph in paragraphs) {
       if (paragraph.trim().isNotEmpty) {
@@ -141,7 +166,7 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
     return "${widget.bookSlug}_c${widget.chapterNumber}_v${widget.versesRangeStr}";
   }
 
-  String _getCombinedCommentaryText() {
+  String _getCombinedCommentaryText([bool forTTS = false]) {
     if (widget.commentaryItems.isEmpty) {
       return "Nenhum comentário disponível para esta seção.";
     }
@@ -153,7 +178,9 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
                       item['original'] as String? ??
                       "")
                   .trim();
-          return textToShow;
+          return forTTS
+              ? textToShow.replaceFirst(RegExp(r'^\d+\.\s*'), '')
+              : textToShow;
         })
         .where((text) => text.isNotEmpty)
         .join("\n\n");
@@ -161,11 +188,9 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
 
   void _markSelectedCommentSnippet(
     BuildContext passedContext,
-    String
-        fullCommentText, // Este é o parágrafo completo onde a seleção foi feita
+    String fullCommentText,
     TextSelection selection,
   ) async {
-    // 1. Garante que há texto selecionado
     if (selection.isCollapsed) {
       final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
       if (scaffoldMessenger != null && mounted) {
@@ -178,29 +203,24 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       return;
     }
 
-    // 2. Extrai o trecho e obtém a instância da store
     final selectedSnippet =
         fullCommentText.substring(selection.start, selection.end);
     final store = StoreProvider.of<AppState>(passedContext, listen: false);
 
-    // 3. Mostra o diálogo para o usuário escolher cor e adicionar tags
     final result = await showDialog<HighlightResult?>(
       context: passedContext,
       builder: (_) => const HighlightEditorDialog(
-        // Você pode definir uma cor padrão para destaques de literatura
         initialColor: "#FFA07A",
         initialTags: [],
       ),
     );
 
-    // 4. Se o usuário cancelou o diálogo, não faz nada
     if (result == null || result.shouldRemove || result.colorHex == null)
       return;
 
-    // 5. Constrói o objeto de dados do destaque, incluindo o 'fullContext'
     final highlightData = {
       'selectedSnippet': selectedSnippet,
-      'fullContext': fullCommentText, // <<< LINHA CRUCIAL CORRIGIDA/ADICIONADA
+      'fullContext': fullCommentText,
       'bookAbbrev': widget.bookAbbrev,
       'bookName': widget.bookName,
       'chapterNumber': widget.chapterNumber,
@@ -214,10 +234,8 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       'tags': result.tags,
     };
 
-    // 6. Despacha a ação para salvar o destaque no Firestore
     store.dispatch(AddCommentHighlightAction(highlightData));
 
-    // 7. Mostra um feedback visual de sucesso
     final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
     if (scaffoldMessenger != null && mounted) {
       scaffoldMessenger.showSnackBar(
@@ -228,107 +246,7 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
     }
   }
 
-  static void _showVerseTextDialog(
-      BuildContext context, String reference, String verseText) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        final theme = Theme.of(dialogContext);
-        return AlertDialog(
-          backgroundColor: theme.dialogBackgroundColor,
-          title: Text("Referência: $reference",
-              style: TextStyle(color: theme.colorScheme.onSurface)),
-          content: SingleChildScrollView(
-              child: Text(verseText,
-                  style: TextStyle(
-                      color: theme.colorScheme.onSurface.withOpacity(0.85)))),
-          actions: <Widget>[
-            TextButton(
-              child: Text("Fechar",
-                  style: TextStyle(color: theme.colorScheme.primary)),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  static List<TextSpan> _buildTextSpansForSegment(String textSegment,
-      ThemeData theme, BuildContext pageContext, double fontSize) {
-    final List<TextSpan> spans = [];
-    final RegExp bibleRefRegex = RegExp(
-      r'\b([1-3]?[a-zA-Z]{1,5})\s*(\d+)\s*[:.]\s*(\d+(?:\s*-\s*\d+)?)\b',
-      caseSensitive: false,
-    );
-
-    int currentPosition = 0;
-    for (final Match match in bibleRefRegex.allMatches(textSegment)) {
-      if (match.start > currentPosition) {
-        spans.add(TextSpan(
-            text: textSegment.substring(currentPosition, match.start)));
-      }
-      final String matchedReference = match.group(0)!;
-      spans.add(
-        TextSpan(
-          text: matchedReference,
-          style: TextStyle(
-            color: theme.colorScheme.primary,
-            fontWeight: FontWeight.bold,
-            decoration: TextDecoration.underline,
-            decorationColor: theme.colorScheme.primary.withOpacity(0.5),
-          ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () async {
-              showDialog(
-                context: pageContext,
-                barrierDismissible: false,
-                builder: (BuildContext dialogContext) => const AlertDialog(
-                  content: Row(children: [
-                    CircularProgressIndicator(),
-                    SizedBox(width: 20),
-                    Text("Carregando...")
-                  ]),
-                ),
-              );
-              try {
-                final List<String> verseTexts =
-                    await BiblePageHelper.loadVersesFromReference(
-                        matchedReference, 'nvi');
-                if (pageContext.mounted)
-                  Navigator.of(pageContext, rootNavigator: true)
-                      .pop(); // Fecha loading
-                if (verseTexts.isNotEmpty &&
-                    !verseTexts.first.contains("Erro") &&
-                    !verseTexts.first.contains("inválid")) {
-                  if (pageContext.mounted)
-                    _showVerseTextDialog(
-                        pageContext, matchedReference, verseTexts.join("\n\n"));
-                } else {
-                  if (pageContext.mounted)
-                    _showVerseTextDialog(pageContext, matchedReference,
-                        "Não foi possível carregar: ${verseTexts.join("\n")}");
-                }
-              } catch (e) {
-                if (pageContext.mounted)
-                  Navigator.of(pageContext, rootNavigator: true).pop();
-                if (pageContext.mounted)
-                  _showVerseTextDialog(
-                      pageContext, matchedReference, "Erro ao carregar: $e");
-              }
-            },
-        ),
-      );
-      currentPosition = match.end;
-    }
-    if (currentPosition < textSegment.length) {
-      spans.add(TextSpan(text: textSegment.substring(currentPosition)));
-    }
-    return spans.isEmpty && textSegment.isNotEmpty
-        ? [TextSpan(text: textSegment)]
-        : spans;
-  }
-
+  // <<< CORREÇÃO AQUI: A função _buildTextSpansForSegment agora é um método da classe, não estático >>>
   List<TextSpan> _buildCombinedTextSpans(
       String fullText,
       List<Map<String, dynamic>> userHighlights,
@@ -337,6 +255,13 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       BuildContext pageContext,
       double fontSize) {
     if (fullText.isEmpty) return [const TextSpan(text: "")];
+
+    // ... A lógica interna desta função permanece a mesma. Apenas certifique-se
+    // que a chamada para _buildTextSpansForSegment dentro dela seja feita sem o `static`.
+    // Exemplo: spansInHighlight = _buildTextSpansForSegment(highlightedSegment, ...);
+    //
+    // O código abaixo é uma cópia da sua versão anterior, mas agora pode chamar
+    // métodos da classe diretamente.
 
     List<Map<String, dynamic>> relevantUserHighlights =
         userHighlights.where((h) {
@@ -351,12 +276,14 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
     List<Map<String, dynamic>> userHighlightIntervals = [];
     for (var highlightData in relevantUserHighlights) {
       final String snippet = highlightData['selectedSnippet'] as String;
+      final String? colorHex = highlightData['color'] as String?;
       if (snippet.isEmpty) continue;
       int startIndex = 0;
       while (startIndex < fullText.length) {
         final int pos = fullText.indexOf(snippet, startIndex);
         if (pos == -1) break;
-        userHighlightIntervals.add({'start': pos, 'end': pos + snippet.length});
+        userHighlightIntervals.add(
+            {'start': pos, 'end': pos + snippet.length, 'color': colorHex});
         startIndex = pos + snippet.length;
       }
     }
@@ -426,37 +353,38 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       if (isNextEventUserHighlight && nextUserHighlight != null) {
         String highlightedSegment = fullText.substring(
             nextUserHighlight['start'] as int, nextUserHighlight['end'] as int);
+        String? colorHex = nextUserHighlight['color'] as String? ?? "#FFA07A";
+        Color highlightColor =
+            Color(int.parse(colorHex.replaceFirst('#', '0xff')));
+
+        Color backgroundColor = highlightColor.withOpacity(0.40);
+        Color textColor = theme.colorScheme.onSurface;
+
+        // A chamada agora é para um método da classe, não estático
         List<TextSpan> spansInHighlight = _buildTextSpansForSegment(
             highlightedSegment, theme, pageContext, fontSize);
+
         for (var span in spansInHighlight) {
           if (span.recognizer == null) {
             finalSpans.add(TextSpan(
               text: span.text,
               style: (span.style ?? const TextStyle()).copyWith(
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.35),
-                color:
-                    (span.style?.color) ?? theme.colorScheme.onPrimaryContainer,
+                backgroundColor: backgroundColor,
+                color: textColor,
               ),
             ));
           } else {
-            finalSpans.add(span);
+            finalSpans.add(TextSpan(
+              text: span.text,
+              style: span.style?.copyWith(backgroundColor: backgroundColor),
+              recognizer: span.recognizer,
+            ));
           }
         }
         currentPosition = nextUserHighlight['end'] as int;
       } else if (isNextEventRef && nextRefMatch != null) {
-        final String matchedReference = nextRefMatch.group(0)!;
-        finalSpans.add(
-          TextSpan(
-            text: matchedReference,
-            style: TextStyle(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
-              decoration: TextDecoration.underline,
-              decorationColor: theme.colorScheme.secondary,
-            ),
-            recognizer: TapGestureRecognizer()..onTap = () async {/* ... */},
-          ),
-        );
+        finalSpans.add(_createClickableReferenceSpan(
+            nextRefMatch.group(0)!, theme, pageContext, fontSize));
         currentPosition = nextRefMatch.end;
       } else {
         currentPosition = fullText.length;
@@ -465,73 +393,227 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
     return finalSpans.isEmpty ? [const TextSpan(text: "")] : finalSpans;
   }
 
+  // --- FIM DO CÓDIGO A SER COLADO ---
+
+  /// Cria um TextSpan clicável para uma referência bíblica.
+  TextSpan _createClickableReferenceSpan(String reference, ThemeData theme,
+      BuildContext pageContext, double fontSize) {
+    return TextSpan(
+      text: reference,
+      style: TextStyle(
+        color: theme.colorScheme.primary,
+        fontWeight: FontWeight.bold,
+        decoration: TextDecoration.underline,
+        decorationColor: theme.colorScheme.primary.withOpacity(0.5),
+        fontSize: fontSize,
+      ),
+      recognizer: TapGestureRecognizer()
+        ..onTap = () async {
+          print("Referência clicada: $reference");
+          showDialog(
+            context: pageContext,
+            barrierDismissible: false,
+            builder: (BuildContext dialogContext) => AlertDialog(
+              content: Row(children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text("Carregando...")
+              ]),
+            ),
+          );
+          try {
+            final List<String> verseTexts =
+                await BiblePageHelper.loadVersesFromReference(reference, 'nvi');
+            if (pageContext.mounted)
+              Navigator.of(pageContext, rootNavigator: true).pop();
+            if (verseTexts.isNotEmpty &&
+                !verseTexts.first.contains("Erro") &&
+                !verseTexts.first.contains("inválid")) {
+              if (pageContext.mounted)
+                _showVerseTextDialog(
+                    pageContext, reference, verseTexts.join("\n\n"));
+            } else {
+              if (pageContext.mounted)
+                _showVerseTextDialog(pageContext, reference,
+                    "Não foi possível carregar: ${verseTexts.join("\n")}");
+            }
+          } catch (e) {
+            if (pageContext.mounted)
+              Navigator.of(pageContext, rootNavigator: true).pop();
+            if (pageContext.mounted)
+              _showVerseTextDialog(
+                  pageContext, reference, "Erro ao carregar: $e");
+          }
+        },
+    );
+  }
+
+  /// Constrói os spans de texto, agora chamando o método de classe _createClickableReferenceSpan
+  List<TextSpan> _buildTextSpansForSegment(String textSegment, ThemeData theme,
+      BuildContext pageContext, double fontSize) {
+    final List<TextSpan> spans = [];
+    final RegExp bibleRefRegex = RegExp(
+      r'\b([1-3]?[a-zA-Z]{1,5})\s*(\d+)\s*[:.]\s*(\d+(?:\s*-\s*\d+)?)\b',
+      caseSensitive: false,
+    );
+
+    int currentPosition = 0;
+    for (final Match match in bibleRefRegex.allMatches(textSegment)) {
+      if (match.start > currentPosition) {
+        spans.add(TextSpan(
+            text: textSegment.substring(currentPosition, match.start)));
+      }
+      final String matchedReference = match.group(0)!;
+      spans.add(_createClickableReferenceSpan(
+          matchedReference, theme, pageContext, fontSize));
+      currentPosition = match.end;
+    }
+    if (currentPosition < textSegment.length) {
+      spans.add(TextSpan(text: textSegment.substring(currentPosition)));
+    }
+    return spans.isEmpty && textSegment.isNotEmpty
+        ? [TextSpan(text: textSegment)]
+        : spans;
+  }
+
+  // O _showVerseTextDialog agora também é um método da classe
+  void _showVerseTextDialog(
+      BuildContext context, String reference, String verseText) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: theme.dialogBackgroundColor,
+          title: Text("Referência: $reference",
+              style: TextStyle(color: theme.colorScheme.onSurface)),
+          content: SingleChildScrollView(
+              child: Text(verseText,
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.85)))),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Fechar",
+                  style: TextStyle(color: theme.colorScheme.primary)),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final double baseFontSize =
+        15.5 * _currentFontSizeMultiplier; // <<< FONTE DINÂMICA
+
+    final TextStyle titleStyle = theme.textTheme.titleLarge!.copyWith(
+      color: theme.colorScheme.primary,
+      fontWeight: FontWeight.w600,
+      fontFamily: theme.textTheme.headlineSmall?.fontFamily,
+    );
+    final TextStyle bodyStyle = theme.textTheme.bodyLarge!.copyWith(
+      height: 1.6,
+      fontSize: baseFontSize, // <<< APLICA A FONTE DINÂMICA
+      fontFamily: theme.textTheme.bodyLarge?.fontFamily,
+      color: theme.colorScheme.onSurface.withOpacity(0.9),
+    );
+    final TextStyle numberStyle = bodyStyle.copyWith(
+      color: theme.colorScheme.secondary,
+      fontWeight: FontWeight.w700,
+      fontSize: bodyStyle.fontSize! * 1.1,
+    );
+
     return StoreConnector<AppState, _CommentaryModalViewModel>(
       converter: (store) => _CommentaryModalViewModel.fromStore(store),
       builder: (modalBuilderContext, viewModel) {
-        final String combinedText = _getCombinedCommentaryText();
-        final double baseCommentaryFontSize =
-            15.5 * widget.initialFontSizeMultiplier;
-
         return DraggableScrollableSheet(
-          initialChildSize: 0.7,
+          initialChildSize: 0.8,
           minChildSize: 0.4,
-          maxChildSize: 0.9,
+          maxChildSize: 0.95,
           expand: false,
           builder: (_, scrollController) {
             return Container(
               decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
+                color: theme.colorScheme.surface,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 8.0),
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: theme.dividerColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 4.0, 8.0, 8.0),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
                             widget.sectionTitle,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: theme.colorScheme.onBackground,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.left,
+                            style: titleStyle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // >>> INÍCIO DA MUDANÇA 2/3: Adicionar os botões de controle <<<
+                        // <<< INÍCIO DA MODIFICAÇÃO: Botões de Ação >>>
                         Row(
                           children: [
+                            // Controles de Fonte
+                            IconButton(
+                              icon: const Icon(Icons.text_decrease_outlined),
+                              iconSize: 22,
+                              tooltip: "Diminuir Fonte",
+                              color: _currentFontSizeMultiplier >
+                                      MIN_FONT_MULTIPLIER
+                                  ? theme.iconTheme.color
+                                  : theme.disabledColor,
+                              onPressed: _currentFontSizeMultiplier >
+                                      MIN_FONT_MULTIPLIER
+                                  ? _decreaseFontSize
+                                  : null,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.text_increase_outlined),
+                              iconSize: 22,
+                              tooltip: "Aumentar Fonte",
+                              color: _currentFontSizeMultiplier <
+                                      MAX_FONT_MULTIPLIER
+                                  ? theme.iconTheme.color
+                                  : theme.disabledColor,
+                              onPressed: _currentFontSizeMultiplier <
+                                      MAX_FONT_MULTIPLIER
+                                  ? _increaseFontSize
+                                  : null,
+                            ),
                             // Botão de Tradução
                             IconButton(
-                              icon: Icon(
-                                Icons.translate_rounded,
-                                size: 24,
-                                color: _showOriginalText
-                                    ? theme.colorScheme.primary
-                                    : theme.iconTheme.color?.withOpacity(0.8),
-                              ),
+                              icon: Icon(Icons.translate_rounded,
+                                  color: _showOriginalText
+                                      ? theme.colorScheme.primary
+                                      : theme.iconTheme.color),
                               tooltip: _showOriginalText
                                   ? "Ver Tradução (PT)"
                                   : "Ver Original (EN)",
                               onPressed: () {
                                 setState(() =>
                                     _showOriginalText = !_showOriginalText);
-                                _ttsManager
-                                    .stop(); // Para a leitura se o idioma mudar
+                                _ttsManager.stop();
                               },
-                              splashRadius: 22,
-                              padding: const EdgeInsets.all(10),
                             ),
-                            // Botão de Leitura em Áudio
+                            // Botão de Áudio
                             IconButton(
                               icon: Icon(
                                 _getAudioIcon(),
@@ -542,79 +624,112 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
                               ),
                               tooltip: _getAudioTooltip(),
                               onPressed: _handleAudioControl,
-                              splashRadius: 22,
-                              padding: const EdgeInsets.all(10),
                             ),
                           ],
                         ),
-                        // >>> FIM DA MUDANÇA 2/3 <<<
+                        // <<< FIM DA MODIFICAÇÃO >>>
                       ],
                     ),
                   ),
                   Divider(
-                      height: 1, color: theme.dividerColor.withOpacity(0.3)),
+                      height: 1,
+                      thickness: 1,
+                      color: theme.dividerColor.withOpacity(0.2)),
                   Expanded(
                     child: widget.commentaryItems.isEmpty
                         ? Center(
-                            child: Text(
-                                "Nenhum comentário disponível para esta seção.",
-                                style: TextStyle(
-                                    color: theme.textTheme.bodyMedium?.color
-                                        ?.withOpacity(0.7)),
-                                textAlign: TextAlign.center))
-                        : Padding(
+                            child: Text("Nenhum comentário disponível.",
+                                style: theme.textTheme.bodyMedium))
+                        : ListView.builder(
+                            controller: scrollController,
                             padding: const EdgeInsets.fromLTRB(
-                                16.0, 12.0, 16.0, 16.0),
-                            child: SingleChildScrollView(
-                              controller: scrollController,
-                              child: SelectableText.rich(
-                                TextSpan(
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.colorScheme.onBackground,
-                                    height: 1.65,
-                                    fontSize: baseCommentaryFontSize,
-                                  ),
-                                  children: _buildCombinedTextSpans(
-                                      combinedText,
-                                      viewModel.userCommentHighlights,
-                                      currentSectionIdForHighlights,
-                                      theme,
-                                      modalBuilderContext,
-                                      baseCommentaryFontSize),
-                                ),
-                                textAlign: TextAlign.justify,
-                                contextMenuBuilder: (BuildContext menuContext,
-                                    EditableTextState editableTextState) {
-                                  final List<ContextMenuButtonItem>
-                                      buttonItems =
-                                      editableTextState.contextMenuButtonItems;
-                                  final currentTextSelection = editableTextState
-                                      .textEditingValue.selection;
-                                  if (!currentTextSelection.isCollapsed) {
-                                    buttonItems.insert(
-                                      0,
-                                      ContextMenuButtonItem(
-                                        label: 'Marcar Trecho',
-                                        onPressed: () {
-                                          ContextMenuController.removeAny();
-                                          _markSelectedCommentSnippet(
-                                            context,
-                                            combinedText,
-                                            currentTextSelection,
+                                20.0, 16.0, 20.0, 24.0),
+                            itemCount: widget.commentaryItems.length,
+                            itemBuilder: (context, index) {
+                              final item = widget.commentaryItems[index];
+                              final String text = _showOriginalText
+                                  ? (item['original'] as String? ?? '').trim()
+                                  : (item['traducao'] as String? ??
+                                          item['original'] as String? ??
+                                          '')
+                                      .trim();
+
+                              if (text.isEmpty) return const SizedBox.shrink();
+
+                              String numberPart = "";
+                              String contentPart = text;
+                              final match = RegExp(r'^(\(?[0-9]+\)?\.?)\s*')
+                                  .firstMatch(text);
+                              if (match != null) {
+                                numberPart = match.group(1)!;
+                                contentPart = text.substring(match.end);
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 20.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (numberPart.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                            right: 12.0, top: 2.0),
+                                        child: Text(numberPart,
+                                            style: numberStyle),
+                                      ),
+                                    Expanded(
+                                      child: SelectableText.rich(
+                                        TextSpan(
+                                          style: bodyStyle,
+                                          children: _buildCombinedTextSpans(
+                                            contentPart,
+                                            viewModel.userCommentHighlights,
+                                            currentSectionIdForHighlights,
+                                            theme,
+                                            modalBuilderContext, // <<< CONTEXTO CORRETO
+                                            bodyStyle.fontSize!,
+                                          ),
+                                        ),
+                                        textAlign: TextAlign.justify,
+                                        contextMenuBuilder:
+                                            (context, editableTextState) {
+                                          final buttonItems = editableTextState
+                                              .contextMenuButtonItems;
+                                          if (!editableTextState
+                                              .textEditingValue
+                                              .selection
+                                              .isCollapsed) {
+                                            buttonItems.insert(
+                                              0,
+                                              ContextMenuButtonItem(
+                                                label: 'Marcar Trecho',
+                                                onPressed: () {
+                                                  ContextMenuController
+                                                      .removeAny();
+                                                  _markSelectedCommentSnippet(
+                                                    context,
+                                                    text,
+                                                    editableTextState
+                                                        .textEditingValue
+                                                        .selection,
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                          }
+                                          return AdaptiveTextSelectionToolbar
+                                              .buttonItems(
+                                            anchors: editableTextState
+                                                .contextMenuAnchors,
+                                            buttonItems: buttonItems,
                                           );
                                         },
                                       ),
-                                    );
-                                  }
-                                  return AdaptiveTextSelectionToolbar
-                                      .buttonItems(
-                                    anchors:
-                                        editableTextState.contextMenuAnchors,
-                                    buttonItems: buttonItems,
-                                  );
-                                },
-                              ),
-                            ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                   ),
                 ],

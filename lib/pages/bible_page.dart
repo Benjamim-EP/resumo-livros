@@ -909,13 +909,18 @@ class _BiblePageState extends State<BiblePage> {
 
   Future<void> _showVoiceSelectionDialog() async {
     final theme = Theme.of(context);
+    // A função getAvailableVoices agora retorna APENAS as vozes que queremos
     final availableVoices = await _ttsManager.getAvailableVoices();
     if (!mounted) return;
+
+    // Mostra um aviso se nenhuma das vozes desejadas for encontrada no dispositivo do usuário
     if (availableVoices.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Nenhuma voz em Português (Brasil) encontrada.")));
+          content: Text(
+              "Nenhuma das vozes padrão foi encontrada neste dispositivo.")));
       return;
     }
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -930,17 +935,19 @@ class _BiblePageState extends State<BiblePage> {
               itemCount: availableVoices.length,
               itemBuilder: (context, index) {
                 final voice = availableVoices[index];
-                final voiceName =
-                    voice['name'] as String? ?? 'Voz Desconhecida';
-                final displayName = voiceName
-                    .split('#')
-                    .last
-                    .replaceAll('_', ' ')
-                    .replaceFirst('-', ' ');
+
+                // --- INÍCIO DA MODIFICAÇÃO: Usar a nova função do TtsManager ---
+                final String rawVoiceName = voice['name'] as String? ?? '';
+                // Usamos a função auxiliar que criamos no TtsManager para obter o nome amigável
+                final String displayName =
+                    _ttsManager.getVoiceDisplayName(rawVoiceName);
+                // --- FIM DA MODIFICAÇÃO ---
+
                 return ListTile(
-                  title: Text(displayName,
+                  title: Text(displayName, // A mágica acontece aqui!
                       style: TextStyle(color: theme.colorScheme.onSurface)),
                   onTap: () {
+                    // A lógica aqui permanece a mesma, pois setVoice precisa do objeto `voice` completo
                     _ttsManager.setVoice(voice);
                     Navigator.of(dialogContext).pop();
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -985,7 +992,8 @@ class _BiblePageState extends State<BiblePage> {
               _currentPlayerState == TtsPlayerState.playing
                   ? Icons.pause_circle_outline_rounded
                   : Icons.play_circle_outline_rounded,
-              color: theme.colorScheme.secondary,
+              color: const Color.fromARGB(
+                  255, 253, 242, 242), //theme.colorScheme.secondary,
               size: 28),
           tooltip: _currentPlayerState == TtsPlayerState.playing
               ? "Pausar Leitura"
