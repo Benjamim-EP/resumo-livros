@@ -172,54 +172,56 @@ class BiblePageHelper {
   static Future<List<String>> loadVersesFromReference(
       String reference, String translation) async {
     if (reference.isEmpty) return ["Referência inválida."];
+
     final RegExp regex = RegExp(
         r"^\s*([1-3]?\s*[A-Za-zÀ-ÖØ-öø-ÿ]+)\s*(\d+)\s*[:\.]\s*(\d+)(?:\s*-\s*(\d+))?\s*$",
         caseSensitive: false);
     final Match? match = regex.firstMatch(reference.trim());
+
     if (match == null) return ["Formato de referência inválido: $reference"];
+
     String bookNamePart = match.group(1)!.trim();
     String chapterStr = match.group(2)!;
     String startVerseStr = match.group(3)!;
     String? endVerseStr = match.group(4);
-    String? bookAbbrev = _getAbbrevFromPortugueseName(bookNamePart);
-    if (bookAbbrev == null) {
-      final Map<String, dynamic> booksMap = await loadBooksMap();
-      for (var entry in booksMap.entries) {
-        final data = entry.value;
-        if (data is Map && data['nome'] != null) {
-          String nameFromMap = unorm
-              .nfd((data['nome'] as String).toLowerCase().trim())
-              .replaceAll(RegExp(r'[\u0300-\u036f]'), '');
-          if (nameFromMap ==
-              unorm
-                  .nfd(bookNamePart.toLowerCase().trim())
-                  .replaceAll(RegExp(r'[\u0300-\u036f]'), '')) {
-            bookAbbrev = entry.key;
-            break;
-          }
-        }
-        if (entry.key.toLowerCase() == bookNamePart.toLowerCase()) {
-          bookAbbrev = entry.key;
-          break;
-        }
-      }
-      if (bookAbbrev == null) return ["Livro não reconhecido: $bookNamePart"];
+
+    // <<< INÍCIO DA CORREÇÃO >>>
+    String? bookAbbrev;
+    final Map<String, dynamic> booksMap = await loadBooksMap();
+
+    // 1. Tenta tratar a 'bookNamePart' como se já fosse uma abreviação
+    final String potentialAbbrev = bookNamePart.toLowerCase();
+    if (booksMap.containsKey(potentialAbbrev)) {
+      bookAbbrev = potentialAbbrev;
+    } else {
+      // 2. Se não for uma abreviação, tenta converter do nome por extenso
+      bookAbbrev = _getAbbrevFromPortugueseName(bookNamePart);
     }
+    // <<< FIM DA CORREÇÃO >>>
+
+    if (bookAbbrev == null) {
+      return ["Livro não reconhecido: $bookNamePart"];
+    }
+
     final int? chapter = int.tryParse(chapterStr);
     final int? startVerse = int.tryParse(startVerseStr);
     final int? endVerse =
         endVerseStr != null ? int.tryParse(endVerseStr) : startVerse;
+
     if (chapter == null ||
         startVerse == null ||
         endVerse == null ||
-        endVerse < startVerse)
+        endVerse < startVerse) {
       return ["Capítulo/versículo(s) inválido(s) na referência: $reference"];
+    }
+
     try {
       final String verseDataPath =
           'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
       final String verseDataString = await rootBundle.loadString(verseDataPath);
       final List<dynamic> allVersesInChapter = json.decode(verseDataString);
       List<String> resultVerses = [];
+
       for (int i = startVerse; i <= endVerse; i++) {
         if (i > 0 && i <= allVersesInChapter.length) {
           resultVerses.add("${i} ${allVersesInChapter[i - 1].toString()}");
@@ -231,6 +233,9 @@ class BiblePageHelper {
           ? resultVerses
           : ["Versículos não encontrados para: $reference"];
     } catch (e) {
+      // Este erro geralmente significa que o arquivo JSON não foi encontrado.
+      print(
+          "Erro ao carregar o arquivo de versículos para '$reference' (Abbrev: '$bookAbbrev', Cap: '$chapter'): $e");
       return ["Erro ao carregar versículos para: $reference"];
     }
   }

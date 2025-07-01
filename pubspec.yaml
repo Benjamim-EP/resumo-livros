@@ -168,7 +168,7 @@ flutter:
     - assets/Biblia/completa_traducoes/nvi/lc/
     - assets/Biblia/completa_traducoes/nvi/jo/
     - assets/Biblia/completa_traducoes/nvi/job/
-    - assets/Biblia/completa_traducoes/nvi/atos/
+    - assets/Biblia/completa_traducoes/nvi/at/
     - assets/Biblia/completa_traducoes/nvi/rm/
     - assets/Biblia/completa_traducoes/nvi/1co/
     - assets/Biblia/completa_traducoes/nvi/2co/
@@ -236,7 +236,7 @@ flutter:
     - assets/Biblia/completa_traducoes/acf/lc/
     - assets/Biblia/completa_traducoes/acf/jo/
     - assets/Biblia/completa_traducoes/acf/job/
-    - assets/Biblia/completa_traducoes/acf/atos/
+    - assets/Biblia/completa_traducoes/acf/at/
     - assets/Biblia/completa_traducoes/acf/rm/
     - assets/Biblia/completa_traducoes/acf/1co/
     - assets/Biblia/completa_traducoes/acf/2co/
@@ -304,7 +304,7 @@ flutter:
     - assets/Biblia/completa_traducoes/aa/lc/
     - assets/Biblia/completa_traducoes/aa/jo/
     - assets/Biblia/completa_traducoes/aa/job/
-    - assets/Biblia/completa_traducoes/aa/atos/
+    - assets/Biblia/completa_traducoes/aa/at/
     - assets/Biblia/completa_traducoes/aa/rm/
     - assets/Biblia/completa_traducoes/aa/1co/
     - assets/Biblia/completa_traducoes/aa/2co/
@@ -441,7 +441,7 @@ flutter:
     - assets/Biblia/blocos/lc/
     - assets/Biblia/blocos/jo/
     - assets/Biblia/blocos/job/
-    - assets/Biblia/blocos/atos/
+    - assets/Biblia/blocos/at/
     - assets/Biblia/blocos/rm/
     - assets/Biblia/blocos/1co/
     - assets/Biblia/blocos/2co/

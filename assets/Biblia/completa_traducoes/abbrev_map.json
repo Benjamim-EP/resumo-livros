@@ -42,7 +42,12 @@
   "mc": { "nome": "Marcos", "capitulos": 16, "slug": "marcos", "testament": "Novo" },
   "lc": { "nome": "Lucas", "capitulos": 24, "slug": "lucas", "testament": "Novo" },
   "jo": { "nome": "João", "capitulos": 21, "slug": "joao", "testament": "Novo" },
-  "at": { "nome": "Atos dos Apóstolos", "capitulos": 28, "slug": "atosdosapostolos", "testament": "Novo" },
+  "at": {
+            "nome": "Atos",
+            "testament": "Novo",
+            "capitulos": 28,
+            "slug": "atos"
+        },
   "rm": { "nome": "Romanos", "capitulos": 16, "slug": "romanos", "testament": "Novo" },
   "1co": { "nome": "1 Coríntios", "capitulos": 16, "slug": "1corintios", "testament": "Novo" },
   "2co": { "nome": "2 Coríntios", "capitulos": 13, "slug": "2corintios", "testament": "Novo" },
