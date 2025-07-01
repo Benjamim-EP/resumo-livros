@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
@@ -90,13 +92,13 @@ class Sermon {
 class SermonDetailPage extends StatefulWidget {
   final String sermonGeneratedId;
   final String sermonTitle;
-  final String? snippetToScrollTo; // <<< NOVO PARÂMETRO OPCIONAL
+  final String? snippetToScrollTo;
 
   const SermonDetailPage({
     super.key,
     required this.sermonGeneratedId,
     required this.sermonTitle,
-    this.snippetToScrollTo, // <<< ADICIONADO AO CONSTRUTOR
+    this.snippetToScrollTo,
   });
 
   @override
@@ -105,14 +107,22 @@ class SermonDetailPage extends StatefulWidget {
 
 class _SermonViewModel {
   final List<Map<String, dynamic>> highlights;
-  _SermonViewModel({required this.highlights});
+  // >>> MUDANÇA: Adicionado isPremium ao ViewModel <<<
+  final bool isPremium;
+
+  _SermonViewModel({required this.highlights, required this.isPremium});
 
   static _SermonViewModel fromStore(Store<AppState> store, String sermonId) {
-    // Filtra apenas os destaques que pertencem a este sermão específico
     final sermonHighlights = store.state.userState.userCommentHighlights
         .where((h) => h['sourceId'] == sermonId)
         .toList();
-    return _SermonViewModel(highlights: sermonHighlights);
+
+    // >>> MUDANÇA: Lógica para verificar status premium <<<
+    bool premiumStatus = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    return _SermonViewModel(
+        highlights: sermonHighlights, isPremium: premiumStatus);
   }
 }
 
@@ -134,23 +144,70 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   TtsPlayerState _sermonPlayerState = TtsPlayerState.stopped;
   final Map<String, GlobalKey> _paragraphKeys = {};
 
-  // O controller foi REMOVIDO pois não é necessário.
+  // >>> MUDANÇA: Diálogo de acesso premium <<<
+  void _showPremiumRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'A marcação de trechos em sermões, livros e outros recursos da biblioteca é exclusiva para assinantes Premium.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Entendi')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // >>> MUDANÇA: A função de highlight agora recebe o status premium <<<
+  void _handleHighlight(BuildContext context, String fullParagraph,
+      EditableTextState editableTextState, bool isPremium) {
+    // Esconde o menu de contexto padrão
+    editableTextState.hideToolbar();
+
+    // Verifica se é premium
+    if (!isPremium) {
+      _showPremiumRequiredDialog(context);
+      return;
+    }
+
+    final TextSelection selection =
+        editableTextState.textEditingValue.selection;
+    if (selection.isCollapsed) return;
+
+    final selectedSnippet =
+        fullParagraph.substring(selection.start, selection.end);
+    _showHighlightEditor(context, selectedSnippet, fullParagraph);
+  }
+
+  // (O resto das suas funções permanece aqui: _scrollToSnippet, initState, dispose, _onTtsStateChanged, etc.)
+  // ... (cole suas funções existentes aqui)
+
   void _scrollToSnippet() {
     if (widget.snippetToScrollTo == null) return;
-
-    // Procura a chave do parágrafo que contém o snippet
     final keyEntry = _paragraphKeys.entries.firstWhere(
       (entry) => entry.key.contains(widget.snippetToScrollTo!),
       orElse: () => MapEntry('', GlobalKey()),
     );
 
     if (keyEntry.value.currentContext != null) {
-      // Espera um pouco para a UI renderizar antes de rolar
       Future.delayed(const Duration(milliseconds: 300), () {
         Scrollable.ensureVisible(
           keyEntry.value.currentContext!,
           duration: const Duration(milliseconds: 500),
-          alignment: 0.3, // Centraliza o destaque a 30% do topo da tela
+          alignment: 0.3,
         );
       });
     }
@@ -160,7 +217,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   void initState() {
     super.initState();
     _loadSermonDataFromFirestore().then((_) {
-      // Chama a função de scroll DEPOIS que os dados do sermão forem carregados
       if (mounted) {
         _scrollToSnippet();
       }
@@ -185,31 +241,17 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     }
   }
 
-  void _handleHighlight(BuildContext context, String fullParagraph,
-      EditableTextState editableTextState) {
-    final TextSelection selection =
-        editableTextState.textEditingValue.selection;
-    if (selection.isCollapsed) return;
-
-    final selectedSnippet =
-        fullParagraph.substring(selection.start, selection.end);
-    _showHighlightEditor(context, selectedSnippet, fullParagraph);
-  }
-
   Future<void> _showHighlightEditor(
       BuildContext context, String snippet, String fullParagraph) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
-
-    // <<< MUDANÇA AQUI >>>
-    // Pega a lista de tags do estado ANTES de mostrar o diálogo.
     final List<String> allUserTags = store.state.userState.allUserTags;
 
     final result = await showDialog<HighlightResult?>(
       context: context,
       builder: (_) => HighlightEditorDialog(
-        initialColor: "#FFA07A", // Cor padrão para destaques de literatura
-        initialTags: const [], // Sempre começa vazio para um novo destaque
-        allUserTags: allUserTags, // <<< PASSA A LISTA AQUI
+        initialColor: "#FFA07A",
+        initialTags: const [],
+        allUserTags: allUserTags,
       ),
     );
 
@@ -234,13 +276,10 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     );
   }
 
-  // >>> NOVA FUNÇÃO HELPER PARA CONSTRUIR O TEXTO COM DESTAQUES <<<
   List<TextSpan> _buildHighlightedParagraph(String paragraph,
       List<Map<String, dynamic>> highlights, ThemeData theme) {
     List<TextSpan> spans = [];
     int lastEnd = 0;
-
-    // Encontra todos os trechos de destaque que estão neste parágrafo
     List<Map<String, dynamic>> snippetsInParagraph = [];
     for (var highlight in highlights) {
       String snippet = highlight['selectedSnippet'] ?? '';
@@ -253,19 +292,12 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         });
       }
     }
-
-    // Ordena os trechos para evitar sobreposição incorreta
     snippetsInParagraph.sort((a, b) => a['start'].compareTo(b['start']));
-
-    // Constrói os TextSpans
     for (var snippetInfo in snippetsInParagraph) {
-      // Adiciona o texto normal antes do destaque
       if (snippetInfo['start'] > lastEnd) {
         spans.add(
             TextSpan(text: paragraph.substring(lastEnd, snippetInfo['start'])));
       }
-
-      // Adiciona o texto destacado com cor de fundo
       spans.add(TextSpan(
         text: paragraph.substring(snippetInfo['start'], snippetInfo['end']),
         style: TextStyle(
@@ -274,52 +306,37 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
               .withOpacity(0.35),
         ),
       ));
-
       lastEnd = snippetInfo['end'];
     }
-
-    // Adiciona o resto do texto após o último destaque
     if (lastEnd < paragraph.length) {
       spans.add(TextSpan(text: paragraph.substring(lastEnd)));
     }
-
-    // Se nenhum destaque foi encontrado, retorna o parágrafo inteiro como um único TextSpan
     return spans.isEmpty ? [TextSpan(text: paragraph)] : spans;
   }
 
-  /// Lida com os cliques no botão de áudio (play, pause, resume).
   void _handleAudioControl() {
     switch (_sermonPlayerState) {
       case TtsPlayerState.stopped:
-        // Se está parado, inicia uma nova leitura do começo.
         _startSermonPlayback();
         break;
       case TtsPlayerState.playing:
-        // Se está tocando, pausa.
         _ttsManager.pause();
         break;
       case TtsPlayerState.paused:
-        // Se está pausado, REINICIA a fala do item atual.
         _ttsManager.restartCurrentItem();
         break;
     }
   }
 
-  /// Constrói a fila de áudio e inicia a reprodução do sermão.
   void _startSermonPlayback() async {
     if (_sermonDataFromFirestore == null) return;
-
     final sermon = _sermonDataFromFirestore!;
     List<TtsQueueItem> queue = [];
     final sermonId =
         sermon.generatedSermonId ?? "sermon_${sermon.translatedTitle.hashCode}";
-
-    // 1. Título
     queue.add(TtsQueueItem(
         sectionId: sermonId,
         textToSpeak: "Sermão: ${sermon.translatedTitle}."));
-
-    // 2. Passagem Principal
     if (sermon.mainScripturePassageAbbreviated != null &&
         sermon.mainScripturePassageAbbreviated!.isNotEmpty) {
       final fullReferenceName = await BiblePageHelper.getFullReferenceName(
@@ -330,49 +347,34 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
           sectionId: sermonId,
           textToSpeak: "Passagem principal: $ttsFriendlyReference."));
     }
-
-    // 3. Texto dos Versículos (CORRIGIDO)
     if (_loadedMainScriptureVerses != null &&
         _loadedMainScriptureVerses!.isNotEmpty) {
-      // >>> INÍCIO DA CORREÇÃO <<<
       final versesTextOnly = _loadedMainScriptureVerses!.map((verseWithNumber) {
-        // Lógica robusta para remover o número inicial.
-        // Encontra o primeiro espaço. Todo o resto é o texto do versículo.
         final firstSpaceIndex = verseWithNumber.indexOf(' ');
         if (firstSpaceIndex != -1) {
           return verseWithNumber.substring(firstSpaceIndex + 1);
         }
-        // Se não houver espaço (improvável, mas seguro), retorna a string original.
         return verseWithNumber;
-      }).join(
-          " "); // Junta todos os versículos com um espaço para uma leitura fluida.
-      // >>> FIM DA CORREÇÃO <<<
-
+      }).join(" ");
       if (versesTextOnly.trim().isNotEmpty) {
         queue.add(
             TtsQueueItem(sectionId: sermonId, textToSpeak: versesTextOnly));
       }
     }
-
-    // 4. Parágrafos do Sermão
     for (var paragraph in sermon.paragraphsToDisplay) {
       if (paragraph.trim().isNotEmpty) {
         queue.add(TtsQueueItem(sectionId: sermonId, textToSpeak: paragraph));
       }
     }
-
-    // A leitura do sermão é sempre contínua.
-    //_ttsManager.isContinuousPlayEnabled = true; // Removido, pois é o padrão agora.
     _ttsManager.speak(queue, sermonId);
   }
 
-  // O ícone para "paused" agora será um ícone de "restart" ou "replay" para ser mais claro.
   IconData _getAudioIcon() {
     switch (_sermonPlayerState) {
       case TtsPlayerState.playing:
         return Icons.pause_circle_outline;
       case TtsPlayerState.paused:
-        return Icons.play_circle_outline; // Ícone de Replay
+        return Icons.play_circle_outline;
       case TtsPlayerState.stopped:
         return Icons.play_circle_outline;
     }
@@ -383,7 +385,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       case TtsPlayerState.playing:
         return "Pausar Leitura";
       case TtsPlayerState.paused:
-        return "Continuar do Início do Parágrafo"; // Tooltip mais claro
+        return "Continuar do Início do Parágrafo";
       case TtsPlayerState.stopped:
         return "Ouvir Sermão";
     }
@@ -407,7 +409,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
             "Sermão não encontrado (ID: ${widget.sermonGeneratedId}).");
       }
     } catch (e, s) {
-      print("Erro ao carregar dados do sermão: $e\n$s");
       if (mounted) setState(() => _error = "Falha ao carregar o sermão.");
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -422,7 +423,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
           await BiblePageHelper.loadVersesFromReference(reference, "nvi");
       if (mounted) setState(() => _loadedMainScriptureVerses = verses);
     } catch (e) {
-      print("Erro ao carregar escritura principal: $e");
       if (mounted)
         setState(() =>
             _loadedMainScriptureVerses = ["Erro ao carregar: $reference"]);
@@ -528,7 +528,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     final preacherName =
         sermon.preacher ?? details?['preacher'] as String? ?? 'C.H. Spurgeon';
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSnippet());
-    // O corpo agora é envolvido por um StoreConnector para obter os destaques
     return StoreConnector<AppState, _SermonViewModel>(
       converter: (store) =>
           _SermonViewModel.fromStore(store, widget.sermonGeneratedId),
@@ -538,7 +537,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Seção de Detalhes do Sermão (Número, Pregador, Data)
               if (details != null) ...[
                 if (details['number_text'] != null &&
                     (details['number_text'] as String).isNotEmpty)
@@ -564,8 +562,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                           ?.copyWith(fontSize: _currentFontSize * 0.8)),
                 const SizedBox(height: 12),
               ],
-
-              // Seção da Passagem Bíblica Principal
               if (sermon.mainScripturePassageAbbreviated != null &&
                   sermon.mainScripturePassageAbbreviated!.isNotEmpty) ...[
                 Text(
@@ -645,7 +641,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                             fontSize: _currentFontSize * 0.95)),
                   ),
                 ),
-
               const SizedBox(height: 16),
               Text("Sermão:",
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -653,8 +648,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                       decoration: TextDecoration.underline,
                       fontSize: _currentFontSize * 1.1)),
               const SizedBox(height: 8),
-
-              // Seção dos Parágrafos do Sermão com Destaques Visuais
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: sermon.paragraphsToDisplay.map((paragraph) {
@@ -664,34 +657,30 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                     key: key,
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: SelectableText.rich(
-                      // Usando .rich para aceitar TextSpan
                       TextSpan(
                         style: theme.textTheme.bodyLarge?.copyWith(
                           fontSize: _currentFontSize,
                           height: 1.6,
                         ),
-                        // A função helper constrói os spans com os destaques
                         children: _buildHighlightedParagraph(
                             paragraph, viewModel.highlights, theme),
                       ),
+                      // >>> MUDANÇA: Passando o viewModel.isPremium para o handler <<<
                       contextMenuBuilder: (context, editableTextState) {
                         final List<ContextMenuButtonItem> buttonItems =
                             editableTextState.contextMenuButtonItems;
 
-                        if (!editableTextState
-                            .textEditingValue.selection.isCollapsed) {
-                          buttonItems.insert(
-                            0,
-                            ContextMenuButtonItem(
-                              label: 'Destacar',
-                              onPressed: () {
-                                _handleHighlight(
-                                    context, paragraph, editableTextState);
-                                editableTextState.hideToolbar();
-                              },
-                            ),
-                          );
-                        }
+                        // Adiciona o botão de destacar no início
+                        buttonItems.insert(
+                          0,
+                          ContextMenuButtonItem(
+                            label: 'Destacar',
+                            onPressed: () {
+                              _handleHighlight(context, paragraph,
+                                  editableTextState, viewModel.isPremium);
+                            },
+                          ),
+                        );
 
                         return AdaptiveTextSelectionToolbar.buttonItems(
                           anchors: editableTextState.contextMenuAnchors,
@@ -703,8 +692,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                   );
                 }).toList(),
               ),
-
-              // Seção de Outras Referências
               if (sermon.embeddedScripturesAbbreviated != null &&
                   sermon.embeddedScripturesAbbreviated!.isNotEmpty) ...[
                 const SizedBox(height: 24),

@@ -246,7 +246,7 @@ class _LibraryPageState extends State<LibraryPage> {
               "A jornada da igreja cristã desde os apóstolos até a era moderna.",
           'author': 'Philip Schaff',
           'pageCount': '8 volumes / +5000 páginas',
-          'isFullyPremium': false,
+          'isFullyPremium': true,
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/historia_igreja.webp',
           'destinationPage': const ChurchHistoryIndexPage(),
@@ -256,7 +256,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'description': "A obra monumental da teologia sistemática reformada.",
           'author': 'Francis Turretin',
           'pageCount': '3 volumes / +2000 páginas',
-          'isFullyPremium': false, // Totalmente premium
+          'isFullyPremium': true, // Totalmente premium
           'hasPremiumFeature': false,
           'coverImagePath':
               'assets/covers/turretin_cover.webp', // Crie uma capa para ele!

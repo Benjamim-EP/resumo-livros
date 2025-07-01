@@ -3,23 +3,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/models/church_history_model.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:redux/redux.dart';
 
-// ViewModel para conectar aos destaques do Redux
 class _ChurchHistoryViewModel {
   final List<Map<String, dynamic>> highlights;
-  _ChurchHistoryViewModel({required this.highlights});
+  final bool isPremium;
+
+  _ChurchHistoryViewModel({required this.highlights, required this.isPremium});
 
   static _ChurchHistoryViewModel fromStore(
       Store<AppState> store, String volumeTitle) {
-    // Filtra para pegar apenas os destaques que pertencem a este volume específico
     final relevantHighlights = store.state.userState.userCommentHighlights
         .where((h) => h['sourceParentTitle'] == volumeTitle)
         .toList();
-    return _ChurchHistoryViewModel(highlights: relevantHighlights);
+    bool premiumStatus = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    return _ChurchHistoryViewModel(
+        highlights: relevantHighlights, isPremium: premiumStatus);
   }
 }
 
@@ -35,7 +40,6 @@ class ChurchHistoryVolumePage extends StatefulWidget {
 class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-
   final TtsManager _ttsManager = TtsManager();
   TtsPlayerState _playerState = TtsPlayerState.stopped;
 
@@ -53,9 +57,43 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
     super.dispose();
   }
 
-  // --- Funções de Destaque ---
-  void _handleHighlight(BuildContext context, String fullParagraph,
-      String chapterTitle, EditableTextState editableTextState) {
+  void _showPremiumRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'A marcação de trechos em sermões, livros e outros recursos da biblioteca é exclusiva para assinantes Premium.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Entendi')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleHighlight(
+      BuildContext context,
+      String fullParagraph,
+      String chapterTitle,
+      EditableTextState editableTextState,
+      bool isPremium) {
+    editableTextState.hideToolbar();
+    if (!isPremium) {
+      _showPremiumRequiredDialog(context);
+      return;
+    }
     final selection = editableTextState.textEditingValue.selection;
     if (selection.isCollapsed) return;
     final selectedSnippet =
@@ -63,20 +101,20 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
     _showHighlightEditor(context, selectedSnippet, fullParagraph, chapterTitle);
   }
 
+  // (O resto das suas funções permanece aqui)
+  // ... (cole suas funções _showHighlightEditor, _buildHighlightedParagraph, _onTtsStateChanged, etc.)
+
   Future<void> _showHighlightEditor(BuildContext context, String snippet,
       String fullParagraph, String chapterTitle) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
-
-    // <<< MUDANÇA AQUI >>>
-    // Pega a lista de tags do estado ANTES de mostrar o diálogo.
     final List<String> allUserTags = store.state.userState.allUserTags;
 
     final result = await showDialog<HighlightResult?>(
       context: context,
       builder: (_) => HighlightEditorDialog(
-        initialColor: "#90EE90", // Cor verde para história
-        initialTags: const [], // Sempre começa vazio para um novo destaque
-        allUserTags: allUserTags, // <<< PASSA A LISTA AQUI
+        initialColor: "#90EE90",
+        initialTags: const [],
+        allUserTags: allUserTags,
       ),
     );
 
@@ -155,7 +193,6 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
     return spans;
   }
 
-  // --- Funções de Áudio ---
   void _onTtsStateChanged() {
     if (mounted && _playerState != _ttsManager.playerState.value) {
       setState(() => _playerState = _ttsManager.playerState.value);
@@ -309,23 +346,23 @@ class _ChurchHistoryVolumePageState extends State<ChurchHistoryVolumePage> {
                                     (context, editableTextState) {
                                   final buttonItems =
                                       editableTextState.contextMenuButtonItems;
-                                  if (!editableTextState
-                                      .textEditingValue.selection.isCollapsed) {
-                                    buttonItems.insert(
-                                      0,
-                                      ContextMenuButtonItem(
-                                        label: 'Destacar',
-                                        onPressed: () {
-                                          _handleHighlight(
-                                              context,
-                                              paragraph,
-                                              currentChapter.title,
-                                              editableTextState);
-                                          editableTextState.hideToolbar();
-                                        },
-                                      ),
-                                    );
-                                  }
+
+                                  buttonItems.insert(
+                                    0,
+                                    ContextMenuButtonItem(
+                                      label: 'Destacar',
+                                      onPressed: () {
+                                        _handleHighlight(
+                                            context,
+                                            paragraph,
+                                            currentChapter.title,
+                                            editableTextState,
+                                            viewModel
+                                                .isPremium); // <<< Passa o status
+                                      },
+                                    ),
+                                  );
+
                                   return AdaptiveTextSelectionToolbar
                                       .buttonItems(
                                           anchors: editableTextState

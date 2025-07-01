@@ -3,23 +3,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/models/turretin_theology_model.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:redux/redux.dart';
 
-// ViewModel para conectar aos destaques do Redux
 class _TurretinViewModel {
   final List<Map<String, dynamic>> highlights;
-  _TurretinViewModel({required this.highlights});
+  final bool isPremium;
+
+  _TurretinViewModel({required this.highlights, required this.isPremium});
 
   static _TurretinViewModel fromStore(
       Store<AppState> store, String topicTitle) {
-    // Filtra para pegar apenas destaques deste tópico específico
     final relevantHighlights = store.state.userState.userCommentHighlights
         .where((h) => h['sourceParentTitle'] == topicTitle)
         .toList();
-    return _TurretinViewModel(highlights: relevantHighlights);
+    bool premiumStatus = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    return _TurretinViewModel(
+        highlights: relevantHighlights, isPremium: premiumStatus);
   }
 }
 
@@ -34,7 +39,6 @@ class TurretinTopicPage extends StatefulWidget {
 class _TurretinTopicPageState extends State<TurretinTopicPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-
   final TtsManager _ttsManager = TtsManager();
   TtsPlayerState _playerState = TtsPlayerState.stopped;
 
@@ -52,77 +56,43 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
     super.dispose();
   }
 
-  // --- Funções de Controle de Áudio ---
-  void _onTtsStateChanged() {
-    if (mounted && _playerState != _ttsManager.playerState.value) {
-      setState(() => _playerState = _ttsManager.playerState.value);
-    }
+  void _showPremiumRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'A marcação de trechos em sermões, livros e outros recursos da biblioteca é exclusiva para assinantes Premium.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Entendi')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _startQuestionPlayback() {
-    if (widget.topic.questions.isEmpty) return;
-    final question = widget.topic.questions[_currentPage];
-    final List<TtsQueueItem> queue = [];
-
-    queue.add(TtsQueueItem(
-        sectionId: 'q_title_${_currentPage}',
-        textToSpeak: question.questionTitle));
-    if (question.questionStatement.isNotEmpty) {
-      queue.add(TtsQueueItem(
-          sectionId: 'q_statement_${_currentPage}',
-          textToSpeak: question.questionStatement));
+  void _handleHighlight(
+      BuildContext context,
+      String fullParagraph,
+      String questionTitle,
+      EditableTextState editableTextState,
+      bool isPremium) {
+    editableTextState.hideToolbar();
+    if (!isPremium) {
+      _showPremiumRequiredDialog(context);
+      return;
     }
-    for (int i = 0; i < question.content.length; i++) {
-      if (question.content[i].trim().isNotEmpty) {
-        queue.add(TtsQueueItem(
-            sectionId: 'q_paragraph_${_currentPage}_$i',
-            textToSpeak: question.content[i]));
-      }
-    }
-    if (queue.isNotEmpty) {
-      _ttsManager.speak(queue, queue.first.sectionId);
-    }
-  }
-
-  void _handleAudioControl() {
-    switch (_playerState) {
-      case TtsPlayerState.stopped:
-        _startQuestionPlayback();
-        break;
-      case TtsPlayerState.playing:
-        _ttsManager.pause();
-        break;
-      case TtsPlayerState.paused:
-        _ttsManager.restartCurrentItem();
-        break;
-    }
-  }
-
-  IconData _getAudioIcon() {
-    switch (_playerState) {
-      case TtsPlayerState.playing:
-        return Icons.pause_circle_outline;
-      case TtsPlayerState.paused:
-        return Icons.play_circle_outline;
-      default:
-        return Icons.play_circle_outline;
-    }
-  }
-
-  String _getAudioTooltip() {
-    switch (_playerState) {
-      case TtsPlayerState.playing:
-        return "Pausar Leitura";
-      case TtsPlayerState.paused:
-        return "Continuar Leitura";
-      default:
-        return "Ouvir Questão";
-    }
-  }
-
-  // --- Funções de Destaque ---
-  void _handleHighlight(BuildContext context, String fullParagraph,
-      String questionTitle, EditableTextState editableTextState) {
     final selection = editableTextState.textEditingValue.selection;
     if (selection.isCollapsed) return;
     final selectedSnippet =
@@ -131,20 +101,19 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
         context, selectedSnippet, fullParagraph, questionTitle);
   }
 
+  // (O resto das suas funções permanece aqui)
+  // ... (cole suas funções _showHighlightEditor, _buildHighlightedParagraph, _onTtsStateChanged, etc.)
   Future<void> _showHighlightEditor(BuildContext context, String snippet,
       String fullParagraph, String questionTitle) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
-
-    // <<< MUDANÇA AQUI >>>
-    // Pega a lista de tags do estado ANTES de mostrar o diálogo.
     final List<String> allUserTags = store.state.userState.allUserTags;
 
     final result = await showDialog<HighlightResult?>(
       context: context,
       builder: (_) => HighlightEditorDialog(
-        initialColor: "#ADD8E6", // Cor azul para teologia
-        initialTags: const [], // Sempre começa vazio para um novo destaque
-        allUserTags: allUserTags, // <<< PASSA A LISTA AQUI
+        initialColor: "#ADD8E6",
+        initialTags: const [],
+        allUserTags: allUserTags,
       ),
     );
 
@@ -213,6 +182,73 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
       spans.add(TextSpan(text: paragraph.substring(lastEnd)));
     }
     return spans;
+  }
+
+  void _onTtsStateChanged() {
+    if (mounted && _playerState != _ttsManager.playerState.value) {
+      setState(() => _playerState = _ttsManager.playerState.value);
+    }
+  }
+
+  void _startQuestionPlayback() {
+    if (widget.topic.questions.isEmpty) return;
+    final question = widget.topic.questions[_currentPage];
+    final List<TtsQueueItem> queue = [];
+
+    queue.add(TtsQueueItem(
+        sectionId: 'q_title_${_currentPage}',
+        textToSpeak: question.questionTitle));
+    if (question.questionStatement.isNotEmpty) {
+      queue.add(TtsQueueItem(
+          sectionId: 'q_statement_${_currentPage}',
+          textToSpeak: question.questionStatement));
+    }
+    for (int i = 0; i < question.content.length; i++) {
+      if (question.content[i].trim().isNotEmpty) {
+        queue.add(TtsQueueItem(
+            sectionId: 'q_paragraph_${_currentPage}_$i',
+            textToSpeak: question.content[i]));
+      }
+    }
+    if (queue.isNotEmpty) {
+      _ttsManager.speak(queue, queue.first.sectionId);
+    }
+  }
+
+  void _handleAudioControl() {
+    switch (_playerState) {
+      case TtsPlayerState.stopped:
+        _startQuestionPlayback();
+        break;
+      case TtsPlayerState.playing:
+        _ttsManager.pause();
+        break;
+      case TtsPlayerState.paused:
+        _ttsManager.restartCurrentItem();
+        break;
+    }
+  }
+
+  IconData _getAudioIcon() {
+    switch (_playerState) {
+      case TtsPlayerState.playing:
+        return Icons.pause_circle_outline;
+      case TtsPlayerState.paused:
+        return Icons.play_circle_outline;
+      default:
+        return Icons.play_circle_outline;
+    }
+  }
+
+  String _getAudioTooltip() {
+    switch (_playerState) {
+      case TtsPlayerState.playing:
+        return "Pausar Leitura";
+      case TtsPlayerState.paused:
+        return "Continuar Leitura";
+      default:
+        return "Ouvir Questão";
+    }
   }
 
   @override
@@ -297,23 +333,22 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
                                     (context, editableTextState) {
                                   final buttonItems =
                                       editableTextState.contextMenuButtonItems;
-                                  if (!editableTextState
-                                      .textEditingValue.selection.isCollapsed) {
-                                    buttonItems.insert(
-                                      0,
-                                      ContextMenuButtonItem(
-                                        label: 'Destacar',
-                                        onPressed: () {
-                                          _handleHighlight(
-                                              context,
-                                              paragraph,
-                                              question.questionTitle,
-                                              editableTextState);
-                                          editableTextState.hideToolbar();
-                                        },
-                                      ),
-                                    );
-                                  }
+
+                                  buttonItems.insert(
+                                    0,
+                                    ContextMenuButtonItem(
+                                      label: 'Destacar',
+                                      onPressed: () {
+                                        _handleHighlight(
+                                            context,
+                                            paragraph,
+                                            question.questionTitle,
+                                            editableTextState,
+                                            viewModel.isPremium);
+                                      },
+                                    ),
+                                  );
+
                                   return AdaptiveTextSelectionToolbar
                                       .buttonItems(
                                     anchors:
