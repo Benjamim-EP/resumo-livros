@@ -1,4 +1,6 @@
 // lib/redux/actions/bible_progress_actions.dart
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart'; // Para Timestamp
 import 'package:septima_biblia/redux/reducers.dart'; // Para BibleBookProgressData
 
@@ -51,7 +53,12 @@ class ToggleSectionReadStatusAction {
 // }
 
 // Carrega o progresso de todos os livros (para a UserPage)
-class LoadAllBibleProgressAction {}
+class LoadAllBibleProgressAction {
+  // <<< INÍCIO DA MUDANÇA >>>
+  final Completer? completer; // Torna o Completer um parâmetro opcional
+  LoadAllBibleProgressAction({this.completer});
+  // <<< FIM DA MUDANÇA >>>
+}
 
 class AllBibleProgressLoadedAction {
   // Map<livroAbrev, ProgressoDetalhadoDoLivro>

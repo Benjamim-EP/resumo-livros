@@ -616,14 +616,14 @@ class _UserPageState extends State<UserPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
 
                   // Cards para Testamentos
                   Row(
                     children: [
                       Expanded(
                         child: _buildTestamentProgressCard(
-                            "Antigo Testamento",
+                            "Velho Testamento",
                             atProgress,
                             totalReadSectionsAT,
                             totalSectionsInAT,
@@ -631,7 +631,6 @@ class _UserPageState extends State<UserPage> {
                             Colors.orange.shade700 // Cor específica para AT
                             ),
                       ),
-                      const SizedBox(width: 16),
                       Expanded(
                         child: _buildTestamentProgressCard(
                             "Novo Testamento",
@@ -1157,6 +1156,8 @@ class _UserPageState extends State<UserPage> {
           "$readSections / ${totalSections > 0 ? totalSections : readSections} seções";
     }
 
+    // O Card agora é o widget raiz, sem o SizedBox problemático.
+    // A altura será controlada pelo IntrinsicHeight + Expanded na Row principal.
     return Card(
       elevation: 1.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1164,7 +1165,7 @@ class _UserPageState extends State<UserPage> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Para o card se ajustar ao conteúdo
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Text(
               title,
@@ -1173,25 +1174,24 @@ class _UserPageState extends State<UserPage> {
                   fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8), // Espaçamento consistente
             LinearPercentIndicator(
               percent: progress,
-              lineHeight: 12.0, // Um pouco mais espesso
-              barRadius: const Radius.circular(6),
+              lineHeight: 14.0,
+              barRadius: const Radius.circular(7),
               backgroundColor: progressColor.withOpacity(0.25),
               progressColor: progressColor,
               center: Text(
                 "${(progress * 100).toStringAsFixed(0)}%",
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onPrimary
-                        .withOpacity(0.9) // Cor do texto sobre a barra
-                    ),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white, // Garante legibilidade
+                ),
               ),
               animation: true,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8), // Espaçamento consistente
             Text(sectionsText,
                 style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.75),
@@ -1256,20 +1256,31 @@ class _UserPageState extends State<UserPage> {
           body: RefreshIndicator(
             color: theme.colorScheme.primary,
             backgroundColor: theme.scaffoldBackgroundColor,
-            onRefresh: () async {
-              if (!mounted) return;
+            // <<< INÍCIO DA MUDANÇA >>>
+            onRefresh: () {
+              final completer = Completer<void>();
               final storeInstance =
                   StoreProvider.of<AppState>(context, listen: false);
+
               if (vm.userId != null) {
+                // Despacha todas as ações de atualização que você precisa
                 storeInstance.dispatch(LoadUserStatsAction());
                 storeInstance.dispatch(LoadUserDiariesAction());
                 storeInstance.dispatch(LoadUserHighlightsAction());
                 storeInstance.dispatch(LoadUserCommentHighlightsAction());
                 storeInstance.dispatch(LoadUserNotesAction());
                 storeInstance.dispatch(LoadReadingHistoryAction());
-                storeInstance.dispatch(LoadAllBibleProgressAction());
                 storeInstance.dispatch(LoadBibleSectionCountsAction());
+
+                // Despacha a ação de progresso com o completer
+                storeInstance
+                    .dispatch(LoadAllBibleProgressAction(completer: completer));
+              } else {
+                // Se não houver usuário, completa imediatamente.
+                completer.complete();
               }
+              // Retorna o Future do completer, que o RefreshIndicator vai esperar.
+              return completer.future;
             },
             child: SafeArea(
               child: Column(

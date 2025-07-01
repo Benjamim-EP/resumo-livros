@@ -588,6 +588,8 @@ UserState userReducer(UserState state, dynamic action) {
       totalSectionsPerBook: newTotalSectionsPerBook,
       bookCompletionStatus: newBookCompletionStatus,
       isLoadingAllBibleProgress: false,
+      clearBibleProgressError:
+          true, // Limpa erro após carregamento bem-sucedido
       // lastReadBookAbbrev: overallLastReadBook ?? state.lastReadBookAbbrev, // Atualização experimental
       // lastReadChapter: overallLastReadChapter ?? state.lastReadChapter,  // Atualização experimental
     );

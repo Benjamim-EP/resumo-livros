@@ -71,6 +71,8 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
     if (userId == null) {
       store.dispatch(BibleProgressFailureAction(
           "Usuário não autenticado para carregar todo o progresso bíblico."));
+      // <<< MUDANÇA ESSENCIAL AQUI >>>
+      action.completer?.completeError(Exception("Usuário não autenticado."));
       return;
     }
     try {
@@ -82,33 +84,29 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
           await firestoreService.getBibleProgressDocument(userId);
 
       if (userProgressDoc != null && userProgressDoc.exists) {
+        // ... sua lógica para carregar a última leitura ...
         final data = userProgressDoc.data() as Map<String, dynamic>;
-
-        // >>> INÍCIO DA CORREÇÃO <<<
-        // Verifica se os campos existem e não são nulos antes de usá-los.
         final String? lastBook = data['lastReadBookAbbrev'] as String?;
         final int? lastChapter = data['lastReadChapter'] as int?;
 
         if (lastBook != null && lastChapter != null) {
-          store.dispatch(UpdateLastReadLocationAction(
-            lastBook,
-            lastChapter,
-          ));
-          print(
-              "BibleProgressMiddleware: Última leitura geral carregada: Livro $lastBook, Cap $lastChapter");
-        } else {
-          print(
-              "BibleProgressMiddleware: Nenhum dado de última leitura geral encontrado para o usuário (campos nulos).");
+          store.dispatch(UpdateLastReadLocationAction(lastBook, lastChapter));
         }
-        // >>> FIM DA CORREÇÃO <<<
-      } else {
-        print(
-            "BibleProgressMiddleware: Documento userBibleProgress para $userId não encontrado ou vazio. Última leitura geral não definida/atualizada a partir dele.");
       }
+
+      // <<< MUDANÇA ESSENCIAL AQUI >>>
+      // Sinaliza que a operação foi concluída com sucesso.
+      action.completer?.complete();
+      print("Middleware: handleLoadAllBibleProgress completado com sucesso.");
     } catch (e) {
       print("Erro em handleLoadAllBibleProgress: $e");
       store.dispatch(BibleProgressFailureAction(
           "Erro ao carregar todo o progresso bíblico: $e"));
+
+      // <<< MUDANÇA ESSENCIAL AQUI >>>
+      // Sinaliza que a operação foi concluída com erro.
+      action.completer?.completeError(e);
+      print("Middleware: handleLoadAllBibleProgress completado com erro.");
     }
   }
 
