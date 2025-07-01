@@ -476,10 +476,9 @@ class BiblePageWidgets {
     required String? selectedBook,
     required int? selectedChapter,
     required BuildContext context,
-    // >>> INÍCIO DA CORREÇÃO 1/3: Atualizar o tipo do parâmetro <<<
     required Map<String, Map<String, dynamic>> userHighlights,
-    // >>> FIM DA CORREÇÃO 1/3 <<<
     required Map<String, String> userNotes,
+    required List<String> allUserTags, // <<< PARÂMETRO ADICIONADO
     required double fontSizeMultiplier,
     bool isHebrew = false,
     bool isGreekInterlinear = false,
@@ -491,21 +490,17 @@ class BiblePageWidgets {
     final theme = Theme.of(context);
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
 
-    // >>> INÍCIO DA CORREÇÃO 2/3: Atualizar como os dados são lidos <<<
-    final Map<String, dynamic>? currentHighlightData =
-        userHighlights[verseId]; // Pega o mapa inteiro do destaque
-    final String? currentHighlightColorHex = currentHighlightData?['color']
-        as String?; // Pega a cor de dentro do mapa
-    // >>> FIM DA CORREÇÃO 2/3 <<<
-
+    final Map<String, dynamic>? currentHighlightData = userHighlights[verseId];
+    final String? currentHighlightColorHex =
+        currentHighlightData?['color'] as String?;
     final bool hasNote = userNotes.containsKey(verseId);
     final backgroundColor = currentHighlightColorHex != null
         ? Color(int.parse(currentHighlightColorHex.replaceFirst('#', '0xff')))
             .withOpacity(0.30)
         : Colors.transparent;
 
-    Widget mainTranslationWidget;
     String verseTextForModalDialog = "";
+    Widget mainTranslationWidget;
 
     if (isGreekInterlinear && verseData is List<Map<String, String>>) {
       List<Widget> greekWordWidgets = [];
@@ -635,17 +630,18 @@ class BiblePageWidgets {
     return GestureDetector(
       key: key,
       onLongPress: () {
-        // >>> INÍCIO DA CORREÇÃO 3/3: A chamada aqui já está correta <<<
+        // <<< MUDANÇA: Parâmetros agora são nomeados >>>
         _showVerseOptionsModal(
           context,
-          verseId,
-          currentHighlightColorHex,
-          currentHighlightData,
-          userNotes[verseId],
-          selectedBook!,
-          selectedChapter!,
-          verseNumber,
-          verseTextForModalDialog.trim(),
+          verseId: verseId,
+          currentHighlightColor: currentHighlightColorHex,
+          currentHighlightData: currentHighlightData,
+          currentNote: userNotes[verseId],
+          bookAbbrev: selectedBook!,
+          chapter: selectedChapter!,
+          verseNum: verseNumber,
+          verseText: verseTextForModalDialog.trim(),
+          allUserTags: allUserTags,
         );
       },
       child: Container(
@@ -694,17 +690,21 @@ class BiblePageWidgets {
   }
 
   static void _showVerseOptionsModal(
-    BuildContext context,
-    String verseId,
-    String? currentHighlightColor,
-    Map<String, dynamic>? currentHighlightData,
-    String? currentNote,
-    String bookAbbrev,
-    int chapter,
-    int verseNum,
-    String verseText,
-  ) {
+    BuildContext context, {
+    // MUDANÇA: Parâmetros agora são nomeados
+    required String verseId,
+    required String? currentHighlightColor,
+    required Map<String, dynamic>? currentHighlightData,
+    required String? currentNote,
+    required String bookAbbrev,
+    required int chapter,
+    required int verseNum,
+    required String verseText,
+    required List<String> allUserTags, // Parâmetro obrigatório
+  }) {
     final theme = Theme.of(context);
+    final store = StoreProvider.of<AppState>(context, listen: false);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: theme.dialogBackgroundColor,
@@ -713,7 +713,6 @@ class BiblePageWidgets {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (modalContext) {
-        final store = StoreProvider.of<AppState>(modalContext);
         return Padding(
           padding: EdgeInsets.only(
               top: 16.0,
@@ -753,102 +752,83 @@ class BiblePageWidgets {
                 ),
               ),
               Divider(color: theme.dividerColor.withOpacity(0.5), height: 20),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListTile(
-                        leading: Icon(Icons.format_paint_outlined,
-                            color: currentHighlightColor != null
-                                ? Color(int.parse(currentHighlightColor
-                                    .replaceFirst('#', '0xff')))
-                                : theme.iconTheme.color?.withOpacity(0.8)),
-                        title: Text(
-                            currentHighlightColor != null
-                                ? "Editar Destaque/Tags"
-                                : "Destacar Versículo",
-                            style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 15)),
-                        onTap: () async {
-                          // 1. Fecha o modal de opções
-                          Navigator.pop(modalContext);
-
-                          // 2. Chama o NOVO diálogo unificado
-                          final result = await showDialog<HighlightResult?>(
-                            context: context, // Usa o context da página
-                            builder: (_) => HighlightEditorDialog(
-                              initialColor: currentHighlightColor,
-                              initialTags: List<String>.from(
-                                  currentHighlightData?['tags'] ?? []),
-                            ),
-                          );
-
-                          // 3. Processa o resultado do diálogo unificado
-                          if (result == null) return; // Usuário cancelou
-
-                          if (result.shouldRemove) {
-                            store.dispatch(ToggleHighlightAction(verseId));
-                          } else if (result.colorHex != null) {
-                            store.dispatch(ToggleHighlightAction(
-                              verseId,
-                              colorHex: result.colorHex,
-                              tags: result.tags,
-                            ));
-                          }
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(
-                            currentNote != null
-                                ? Icons.edit_note_outlined
-                                : Icons.note_add_outlined,
-                            color: theme.iconTheme.color?.withOpacity(0.8)),
-                        title: Text(
-                            currentNote != null
-                                ? "Editar Nota"
-                                : "Adicionar Nota",
-                            style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 15)),
-                        onTap: () {
-                          Navigator.pop(modalContext);
-                          showDialog(
-                            context: context,
-                            builder: (_) => NoteEditorModal(
-                              verseId: verseId,
-                              initialText: currentNote,
-                              bookReference: "$bookAbbrev $chapter:$verseNum",
-                              verseTextSample: verseText.isNotEmpty
-                                  ? verseText
-                                  : "[Conteúdo interlinear]",
-                            ),
-                          );
-                        },
-                      ),
-                      if (currentNote != null && currentNote.isNotEmpty)
-                        ListTile(
-                          leading: Icon(Icons.delete_outline,
-                              color: theme.colorScheme.error.withOpacity(0.8)),
-                          title: Text("Remover Nota",
-                              style: TextStyle(
-                                  color: theme.colorScheme.error,
-                                  fontSize: 15)),
-                          onTap: () {
-                            Navigator.pop(modalContext);
-                            store.dispatch(DeleteNoteAction(verseId));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Nota removida.'),
-                                  duration: Duration(seconds: 2)),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                ),
+              ListTile(
+                leading: Icon(Icons.format_paint_outlined,
+                    color: currentHighlightColor != null
+                        ? Color(int.parse(
+                            currentHighlightColor.replaceFirst('#', '0xff')))
+                        : theme.iconTheme.color?.withOpacity(0.8)),
+                title: Text(
+                    currentHighlightColor != null
+                        ? "Editar Destaque/Tags"
+                        : "Destacar Versículo",
+                    style: TextStyle(
+                        color: theme.colorScheme.onSurface, fontSize: 15)),
+                onTap: () async {
+                  Navigator.pop(modalContext);
+                  final result = await showDialog<HighlightResult?>(
+                    context: context,
+                    builder: (_) => HighlightEditorDialog(
+                      initialColor: currentHighlightColor,
+                      initialTags: List<String>.from(
+                          currentHighlightData?['tags'] ?? []),
+                      allUserTags: allUserTags,
+                    ),
+                  );
+                  if (result == null) return;
+                  if (result.shouldRemove) {
+                    store.dispatch(ToggleHighlightAction(verseId));
+                  } else if (result.colorHex != null) {
+                    store.dispatch(ToggleHighlightAction(
+                      verseId,
+                      colorHex: result.colorHex,
+                      tags: result.tags,
+                    ));
+                  }
+                },
               ),
+              ListTile(
+                leading: Icon(
+                    currentNote != null
+                        ? Icons.edit_note_outlined
+                        : Icons.note_add_outlined,
+                    color: theme.iconTheme.color?.withOpacity(0.8)),
+                title: Text(
+                    currentNote != null ? "Editar Nota" : "Adicionar Nota",
+                    style: TextStyle(
+                        color: theme.colorScheme.onSurface, fontSize: 15)),
+                onTap: () {
+                  Navigator.pop(modalContext);
+                  showDialog(
+                    context: context,
+                    builder: (_) => NoteEditorModal(
+                      verseId: verseId,
+                      initialText: currentNote,
+                      bookReference: "$bookAbbrev $chapter:$verseNum",
+                      verseTextSample: verseText.isNotEmpty
+                          ? verseText
+                          : "[Conteúdo interlinear]",
+                    ),
+                  );
+                },
+              ),
+              if (currentNote != null && currentNote.isNotEmpty)
+                ListTile(
+                  leading: Icon(Icons.delete_outline,
+                      color: theme.colorScheme.error.withOpacity(0.8)),
+                  title: Text("Remover Nota",
+                      style: TextStyle(
+                          color: theme.colorScheme.error, fontSize: 15)),
+                  onTap: () {
+                    Navigator.pop(modalContext);
+                    store.dispatch(DeleteNoteAction(verseId));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Nota removida.'),
+                          duration: Duration(seconds: 2)),
+                    );
+                  },
+                ),
             ],
           ),
         );

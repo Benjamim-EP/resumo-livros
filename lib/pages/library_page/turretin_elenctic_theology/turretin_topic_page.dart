@@ -134,10 +134,18 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
   Future<void> _showHighlightEditor(BuildContext context, String snippet,
       String fullParagraph, String questionTitle) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
+
+    // <<< MUDANÇA AQUI >>>
+    // Pega a lista de tags do estado ANTES de mostrar o diálogo.
+    final List<String> allUserTags = store.state.userState.allUserTags;
+
     final result = await showDialog<HighlightResult?>(
       context: context,
-      builder: (_) => const HighlightEditorDialog(
-          initialColor: "#ADD8E6"), // Cor azul para teologia
+      builder: (_) => HighlightEditorDialog(
+        initialColor: "#ADD8E6", // Cor azul para teologia
+        initialTags: const [], // Sempre começa vazio para um novo destaque
+        allUserTags: allUserTags, // <<< PASSA A LISTA AQUI
+      ),
     );
 
     if (result == null || result.colorHex == null) return;

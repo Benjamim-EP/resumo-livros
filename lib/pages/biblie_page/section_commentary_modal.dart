@@ -188,9 +188,11 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
 
   void _markSelectedCommentSnippet(
     BuildContext passedContext,
-    String fullCommentText,
+    String
+        fullCommentText, // Este é o parágrafo completo onde a seleção foi feita
     TextSelection selection,
   ) async {
+    // 1. Garante que há texto selecionado
     if (selection.isCollapsed) {
       final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
       if (scaffoldMessenger != null && mounted) {
@@ -203,21 +205,30 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       return;
     }
 
+    // 2. Extrai o trecho e obtém a instância da store
     final selectedSnippet =
         fullCommentText.substring(selection.start, selection.end);
     final store = StoreProvider.of<AppState>(passedContext, listen: false);
 
+    // <<< MUDANÇA ESSENCIAL AQUI >>>
+    // Pega a lista de tags diretamente do estado ANTES de mostrar o diálogo
+    final List<String> allUserTags = store.state.userState.allUserTags;
+
+    // 3. Mostra o diálogo para o usuário, passando a lista de tags
     final result = await showDialog<HighlightResult?>(
       context: passedContext,
-      builder: (_) => const HighlightEditorDialog(
-        initialColor: "#FFA07A",
-        initialTags: [],
+      builder: (_) => HighlightEditorDialog(
+        initialColor: "#FFA07A", // Cor padrão para destaques de literatura
+        initialTags: const [], // Destaques de comentário sempre começam sem tags
+        allUserTags: allUserTags, // <<< PASSA A LISTA AQUI
       ),
     );
 
+    // 4. Se o usuário cancelou o diálogo, não faz nada
     if (result == null || result.shouldRemove || result.colorHex == null)
       return;
 
+    // 5. Constrói o objeto de dados do destaque
     final highlightData = {
       'selectedSnippet': selectedSnippet,
       'fullContext': fullCommentText,
@@ -234,8 +245,10 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
       'tags': result.tags,
     };
 
+    // 6. Despacha a ação para salvar o destaque no Firestore
     store.dispatch(AddCommentHighlightAction(highlightData));
 
+    // 7. Mostra um feedback visual de sucesso
     final scaffoldMessenger = ScaffoldMessenger.maybeOf(passedContext);
     if (scaffoldMessenger != null && mounted) {
       scaffoldMessenger.showSnackBar(
@@ -618,8 +631,8 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
                               icon: Icon(
                                 _getAudioIcon(),
                                 color: _playerState == TtsPlayerState.playing
-                                    ? theme.colorScheme.secondary
-                                    : theme.iconTheme.color,
+                                    ? theme.iconTheme.color?.withOpacity(0.7)
+                                    : theme.iconTheme.color?.withOpacity(0.7),
                                 size: 28,
                               ),
                               tooltip: _getAudioTooltip(),

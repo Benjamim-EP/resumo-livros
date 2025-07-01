@@ -200,10 +200,16 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       BuildContext context, String snippet, String fullParagraph) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
 
+    // <<< MUDANÇA AQUI >>>
+    // Pega a lista de tags do estado ANTES de mostrar o diálogo.
+    final List<String> allUserTags = store.state.userState.allUserTags;
+
     final result = await showDialog<HighlightResult?>(
       context: context,
-      builder: (_) => const HighlightEditorDialog(
+      builder: (_) => HighlightEditorDialog(
         initialColor: "#FFA07A", // Cor padrão para destaques de literatura
+        initialTags: const [], // Sempre começa vazio para um novo destaque
+        allUserTags: allUserTags, // <<< PASSA A LISTA AQUI
       ),
     );
 

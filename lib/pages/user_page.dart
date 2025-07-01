@@ -129,6 +129,10 @@ class _UserPageState extends State<UserPage> {
       if (storeInstance.state.userState.userNotes.isEmpty) {
         storeInstance.dispatch(LoadUserNotesAction());
       }
+
+      // <<< ADICIONE ESTA LINHA AQUI >>>
+      // Garante que as tags sejam carregadas quando a UserPage é inicializada.
+      storeInstance.dispatch(LoadUserTagsAction());
     }
   }
   // >>> FIM DA CORREÇÃO <<<
@@ -1156,8 +1160,7 @@ class _UserPageState extends State<UserPage> {
           "$readSections / ${totalSections > 0 ? totalSections : readSections} seções";
     }
 
-    // O Card agora é o widget raiz, sem o SizedBox problemático.
-    // A altura será controlada pelo IntrinsicHeight + Expanded na Row principal.
+    // O Card é o widget raiz. O SizedBox problemático foi removido.
     return Card(
       elevation: 1.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1165,7 +1168,8 @@ class _UserPageState extends State<UserPage> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          // Distribui o espaço verticalmente para um visual equilibrado
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               title,
@@ -1174,7 +1178,8 @@ class _UserPageState extends State<UserPage> {
                   fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8), // Espaçamento consistente
+            // Usamos um SizedBox com altura fixa pequena para garantir espaçamento
+            const SizedBox(height: 8),
             LinearPercentIndicator(
               percent: progress,
               lineHeight: 14.0,
@@ -1186,12 +1191,13 @@ class _UserPageState extends State<UserPage> {
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white, // Garante legibilidade
+                  color: Colors.white, // Cor de alto contraste
                 ),
               ),
               animation: true,
             ),
-            const SizedBox(height: 8), // Espaçamento consistente
+            // Usamos um SizedBox com altura fixa pequena para garantir espaçamento
+            const SizedBox(height: 8),
             Text(sectionsText,
                 style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.75),

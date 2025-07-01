@@ -1,24 +1,25 @@
 // lib/pages/biblie_page/bible_reader_view.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
-import 'package:flutter/foundation.dart';
-import 'package:redux/redux.dart';
 
 class _BibleContentViewModel {
-  // >>> TIPO CORRIGIDO AQUI <<<
   final Map<String, Map<String, dynamic>> userHighlights;
   final Map<String, String> userNotes;
   final Set<String> readSectionsForCurrentBook;
+  final List<String> allUserTags;
 
   _BibleContentViewModel({
     required this.userHighlights,
     required this.userNotes,
     required this.readSectionsForCurrentBook,
+    required this.allUserTags,
   });
 
   static _BibleContentViewModel fromStore(
@@ -30,6 +31,7 @@ class _BibleContentViewModel {
           ? store.state.userState.readSectionsByBook[currentSelectedBook] ??
               const {}
           : const {},
+      allUserTags: store.state.userState.allUserTags,
     );
   }
 
@@ -41,13 +43,15 @@ class _BibleContentViewModel {
           mapEquals(userHighlights, other.userHighlights) &&
           mapEquals(userNotes, other.userNotes) &&
           setEquals(
-              readSectionsForCurrentBook, other.readSectionsForCurrentBook);
+              readSectionsForCurrentBook, other.readSectionsForCurrentBook) &&
+          listEquals(allUserTags, other.allUserTags);
 
   @override
   int get hashCode =>
       userHighlights.hashCode ^
       userNotes.hashCode ^
-      readSectionsForCurrentBook.hashCode;
+      readSectionsForCurrentBook.hashCode ^
+      allUserTags.hashCode;
 }
 
 class BibleReaderView extends StatefulWidget {
@@ -61,15 +65,12 @@ class BibleReaderView extends StatefulWidget {
   final bool showHebrewInterlinear;
   final bool showGreekInterlinear;
   final double fontSizeMultiplier;
-
   final Function(String, TtsContentType) onPlayRequest;
   final TtsPlayerState currentPlayerState;
   final String? currentlyPlayingSectionId;
   final TtsContentType? currentlyPlayingContentType;
-
   final ScrollController scrollController1;
   final ScrollController scrollController2;
-
   final Map<String, dynamic>? currentChapterHebrewData;
   final Map<String, dynamic>? currentChapterGreekData;
 
@@ -198,35 +199,35 @@ class _BibleReaderViewState extends State<BibleReaderView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                  child: _buildComparisonColumn(
-                      context,
-                      sections,
-                      primaryTranslationVerseData as List,
-                      widget.scrollController1,
-                      widget.selectedTranslation1,
-                      isHebrew:
-                          widget.selectedTranslation1 == 'hebrew_original',
-                      isGreek:
-                          widget.selectedTranslation1 == 'greek_interlinear',
-                      listViewKey: PageStorageKey<String>(
-                          '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation1}-compareView'))),
+                child: _buildComparisonColumn(
+                  context,
+                  sections,
+                  primaryTranslationVerseData as List,
+                  widget.scrollController1,
+                  widget.selectedTranslation1,
+                  isHebrew: widget.selectedTranslation1 == 'hebrew_original',
+                  isGreek: widget.selectedTranslation1 == 'greek_interlinear',
+                  listViewKey: PageStorageKey<String>(
+                      '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation1}-compareView'),
+                ),
+              ),
               VerticalDivider(
                   width: 1,
                   color: theme.dividerColor.withOpacity(0.5),
                   thickness: 0.5),
               Expanded(
-                  child: _buildComparisonColumn(
-                      context,
-                      sections,
-                      comparisonVerseData as List,
-                      widget.scrollController2,
-                      widget.selectedTranslation2!,
-                      isHebrew:
-                          widget.selectedTranslation2 == 'hebrew_original',
-                      isGreek:
-                          widget.selectedTranslation2 == 'greek_interlinear',
-                      listViewKey: PageStorageKey<String>(
-                          '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation2}-compareView'))),
+                child: _buildComparisonColumn(
+                  context,
+                  sections,
+                  comparisonVerseData as List,
+                  widget.scrollController2,
+                  widget.selectedTranslation2!,
+                  isHebrew: widget.selectedTranslation2 == 'hebrew_original',
+                  isGreek: widget.selectedTranslation2 == 'greek_interlinear',
+                  listViewKey: PageStorageKey<String>(
+                      '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation2}-compareView'),
+                ),
+              ),
             ],
           );
         }
@@ -299,6 +300,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 }
               }
 
+              // CORREÇÃO AQUI: As propriedades do widget são acessadas com 'widget.'
               return SectionItemWidget(
                 sectionTitle: section['title'] ?? 'Seção Desconhecida',
                 verseNumbersInSection: verseNumbersInSection,
@@ -313,7 +315,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 isGreekInterlinear:
                     widget.selectedTranslation1 == 'greek_interlinear',
                 isRead: contentViewModel.readSectionsForCurrentBook.contains(
-                    "${widget.selectedBook}_c${widget.selectedChapter}_v$versesRangeStrInSection"),
+                    "${widget.selectedBook}_c${widget.selectedChapter}_v$versesRangeStrInSection"), // CORREÇÃO AQUI
                 showHebrewInterlinear: widget.showHebrewInterlinear &&
                     !(widget.selectedTranslation1 == 'hebrew_original'),
                 showGreekInterlinear: widget.showGreekInterlinear &&
@@ -325,6 +327,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 currentPlayerState: widget.currentPlayerState,
                 currentlyPlayingSectionId: widget.currentlyPlayingSectionId,
                 currentlyPlayingContentType: widget.currentlyPlayingContentType,
+                allUserTags: contentViewModel.allUserTags,
               );
             } else {
               final verseNumber = index + 1;
@@ -338,6 +341,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 context: context,
                 userHighlights: contentViewModel.userHighlights,
                 userNotes: contentViewModel.userNotes,
+                allUserTags: contentViewModel.allUserTags,
                 fontSizeMultiplier: widget.fontSizeMultiplier,
                 isHebrew: widget.selectedTranslation1 == 'hebrew_original',
                 isGreekInterlinear:
@@ -410,6 +414,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                       context: context,
                       userHighlights: contentViewModel.userHighlights,
                       userNotes: contentViewModel.userNotes,
+                      allUserTags: contentViewModel.allUserTags,
                       fontSizeMultiplier: widget.fontSizeMultiplier,
                       isHebrew: isHebrew,
                       isGreekInterlinear: isGreek,

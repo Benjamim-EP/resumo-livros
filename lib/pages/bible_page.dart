@@ -107,6 +107,27 @@ class _BiblePageState extends State<BiblePage> {
     _scrollController1.addListener(_syncScrollFrom1To2);
     _scrollController2.addListener(_syncScrollFrom2To1);
     _ttsManager.playerState.addListener(_onTtsStateChanged);
+
+    // Bloco de código com logs adicionados
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final store = StoreProvider.of<AppState>(context, listen: false);
+
+        // VERIFICAÇÃO E LOG
+        if (store.state.userState.allUserTags.isEmpty) {
+          print("--- [BiblePage LOG] ---");
+          print("-> A lista 'allUserTags' no estado está VAZIA.");
+          print("-> Despachando a ação LoadUserTagsAction().");
+          print("------------------------");
+          store.dispatch(LoadUserTagsAction());
+        } else {
+          print("--- [BiblePage LOG] ---");
+          print(
+              "-> A lista 'allUserTags' no estado JÁ ESTÁ CARREGADA com ${store.state.userState.allUserTags.length} tags.");
+          print("------------------------");
+        }
+      }
+    });
   }
 
   @override

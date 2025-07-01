@@ -415,6 +415,7 @@ class UserState {
           ? null
           : (initialBibleSectionIdToScrollTo ??
               this.initialBibleSectionIdToScrollTo), // NOVO
+      allUserTags: allUserTags ?? this.allUserTags,
     );
   }
 }

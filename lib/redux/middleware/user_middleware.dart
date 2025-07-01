@@ -9,12 +9,17 @@ List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();
 
   return [
+    // <<< ESTE HANDLER É CRUCIAL >>>
     TypedMiddleware<AppState, LoadUserTagsAction>((store, action, next) async {
       next(action);
       final userId = store.state.userState.userId;
       if (userId == null) return;
       try {
+        print(
+            "Middleware: Carregando tags para o usuário $userId..."); // Log para depuração
         final tags = await firestoreService.loadUserTags(userId);
+        print(
+            "Middleware: Tags carregadas do Firestore: $tags"); // Log para depuração
         store.dispatch(UserTagsLoadedAction(tags));
       } catch (e) {
         print("Erro ao carregar tags do usuário: $e");
@@ -128,27 +133,66 @@ void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
 void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
     _toggleHighlight(FirestoreService firestoreService) {
   return (store, action, next) async {
+    // 1. Passa a ação para o próximo middleware/reducer (opcional, mas bom padrão)
+    next(action);
+
+    // 2. Verifica se há um usuário logado
     final userId = store.state.userState.userId;
-    if (userId == null) return;
+    if (userId == null) {
+      print("ToggleHighlight Middleware: Usuário não logado. Ação ignorada.");
+      return;
+    }
+
     try {
+      // 3. Verifica se é para REMOVER ou ADICIONAR/ATUALIZAR o destaque
       if (action.colorHex == null) {
+        // Se a cor for nula, a intenção é remover o destaque.
+        print(
+            "ToggleHighlight Middleware: Removendo destaque para o versículo ${action.verseId}...");
         await firestoreService.removeHighlight(userId, action.verseId);
+        print("ToggleHighlight Middleware: Destaque removido com sucesso.");
       } else {
+        // Se a cor existe, a intenção é salvar ou atualizar.
+        print(
+            "ToggleHighlight Middleware: Salvando destaque para o versículo ${action.verseId}...");
+
+        // Busca o texto completo do versículo para salvar junto com o destaque.
+        // Isso é útil para exibir o contexto na lista de destaques sem precisar buscar novamente.
         final String verseText =
             await BiblePageHelper.loadSingleVerseText(action.verseId, 'nvi');
+
+        // Salva os dados do destaque no Firestore
         await firestoreService.saveHighlight(
           userId,
           action.verseId,
           action.colorHex!,
           tags: action.tags,
-          fullVerseText: verseText, // Passa o texto completo para ser salvo
+          fullVerseText: verseText,
         );
-        // ... (resto da lógica de tags)
+        print("ToggleHighlight Middleware: Destaque salvo com sucesso.");
+
+        // Se houver tags, garante que elas existam na coleção de tags do usuário.
+        if (action.tags != null && action.tags!.isNotEmpty) {
+          print(
+              "ToggleHighlight Middleware: Garantindo a existência das tags: ${action.tags}");
+          for (var tag in action.tags!) {
+            // Despacha uma ação para cada tag. O middleware `EnsureUserTagExistsAction` fará o trabalho.
+            store.dispatch(EnsureUserTagExistsAction(tag));
+          }
+        }
       }
-      store.dispatch(LoadUserHighlightsAction());
-      store.dispatch(LoadUserTagsAction());
+
+      // 4. Após qualquer operação (salvar ou remover), recarrega os dados para a UI
+      print(
+          "ToggleHighlight Middleware: Recarregando destaques e tags para atualizar a UI.");
+      store.dispatch(
+          LoadUserHighlightsAction()); // Recarrega os destaques de versículos.
+      store.dispatch(
+          LoadUserTagsAction()); // Recarrega a lista completa de tags do usuário.
     } catch (e) {
       print("Erro no middleware ToggleHighlightAction: $e");
+      // Opcional: despachar uma ação de erro para a UI.
+      // store.dispatch(HighlightUpdateFailedAction(e.toString()));
     }
   };
 }
@@ -157,22 +201,47 @@ void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
 void Function(Store<AppState>, AddCommentHighlightAction, NextDispatcher)
     _addCommentHighlight(FirestoreService firestoreService) {
   return (store, action, next) async {
+    // 1. Passa a ação para o próximo middleware/reducer
+    next(action);
+
+    // 2. Verifica se há um usuário logado
     final userId = store.state.userState.userId;
-    if (userId == null) return;
+    if (userId == null) {
+      print(
+          "AddCommentHighlight Middleware: Usuário não logado. Ação ignorada.");
+      return;
+    }
+
     try {
+      // 3. Salva os dados do destaque de comentário no Firestore
+      print(
+          "AddCommentHighlight Middleware: Salvando destaque de comentário...");
       await firestoreService.addCommentHighlight(
           userId, action.commentHighlightData);
+      print(
+          "AddCommentHighlight Middleware: Destaque de comentário salvo com sucesso.");
 
-      final tags = action.commentHighlightData['tags'] as List<String>?;
-      if (tags != null) {
-        for (var tag in tags) {
+      // 4. Garante que as tags (se existirem) sejam salvas na lista de tags do usuário
+      final tags = action.commentHighlightData['tags']
+          as List<dynamic>?; // Pode vir como List<dynamic>
+      if (tags != null && tags.isNotEmpty) {
+        final tagList = List<String>.from(tags.map((t) => t.toString()));
+        print(
+            "AddCommentHighlight Middleware: Garantindo a existência das tags: $tagList");
+        for (var tag in tagList) {
           store.dispatch(EnsureUserTagExistsAction(tag));
         }
       }
+
+      // 5. Após salvar, recarrega a lista de destaques de comentários e a lista de tags
+      print(
+          "AddCommentHighlight Middleware: Recarregando dados para atualizar a UI.");
       store.dispatch(LoadUserCommentHighlightsAction());
       store.dispatch(LoadUserTagsAction());
     } catch (e) {
       print("Erro no middleware AddCommentHighlightAction: $e");
+      // Opcional: despachar uma ação de erro.
+      // store.dispatch(CommentHighlightUpdateFailedAction(e.toString()));
     }
   };
 }
