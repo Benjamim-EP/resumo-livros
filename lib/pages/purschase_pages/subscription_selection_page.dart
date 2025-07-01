@@ -10,13 +10,19 @@ import 'package:redux/redux.dart';
 class _ViewModel {
   final bool isLoading;
   final AppThemeOption activeTheme;
+  final bool isGuest;
 
-  _ViewModel({required this.isLoading, required this.activeTheme});
+  _ViewModel({
+    required this.isLoading,
+    required this.activeTheme,
+    required this.isGuest,
+  });
 
   static _ViewModel fromStore(Store<AppState> store) {
     return _ViewModel(
       isLoading: store.state.subscriptionState.isLoading,
       activeTheme: store.state.themeState.activeThemeOption,
+      isGuest: store.state.userState.isGuestUser,
     );
   }
 }
@@ -52,7 +58,8 @@ class SubscriptionSelectionPage extends StatelessWidget {
                 _buildFreePlanCard(context, theme),
                 const SizedBox(height: 24),
                 // Passa a informação do tema ativo para o card Premium
-                _buildPremiumPlanCard(context, theme, viewModel.activeTheme),
+                _buildPremiumPlanCard(
+                    context, theme, viewModel.activeTheme, viewModel.isGuest),
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -124,8 +131,8 @@ class SubscriptionSelectionPage extends StatelessWidget {
   }
 
   // Card para o plano Premium
-  Widget _buildPremiumPlanCard(
-      BuildContext context, ThemeData theme, AppThemeOption activeTheme) {
+  Widget _buildPremiumPlanCard(BuildContext context, ThemeData theme,
+      AppThemeOption activeTheme, bool isGuest) {
     return Card(
       elevation: 8,
       shadowColor: theme.colorScheme.primary.withOpacity(0.3),
@@ -170,6 +177,7 @@ class SubscriptionSelectionPage extends StatelessWidget {
                 price: "R\$ 19,99 / mês",
                 productId: googlePlayMonthlyProductId,
                 activeTheme: activeTheme,
+                isGuest: isGuest,
               ),
               const SizedBox(height: 16),
               _buildPlanOptionButton(
@@ -179,6 +187,7 @@ class SubscriptionSelectionPage extends StatelessWidget {
                 price: "R\$ 47,99 / 3 meses",
                 productId: googlePlayQuarterlyProductId,
                 activeTheme: activeTheme,
+                isGuest: isGuest,
               ),
             ],
           ),
@@ -277,7 +286,8 @@ class SubscriptionSelectionPage extends StatelessWidget {
       {required String title,
       required String price,
       required String productId,
-      required AppThemeOption activeTheme}) {
+      required AppThemeOption activeTheme,
+      required bool isGuest}) {
     final bool isGreenTheme = activeTheme == AppThemeOption.green;
 
     final Color titleColor;
@@ -303,9 +313,39 @@ class SubscriptionSelectionPage extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          StoreProvider.of<AppState>(context, listen: false).dispatch(
-            InitiateGooglePlaySubscriptionAction(productId: productId),
-          );
+          // <<< LÓGICA PRINCIPAL DA MUDANÇA >>>
+          if (isGuest) {
+            // Se for convidado, mostra um diálogo para fazer login
+            showDialog(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text("Login Necessário"),
+                content: const Text(
+                    "Para fazer uma assinatura, você precisa criar uma conta ou fazer login."),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text("Cancelar"),
+                  ),
+                  FilledButton(
+                    onPressed: () {
+                      // Fecha o diálogo e navega para a tela de login,
+                      // removendo todas as rotas anteriores.
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/login', (route) => false);
+                    },
+                    child: const Text("Fazer Login"),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // Se não for convidado, dispara a ação de compra normalmente
+            StoreProvider.of<AppState>(context, listen: false).dispatch(
+              InitiateGooglePlaySubscriptionAction(productId: productId),
+            );
+          }
         },
         child: Container(
           width: double.infinity,

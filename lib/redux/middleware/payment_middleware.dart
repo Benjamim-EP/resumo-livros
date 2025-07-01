@@ -124,6 +124,19 @@ List<Middleware<AppState>> createPaymentMiddleware() {
     InitiateGooglePlaySubscriptionAction action,
     NextDispatcher next,
   ) async {
+    if (store.state.userState.isGuestUser) {
+      print(
+          "PaymentMiddleware: Ação de compra bloqueada. Usuário é um convidado.");
+
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Por favor, faça login para assinar.')),
+        );
+      }
+      // Não passa a ação adiante, encerrando o fluxo aqui.
+      return;
+    }
     next(action);
     _listenToPurchaseUpdated(store);
 
