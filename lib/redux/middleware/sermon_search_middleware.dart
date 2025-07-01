@@ -1,251 +1,108 @@
 // lib/redux/middleware/sermon_search_middleware.dart
-import 'dart:convert'; // Para jsonEncode e jsonDecode
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:septima_biblia/consts.dart';
+import 'package:septima_biblia/main.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
-import 'package:septima_biblia/redux/reducers/subscription_reducer.dart'; // Para SubscriptionStatus
-import 'package:septima_biblia/redux/store.dart'; // Para AppState
-import 'package:septima_biblia/main.dart'; // Para navigatorKey
-import 'package:septima_biblia/redux/actions.dart'; // Para UpdateUserCoinsAction, RequestRewardedAdAction
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart'; // Para DateFormat
-import 'package:septima_biblia/consts.dart'; // <<< IMPORTAR ARQUIVO DE CONSTANTES GLOBAIS
 
-// Custo da busca de sermões
+// Custo em moedas para realizar a busca semântica de sermões
 const int SERMON_SEARCH_COST = 3;
-// Não precisa definir guestUserCoinsPrefsKey aqui se estiver importando de consts.dart
 
-// Chave específica para o histórico de busca de sermões do convidado no SharedPreferences
+// Chave específica para o histórico de busca de sermões do convidado
 const String _sermonSearchHistoryKeyPrefsGuest = 'sermon_search_history_guest';
 
-// Função Helper para salvar histórico de sermões
-Future<void> _saveSermonSearchHistory(Store<AppState> store, String query,
-    List<Map<String, dynamic>> results) async {
-  final userState = store.state.userState;
-  final userId = userState.userId;
-  final isGuest = userState.isGuestUser;
-
-  // Atualiza o estado Redux primeiro com a nova entrada de histórico
-  // O reducer (sermonSearchReducer) cuidará de adicionar e limitar a 30 itens.
-  store
-      .dispatch(AddSermonSearchToHistoryAction(query: query, results: results));
-
-  // Pega o histórico atualizado do Redux para persistir
-  final List<Map<String, dynamic>> currentHistoryToPersist =
-      store.state.sermonSearchState.searchHistory;
-
-  if (userId != null) {
-    // Usuário Logado
-    final firestoreService = FirestoreService();
-    try {
-      // Salva no Firestore.
-      // IMPORTANTE: Use uma chave diferente para o histórico de sermões para não sobrescrever o da Bíblia.
-      await firestoreService.updateUserField(
-          userId, 'sermonSearchHistory', currentHistoryToPersist);
-      print(
-          "SermonSearchMiddleware: Histórico de busca de sermões (limitado a ${currentHistoryToPersist.length}) salvo no Firestore para usuário $userId.");
-    } catch (e) {
-      print(
-          "SermonSearchMiddleware: Erro ao salvar histórico de busca de sermões no Firestore: $e");
-    }
-  } else if (isGuest) {
-    // Usuário Convidado
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String historyJson = jsonEncode(currentHistoryToPersist);
-      await prefs.setString(_sermonSearchHistoryKeyPrefsGuest, historyJson);
-      print(
-          "SermonSearchMiddleware: Histórico de busca de sermões (limitado a ${currentHistoryToPersist.length}) salvo no SharedPreferences para convidado.");
-    } catch (e) {
-      print(
-          "SermonSearchMiddleware: Erro ao salvar histórico de busca de sermões no SharedPreferences: $e");
-    }
-  }
+/// Cria a lista de middlewares responsáveis pela busca de sermões.
+List<Middleware<AppState>> createSermonSearchMiddleware() {
+  return [
+    TypedMiddleware<AppState, SearchSermonsAction>(_handleSearchSermons).call,
+    TypedMiddleware<AppState, LoadSermonSearchHistoryAction>(
+            _handleLoadSermonSearchHistory)
+        .call,
+  ];
 }
 
-// Handler para carregar o histórico de sermões
-void _handleLoadSermonSearchHistory(Store<AppState> store,
-    LoadSermonSearchHistoryAction action, NextDispatcher next) async {
-  next(action); // Reducer pode setar isLoadingHistory = true
-
-  final userState = store.state.userState;
-  final userId = userState.userId;
-  final isGuest = userState.isGuestUser;
-  List<Map<String, dynamic>> history = [];
-
-  if (userId != null) {
-    // Usuário Logado
-    final firestoreService = FirestoreService();
-    try {
-      final userDoc = await firestoreService.getUserDetails(userId);
-      // IMPORTANTE: Use a chave correta, ex: 'sermonSearchHistory'
-      if (userDoc != null && userDoc['sermonSearchHistory'] is List) {
-        history = List<Map<String, dynamic>>.from(
-            userDoc['sermonSearchHistory'] as List<dynamic>);
-      }
-      print(
-          "SermonSearchMiddleware: Histórico de busca de sermões carregado do Firestore para $userId.");
-    } catch (e) {
-      print(
-          "SermonSearchMiddleware: Erro ao carregar histórico de busca de sermões do Firestore para $userId: $e");
-    }
-  } else if (isGuest) {
-    // Usuário Convidado
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String? historyJson =
-          prefs.getString(_sermonSearchHistoryKeyPrefsGuest);
-      if (historyJson != null) {
-        final List<dynamic> decodedList = jsonDecode(historyJson);
-        history = decodedList
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-      }
-      print(
-          "SermonSearchMiddleware: Histórico de busca de sermões carregado do SharedPreferences para convidado.");
-    } catch (e) {
-      print(
-          "SermonSearchMiddleware: Erro ao carregar histórico de busca de sermões do SharedPreferences para convidado: $e");
-    }
-  }
-
-  history.sort((a, b) {
-    final DateTime? timeA = DateTime.tryParse(a['timestamp'] as String? ?? '');
-    final DateTime? timeB = DateTime.tryParse(b['timestamp'] as String? ?? '');
-    if (timeA == null && timeB == null) return 0;
-    if (timeA == null) return 1;
-    if (timeB == null) return -1;
-    return timeB.compareTo(timeA); // Mais recente primeiro
-  });
-
-  store.dispatch(SermonSearchHistoryLoadedAction(history));
-}
-
-// Handler para a ação de buscar sermões
-void _handleSearchSermons(
-  Store<AppState> store,
-  SearchSermonsAction action,
-  NextDispatcher next,
-) async {
-  // 1. Verifica se uma busca ou seu processamento de custo já está em andamento.
-  if (store.state.sermonSearchState.isLoading ||
-      store.state.sermonSearchState.isProcessingPayment) {
+/// Handler principal que executa a busca de sermões, gerenciando custos e erros.
+void _handleSearchSermons(Store<AppState> store, SearchSermonsAction action,
+    NextDispatcher next) async {
+  // Evita buscas duplicadas
+  if (store.state.sermonSearchState.isLoading) {
     print(
-        "SermonSearchMiddleware: Busca de sermões ou pagamento/dedução já em andamento. Nova solicitação ignorada para query: '${action.query}'.");
+        "SermonSearchMiddleware: Busca de sermões já em andamento. Ignorando.");
     return;
   }
 
-  // 2. Despacha a ação para o reducer (que seta isLoading e isProcessingPayment para true).
-  next(action);
+  next(
+      action); // Reducer vai setar isLoading = true e isProcessingPayment = true
 
-  // 3. Prepara variáveis e pega o estado atualizado.
   final BuildContext? currentContext = navigatorKey.currentContext;
   final UserState currentUserState = store.state.userState;
 
   final String? userId = currentUserState.userId;
   final bool isGuest = currentUserState.isGuestUser;
-  final int userCoins = currentUserState.userCoins;
+  final int originalUserCoins = currentUserState.userCoins;
   final bool isPremium =
       store.state.subscriptionState.status == SubscriptionStatus.premiumActive;
 
-  if (userId == null && !isGuest) {
-    print(
-        "SermonSearchMiddleware: Usuário nem logado, nem convidado. Busca de sermões cancelada.");
-    if (currentContext != null && currentContext.mounted) {
-      ScaffoldMessenger.of(currentContext).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Você precisa estar logado ou continuar como convidado para buscar sermões.')),
-      );
-    }
-    store.dispatch(
-        SearchSermonsFailureAction("Usuário não autenticado ou convidado."));
-    return;
-  }
+  bool coinsWereDeducted = false;
 
-  // --- LÓGICA DE CUSTO E VERIFICAÇÃO DE MOEDAS ---
+  // --- LÓGICA DE CUSTO ---
   if (!isPremium) {
-    print(
-        "SermonSearchMiddleware: Usuário não é premium. Verificando moedas... Moedas: $userCoins, Custo: $SERMON_SEARCH_COST");
-    if (userCoins < SERMON_SEARCH_COST) {
+    if (originalUserCoins < SERMON_SEARCH_COST) {
       print(
-          "SermonSearchMiddleware: Moedas insuficientes ($userCoins). Custo: $SERMON_SEARCH_COST.");
+          "SermonSearchMiddleware: Moedas insuficientes ($originalUserCoins). Custo: $SERMON_SEARCH_COST.");
+      store.dispatch(SearchSermonsFailureAction('Moedas insuficientes.'));
       if (currentContext != null && currentContext.mounted) {
         ScaffoldMessenger.of(currentContext).showSnackBar(
           SnackBar(
             content: Text(
-                'Moedas insuficientes para buscar sermões. Você tem $userCoins, são necessárias $SERMON_SEARCH_COST.'),
+                'Moedas insuficientes para buscar sermões. Você tem $originalUserCoins, são necessárias $SERMON_SEARCH_COST.'),
             action: SnackBarAction(
                 label: 'Ganhar Moedas',
                 onPressed: () => store.dispatch(RequestRewardedAdAction())),
           ),
         );
       }
-      store.dispatch(SearchSermonsFailureAction('Moedas insuficientes.'));
       return;
     }
 
+    // Deduz moedas otimisticamente
     print("SermonSearchMiddleware: Deduzindo $SERMON_SEARCH_COST moedas.");
-    int newCoinTotal = userCoins - SERMON_SEARCH_COST;
-    store.dispatch(
-        UpdateUserCoinsAction(newCoinTotal)); // Atualiza o Redux imediatamente
+    int newCoinTotal = originalUserCoins - SERMON_SEARCH_COST;
+    store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+    coinsWereDeducted = true;
 
-    String? errorPersistence;
-    if (userId != null) {
-      // Usuário Logado
-      final firestoreService = FirestoreService();
-      try {
+    // Persiste a dedução no backend
+    final firestoreService = FirestoreService();
+    try {
+      if (userId != null) {
         await firestoreService.updateUserField(
             userId, 'userCoins', newCoinTotal);
-        print(
-            "SermonSearchMiddleware: Moedas (logado) atualizadas no Firestore: $newCoinTotal");
-      } catch (e) {
-        errorPersistence = "Erro ao deduzir moedas (Firestore): $e";
-      }
-    } else if (isGuest) {
-      // Usuário Convidado
-      try {
+      } else if (isGuest) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt(
-            guestUserCoinsPrefsKey, newCoinTotal); // <<< USA A CONSTANTE GLOBAL
-        print(
-            "SermonSearchMiddleware: Moedas (convidado) atualizadas no SharedPreferences: $newCoinTotal usando a chave '$guestUserCoinsPrefsKey'");
-      } catch (e) {
-        errorPersistence = "Erro ao salvar moedas (SharedPreferences): $e";
+        await prefs.setInt(guestUserCoinsPrefsKey, newCoinTotal);
       }
-    }
-
-    if (errorPersistence != null) {
-      print("SermonSearchMiddleware: $errorPersistence");
+    } catch (e) {
+      print("SermonSearchMiddleware: Erro ao persistir dedução de moedas: $e");
       store.dispatch(SearchSermonsFailureAction(
           'Erro ao processar custo da busca de sermões.'));
+      _reimburseSermonCoins(
+          store, userId, isGuest, originalUserCoins); // Reembolsa
       return;
     }
-    if (currentContext != null && currentContext.mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (currentContext.mounted) {
-          // Verifica novamente
-          ScaffoldMessenger.of(currentContext).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    '$SERMON_SEARCH_COST moedas usadas para a busca de sermões.')),
-          );
-        }
-      });
-    }
-  } else {
-    print(
-        "SermonSearchMiddleware: Usuário é premium. Busca de sermões sem custo.");
   }
-  // --- FIM DA LÓGICA DE CUSTO ---
 
-  // 4. Executa a busca real (chamada da Cloud Function)
+  // --- CHAMADA DA CLOUD FUNCTION ---
   try {
     print(
-        'SermonSearchMiddleware: Iniciando chamada da CF para query="${action.query}", topKSermons=${action.topKSermons}, topKParagraphs=${action.topKParagraphs}');
+        'SermonSearchMiddleware: Iniciando chamada da CF para query="${action.query}"...');
     final FirebaseFunctions functions =
         FirebaseFunctions.instanceFor(region: "southamerica-east1");
     final HttpsCallable callable =
@@ -255,11 +112,8 @@ void _handleSearchSermons(
       'query': action.query,
       'topKSermons': action.topKSermons,
       'topKParagraphs': action.topKParagraphs,
-      // 'filters': action.filters, // Se você tiver filtros para sermões
     };
 
-    print(
-        'SermonSearchMiddleware: Chamando Cloud Function "semantic_sermon_search" com dados: $requestData');
     final HttpsCallableResult<dynamic> response =
         await callable.call<Map<String, dynamic>>(requestData);
 
@@ -268,21 +122,9 @@ void _handleSearchSermons(
 
     if (rawResults is List) {
       resultsList = rawResults
-          .map((item) {
-            if (item is Map) {
-              return Map<String, dynamic>.from(item);
-            }
-            return <String, dynamic>{};
-          })
+          .map((item) => Map<String, dynamic>.from(item as Map))
           .where((item) => item.isNotEmpty)
           .toList();
-      print(
-          'SermonSearchMiddleware: Resultados de sermões da CF processados: ${resultsList.length} itens.');
-    } else if (rawResults != null) {
-      print(
-          'SermonSearchMiddleware: "sermons" da CF não é uma lista. Tipo: ${rawResults.runtimeType}');
-    } else {
-      print('SermonSearchMiddleware: "sermons" da CF é nulo.');
     }
 
     if (resultsList.isNotEmpty) {
@@ -290,23 +132,142 @@ void _handleSearchSermons(
     }
 
     store.dispatch(SearchSermonsSuccessAction(resultsList));
+    print('SermonSearchMiddleware: Busca de sermões bem-sucedida.');
   } on FirebaseFunctionsException catch (e) {
     print(
-        "SermonSearchMiddleware: Erro FirebaseFunctionsException (CF): code=${e.code}, message=${e.message}, details=${e.details}");
+        "SermonSearchMiddleware: Erro FirebaseFunctionsException (CF): code=${e.code}, message=${e.message}");
     store.dispatch(SearchSermonsFailureAction(
         "Erro na busca de sermões (${e.code}): ${e.message ?? 'Falha no servidor.'}"));
+
+    if (coinsWereDeducted) {
+      _reimburseSermonCoins(store, userId, isGuest, originalUserCoins);
+    }
   } catch (e) {
     print("SermonSearchMiddleware: Erro inesperado na chamada da CF: $e");
     store.dispatch(SearchSermonsFailureAction(
         "Ocorreu um erro desconhecido durante a busca de sermões."));
+
+    if (coinsWereDeducted) {
+      _reimburseSermonCoins(store, userId, isGuest, originalUserCoins);
+    }
   }
 }
 
-List<Middleware<AppState>> createSermonSearchMiddleware() {
-  return [
-    TypedMiddleware<AppState, SearchSermonsAction>(_handleSearchSermons).call,
-    TypedMiddleware<AppState, LoadSermonSearchHistoryAction>(
-            _handleLoadSermonSearchHistory)
-        .call,
-  ];
+/// Função auxiliar para reembolsar moedas em caso de falha na busca de sermões.
+void _reimburseSermonCoins(Store<AppState> store, String? userId, bool isGuest,
+    int originalCoinAmount) async {
+  print(
+      "SermonSearchMiddleware: Reembolsando moedas devido a erro. Valor original: $originalCoinAmount");
+
+  store.dispatch(UpdateUserCoinsAction(originalCoinAmount));
+
+  try {
+    if (userId != null) {
+      final firestoreService = FirestoreService();
+      await firestoreService.updateUserField(
+          userId, 'userCoins', originalCoinAmount);
+      print(
+          "SermonSearchMiddleware: Moedas (logado) reembolsadas no Firestore: $originalCoinAmount");
+    } else if (isGuest) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(guestUserCoinsPrefsKey, originalCoinAmount);
+      print(
+          "SermonSearchMiddleware: Moedas (convidado) reembolsadas no SharedPreferences: $originalCoinAmount");
+    }
+  } catch (e) {
+    print(
+        "SermonSearchMiddleware: Erro CRÍTICO ao persistir reembolso de moedas: $e");
+  }
+
+  final context = navigatorKey.currentContext;
+  if (context != null && context.mounted) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Suas moedas foram devolvidas devido a um erro na busca.')),
+        );
+      }
+    });
+  }
+}
+
+/// Carrega o histórico de buscas de sermões.
+void _handleLoadSermonSearchHistory(Store<AppState> store,
+    LoadSermonSearchHistoryAction action, NextDispatcher next) async {
+  next(action);
+
+  final userState = store.state.userState;
+  final userId = userState.userId;
+  final isGuest = userState.isGuestUser;
+  List<Map<String, dynamic>> history = [];
+
+  if (userId != null) {
+    final firestoreService = FirestoreService();
+    try {
+      final userDoc = await firestoreService.getUserDetails(userId);
+      if (userDoc != null && userDoc['sermonSearchHistory'] is List) {
+        history = List<Map<String, dynamic>>.from(
+            userDoc['sermonSearchHistory'] as List<dynamic>);
+      }
+    } catch (e) {
+      print(
+          "SermonSearchMiddleware: Erro ao carregar histórico de sermões do Firestore: $e");
+    }
+  } else if (isGuest) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? historyJson =
+          prefs.getString(_sermonSearchHistoryKeyPrefsGuest);
+      if (historyJson != null) {
+        history = (jsonDecode(historyJson) as List)
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+    } catch (e) {
+      print(
+          "SermonSearchMiddleware: Erro ao carregar histórico de sermões do SharedPreferences: $e");
+    }
+  }
+
+  history.sort((a, b) =>
+      (DateTime.tryParse(b['timestamp'] as String? ?? '') ?? DateTime(1900))
+          .compareTo(DateTime.tryParse(a['timestamp'] as String? ?? '') ??
+              DateTime(1900)));
+
+  store.dispatch(SermonSearchHistoryLoadedAction(history));
+}
+
+/// Salva o histórico de buscas de sermões.
+Future<void> _saveSermonSearchHistory(Store<AppState> store, String query,
+    List<Map<String, dynamic>> results) async {
+  store
+      .dispatch(AddSermonSearchToHistoryAction(query: query, results: results));
+
+  final List<Map<String, dynamic>> historyToPersist =
+      store.state.sermonSearchState.searchHistory;
+  final userState = store.state.userState;
+  final userId = userState.userId;
+  final isGuest = userState.isGuestUser;
+
+  if (userId != null) {
+    final firestoreService = FirestoreService();
+    try {
+      await firestoreService.updateUserField(
+          userId, 'sermonSearchHistory', historyToPersist);
+    } catch (e) {
+      print(
+          "SermonSearchMiddleware: Erro ao salvar histórico de sermões no Firestore: $e");
+    }
+  } else if (isGuest) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          _sermonSearchHistoryKeyPrefsGuest, jsonEncode(historyToPersist));
+    } catch (e) {
+      print(
+          "SermonSearchMiddleware: Erro ao salvar histórico de sermões no SharedPreferences: $e");
+    }
+  }
 }

@@ -673,28 +673,94 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
     );
   }
 
+  Widget _buildErrorWidget({
+    required BuildContext context,
+    required ThemeData theme,
+    required String message,
+    required String details,
+    required VoidCallback onRetry,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          // Para evitar overflow em telas menores
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.cloud_off_rounded, // Ícone diferente para variar
+                color: theme.iconTheme.color?.withOpacity(0.5),
+                size: 60,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                message,
+                style: theme.textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                details,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text("Tentar Novamente"),
+                onPressed: onRetry,
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // <<< FUNÇÃO MODIFICADA >>>
   Widget _buildSemanticSearchUI(
       ThemeData theme, SermonSearchState sermonSearchState) {
+    // 1. Loading...
     if (sermonSearchState.isLoading &&
         sermonSearchState.currentSermonQuery.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    // 2. Erro na busca (AQUI ESTÁ A MUDANÇA)
     if (!sermonSearchState.isLoading && sermonSearchState.error != null) {
-      return Center(
-          child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text("Erro na busca: ${sermonSearchState.error}",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: theme.colorScheme.error))));
+      return _buildErrorWidget(
+        context: context,
+        theme: theme,
+        message: "Não foi possível carregar os resultados.",
+        details: "Verifique sua conexão com a internet e tente novamente.",
+        onRetry: () {
+          // Redispacha a busca com a última query tentada
+          if (sermonSearchState.currentSermonQuery.isNotEmpty) {
+            StoreProvider.of<AppState>(context, listen: false).dispatch(
+                SearchSermonsAction(
+                    query: sermonSearchState.currentSermonQuery));
+          }
+        },
+      );
     }
+
+    // 3. Resultados da busca...
     if (sermonSearchState.sermonResults.isNotEmpty) {
       return _buildSemanticSearchResultsList(
           theme, sermonSearchState.sermonResults);
     }
+
+    // 4. Histórico de busca...
     if (sermonSearchState.currentSermonQuery.isEmpty &&
         sermonSearchState.searchHistory.isNotEmpty) {
       return _buildSearchHistoryList(theme, sermonSearchState.searchHistory);
     }
+
+    // 5. Nenhum resultado encontrado...
     if (!sermonSearchState.isLoading &&
         sermonSearchState.sermonResults.isEmpty &&
         sermonSearchState.currentSermonQuery.isNotEmpty) {
@@ -706,13 +772,15 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium)));
     }
+
+    // 6. Mensagem inicial...
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Text(
           sermonSearchState.isLoadingHistory
               ? "Carregando histórico de sermões..."
-              : "Digite algo para a busca inteligente de sermões. Seu histórico aparecerá aqui.",
+              : "Use a busca inteligente para encontrar sermões por tema ou sentimento.",
           style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.textTheme.bodySmall?.color?.withOpacity(0.7)),
           textAlign: TextAlign.center,
