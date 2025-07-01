@@ -1,134 +1,46 @@
 // lib/redux/middleware/bible_search_middleware.dart
-import 'dart:convert'; // Para jsonEncode e jsonDecode
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:septima_biblia/consts.dart';
+import 'package:septima_biblia/main.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
-import 'package:septima_biblia/redux/reducers/subscription_reducer.dart'; // Para SubscriptionStatus
-import 'package:septima_biblia/redux/store.dart'; // Para AppState
-import 'package:septima_biblia/main.dart'; // Para navigatorKey
-import 'package:septima_biblia/redux/actions.dart'; // Para UpdateUserCoinsAction, RequestRewardedAdAction
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart'; // Para DateFormat
-import 'package:septima_biblia/consts.dart'; // <<< IMPORTAR ARQUIVO DE CONSTANTES
 
-// Custo da busca semântica na Bíblia
+// Custo em moedas para realizar a busca semântica na Bíblia
 const int BIBLE_SEARCH_COST = 3;
-// Não precisa definir guestUserCoinsPrefsKeyForBibleSearch aqui se estiver importando de consts.dart
 
 // Chave específica para o histórico de busca bíblica do convidado no SharedPreferences
 const String _bibleSearchHistoryKeyPrefsGuest = 'bible_search_history_guest';
 
-// Função Helper para salvar histórico
-Future<void> _saveSearchHistory(Store<AppState> store, String query,
-    List<Map<String, dynamic>> results) async {
-  final userState = store.state.userState;
-  final userId = userState.userId;
-  final isGuest = userState.isGuestUser;
-
-  // 1. Atualiza o estado Redux primeiro (o reducer já limita a 50)
-  store.dispatch(AddSearchToHistoryAction(query: query, results: results));
-
-  // 2. Pega o histórico ATUALIZADO E JÁ LIMITADO do Redux para persistir
-  final List<Map<String, dynamic>> currentHistoryToPersist =
-      store.state.bibleSearchState.searchHistory;
-
-  if (userId != null) {
-    // Usuário Logado
-    final firestoreService = FirestoreService();
-    try {
-      await firestoreService.updateUserField(
-          userId, 'bibleSearchHistory', currentHistoryToPersist);
-      print(
-          "BibleSearchMiddleware: Histórico de busca bíblica (limitado a ${currentHistoryToPersist.length} itens) salvo no Firestore para usuário $userId.");
-    } catch (e) {
-      print(
-          "BibleSearchMiddleware: Erro ao salvar histórico de busca bíblica no Firestore: $e");
-    }
-  } else if (isGuest) {
-    // Usuário Convidado
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String historyJson = jsonEncode(currentHistoryToPersist);
-      await prefs.setString(_bibleSearchHistoryKeyPrefsGuest,
-          historyJson); // Usa a chave específica para o histórico
-      print(
-          "BibleSearchMiddleware: Histórico de busca bíblica (limitado a ${currentHistoryToPersist.length} itens) salvo no SharedPreferences para convidado.");
-    } catch (e) {
-      print(
-          "BibleSearchMiddleware: Erro ao salvar histórico de busca bíblica no SharedPreferences: $e");
-    }
-  }
+/// Cria a lista de middlewares responsáveis pela busca semântica na Bíblia.
+List<Middleware<AppState>> createBibleSearchMiddleware() {
+  return [
+    TypedMiddleware<AppState, SearchBibleSemanticAction>(
+            _handleSearchBibleSemantic)
+        .call,
+    TypedMiddleware<AppState, LoadSearchHistoryAction>(_handleLoadSearchHistory)
+        .call,
+  ];
 }
 
-// Handler para carregar o histórico
-void _handleLoadSearchHistory(Store<AppState> store,
-    LoadSearchHistoryAction action, NextDispatcher next) async {
-  next(action); // Reducer pode setar isLoadingHistory = true
-
-  final userState = store.state.userState;
-  final userId = userState.userId;
-  final isGuest = userState.isGuestUser;
-  List<Map<String, dynamic>> history = [];
-
-  if (userId != null) {
-    // Usuário Logado
-    final firestoreService = FirestoreService();
-    try {
-      final userDoc = await firestoreService.getUserDetails(userId);
-      if (userDoc != null && userDoc['bibleSearchHistory'] is List) {
-        history = List<Map<String, dynamic>>.from(
-            userDoc['bibleSearchHistory'] as List<dynamic>);
-      }
-      print(
-          "BibleSearchMiddleware: Histórico de busca bíblica carregado do Firestore para $userId.");
-    } catch (e) {
-      print(
-          "BibleSearchMiddleware: Erro ao carregar histórico de busca bíblica do Firestore para $userId: $e");
-    }
-  } else if (isGuest) {
-    // Usuário Convidado
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String? historyJson = prefs.getString(
-          _bibleSearchHistoryKeyPrefsGuest); // Usa a chave específica para o histórico
-      if (historyJson != null) {
-        final List<dynamic> decodedList = jsonDecode(historyJson);
-        history = decodedList
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-      }
-      print(
-          "BibleSearchMiddleware: Histórico de busca bíblica carregado do SharedPreferences para convidado.");
-    } catch (e) {
-      print(
-          "BibleSearchMiddleware: Erro ao carregar histórico de busca bíblica do SharedPreferences para convidado: $e");
-    }
-  }
-
-  history.sort((a, b) {
-    final DateTime? timeA = DateTime.tryParse(a['timestamp'] as String? ?? '');
-    final DateTime? timeB = DateTime.tryParse(b['timestamp'] as String? ?? '');
-    if (timeA == null && timeB == null) return 0;
-    if (timeA == null) return 1;
-    if (timeB == null) return -1;
-    return timeB.compareTo(timeA);
-  });
-
-  store.dispatch(SearchHistoryLoadedAction(history));
-}
-
+/// Handler principal que executa a busca semântica, gerenciando custos e erros.
 void _handleSearchBibleSemantic(Store<AppState> store,
     SearchBibleSemanticAction action, NextDispatcher next) async {
-  if (store.state.bibleSearchState.isLoading ||
-      store.state.bibleSearchState.isProcessingPayment) {
+  // Evita buscas duplicadas se uma já estiver em andamento
+  if (store.state.bibleSearchState.isLoading) {
     print(
-        "BibleSearchMiddleware: Busca ou pagamento/dedução já em andamento. Nova solicitação ignorada para query: '${action.query}'.");
+        "BibleSearchMiddleware: Busca já em andamento. Nova solicitação ignorada para query: '${action.query}'.");
     return;
   }
 
+  // Despacha a ação para o reducer, que setará isLoading = true
   next(action);
 
   final BuildContext? currentContext = navigatorKey.currentContext;
@@ -136,97 +48,60 @@ void _handleSearchBibleSemantic(Store<AppState> store,
 
   final String? userId = currentUserState.userId;
   final bool isGuest = currentUserState.isGuestUser;
-  final int userCoins = currentUserState.userCoins;
+  final int originalUserCoins = currentUserState.userCoins;
   final bool isPremium =
       store.state.subscriptionState.status == SubscriptionStatus.premiumActive;
 
-  if (userId == null && !isGuest) {
-    print(
-        "BibleSearchMiddleware: Usuário nem logado, nem convidado. Busca bíblica cancelada.");
-    if (currentContext != null && currentContext.mounted) {
-      ScaffoldMessenger.of(currentContext).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Você precisa estar logado ou continuar como convidado para buscar na Bíblia.')),
-      );
-    }
-    store.dispatch(SearchBibleSemanticFailureAction(
-        'Usuário não autenticado ou convidado.'));
-    return;
-  }
+  bool coinsWereDeducted = false;
 
+  // --- LÓGICA DE CUSTO ---
   if (!isPremium) {
-    print(
-        "BibleSearchMiddleware: Usuário não é premium. Verificando moedas... Moedas: $userCoins, Custo: $BIBLE_SEARCH_COST");
-    if (userCoins < BIBLE_SEARCH_COST) {
+    if (originalUserCoins < BIBLE_SEARCH_COST) {
       print(
-          "BibleSearchMiddleware: Moedas insuficientes ($userCoins). Custo: $BIBLE_SEARCH_COST.");
+          "BibleSearchMiddleware: Moedas insuficientes ($originalUserCoins). Custo: $BIBLE_SEARCH_COST.");
+      store.dispatch(SearchBibleSemanticFailureAction('Moedas insuficientes.'));
+
       if (currentContext != null && currentContext.mounted) {
         ScaffoldMessenger.of(currentContext).showSnackBar(
           SnackBar(
             content: Text(
-                'Moedas insuficientes. Você tem $userCoins, são necessárias $BIBLE_SEARCH_COST.'),
+                'Moedas insuficientes. Você tem $originalUserCoins, são necessárias $BIBLE_SEARCH_COST.'),
             action: SnackBarAction(
                 label: 'Ganhar Moedas',
                 onPressed: () => store.dispatch(RequestRewardedAdAction())),
           ),
         );
       }
-      store.dispatch(SearchBibleSemanticFailureAction('Moedas insuficientes.'));
       return;
     }
 
+    // Deduz as moedas otimisticamente
     print("BibleSearchMiddleware: Deduzindo $BIBLE_SEARCH_COST moedas.");
-    int newCoinTotal = userCoins - BIBLE_SEARCH_COST;
+    int newCoinTotal = originalUserCoins - BIBLE_SEARCH_COST;
     store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+    coinsWereDeducted = true;
 
-    String? errorPersistence;
-    if (userId != null) {
-      final firestoreService = FirestoreService();
-      try {
+    // Persiste a dedução no backend
+    final firestoreService = FirestoreService();
+    try {
+      if (userId != null) {
         await firestoreService.updateUserField(
             userId, 'userCoins', newCoinTotal);
-        print(
-            "BibleSearchMiddleware: Moedas (logado) atualizadas no Firestore: $newCoinTotal");
-      } catch (e) {
-        errorPersistence = "Erro ao deduzir moedas do Firestore (logado): $e";
-      }
-    } else if (isGuest) {
-      try {
+      } else if (isGuest) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt(
-            guestUserCoinsPrefsKey, newCoinTotal); // <<< USA A CONSTANTE GLOBAL
-        print(
-            "BibleSearchMiddleware: Moedas (convidado) atualizadas no SharedPreferences: $newCoinTotal");
-      } catch (e) {
-        errorPersistence =
-            "Erro ao salvar moedas do convidado (SharedPreferences): $e";
+        await prefs.setInt(guestUserCoinsPrefsKey, newCoinTotal);
       }
-    }
-
-    if (errorPersistence != null) {
-      print("BibleSearchMiddleware: $errorPersistence");
+    } catch (e) {
+      print("BibleSearchMiddleware: Erro ao persistir dedução de moedas: $e");
       store.dispatch(SearchBibleSemanticFailureAction(
           'Erro ao processar custo da busca.'));
+      // Reembolsa imediatamente se a persistência falhar
+      _reimburseCoins(store, userId, isGuest, originalUserCoins);
       return;
     }
-
-    if (currentContext != null && currentContext.mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (currentContext.mounted) {
-          ScaffoldMessenger.of(currentContext).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('$BIBLE_SEARCH_COST moedas usadas para a busca.')),
-          );
-        }
-      });
-    }
-  } else {
-    print(
-        "BibleSearchMiddleware: Usuário é premium. Busca sem custo de moedas.");
   }
 
+  // --- CHAMADA DA CLOUD FUNCTION ---
   try {
     print(
         'BibleSearchMiddleware: Iniciando chamada da Cloud Function para query="${action.query}"...');
@@ -252,13 +127,6 @@ void _handleSearchBibleSemantic(Store<AppState> store,
           .map((item) => Map<String, dynamic>.from(item as Map))
           .where((item) => item.isNotEmpty)
           .toList();
-      print(
-          'BibleSearchMiddleware: Resultados da CF processados: ${resultsList.length} itens.');
-    } else if (rawResults != null) {
-      print(
-          'BibleSearchMiddleware: "results" da CF não é uma lista. Tipo: ${rawResults.runtimeType}');
-    } else {
-      print('BibleSearchMiddleware: "results" da CF é nulo.');
     }
 
     if (resultsList.isNotEmpty) {
@@ -266,24 +134,157 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     }
 
     store.dispatch(SearchBibleSemanticSuccessAction(resultsList));
+    print('BibleSearchMiddleware: Busca semântica bem-sucedida.');
   } on FirebaseFunctionsException catch (e) {
     print(
-        "BibleSearchMiddleware: Erro FirebaseFunctionsException (CF): code=${e.code}, message=${e.message}, details=${e.details}");
+        "BibleSearchMiddleware: Erro FirebaseFunctionsException (CF): code=${e.code}, message=${e.message}");
     store.dispatch(SearchBibleSemanticFailureAction(
         "Erro na busca (${e.code}): ${e.message ?? 'Falha no servidor.'}"));
+
+    if (coinsWereDeducted) {
+      _reimburseCoins(store, userId, isGuest, originalUserCoins);
+    }
   } catch (e) {
     print("BibleSearchMiddleware: Erro inesperado na chamada da CF: $e");
     store.dispatch(SearchBibleSemanticFailureAction(
         "Ocorreu um erro desconhecido durante a busca."));
+
+    if (coinsWereDeducted) {
+      _reimburseCoins(store, userId, isGuest, originalUserCoins);
+    }
   }
 }
 
-List<Middleware<AppState>> createBibleSearchMiddleware() {
-  return [
-    TypedMiddleware<AppState, SearchBibleSemanticAction>(
-            _handleSearchBibleSemantic)
-        .call,
-    TypedMiddleware<AppState, LoadSearchHistoryAction>(_handleLoadSearchHistory)
-        .call,
-  ];
+/// Função auxiliar para reembolsar moedas ao usuário em caso de falha na busca.
+void _reimburseCoins(Store<AppState> store, String? userId, bool isGuest,
+    int originalCoinAmount) async {
+  print(
+      "BibleSearchMiddleware: Reembolsando moedas devido a erro. Valor original: $originalCoinAmount");
+
+  // 1. Atualiza o estado do Redux para o valor original
+  store.dispatch(UpdateUserCoinsAction(originalCoinAmount));
+
+  // 2. Persiste a devolução no backend/local storage
+  try {
+    if (userId != null) {
+      final firestoreService = FirestoreService();
+      await firestoreService.updateUserField(
+          userId, 'userCoins', originalCoinAmount);
+      print(
+          "BibleSearchMiddleware: Moedas (logado) reembolsadas no Firestore: $originalCoinAmount");
+    } else if (isGuest) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(guestUserCoinsPrefsKey, originalCoinAmount);
+      print(
+          "BibleSearchMiddleware: Moedas (convidado) reembolsadas no SharedPreferences: $originalCoinAmount");
+    }
+  } catch (e) {
+    print(
+        "BibleSearchMiddleware: Erro CRÍTICO ao persistir reembolso de moedas: $e");
+  }
+
+  // 3. Notifica o usuário (opcional, mas recomendado)
+  final context = navigatorKey.currentContext;
+  if (context != null && context.mounted) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Suas moedas foram devolvidas devido a um erro na busca.')),
+        );
+      }
+    });
+  }
+}
+
+/// Carrega o histórico de buscas do Firestore (se logado) ou SharedPreferences (se convidado).
+void _handleLoadSearchHistory(Store<AppState> store,
+    LoadSearchHistoryAction action, NextDispatcher next) async {
+  next(action); // Reducer pode setar isLoadingHistory = true
+
+  final userState = store.state.userState;
+  final userId = userState.userId;
+  final isGuest = userState.isGuestUser;
+  List<Map<String, dynamic>> history = [];
+
+  if (userId != null) {
+    final firestoreService = FirestoreService();
+    try {
+      final userDoc = await firestoreService.getUserDetails(userId);
+      if (userDoc != null && userDoc['bibleSearchHistory'] is List) {
+        history = List<Map<String, dynamic>>.from(
+            userDoc['bibleSearchHistory'] as List<dynamic>);
+      }
+    } catch (e) {
+      print(
+          "BibleSearchMiddleware: Erro ao carregar histórico de busca do Firestore: $e");
+    }
+  } else if (isGuest) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? historyJson =
+          prefs.getString(_bibleSearchHistoryKeyPrefsGuest);
+      if (historyJson != null) {
+        final List<dynamic> decodedList = jsonDecode(historyJson);
+        history = decodedList
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+      }
+    } catch (e) {
+      print(
+          "BibleSearchMiddleware: Erro ao carregar histórico de busca do SharedPreferences: $e");
+    }
+  }
+
+  // Ordena o histórico pela data, do mais recente para o mais antigo.
+  history.sort((a, b) {
+    final DateTime? timeA = DateTime.tryParse(a['timestamp'] as String? ?? '');
+    final DateTime? timeB = DateTime.tryParse(b['timestamp'] as String? ?? '');
+    if (timeA == null && timeB == null) return 0;
+    if (timeA == null) return 1;
+    if (timeB == null) return -1;
+    return timeB.compareTo(timeA);
+  });
+
+  store.dispatch(SearchHistoryLoadedAction(history));
+}
+
+/// Salva o histórico de buscas no local apropriado (Firestore ou SharedPreferences).
+Future<void> _saveSearchHistory(Store<AppState> store, String query,
+    List<Map<String, dynamic>> results) async {
+  final userState = store.state.userState;
+  final userId = userState.userId;
+  final isGuest = userState.isGuestUser;
+
+  // Primeiro, atualiza o estado do Redux. O reducer já limita a lista a 50 itens.
+  store.dispatch(AddSearchToHistoryAction(query: query, results: results));
+
+  // Pega o histórico ATUALIZADO do Redux para persistir.
+  final List<Map<String, dynamic>> currentHistoryToPersist =
+      store.state.bibleSearchState.searchHistory;
+
+  if (userId != null) {
+    final firestoreService = FirestoreService();
+    try {
+      await firestoreService.updateUserField(
+          userId, 'bibleSearchHistory', currentHistoryToPersist);
+      print(
+          "BibleSearchMiddleware: Histórico de busca bíblica salvo no Firestore.");
+    } catch (e) {
+      print(
+          "BibleSearchMiddleware: Erro ao salvar histórico de busca bíblica no Firestore: $e");
+    }
+  } else if (isGuest) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String historyJson = jsonEncode(currentHistoryToPersist);
+      await prefs.setString(_bibleSearchHistoryKeyPrefsGuest, historyJson);
+      print(
+          "BibleSearchMiddleware: Histórico de busca bíblica salvo no SharedPreferences para convidado.");
+    } catch (e) {
+      print(
+          "BibleSearchMiddleware: Erro ao salvar histórico de busca bíblica no SharedPreferences: $e");
+    }
+  }
 }

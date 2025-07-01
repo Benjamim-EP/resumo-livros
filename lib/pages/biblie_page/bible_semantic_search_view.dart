@@ -55,15 +55,21 @@ class _BibleSemanticSearchViewState extends State<BibleSemanticSearchView> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // 2. Erro na busca
+        // 2. Erro na busca (AQUI ESTÁ A MUDANÇA)
         if (!searchState.isLoading && searchState.error != null) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text("Erro na busca: ${searchState.error}",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: theme.colorScheme.error)),
-            ),
+          return _buildErrorWidget(
+            // <<< Usando o novo widget de erro
+            context: context,
+            theme: theme,
+            message: "Não foi possível carregar os resultados.",
+            details: "Verifique sua conexão com a internet e tente novamente.",
+            onRetry: () {
+              // Redispacha a busca com a última query tentada
+              if (searchState.currentQuery.isNotEmpty) {
+                StoreProvider.of<AppState>(context, listen: false).dispatch(
+                    SearchBibleSemanticAction(searchState.currentQuery));
+              }
+            },
           );
         }
 
@@ -110,6 +116,54 @@ class _BibleSemanticSearchViewState extends State<BibleSemanticSearchView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildErrorWidget({
+    required BuildContext context,
+    required ThemeData theme,
+    required String message,
+    required String details,
+    required VoidCallback onRetry,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        // <<< MUDANÇA AQUI: Adicionar SingleChildScrollView >>>
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.wifi_off_rounded,
+                color: theme.iconTheme.color?.withOpacity(0.5),
+                size: 60,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                message,
+                style: theme.textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                details,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text("Tentar Novamente"),
+                onPressed: onRetry,
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 
