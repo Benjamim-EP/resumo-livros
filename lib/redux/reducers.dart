@@ -192,7 +192,7 @@ class UserState {
 
   // Campos para dados que agora vêm de coleções separadas, mas mantidos no UserState para a UI
   final Map<String, Map<String, dynamic>> userHighlights;
-  final Map<String, String>
+  final List<Map<String, dynamic>>
       userNotes; // Notas de versículos bíblicos <verseId, noteText>
   final List<Map<String, dynamic>>
       userCommentHighlights; // Destaques de comentários bíblicos
@@ -254,7 +254,6 @@ class UserState {
     // this.verseSaves = const {},
     this.userDiaries = const [],
     this.userHighlights = const {}, // Inicializa vazio
-    this.userNotes = const {}, // Inicializa vazio
     this.userCommentHighlights = const [], // Inicializa vazio
 
     this.initialBibleBook,
@@ -281,6 +280,7 @@ class UserState {
     this.isGuestUser = false,
     this.initialBibleSectionIdToScrollTo, // NOVO
     this.allUserTags = const [],
+    this.userNotes = const [],
   });
 
   UserState copyWith({
@@ -301,7 +301,7 @@ class UserState {
     // Map<String, List<Map<String, dynamic>>>? verseSaves,
     List<Map<String, dynamic>>? userDiaries,
     Map<String, Map<String, dynamic>>? userHighlights,
-    Map<String, String>? userNotes,
+    List<Map<String, dynamic>>? userNotes,
     List<Map<String, dynamic>>? userCommentHighlights,
     String? initialBibleBook,
     int? initialBibleChapter,
@@ -526,6 +526,7 @@ UserState userReducer(UserState state, dynamic action) {
   }
   // Notas de Versículos Bíblicos
   else if (action is UserNotesLoadedAction) {
+    // A lógica aqui agora lida com uma lista de mapas
     return state.copyWith(userNotes: action.notes);
   }
   // SaveNoteAction e DeleteNoteAction são tratadas pelo middleware, que depois despacha LoadUserNotesAction.

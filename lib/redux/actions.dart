@@ -475,7 +475,9 @@ class AddCommentHighlightAction {
 class LoadUserNotesAction {}
 
 class UserNotesLoadedAction {
-  final Map<String, String> notes;
+  // ANTES: final Map<String, String> notes;
+  // DEPOIS:
+  final List<Map<String, dynamic>> notes; // Agora é uma lista de mapas
   UserNotesLoadedAction(this.notes);
 }
 

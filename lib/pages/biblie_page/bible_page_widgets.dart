@@ -477,7 +477,7 @@ class BiblePageWidgets {
     required int? selectedChapter,
     required BuildContext context,
     required Map<String, Map<String, dynamic>> userHighlights,
-    required Map<String, String> userNotes,
+    required List<Map<String, dynamic>> userNotes,
     required List<String> allUserTags, // <<< PARÂMETRO ADICIONADO
     required double fontSizeMultiplier,
     bool isHebrew = false,
@@ -493,7 +493,7 @@ class BiblePageWidgets {
     final Map<String, dynamic>? currentHighlightData = userHighlights[verseId];
     final String? currentHighlightColorHex =
         currentHighlightData?['color'] as String?;
-    final bool hasNote = userNotes.containsKey(verseId);
+    final bool hasNote = userNotes.any((note) => note['verseId'] == verseId);
     final backgroundColor = currentHighlightColorHex != null
         ? Color(int.parse(currentHighlightColorHex.replaceFirst('#', '0xff')))
             .withOpacity(0.30)
@@ -630,13 +630,21 @@ class BiblePageWidgets {
     return GestureDetector(
       key: key,
       onLongPress: () {
+        String? currentNoteText;
+        if (hasNote) {
+          // Usa 'firstWhere' para encontrar o mapa da nota e pegar o texto
+          currentNoteText = userNotes.firstWhere(
+            (note) => note['verseId'] == verseId,
+            orElse: () => {}, // Retorna mapa vazio se não encontrar
+          )['noteText'] as String?;
+        }
         // <<< MUDANÇA: Parâmetros agora são nomeados >>>
         _showVerseOptionsModal(
           context,
           verseId: verseId,
           currentHighlightColor: currentHighlightColorHex,
           currentHighlightData: currentHighlightData,
-          currentNote: userNotes[verseId],
+          currentNote: currentNoteText,
           bookAbbrev: selectedBook!,
           chapter: selectedChapter!,
           verseNum: verseNumber,

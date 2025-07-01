@@ -4,6 +4,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();
@@ -532,15 +533,44 @@ void Function(Store<AppState>, LoadUserNotesAction, NextDispatcher)
     next(action);
     final userId = store.state.userState.userId;
     if (userId == null) {
-      store.dispatch(UserNotesLoadedAction({}));
+      store.dispatch(UserNotesLoadedAction([]));
       return;
     }
+
     try {
-      final notes = await firestoreService.loadUserNotes(userId);
-      store.dispatch(UserNotesLoadedAction(notes));
+      // 1. O FirestoreService agora precisa retornar dados mais ricos
+      // Vamos assumir que loadUserNotesRaw agora retorna um Map<String, Map<String, dynamic>>
+      final Map<String, Map<String, dynamic>> rawNotes =
+          await firestoreService.loadUserNotesRaw(userId);
+
+      final List<Map<String, dynamic>> richNotesList = [];
+
+      for (var entry in rawNotes.entries) {
+        final verseId = entry.key;
+        final noteData = entry.value;
+
+        final String noteText = noteData['text'] as String? ?? '';
+        final Timestamp? timestamp = noteData['timestamp'] as Timestamp?;
+
+        final String verseContent =
+            await BiblePageHelper.loadSingleVerseText(verseId, 'nvi');
+
+        richNotesList.add({
+          'verseId': verseId,
+          'noteText': noteText,
+          'verseContent': verseContent,
+          'timestamp': timestamp, // <<< ADICIONA O TIMESTAMP AOS DADOS
+        });
+      }
+
+      // A ordenação agora será feita na UI para maior flexibilidade.
+      // Opcional: você pode ordenar aqui se sempre quiser a mesma ordem.
+
+      store.dispatch(UserNotesLoadedAction(richNotesList));
     } catch (e) {
-      print("UserMiddleware: Erro ao carregar notas de versículos: $e");
-      store.dispatch(UserNotesLoadedAction({}));
+      print(
+          "UserMiddleware: Erro ao carregar e enriquecer notas de versículos: $e");
+      store.dispatch(UserNotesLoadedAction([]));
     }
   };
 }

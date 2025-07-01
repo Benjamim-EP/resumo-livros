@@ -38,7 +38,7 @@ class SectionItemWidget extends StatefulWidget {
   final int chapterNumber;
   final String versesRangeStr;
   final Map<String, Map<String, dynamic>> userHighlights;
-  final Map<String, String> userNotes;
+  final List<Map<String, dynamic>> userNotes;
   final bool isHebrew;
   final bool isGreekInterlinear;
   final bool isRead;

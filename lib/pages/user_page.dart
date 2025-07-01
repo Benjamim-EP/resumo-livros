@@ -50,8 +50,6 @@ class _UserPageState extends State<UserPage> {
     'Progresso',
     'Destaques',
     'Notas',
-    'Histórico',
-    'Diário'
   ];
 
   @override
@@ -866,7 +864,7 @@ class _UserPageState extends State<UserPage> {
           ],
         );
       case 'Notas':
-        return StoreConnector<AppState, Map<String, String>>(
+        return StoreConnector<AppState, List<Map<String, dynamic>>>(
           converter: (store) => store.state.userState.userNotes,
           onInit: (store) {
             if (store.state.userState.userNotes.isEmpty &&
@@ -877,268 +875,237 @@ class _UserPageState extends State<UserPage> {
           builder: (context, notes) {
             if (notes.isEmpty) {
               return Center(
-                  child: Padding(
-                // Adiciona padding para a mensagem de "nenhuma nota"
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.speaker_notes_off_outlined,
-                        size: 60,
-                        color: theme.iconTheme.color?.withOpacity(0.5)),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Nenhuma nota adicionada ainda.",
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color:
-                            theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.speaker_notes_off_outlined,
+                          size: 60,
+                          color: theme.iconTheme.color?.withOpacity(0.5)),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Nenhuma nota adicionada ainda.",
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.7),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Você pode adicionar notas aos versículos na tela da Bíblia.",
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Você pode adicionar notas aos versículos na tela da Bíblia.",
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color
+                              ?.withOpacity(0.6),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ));
+              );
             }
-            // Ordenar as notas, por exemplo, pela referência (opcional, mas pode melhorar a consistência)
-            // Para uma ordenação mais robusta, seria ideal ter um timestamp associado a cada nota.
-            // Por agora, vamos manter a ordem que vem do Map, que pode não ser garantida.
-            // Se quiser ordenar por referência:
-            // final noteList = notes.entries.toList()
-            //   ..sort((a, b) => a.key.compareTo(b.key));
-            final noteList = notes.entries.toList();
+
+            // Ordena a lista de notas pelo timestamp, do mais recente para o mais antigo.
+            notes.sort((a, b) {
+              final Timestamp? tsA = a['timestamp'];
+              final Timestamp? tsB = b['timestamp'];
+              if (tsA == null && tsB == null) return 0;
+              if (tsA == null) return 1; // Itens sem data vão para o final
+              if (tsB == null) return -1;
+              return tsB.compareTo(tsA); // Compara Timestamps
+            });
 
             return ListView.builder(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12.0, vertical: 8.0), // Padding ajustado
-              itemCount: noteList.length,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              itemCount: notes.length,
               itemBuilder: (context, index) {
-                final entry = noteList[index];
-                final verseId = entry.key;
-                final noteText = entry.value;
+                final noteData = notes[index];
+                final verseId = noteData['verseId'] as String;
+                final noteText = noteData['noteText'] as String;
+                final verseContent = noteData['verseContent'] as String? ??
+                    'Carregando versículo...';
+
                 final parts = verseId.split('_');
                 String referenceText = verseId;
-                String bookNameOnly =
-                    parts.isNotEmpty ? parts[0].toUpperCase() : "Livro";
-                String chapterAndVerse = "Cap. ?, Ver. ?";
-
-                if (parts.length == 3 &&
-                    _localBooksMap != null &&
+                if (_localBooksMap != null &&
+                    parts.length == 3 &&
                     _localBooksMap!.containsKey(parts[0])) {
                   final bookData = _localBooksMap![parts[0]];
-                  bookNameOnly = bookData?['nome'] ?? parts[0].toUpperCase();
-                  referenceText = "$bookNameOnly ${parts[1]}:${parts[2]}";
-                  chapterAndVerse = "Cap. ${parts[1]}, Ver. ${parts[2]}";
-                } else if (parts.length == 3) {
-                  referenceText =
-                      "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
-                  chapterAndVerse = "Cap. ${parts[1]}, Ver. ${parts[2]}";
+                  final bookName = bookData?['nome'] ?? parts[0].toUpperCase();
+                  referenceText = "$bookName ${parts[1]}:${parts[2]}";
                 }
 
                 return Card(
                   elevation: 2,
-                  margin: const EdgeInsets.symmetric(
-                      vertical: 6.0), // Espaçamento entre cards
+                  margin: const EdgeInsets.symmetric(vertical: 6.0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                        color: theme.dividerColor.withOpacity(0.5),
-                        width: 0.5), // Borda sutil
+                        color: theme.dividerColor.withOpacity(0.5), width: 0.5),
                   ),
-                  child: InkWell(
-                    // Para tornar o card todo clicável para navegação
-                    onTap: () => _navigateToBibleVerseAndTab(verseId),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      referenceText, // Referência completa como título principal
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: theme.colorScheme
-                                            .primary, // Cor de destaque
-                                      ),
-                                    ),
-                                    // Text(
-                                    //   chapterAndVerse, // "Cap. X, Ver. Y" - opcional, se quiser separado
-                                    //   style: theme.textTheme.bodySmall?.copyWith(
-                                    //     color: theme.textTheme.bodySmall?.color?.withOpacity(0.7)
-                                    //   ),
-                                    // ),
-                                  ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                referenceText,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
-                              IconButton(
-                                icon: Icon(Icons.delete_outline,
-                                    color: theme.colorScheme.error
-                                        .withOpacity(0.7),
-                                    size: 22),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: "Remover Nota",
-                                visualDensity: VisualDensity
-                                    .compact, // Torna o ícone um pouco menor
-                                onPressed: () {
-                                  if (mounted) {
-                                    // Adicionar diálogo de confirmação
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext dialogContext) {
-                                        return AlertDialog(
-                                          title:
-                                              const Text("Confirmar Remoção"),
-                                          content: Text(
-                                              "Tem certeza que deseja remover esta nota para $referenceText?"),
-                                          actions: <Widget>[
-                                            TextButton(
-                                              child: const Text("Cancelar"),
-                                              onPressed: () {
-                                                Navigator.of(dialogContext)
-                                                    .pop();
-                                              },
-                                            ),
-                                            TextButton(
-                                              child: Text("Remover",
-                                                  style: TextStyle(
-                                                      color: theme
-                                                          .colorScheme.error)),
-                                              onPressed: () {
-                                                Navigator.of(dialogContext)
-                                                    .pop();
-                                                StoreProvider.of<AppState>(
-                                                        context,
-                                                        listen: false)
-                                                    .dispatch(DeleteNoteAction(
-                                                        verseId));
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                          Divider(
-                              color: theme.dividerColor.withOpacity(0.3),
-                              height: 16),
-                          Text(
-                            noteText,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              height: 1.45, // Melhor espaçamento entre linhas
-                              fontSize: 14.5,
                             ),
-                            maxLines: 4, // Aumenta um pouco o preview
-                            overflow: TextOverflow.ellipsis,
+                            IconButton(
+                              icon: Icon(Icons.delete_outline,
+                                  color:
+                                      theme.colorScheme.error.withOpacity(0.7),
+                                  size: 22),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              tooltip: "Remover Nota",
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext dialogContext) {
+                                    return AlertDialog(
+                                      title: const Text("Confirmar Remoção"),
+                                      content: Text(
+                                          "Tem certeza que deseja remover esta nota para $referenceText?"),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          child: const Text("Cancelar"),
+                                          onPressed: () =>
+                                              Navigator.of(dialogContext).pop(),
+                                        ),
+                                        TextButton(
+                                          child: Text("Remover",
+                                              style: TextStyle(
+                                                  color:
+                                                      theme.colorScheme.error)),
+                                          onPressed: () {
+                                            Navigator.of(dialogContext).pop();
+                                            StoreProvider.of<AppState>(context,
+                                                    listen: false)
+                                                .dispatch(
+                                                    DeleteNoteAction(verseId));
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(vertical: 12.0),
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                              color: theme.colorScheme.surface.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: theme.dividerColor.withOpacity(0.2))),
+                          child: Text(
+                            verseContent,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.8),
+                                height: 1.4),
                           ),
-                          // Você pode adicionar um "Ver mais" se a nota for muito longa
-                          // if (noteText.length > 150) // Exemplo de condição
-                          //   Align(
-                          //     alignment: Alignment.centerRight,
-                          //     child: TextButton(
-                          //       child: Text("Ver mais", style: TextStyle(color: theme.colorScheme.secondary)),
-                          //       onPressed: () => _navigateToBibleVerseAndTab(verseId),
-                          //     ),
-                          //   )
-                        ],
-                      ),
+                        ),
+                        Text(
+                          noteText,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            height: 1.5,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
               },
             );
           },
-        );
+        ); // case 'Histórico':
+      //   return StoreConnector<AppState, List<Map<String, dynamic>>>(
+      //     converter: (store) => store.state.userState.readingHistory,
+      //     onInit: (store) {
+      //       if (store.state.userState.readingHistory.isEmpty &&
+      //           store.state.userState.userId != null) {
+      //         store.dispatch(LoadReadingHistoryAction());
+      //       }
+      //     },
+      //     builder: (context, history) {
+      //       if (history.isEmpty) {
+      //         return Center(
+      //             child: Text("Nenhum histórico de leitura encontrado.",
+      //                 style: TextStyle(
+      //                     color: theme.textTheme.bodyMedium?.color
+      //                         ?.withOpacity(0.7),
+      //                     fontSize: 16)));
+      //       }
+      //       final DateFormat formatter = DateFormat('dd/MM/yy \'às\' HH:mm');
+      //       return ListView.builder(
+      //         padding:
+      //             const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      //         itemCount: history.length,
+      //         itemBuilder: (context, index) {
+      //           final entry = history[index];
+      //           final bookAbbrev = entry['bookAbbrev'] ?? '?';
+      //           final chapter = entry['chapter'] ?? '?';
+      //           final bookName = _localBooksMap?[bookAbbrev]?['nome'] ??
+      //               bookAbbrev.toUpperCase();
+      //           final timestamp = entry['timestamp'] as DateTime?;
+      //           final verseIdForNav = "${bookAbbrev}_${chapter}_1";
+      //           return Card(
+      //             margin: const EdgeInsets.symmetric(vertical: 4.0),
+      //             shape: RoundedRectangleBorder(
+      //                 borderRadius: BorderRadius.circular(10)),
+      //             child: ListTile(
+      //               contentPadding: const EdgeInsets.symmetric(
+      //                   horizontal: 16.0, vertical: 10.0),
+      //               leading: Icon(Icons.history_edu_outlined,
+      //                   color: theme.iconTheme.color?.withOpacity(0.7),
+      //                   size: 28),
+      //               title: Text("$bookName $chapter",
+      //                   style: const TextStyle(
+      //                       fontWeight: FontWeight.bold, fontSize: 15)),
+      //               subtitle: Padding(
+      //                 padding: const EdgeInsets.only(top: 4.0),
+      //                 child: Text(
+      //                     timestamp != null
+      //                         ? formatter.format(timestamp.toLocal())
+      //                         : "Data indisponível",
+      //                     style: TextStyle(
+      //                         color: theme.textTheme.bodySmall?.color,
+      //                         fontSize: 13)),
+      //               ),
+      //               trailing: Icon(Icons.arrow_forward_ios,
+      //                   size: 18,
+      //                   color: theme.iconTheme.color?.withOpacity(0.7)),
+      //               onTap: () => _navigateToBibleVerseAndTab(verseIdForNav),
+      //             ),
+      //           );
+      //         },
+      //       );
+      //     },
+      //   );
 
-      case 'Histórico':
-        return StoreConnector<AppState, List<Map<String, dynamic>>>(
-          converter: (store) => store.state.userState.readingHistory,
-          onInit: (store) {
-            if (store.state.userState.readingHistory.isEmpty &&
-                store.state.userState.userId != null) {
-              store.dispatch(LoadReadingHistoryAction());
-            }
-          },
-          builder: (context, history) {
-            if (history.isEmpty) {
-              return Center(
-                  child: Text("Nenhum histórico de leitura encontrado.",
-                      style: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color
-                              ?.withOpacity(0.7),
-                          fontSize: 16)));
-            }
-            final DateFormat formatter = DateFormat('dd/MM/yy \'às\' HH:mm');
-            return ListView.builder(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              itemCount: history.length,
-              itemBuilder: (context, index) {
-                final entry = history[index];
-                final bookAbbrev = entry['bookAbbrev'] ?? '?';
-                final chapter = entry['chapter'] ?? '?';
-                final bookName = _localBooksMap?[bookAbbrev]?['nome'] ??
-                    bookAbbrev.toUpperCase();
-                final timestamp = entry['timestamp'] as DateTime?;
-                final verseIdForNav = "${bookAbbrev}_${chapter}_1";
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 10.0),
-                    leading: Icon(Icons.history_edu_outlined,
-                        color: theme.iconTheme.color?.withOpacity(0.7),
-                        size: 28),
-                    title: Text("$bookName $chapter",
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(
-                          timestamp != null
-                              ? formatter.format(timestamp.toLocal())
-                              : "Data indisponível",
-                          style: TextStyle(
-                              color: theme.textTheme.bodySmall?.color,
-                              fontSize: 13)),
-                    ),
-                    trailing: Icon(Icons.arrow_forward_ios,
-                        size: 18,
-                        color: theme.iconTheme.color?.withOpacity(0.7)),
-                    onTap: () => _navigateToBibleVerseAndTab(verseIdForNav),
-                  ),
-                );
-              },
-            );
-          },
-        );
-
-      case 'Diário':
-        return const UserDiaryPage();
+      // case 'Diário':
+      //   return const UserDiaryPage();
       default:
         return Center(
             child: Text('Aba não implementada: $_selectedTab',
@@ -1224,10 +1191,9 @@ class _UserPageState extends State<UserPage> {
         bool shouldShowPageLoader = _isLoadingBooksMap &&
             (_selectedTab == 'Destaques' ||
                 _selectedTab == 'Notas' ||
-                _selectedTab == 'Histórico' ||
                 _selectedTab == 'Progresso');
 
-        if (shouldShowPageLoader && _selectedTab != 'Diário') {
+        if (shouldShowPageLoader) {
           return Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
               body: Center(
@@ -1271,11 +1237,11 @@ class _UserPageState extends State<UserPage> {
               if (vm.userId != null) {
                 // Despacha todas as ações de atualização que você precisa
                 storeInstance.dispatch(LoadUserStatsAction());
-                storeInstance.dispatch(LoadUserDiariesAction());
+                // storeInstance.dispatch(LoadUserDiariesAction());
                 storeInstance.dispatch(LoadUserHighlightsAction());
                 storeInstance.dispatch(LoadUserCommentHighlightsAction());
                 storeInstance.dispatch(LoadUserNotesAction());
-                storeInstance.dispatch(LoadReadingHistoryAction());
+                // storeInstance.dispatch(LoadReadingHistoryAction());
                 storeInstance.dispatch(LoadBibleSectionCountsAction());
 
                 // Despacha a ação de progresso com o completer

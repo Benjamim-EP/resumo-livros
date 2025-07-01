@@ -8,10 +8,11 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
+import 'package:flutter/foundation.dart';
 
 class _BibleContentViewModel {
   final Map<String, Map<String, dynamic>> userHighlights;
-  final Map<String, String> userNotes;
+  final List<Map<String, dynamic>> userNotes;
   final Set<String> readSectionsForCurrentBook;
   final List<String> allUserTags;
 
@@ -41,7 +42,7 @@ class _BibleContentViewModel {
       other is _BibleContentViewModel &&
           runtimeType == other.runtimeType &&
           mapEquals(userHighlights, other.userHighlights) &&
-          mapEquals(userNotes, other.userNotes) &&
+          listEquals(userNotes, other.userNotes) &&
           setEquals(
               readSectionsForCurrentBook, other.readSectionsForCurrentBook) &&
           listEquals(allUserTags, other.allUserTags);
@@ -49,7 +50,7 @@ class _BibleContentViewModel {
   @override
   int get hashCode =>
       userHighlights.hashCode ^
-      userNotes.hashCode ^
+      Object.hashAll(userNotes) ^
       readSectionsForCurrentBook.hashCode ^
       allUserTags.hashCode;
 }

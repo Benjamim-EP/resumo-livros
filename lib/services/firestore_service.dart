@@ -900,11 +900,29 @@ class FirestoreService {
   }
 
   // --- Note Methods ---
+  Future<Map<String, Map<String, dynamic>>> loadUserNotesRaw(
+      String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('userVerseNotes')
+          .doc(userId)
+          .collection('notes')
+          .get();
+      Map<String, Map<String, dynamic>> notes = {};
+      for (var doc in snapshot.docs) {
+        notes[doc.id] = doc.data();
+      }
+      return notes;
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao carregar dados brutos das notas para $userId: $e");
+      return {};
+    }
+  }
 
   /// Salva ou atualiza uma nota de versículo.
   Future<void> saveNote(String userId, String verseId, String text) async {
     try {
-      // Garante que o documento pai /userVerseNotes/{userId} exista.
       await _db.collection('userVerseNotes').doc(userId).set(
           {'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
 
@@ -912,13 +930,15 @@ class FirestoreService {
           .collection('userVerseNotes')
           .doc(userId)
           .collection('notes')
-          .doc(verseId) // Usa verseId como ID do documento da nota
+          .doc(verseId)
           .set({
-        // 'verseId': verseId,
         'text': text,
-        'timestamp': FieldValue.serverTimestamp(),
+        // <<< ADICIONE ESTA LINHA >>>
+        'timestamp':
+            FieldValue.serverTimestamp(), // Adiciona o timestamp do servidor
       });
-      print("FirestoreService: Nota para $verseId salva para usuário $userId");
+      print(
+          "FirestoreService: Nota para $verseId salva para usuário $userId com timestamp.");
     } catch (e) {
       print(
           "FirestoreService: Erro ao salvar nota para $verseId (usuário $userId): $e");
