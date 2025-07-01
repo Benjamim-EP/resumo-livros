@@ -15,9 +15,6 @@ import 'middleware/book_middleware.dart';
 import 'middleware/author_middleware.dart';
 import 'middleware/user_middleware.dart';
 import 'middleware/topic_middleware.dart';
-import 'middleware/search_embedding_middleware.dart'; // Middleware de busca por query de TÓPICOS GERAIS
-import 'middleware/chat_middleware.dart';
-import 'middleware/recommendation_middleware.dart';
 import 'middleware/misc_middleware.dart';
 import 'middleware/theme_middleware.dart';
 import 'middleware/ad_middleware.dart';
@@ -119,9 +116,6 @@ final Store<AppState> store = Store<AppState>(
     ...createAuthorMiddleware(),
     ...createUserMiddleware(),
     ...createTopicMiddleware(),
-    ...createSearchEmbeddingMiddleware(), // Para busca de tópicos gerais
-    ...createChatMiddleware(),
-    ...createRecommendationMiddleware(),
     ...createMiscMiddleware(),
     ...createPaymentMiddleware(),
     ...createThemeMiddleware(),
