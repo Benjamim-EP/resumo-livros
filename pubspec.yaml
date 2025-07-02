@@ -57,7 +57,12 @@ dependencies:
   flutter_local_notifications: ^17.1.2 
   timezone: ^0.9.3 # Add this line
   permission_handler: ^12.0.0+1
-
+  flutter_localizations:
+    sdk: flutter
+  flutter_gen: ^5.10.0
+  
+flutter_localizations:
+    sdk: flutter
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -481,6 +486,7 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
+  
   fonts:
     - family: Poppins
       fonts:

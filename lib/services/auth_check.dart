@@ -16,6 +16,8 @@ import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBa
 import 'package:septima_biblia/services/navigation_service.dart';
 import 'package:septima_biblia/main.dart'; // Para o navigatorKey
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+
 class AuthCheck extends StatelessWidget {
   const AuthCheck({super.key});
 
@@ -31,8 +33,18 @@ class AuthCheck extends StatelessWidget {
         if (!vm.isLoggedIn && !vm.isGuest) {
           return MaterialApp(
               debugShowCheckedModeBanner: false,
-              // Um tema fixo para a tela de login
               theme: AppTheme.greenTheme,
+              locale: const Locale('pt', 'BR'), // <<< Aqui também
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [
+                Locale('pt', 'BR'),
+              ],
+              // Um tema fixo para a tela de login
+
               home: StreamBuilder<User?>(
                 stream: FirebaseAuth.instance.authStateChanges(),
                 builder: (context, snapshot) {
@@ -69,10 +81,18 @@ class AuthCheck extends StatelessWidget {
         return MaterialApp(
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
-          theme: vm.theme, // <<< Usa o tema do Redux
-          home: const MainAppScreen(), // <<< A tela principal
-          onGenerateRoute:
-              NavigationService.generateRoute, // Suas rotas globais
+          theme: vm.theme,
+          locale: const Locale('pt', 'BR'), // <<< Adicione isto
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('pt', 'BR'),
+          ],
+          home: const MainAppScreen(),
+          onGenerateRoute: NavigationService.generateRoute,
         );
       },
       onInit: (store) {

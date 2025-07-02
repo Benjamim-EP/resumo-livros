@@ -18,6 +18,7 @@ void main() async {
   // NENHUMA CHAMADA DE NOTIFICAÇÃO AQUI
 
   await initializeDateFormatting('pt_BR');
+
   await AppInitialization.init();
   store.dispatch(LoadSavedThemeAction());
   store.dispatch(LoadPendingBibleProgressAction());
