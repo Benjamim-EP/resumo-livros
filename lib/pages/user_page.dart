@@ -99,7 +99,9 @@ class _UserPageState extends State<UserPage> {
 
   // >>> INÍCIO DA CORREÇÃO <<<
   // Nova função para centralizar o carregamento inicial
-  void _dispatchInitialLoadActions(Store<AppState> storeInstance) {
+  void _dispatchInitialLoadActions(Store<AppState> storeInstance) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
     if (storeInstance.state.userState.userId != null) {
       // Carrega o progresso se ainda não foi solicitado
       if (!_initialProgressLoadDispatched &&
@@ -364,61 +366,99 @@ class _UserPageState extends State<UserPage> {
       case 'Progresso':
         return StoreConnector<AppState, _UserProgressViewModel>(
           converter: (store) => _UserProgressViewModel.fromStore(store),
-          distinct: true, // <<< ADICIONE distinct: true
+          distinct: true,
           onInit: (store) {
-            // >>> INÍCIO DA MUDANÇA <<<
-            // Esta lógica já foi movida para o initState do widget,
-            // mas vamos garantir que ela seja robusta aqui também.
+            // Despacha as ações de carregamento se elas ainda não foram solicitadas.
+            // A flag _initialProgressLoadDispatched previne múltiplas chamadas.
             if (!_initialProgressLoadDispatched) {
               _dispatchInitialLoadActions(store);
             }
-            // >>> FIM DA MUDANÇA <<<
           },
           builder: (context, vm) {
-            final theme = Theme.of(context); // Pega o tema aqui
+            final theme = Theme.of(context);
 
-            if (vm.isLoadingCounts || vm.isLoadingUserProgress) {
+            // Condição 1: A tela está carregando se:
+            // a) A flag de loading do Redux está ativa, OU
+            // b) O carregamento não está mais ativo, MAS os dados essenciais (counts) ainda não chegaram.
+            final bool isStillLoading = vm.isLoadingCounts ||
+                vm.isLoadingUserProgress ||
+                (!vm.isLoadingCounts &&
+                    vm.bibleSectionCounts.isEmpty &&
+                    vm.userId != null);
+
+            if (isStillLoading) {
               return Center(
                   child: CircularProgressIndicator(
                       color: theme.colorScheme.primary,
                       key: const ValueKey("progress_tab_loader_userpage")));
             }
+
+            // Condição 2: Erros de carregamento (após o loading ter terminado).
             if (vm.countsError != null) {
               return Center(
-                  child: Text(
-                "Erro ao carregar metadados: ${vm.countsError}",
-                style: TextStyle(color: theme.colorScheme.error),
-                textAlign: TextAlign.center,
+                  child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Erro ao carregar metadados da Bíblia: ${vm.countsError}",
+                  style: TextStyle(color: theme.colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
               ));
             }
             if (vm.userProgressError != null) {
               return Center(
-                  child: Text(
-                "Erro ao carregar seu progresso: ${vm.userProgressError}",
-                style: TextStyle(color: theme.colorScheme.error),
-                textAlign: TextAlign.center,
-              ));
-            }
-            if (vm.bibleSectionCounts.isEmpty &&
-                vm.userId != null &&
-                !vm.isLoadingCounts) {
-              return Center(
-                  child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                      "Não foi possível carregar os dados de progresso da Bíblia.",
-                      style: theme.textTheme.bodyMedium),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                      onPressed: () =>
-                          store.dispatch(LoadBibleSectionCountsAction()),
-                      child: Text("Tentar Novamente"))
-                ],
+                  child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Erro ao carregar seu progresso: ${vm.userProgressError}",
+                  style: TextStyle(color: theme.colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
               ));
             }
 
-            // Cálculo do progresso (como antes)
+            // Condição 3: Carregamento terminou, sem erros, mas o usuário ainda não leu nada.
+            // Esta condição agora é segura porque já sabemos que os dados de contagem (bibleSectionCounts) existem.
+            if (vm.allBooksProgress.isEmpty && vm.userId != null) {
+              return Center(
+                  child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.menu_book_outlined,
+                        size: 60,
+                        color: theme.colorScheme.primary.withOpacity(0.7)),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Comece sua jornada de leitura!",
+                      style: theme.textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Seu progresso na leitura da Bíblia aparecerá aqui assim que você marcar seções como lidas na tela da Bíblia.",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.chrome_reader_mode_outlined),
+                      label: const Text("Ir para a Bíblia"),
+                      onPressed: () {
+                        final store =
+                            StoreProvider.of<AppState>(context, listen: false);
+                        store.dispatch(RequestBottomNavChangeAction(
+                            1)); // Navega para a aba da Bíblia (índice 1)
+                      },
+                    )
+                  ],
+                ),
+              ));
+            }
+
+            // --- CÁLCULO DO PROGRESSO (Executado apenas se houver dados) ---
             int totalSectionsInBible =
                 (vm.bibleSectionCounts['total_secoes_biblia'] as int? ?? 1)
                     .clamp(1, 1000000);
@@ -480,8 +520,7 @@ class _UserPageState extends State<UserPage> {
                     bookMetaForName['nome'] ?? bookAbbrev.toUpperCase();
 
                 bookProgressWidgets.add(Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 6.0), // Aumentar padding vertical
+                  padding: const EdgeInsets.symmetric(vertical: 6.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -491,7 +530,6 @@ class _UserPageState extends State<UserPage> {
                           Expanded(
                             child: Text(bookFullName,
                                 style: theme.textTheme.titleSmall?.copyWith(
-                                    // Usar titleSmall ou bodyLarge
                                     fontWeight: FontWeight.w500,
                                     color: theme.colorScheme.onSurface
                                         .withOpacity(0.9))),
@@ -506,7 +544,7 @@ class _UserPageState extends State<UserPage> {
                       const SizedBox(height: 4),
                       LinearPercentIndicator(
                         percent: bookProgressPercent,
-                        lineHeight: 10.0, // Um pouco mais espesso
+                        lineHeight: 10.0,
                         barRadius: const Radius.circular(5),
                         backgroundColor:
                             theme.colorScheme.surfaceVariant.withOpacity(0.4),
@@ -520,61 +558,17 @@ class _UserPageState extends State<UserPage> {
               }
             }
 
-            if (vm.allBooksProgress.isEmpty &&
-                vm.userId != null &&
-                !vm.isLoadingUserProgress &&
-                vm.bibleSectionCounts.isNotEmpty) {
-              return Center(
-                  child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.menu_book_outlined,
-                        size: 60,
-                        color: theme.colorScheme.primary.withOpacity(0.7)),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Comece sua jornada de leitura!",
-                      style: theme.textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Seu progresso na leitura da Bíblia aparecerá aqui assim que você marcar seções como lidas.",
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.chrome_reader_mode_outlined),
-                      label: const Text("Ir para a Bíblia"),
-                      onPressed: () {
-                        final store =
-                            StoreProvider.of<AppState>(context, listen: false);
-                        store.dispatch(RequestBottomNavChangeAction(
-                            1)); // Navega para a aba da Bíblia (índice 1)
-                      },
-                    )
-                  ],
-                ),
-              ));
-            }
-
+            // --- RENDERIZAÇÃO DA UI DE PROGRESSO ---
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment
-                    .stretch, // Faz os filhos ocuparem a largura
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Card para Progresso Geral
                   Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
-                    color: theme.cardColor
-                        .withOpacity(0.8), // Levemente transparente
+                    color: theme.cardColor.withOpacity(0.8),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -588,8 +582,8 @@ class _UserPageState extends State<UserPage> {
                           ),
                           const SizedBox(height: 16),
                           CircularPercentIndicator(
-                            radius: 80.0, // Aumentado
-                            lineWidth: 12.0, // Aumentado
+                            radius: 80.0,
+                            lineWidth: 12.0,
                             percent: overallProgress,
                             center: Text(
                               "${(overallProgress * 100).toStringAsFixed(1)}%",
@@ -619,8 +613,6 @@ class _UserPageState extends State<UserPage> {
                     ),
                   ),
                   const SizedBox(height: 14),
-
-                  // Cards para Testamentos
                   Row(
                     children: [
                       Expanded(
@@ -630,9 +622,9 @@ class _UserPageState extends State<UserPage> {
                             totalReadSectionsAT,
                             totalSectionsInAT,
                             theme,
-                            Colors.orange.shade700 // Cor específica para AT
-                            ),
+                            Colors.orange.shade700),
                       ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildTestamentProgressCard(
                             "Novo Testamento",
@@ -640,27 +632,23 @@ class _UserPageState extends State<UserPage> {
                             totalReadSectionsNT,
                             totalSectionsInNT,
                             theme,
-                            Colors.teal.shade600 // Cor específica para NT
-                            ),
+                            Colors.teal.shade600),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // ExpansionTile para Progresso Detalhado
                   Theme(
                     data: theme.copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       key: const PageStorageKey<String>(
                           'book_progress_expansion_tile_userpage'),
                       tilePadding: const EdgeInsets.symmetric(
-                          horizontal: 8.0, vertical: 4.0), // Padding ajustado
-                      backgroundColor: theme.cardColor
-                          .withOpacity(0.5), // Fundo sutil quando expandido
+                          horizontal: 8.0, vertical: 4.0),
+                      backgroundColor: theme.cardColor.withOpacity(0.5),
                       collapsedBackgroundColor:
                           theme.cardColor.withOpacity(0.3),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)), // Bordas
+                          borderRadius: BorderRadius.circular(10)),
                       collapsedShape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                       title: Text(
@@ -688,24 +676,11 @@ class _UserPageState extends State<UserPage> {
                       },
                       initiallyExpanded: _showAllBookProgress,
                       children: <Widget>[
-                        if (bookProgressWidgets.isEmpty &&
-                            vm.userId != null &&
-                            !vm.isLoadingUserProgress)
-                          const Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: Text(
-                              "Seu progresso por livro aparecerá aqui.",
-                              style: TextStyle(fontStyle: FontStyle.italic),
-                              textAlign: TextAlign.center,
-                            ),
-                          )
-                        else
-                          Padding(
-                            // Padding para a lista de livros
-                            padding: const EdgeInsets.only(
-                                top: 0, left: 16.0, right: 16.0, bottom: 16.0),
-                            child: Column(children: bookProgressWidgets),
-                          ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              top: 0, left: 16.0, right: 16.0, bottom: 16.0),
+                          child: Column(children: bookProgressWidgets),
+                        ),
                       ],
                     ),
                   ),
@@ -715,7 +690,6 @@ class _UserPageState extends State<UserPage> {
             );
           },
         );
-      // ... (cases para 'Destaques', 'Notas', 'Histórico', 'Diário' como antes) ...
       // A lógica interna deles não precisa mudar para esta refatoração de layout do perfil/progresso.
       case 'Destaques':
         return Column(

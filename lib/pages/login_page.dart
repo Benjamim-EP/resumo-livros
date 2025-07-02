@@ -4,8 +4,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/sign_in_google.dart';
 
-class LoginPage extends StatelessWidget {
+// 1. Converter para StatefulWidget
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  // 2. Adicionar uma variável de estado para o loading
+  bool _isLoading = false;
+
+  Future<void> _handleGoogleSignIn() async {
+    // Evita múltiplos cliques enquanto já está carregando
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Chama a função de login. O AuthCheck cuidará da navegação.
+      await signInWithGoogle(context);
+    } catch (e) {
+      // O erro já é tratado dentro de signInWithGoogle com um SnackBar,
+      // mas podemos logar aqui se necessário.
+      print("Erro capturado na LoginPage: $e");
+    } finally {
+      // 3. Garante que o estado de loading seja desativado, mesmo se o login
+      // for cancelado ou falhar, e somente se o widget ainda estiver na tela.
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +84,7 @@ class LoginPage extends StatelessWidget {
                       style: TextStyle(color: Color(0xFFB0B0B0), fontSize: 16),
                     ),
                   ),
-                  const SizedBox(height: 120), // Aumenta o espaço
+                  const SizedBox(height: 120),
                   const Center(
                     child: Text(
                       'Conecte-se com',
@@ -58,20 +93,31 @@ class LoginPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   ElevatedButton(
-                    onPressed: () {
-                      // Apenas chama a função, sem await, sem setState.
-                      // O AuthCheck cuidará do resto.
-                      signInWithGoogle(context);
-                    },
+                    // 4. Desabilita o botão enquanto carrega ou chama a função
+                    onPressed: _isLoading ? null : _handleGoogleSignIn,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: const CircleBorder(),
                       padding: const EdgeInsets.all(16),
                     ),
-                    child: SvgPicture.asset('assets/icons/google.svg',
-                        width: 42, height: 42),
+                    // 5. Mostra o loader ou o ícone do Google
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 42,
+                            height: 42,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 3,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.blue),
+                            ),
+                          )
+                        : SvgPicture.asset(
+                            'assets/icons/google.svg',
+                            width: 42,
+                            height: 42,
+                          ),
                   ),
-                  const SizedBox(height: 150), // Aumenta o espaço
+                  const SizedBox(height: 150),
                 ],
               ),
             ),
