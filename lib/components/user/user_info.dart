@@ -18,11 +18,11 @@ class UserInfo extends StatelessWidget {
         final descricao = userDetails['descrição'] ?? 'Sem descrição';
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               nome,
-              textAlign: TextAlign.center,
+              textAlign: TextAlign.left,
               style: TextStyle(
                 // Usar uma cor primária do tema ou uma cor de texto proeminente
                 color: theme.colorScheme
@@ -35,12 +35,12 @@ class UserInfo extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 0),
               child: Text(
                 descricao.isNotEmpty
                     ? descricao
                     : "Adicione uma descrição nas configurações.",
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.left,
                 style: TextStyle(
                   // Usar uma cor de texto secundária do tema
                   color: theme.textTheme.bodyMedium
