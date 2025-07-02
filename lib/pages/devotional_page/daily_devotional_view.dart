@@ -281,7 +281,7 @@ class _DailyDevotionalViewState extends State<DailyDevotionalView> {
         else
           TextField(
             controller: _journalController,
-            maxLines: 7,
+            maxLines: 4,
             enabled: _userId != null,
             decoration: InputDecoration(
               hintText: _userId != null
