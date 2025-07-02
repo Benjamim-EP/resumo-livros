@@ -50,7 +50,7 @@ options.set_global_options(region=options.SupportedRegion.SOUTHAMERICA_EAST1)
 
 # --- Constantes do Google Play ---
 # O nome do seu pacote, conforme definido no seu app/build.gradle
-PACKAGE_NAME = "com.resumolivros.app" 
+PACKAGE_NAME = "com.septima.septimabiblia" 
 
 # --- Funções Auxiliares (Async) ---
 def _run_async_handler_wrapper(async_func):

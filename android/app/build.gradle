@@ -33,7 +33,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace = "com.resumolivros.app"
+    namespace = "com.septima.septimabiblia"
     compileSdk = 34 //flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
