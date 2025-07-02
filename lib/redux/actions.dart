@@ -611,3 +611,15 @@ class UserEnteredGuestModeAction {
 
 class UserExitedGuestModeAction {} // Ou use UserLoggedOutAction se fizer sentido
 
+// >>> NOVA AÇÃO PARA DELETAR CONTA <<<
+class DeleteUserAccountAction {
+  // Opcional: pode conter um Completer se a UI precisar esperar a conclusão.
+  DeleteUserAccountAction();
+}
+
+class DeleteUserAccountSuccessAction {}
+
+class DeleteUserAccountFailureAction {
+  final String error;
+  DeleteUserAccountFailureAction(this.error);
+}

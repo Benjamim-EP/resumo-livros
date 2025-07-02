@@ -1,5 +1,8 @@
 // lib/redux/middleware/user_middleware.dart
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -8,6 +11,79 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();
+  final FirebaseFunctions functions =
+      FirebaseFunctions.instanceFor(region: "southamerica-east1");
+
+  // >>> INÍCIO DO NOVO HANDLER <<<
+  void _handleDeleteUserAccount(Store<AppState> store,
+      DeleteUserAccountAction action, NextDispatcher next) async {
+    next(action);
+
+    final context = navigatorKey.currentContext;
+    if (context == null || !context.mounted) {
+      print("Middleware DeleteAccount: Contexto inválido.");
+      store.dispatch(
+          DeleteUserAccountFailureAction("Erro interno (contexto inválido)."));
+      return;
+    }
+
+    // Mostra um indicador de loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    try {
+      final HttpsCallable callable = functions.httpsCallable('deleteUserData');
+      final result = await callable.call();
+
+      print(
+          'Middleware DeleteAccount: Sucesso da Cloud Function - ${result.data}');
+
+      // Fecha o diálogo de loading
+      if (context.mounted) Navigator.pop(context);
+
+      // Despacha a ação de logout para limpar o estado
+      store.dispatch(UserLoggedOutAction());
+      store.dispatch(DeleteUserAccountSuccessAction());
+
+      // Navega para a tela de login
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sua conta foi excluída com sucesso.')),
+        );
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    } on FirebaseFunctionsException catch (e) {
+      print(
+          'Middleware DeleteAccount: Erro FirebaseFunctionsException - ${e.code} - ${e.message}');
+      if (context.mounted) Navigator.pop(context); // Fecha o loading
+      store.dispatch(DeleteUserAccountFailureAction(
+          e.message ?? 'Erro ao se comunicar com o servidor.'));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao excluir conta: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      print('Middleware DeleteAccount: Erro inesperado - $e');
+      if (context.mounted) Navigator.pop(context); // Fecha o loading
+      store.dispatch(
+          DeleteUserAccountFailureAction('Ocorreu um erro inesperado.'));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Ocorreu um erro inesperado ao excluir sua conta.')),
+        );
+      }
+    }
+  }
 
   return [
     // <<< ESTE HANDLER É CRUCIAL >>>
@@ -102,6 +178,8 @@ List<Middleware<AppState>> createUserMiddleware() {
         .call,
     TypedMiddleware<AppState, RemoveCommentHighlightAction>(
             _removeCommentHighlight(firestoreService))
+        .call,
+    TypedMiddleware<AppState, DeleteUserAccountAction>(_handleDeleteUserAccount)
         .call,
   ];
 }

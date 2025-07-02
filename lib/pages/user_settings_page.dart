@@ -221,7 +221,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             // Não é ideal atualizar controllers dentro do builder, pois pode causar loops.
             // _nameController.text = userDetails['nome'] ?? ''; // MOVIDO PARA onWillChange
             // _descriptionController.text = userDetails['descrição'] ?? ''; // MOVIDO PARA onWillChange
-
+            final theme = Theme.of(context);
             return SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Form(
@@ -394,11 +394,94 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ),
                     ),
                     const SizedBox(height: 20), // Espaço extra no final
+                    // >>> INÍCIO DAS ALTERAÇÕES NO BUILD <<<
+                    ElevatedButton.icon(
+                      icon: Icon(Icons.no_accounts_outlined,
+                          color: theme.colorScheme.error),
+                      label: Text(
+                        'Excluir Minha Conta',
+                        style: TextStyle(
+                            fontSize: 16, color: theme.colorScheme.onError),
+                      ),
+                      onPressed:
+                          _showDeleteAccountConfirmationDialog, // Chama o diálogo de confirmação
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            theme.colorScheme.error.withOpacity(0.15),
+                        foregroundColor:
+                            theme.colorScheme.error, // Cor do texto e ícone
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                              color: theme.colorScheme.error), // Borda vermelha
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             );
           }),
+    );
+  }
+
+  Future<void> _showDeleteAccountConfirmationDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // O usuário deve tomar uma decisão
+      builder: (BuildContext dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return AlertDialog(
+          backgroundColor: theme.dialogBackgroundColor,
+          title: Text('Excluir Conta Permanentemente?',
+              style: TextStyle(color: theme.colorScheme.error)),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(
+                  'Esta ação é irreversível.',
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Todos os seus dados, incluindo progresso, notas, destaques e histórico, serão permanentemente apagados.',
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar',
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7))),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+              ),
+              child: Text('Excluir Minha Conta',
+                  style: TextStyle(color: theme.colorScheme.onError)),
+              onPressed: () {
+                Navigator.of(dialogContext)
+                    .pop(); // Fecha o diálogo de confirmação
+                // Despacha a ação que será capturada pelo middleware
+                StoreProvider.of<AppState>(context, listen: false)
+                    .dispatch(DeleteUserAccountAction());
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
