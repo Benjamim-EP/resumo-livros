@@ -27,7 +27,6 @@ List<Middleware<AppState>> createUserMiddleware() {
       return;
     }
 
-    // Mostra um indicador de loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -44,20 +43,19 @@ List<Middleware<AppState>> createUserMiddleware() {
       print(
           'Middleware DeleteAccount: Sucesso da Cloud Function - ${result.data}');
 
-      // Fecha o diálogo de loading
       if (context.mounted) Navigator.pop(context);
 
-      // Despacha a ação de logout para limpar o estado
       store.dispatch(UserLoggedOutAction());
       store.dispatch(DeleteUserAccountSuccessAction());
 
-      // Navega para a tela de login
+      // >>>>> CORREÇÃO AQUI <<<<<
+      // REMOVA A LINHA DE NAVEGAÇÃO. O AuthCheck cuidará disso.
+      // O SnackBar pode não aparecer, pois a tela será destruída, mas isso corrige o bug principal.
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sua conta foi excluída com sucesso.')),
         );
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil('/login', (route) => false);
+        // Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false); // <<<<<<< REMOVA ESTA LINHA
       }
     } on FirebaseFunctionsException catch (e) {
       print(

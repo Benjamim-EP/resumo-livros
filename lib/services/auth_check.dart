@@ -23,113 +23,100 @@ class AuthCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // O StoreConnector agora vive aqui, fora do MaterialApp,
-    // ouvindo o estado de login e o tema.
     return StoreConnector<AppState, _ViewModel>(
       converter: (store) => _ViewModel.fromStore(store),
-      builder: (context, vm) {
-        // Envolve tudo em um MaterialApp "básico" para telas de login/loading.
-        // O MaterialApp "completo" com o tema do Redux será construído quando o usuário estiver logado.
-        if (!vm.isLoggedIn && !vm.isGuest) {
-          return MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.greenTheme,
-              locale: const Locale('pt', 'BR'), // <<< Aqui também
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('pt', 'BR'),
-              ],
-              // Um tema fixo para a tela de login
-
-              home: StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()));
-                  }
-                  // Se o stream tem dados (usuário logado), ele será pego pelo StoreConnector na próxima reconstrução.
-                  // Enquanto isso, mostramos um loader para evitar um flash da tela de login.
-                  if (snapshot.hasData) {
-                    return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()));
-                  }
-                  // Se não tem usuário Firebase, mostra a tela de Start.
-                  return const StartScreenPage();
-                },
-              ),
-              // Rotas para as telas de login/cadastro
-              onGenerateRoute: (settings) {
-                switch (settings.name) {
-                  case '/login':
-                    return MaterialPageRoute(builder: (_) => const LoginPage());
-                  case '/signup':
-                    return MaterialPageRoute(
-                        builder: (_) => const SignUpEmailPage());
-                  default:
-                    return MaterialPageRoute(
-                        builder: (_) => const StartScreenPage());
-                }
-              });
-        }
-
-        // Se o usuário está logado ou é convidado, constrói o MaterialApp completo.
-        return MaterialApp(
-          navigatorKey: navigatorKey,
-          debugShowCheckedModeBanner: false,
-          theme: vm.theme,
-          locale: const Locale('pt', 'BR'), // <<< Adicione isto
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('pt', 'BR'),
-          ],
-          home: const MainAppScreen(),
-          onGenerateRoute: NavigationService.generateRoute,
-        );
-      },
       onInit: (store) {
-        // Configura o listener do Firebase uma vez para despachar ações ao Redux.
+        // O listener é a ponte entre as mudanças de autenticação do Firebase e o estado do Redux.
+        // Ele garante que o Redux sempre reflita o status real de autenticação.
         FirebaseAuth.instance.authStateChanges().listen((user) {
           if (user != null) {
-            // Se o usuário logou, mas o Redux ainda não sabe, inicia o processamento.
+            // Se o Firebase tem um usuário, mas o Redux não (ex: após abrir o app),
+            // inicia o processo de carregar os dados desse usuário para o Redux.
             if (!store.state.userState.isLoggedIn) {
               _processUserLogin(store, user);
             }
           } else {
-            // Se o usuário deslogou, mas o Redux ainda acha que está logado.
-            if (store.state.userState.isLoggedIn) {
+            // Se o Firebase não tem um usuário (logout, exclusão de conta),
+            // garante que o Redux seja limpo, despachando a ação de logout.
+            if (store.state.userState.isLoggedIn ||
+                store.state.userState.isGuestUser) {
+              print(
+                  "AuthCheck Listener: Firebase user é nulo. Despachando UserLoggedOutAction.");
               store.dispatch(UserLoggedOutAction());
             }
           }
         });
       },
+      builder: (context, vm) {
+        // A decisão de qual tela/app mostrar é baseada 100% no estado do Redux (vm).
+        // Isso evita condições de corrida entre o Stream do Firebase e a renderização da UI.
+
+        // Se o usuário está logado ou é um convidado...
+        if (vm.isLoggedIn || vm.isGuest) {
+          // Mostra o MaterialApp principal do aplicativo, com o tema dinâmico do Redux.
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            debugShowCheckedModeBanner: false,
+            theme: vm.theme,
+            locale: const Locale('pt', 'BR'),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('pt', 'BR'),
+            ],
+            home: const MainAppScreen(),
+            onGenerateRoute: NavigationService.generateRoute,
+          );
+        } else {
+          // Se não está logado nem é convidado, mostra o MaterialApp de autenticação.
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme
+                .greenTheme, // Um tema fixo e leve para as telas de login.
+            home:
+                const StartScreenPage(), // A tela inicial é a raiz deste fluxo.
+            onGenerateRoute: (settings) {
+              // Rotas específicas para o fluxo de autenticação.
+              switch (settings.name) {
+                case '/login':
+                  return MaterialPageRoute(builder: (_) => const LoginPage());
+                case '/signup':
+                  return MaterialPageRoute(
+                      builder: (_) => const SignUpEmailPage());
+                default:
+                  return MaterialPageRoute(
+                      builder: (_) => const StartScreenPage());
+              }
+            },
+          );
+        }
+      },
     );
   }
 
+  /// Processa o login do usuário, criando ou carregando seus dados do Firestore
+  /// e despachando ações para popular o estado do Redux.
   Future<void> _processUserLogin(Store<AppState> store, User user) async {
     print("AuthCheck: Iniciando processamento para ${user.uid}");
 
-    // 1. Despacha ação de login para o estado Redux saber que estamos autenticados.
+    // 1. Informa ao Redux que o usuário está logado.
     store.dispatch(UserLoggedInAction(
       userId: user.uid,
       email: user.email ?? '',
       nome: user.displayName ?? 'Usuário',
     ));
 
-    // 2. Verifica/cria o documento do usuário no Firestore.
+    // 2. Referência ao documento do usuário no Firestore.
     final userDocRef =
         FirebaseFirestore.instance.collection('users').doc(user.uid);
     final docSnapshot = await userDocRef.get();
 
+    // 3. Verifica se é um novo usuário ou um usuário existente.
     if (!docSnapshot.exists) {
+      // 3.1. Se for um novo usuário, cria seu documento no Firestore.
       print("AuthCheck: Novo usuário. Criando documentos...");
       final initialName =
           user.displayName ?? user.email?.split('@')[0] ?? 'Novo Usuário';
@@ -159,6 +146,7 @@ class AuthCheck extends StatelessWidget {
       await userDocRef.set(newUserFirestoreData);
       store.dispatch(UserDetailsLoadedAction(newUserFirestoreData));
 
+      // Cria o documento de progresso da Bíblia para o novo usuário.
       final commonData = {
         'userId': user.uid,
         'createdAt': FieldValue.serverTimestamp()
@@ -171,24 +159,26 @@ class AuthCheck extends StatelessWidget {
           {...commonData, 'books': {}});
       await batch.commit();
     } else {
+      // 3.2. Se o usuário já existe, carrega seus dados.
       print("AuthCheck: Usuário existente. Carregando detalhes.");
       store.dispatch(UserDetailsLoadedAction(docSnapshot.data()!));
     }
 
-    print(
-        "AuthCheck: Despachando ações para carregar dados adicionais (progresso, notas, etc).");
+    // 4. Despacha ações para carregar todos os outros dados associados ao usuário.
+    print("AuthCheck: Despachando ações para carregar dados adicionais.");
     store.dispatch(LoadAllBibleProgressAction());
     store.dispatch(LoadUserNotesAction());
     store.dispatch(LoadUserHighlightsAction());
     store.dispatch(LoadAdLimitDataAction());
     store.dispatch(LoadUserDiariesAction());
     store.dispatch(LoadUserCollectionsAction());
+    store.dispatch(LoadUserTagsAction());
 
-    print("AuthCheck: Processamento concluído para ${user.uid}.");
+    print("AuthCheck: Processamento de login concluído para ${user.uid}.");
   }
 }
 
-// ViewModel para o StoreConnector em AuthCheck
+/// ViewModel para conectar o AuthCheck ao estado do Redux.
 class _ViewModel {
   final bool isLoggedIn;
   final bool isGuest;
