@@ -235,6 +235,7 @@ class UserState {
   final bool isGuestUser; // NOVO
 
   final List<String> allUserTags;
+  final bool isLoadingLogin;
 
   UserState({
     this.userId,
@@ -280,6 +281,7 @@ class UserState {
     this.isGuestUser = false,
     this.initialBibleSectionIdToScrollTo, // NOVO
     this.allUserTags = const [],
+    this.isLoadingLogin = false,
     this.userNotes = const [],
   });
 
@@ -335,6 +337,7 @@ class UserState {
     bool? isGuestUser, // NOVO
     String? initialBibleSectionIdToScrollTo, // NOVO
     List<String>? allUserTags, // <<< NOVO PARÂMETRO
+    bool? isLoadingLogin,
   }) {
     return UserState(
       userId: userId ?? this.userId,
@@ -416,6 +419,7 @@ class UserState {
           : (initialBibleSectionIdToScrollTo ??
               this.initialBibleSectionIdToScrollTo), // NOVO
       allUserTags: allUserTags ?? this.allUserTags,
+      isLoadingLogin: isLoadingLogin ?? this.isLoadingLogin,
     );
   }
 }
@@ -429,6 +433,7 @@ UserState userReducer(UserState state, dynamic action) {
           .nome, // Nome inicial, pode ser atualizado por UserDetailsLoadedAction
       isLoggedIn: true,
       isGuestUser: false,
+      isLoadingLogin: true,
       // Não reseta moedas ou outros dados aqui, UserDetailsLoadedAction ou
       // uma ação de carregamento de dados do userBibleProgress cuidará disso.
     );
@@ -476,6 +481,7 @@ UserState userReducer(UserState state, dynamic action) {
       // como nome, email (se puderem mudar e forem refletidos no doc principal), etc.
       nome: action.userDetails['nome'] as String? ?? state.nome,
       email: action.userDetails['email'] as String? ?? state.email,
+      isLoadingLogin: false,
     );
   }
   // Ações de Coleções de Tópicos de Livros (não bíblicos)

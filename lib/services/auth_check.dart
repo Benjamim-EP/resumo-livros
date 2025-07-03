@@ -30,18 +30,14 @@ class AuthCheck extends StatelessWidget {
         // Ele garante que o Redux sempre reflita o status real de autenticação.
         FirebaseAuth.instance.authStateChanges().listen((user) {
           if (user != null) {
-            // Se o Firebase tem um usuário, mas o Redux não (ex: após abrir o app),
-            // inicia o processo de carregar os dados desse usuário para o Redux.
-            if (!store.state.userState.isLoggedIn) {
+            if (!store.state.userState.isLoggedIn &&
+                !store.state.userState.isLoadingLogin) {
+              // Evita reprocessar durante o login
               _processUserLogin(store, user);
             }
           } else {
-            // Se o Firebase não tem um usuário (logout, exclusão de conta),
-            // garante que o Redux seja limpo, despachando a ação de logout.
             if (store.state.userState.isLoggedIn ||
                 store.state.userState.isGuestUser) {
-              print(
-                  "AuthCheck Listener: Firebase user é nulo. Despachando UserLoggedOutAction.");
               store.dispatch(UserLoggedOutAction());
             }
           }
@@ -50,6 +46,18 @@ class AuthCheck extends StatelessWidget {
       builder: (context, vm) {
         // A decisão de qual tela/app mostrar é baseada 100% no estado do Redux (vm).
         // Isso evita condições de corrida entre o Stream do Firebase e a renderização da UI.
+        if (vm.isLoadingLogin) {
+          return MaterialApp(
+            // Precisa de um MaterialApp para o Scaffold funcionar
+            debugShowCheckedModeBanner: false,
+            home: Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              body: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
 
         // Se o usuário está logado ou é um convidado...
         if (vm.isLoggedIn || vm.isGuest) {
@@ -183,15 +191,20 @@ class _ViewModel {
   final bool isLoggedIn;
   final bool isGuest;
   final ThemeData theme;
+  final bool isLoadingLogin;
 
   _ViewModel(
-      {required this.isLoggedIn, required this.isGuest, required this.theme});
+      {required this.isLoggedIn,
+      required this.isGuest,
+      required this.theme,
+      required this.isLoadingLogin});
 
   static _ViewModel fromStore(Store<AppState> store) {
     return _ViewModel(
       isLoggedIn: store.state.userState.isLoggedIn,
       isGuest: store.state.userState.isGuestUser,
       theme: store.state.themeState.activeThemeData,
+      isLoadingLogin: store.state.userState.isLoadingLogin,
     );
   }
 }
