@@ -251,12 +251,44 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2))))
                     else
-                      IconButton(
-                          icon: Icon(Icons.comment_outlined,
-                              color: defaultIconColor, size: 22),
-                          tooltip: "Ver Comentário da Seção",
-                          // Passa o status de premium para a função
-                          onPressed: () => _showCommentary(context)),
+                      // Usamos um Tooltip para manter a dica de "Ver Comentário"
+                      Tooltip(
+                        message: "Ver Comentário da Seção",
+                        child: InkWell(
+                          onTap: () => _showCommentary(context),
+                          // Define o formato do "splash" para ser circular
+                          customBorder: const CircleBorder(),
+                          child: Container(
+                            width:
+                                32, // Tamanho total do widget (imagem + borda)
+                            height: 32,
+                            padding:
+                                const EdgeInsets.all(2.0), // Espessura da borda
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary
+                                  .withOpacity(0.7), // Cor da borda
+                              shape: BoxShape.circle,
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/matthew_henry.jpg', // <<< Caminho para sua imagem
+                                fit: BoxFit
+                                    .cover, // Garante que a imagem preencha o círculo
+                                // Opcional: Adicionar um fallback caso a imagem não carregue
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.comment_outlined,
+                                    color:
+                                        theme.iconTheme.color?.withOpacity(0.7),
+                                    size: 20,
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // >>>>> FIM DA ALTERAÇÃO <<<<<
                   ],
                 ),
                 Divider(color: theme.dividerColor.withOpacity(0.5)),
