@@ -79,6 +79,7 @@ def _run_async_handler_wrapper(async_func):
 def validate_google_play_purchase(req: https_fn.CallableRequest) -> dict:
     print("Handler validate_google_play_purchase chamado.")
     result = _run_async_handler_wrapper(_validate_google_play_purchase_async(req))
+    print("resultado", result)
     if result is None:
          raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Falha ao executar a lógica de validação assíncrona.")
     return result
