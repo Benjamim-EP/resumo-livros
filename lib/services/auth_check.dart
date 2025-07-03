@@ -15,7 +15,6 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart';
 import 'package:septima_biblia/services/navigation_service.dart';
 import 'package:septima_biblia/main.dart'; // Para o navigatorKey
-
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 class AuthCheck extends StatelessWidget {
@@ -26,16 +25,16 @@ class AuthCheck extends StatelessWidget {
     return StoreConnector<AppState, _ViewModel>(
       converter: (store) => _ViewModel.fromStore(store),
       onInit: (store) {
-        // O listener é a ponte entre as mudanças de autenticação do Firebase e o estado do Redux.
-        // Ele garante que o Redux sempre reflita o status real de autenticação.
+        // O listener continua sendo a ponte crucial entre o Firebase e o Redux.
         FirebaseAuth.instance.authStateChanges().listen((user) {
           if (user != null) {
-            if (!store.state.userState.isLoggedIn &&
-                !store.state.userState.isLoadingLogin) {
-              // Evita reprocessar durante o login
+            // A condição !isLoggedIn previne que o _processUserLogin seja chamado
+            // múltiplas vezes se o token do usuário for atualizado em segundo plano.
+            if (!store.state.userState.isLoggedIn) {
               _processUserLogin(store, user);
             }
           } else {
+            // Se o usuário do Firebase for nulo, garante que o estado do Redux reflita isso.
             if (store.state.userState.isLoggedIn ||
                 store.state.userState.isGuestUser) {
               store.dispatch(UserLoggedOutAction());
@@ -44,24 +43,9 @@ class AuthCheck extends StatelessWidget {
         });
       },
       builder: (context, vm) {
-        // A decisão de qual tela/app mostrar é baseada 100% no estado do Redux (vm).
-        // Isso evita condições de corrida entre o Stream do Firebase e a renderização da UI.
-        if (vm.isLoadingLogin) {
-          return MaterialApp(
-            // Precisa de um MaterialApp para o Scaffold funcionar
-            debugShowCheckedModeBanner: false,
-            home: Scaffold(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              body: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          );
-        }
-
-        // Se o usuário está logado ou é um convidado...
+        // Se o estado Redux diz que o usuário está logado ou é convidado...
         if (vm.isLoggedIn || vm.isGuest) {
-          // Mostra o MaterialApp principal do aplicativo, com o tema dinâmico do Redux.
+          // ...renderizamos o MaterialApp principal.
           return MaterialApp(
             navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
@@ -78,35 +62,58 @@ class AuthCheck extends StatelessWidget {
             home: const MainAppScreen(),
             onGenerateRoute: NavigationService.generateRoute,
           );
-        } else {
-          // Se não está logado nem é convidado, mostra o MaterialApp de autenticação.
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme
-                .greenTheme, // Um tema fixo e leve para as telas de login.
-            home:
-                const StartScreenPage(), // A tela inicial é a raiz deste fluxo.
-            onGenerateRoute: (settings) {
-              // Rotas específicas para o fluxo de autenticação.
-              switch (settings.name) {
-                case '/login':
-                  return MaterialPageRoute(builder: (_) => const LoginPage());
-                case '/signup':
-                  return MaterialPageRoute(
-                      builder: (_) => const SignUpEmailPage());
-                default:
-                  return MaterialPageRoute(
-                      builder: (_) => const StartScreenPage());
-              }
-            },
-          );
         }
+
+        // Se o usuário NÃO está logado no Redux, mostramos o fluxo de autenticação.
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.greenTheme,
+          locale: const Locale('pt', 'BR'),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('pt', 'BR'),
+          ],
+          home: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              // Enquanto o Firebase verifica o estado de autenticação...
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                // ...mostramos um loader.
+                return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()));
+              }
+              // Se o Firebase já tem um usuário (ex: login recente, app reiniciado)...
+              if (snapshot.hasData) {
+                // ...mostramos um loader. O onInit já chamou _processUserLogin
+                // e logo o estado Redux (vm.isLoggedIn) será true, trocando para o MaterialApp principal.
+                return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()));
+              }
+              // Se não há usuário no Firebase, mostramos a tela inicial para o usuário decidir.
+              return const StartScreenPage();
+            },
+          ),
+          onGenerateRoute: (settings) {
+            switch (settings.name) {
+              case '/login':
+                return MaterialPageRoute(builder: (_) => const LoginPage());
+              case '/signup':
+                return MaterialPageRoute(
+                    builder: (_) => const SignUpEmailPage());
+              default:
+                return MaterialPageRoute(
+                    builder: (_) => const StartScreenPage());
+            }
+          },
+        );
       },
     );
   }
 
-  /// Processa o login do usuário, criando ou carregando seus dados do Firestore
-  /// e despachando ações para popular o estado do Redux.
   Future<void> _processUserLogin(Store<AppState> store, User user) async {
     print("AuthCheck: Iniciando processamento para ${user.uid}");
 
@@ -124,7 +131,6 @@ class AuthCheck extends StatelessWidget {
 
     // 3. Verifica se é um novo usuário ou um usuário existente.
     if (!docSnapshot.exists) {
-      // 3.1. Se for um novo usuário, cria seu documento no Firestore.
       print("AuthCheck: Novo usuário. Criando documentos...");
       final initialName =
           user.displayName ?? user.email?.split('@')[0] ?? 'Novo Usuário';
@@ -154,7 +160,6 @@ class AuthCheck extends StatelessWidget {
       await userDocRef.set(newUserFirestoreData);
       store.dispatch(UserDetailsLoadedAction(newUserFirestoreData));
 
-      // Cria o documento de progresso da Bíblia para o novo usuário.
       final commonData = {
         'userId': user.uid,
         'createdAt': FieldValue.serverTimestamp()
@@ -167,7 +172,6 @@ class AuthCheck extends StatelessWidget {
           {...commonData, 'books': {}});
       await batch.commit();
     } else {
-      // 3.2. Se o usuário já existe, carrega seus dados.
       print("AuthCheck: Usuário existente. Carregando detalhes.");
       store.dispatch(UserDetailsLoadedAction(docSnapshot.data()!));
     }
@@ -186,25 +190,20 @@ class AuthCheck extends StatelessWidget {
   }
 }
 
-/// ViewModel para conectar o AuthCheck ao estado do Redux.
+// O ViewModel volta a ser simples, sem a flag de loading
 class _ViewModel {
   final bool isLoggedIn;
   final bool isGuest;
   final ThemeData theme;
-  final bool isLoadingLogin;
 
   _ViewModel(
-      {required this.isLoggedIn,
-      required this.isGuest,
-      required this.theme,
-      required this.isLoadingLogin});
+      {required this.isLoggedIn, required this.isGuest, required this.theme});
 
   static _ViewModel fromStore(Store<AppState> store) {
     return _ViewModel(
       isLoggedIn: store.state.userState.isLoggedIn,
       isGuest: store.state.userState.isGuestUser,
       theme: store.state.themeState.activeThemeData,
-      isLoadingLogin: store.state.userState.isLoadingLogin,
     );
   }
 }
