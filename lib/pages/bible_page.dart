@@ -217,21 +217,11 @@ class _BiblePageState extends State<BiblePage> {
     await prefs.setDouble(FONT_SIZE_PREF_KEY, multiplier);
   }
 
-  void _increaseFontSize() {
-    if (_currentFontSizeMultiplier < MAX_FONT_MULTIPLIER && mounted) {
+  void _updateFontSize(double newMultiplier) {
+    if (mounted) {
       setState(() {
-        _currentFontSizeMultiplier = (_currentFontSizeMultiplier + FONT_STEP)
-            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
-        _saveFontSizePreference(_currentFontSizeMultiplier);
-      });
-    }
-  }
-
-  void _decreaseFontSize() {
-    if (_currentFontSizeMultiplier > MIN_FONT_MULTIPLIER && mounted) {
-      setState(() {
-        _currentFontSizeMultiplier = (_currentFontSizeMultiplier - FONT_STEP)
-            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
+        _currentFontSizeMultiplier =
+            newMultiplier.clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
         _saveFontSizePreference(_currentFontSizeMultiplier);
       });
     }
@@ -1486,8 +1476,7 @@ class _BiblePageState extends State<BiblePage> {
                           }
                         });
                     },
-                    onIncreaseFontSize: _increaseFontSize,
-                    onDecreaseFontSize: _decreaseFontSize,
+                    onFontSizeChanged: _updateFontSize,
                   ),
                 Expanded(
                   child: (selectedBook == null ||

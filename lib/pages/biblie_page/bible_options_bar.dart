@@ -1,6 +1,7 @@
 // lib/pages/biblie_page/bible_options_bar.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
+import 'package:septima_biblia/pages/biblie_page/font_size_slider_dialog.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
@@ -25,8 +26,7 @@ class BibleOptionsBar extends StatelessWidget {
   final VoidCallback onToggleFocusMode;
   final VoidCallback onToggleHebrewInterlinear;
   final VoidCallback onToggleGreekInterlinear;
-  final VoidCallback onIncreaseFontSize;
-  final VoidCallback onDecreaseFontSize;
+  final Function(double) onFontSizeChanged;
 
   const BibleOptionsBar({
     super.key,
@@ -48,8 +48,7 @@ class BibleOptionsBar extends StatelessWidget {
     required this.onToggleFocusMode,
     required this.onToggleHebrewInterlinear,
     required this.onToggleGreekInterlinear,
-    required this.onIncreaseFontSize,
-    required this.onDecreaseFontSize,
+    required this.onFontSizeChanged,
   });
 
   // Função para mostrar o diálogo de assinatura premium
@@ -75,6 +74,24 @@ class BibleOptionsBar extends StatelessWidget {
             child: const Text('Ver Planos'),
           ),
         ],
+      ),
+    );
+  }
+
+// NOVA FUNÇÃO HELPER
+  void _showFontSizeDialog(BuildContext context) {
+    final double baseFontSize = 16.0;
+
+    showDialog(
+      context: context,
+      builder: (context) => FontSizeSliderDialog(
+        initialSize: currentFontSizeMultiplier * baseFontSize,
+        minSize: minFontMultiplier * baseFontSize,
+        maxSize: maxFontMultiplier * baseFontSize,
+        onSizeChanged: (newAbsoluteSize) {
+          final newMultiplier = newAbsoluteSize / baseFontSize;
+          onFontSizeChanged(newMultiplier); // Chama a nova função diretamente
+        },
       ),
     );
   }
@@ -154,31 +171,31 @@ class BibleOptionsBar extends StatelessWidget {
                   elevation: 1),
             ),
 
-          // Botão de Estudos
-          ElevatedButton.icon(
-            icon: const Icon(Icons.school_outlined, size: 18),
-            label: const Text("Estudos", style: TextStyle(fontSize: 12)),
-            onPressed: () {
-              interstitialManager
-                  .tryShowInterstitial(fromScreen: "BiblePage_To_StudyHub")
-                  .then((_) {
-                if (context.mounted) {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const StudyHubPage()));
-                }
-              });
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: theme.cardColor,
-                foregroundColor: theme.textTheme.bodyLarge?.color,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                elevation: 1),
-          ),
+          // // Botão de Estudos
+          // ElevatedButton.icon(
+          //   icon: const Icon(Icons.school_outlined, size: 18),
+          //   label: const Text("Estudos", style: TextStyle(fontSize: 12)),
+          //   onPressed: () {
+          //     interstitialManager
+          //         .tryShowInterstitial(fromScreen: "BiblePage_To_StudyHub")
+          //         .then((_) {
+          //       if (context.mounted) {
+          //         Navigator.push(
+          //             context,
+          //             MaterialPageRoute(
+          //                 builder: (context) => const StudyHubPage()));
+          //       }
+          //     });
+          //   },
+          //   style: ElevatedButton.styleFrom(
+          //       backgroundColor: theme.cardColor,
+          //       foregroundColor: theme.textTheme.bodyLarge?.color,
+          //       padding:
+          //           const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          //       shape: RoundedRectangleBorder(
+          //           borderRadius: BorderRadius.circular(20)),
+          //       elevation: 1),
+          // ),
 
           // Botão Modo Foco
           IconButton(
@@ -258,27 +275,11 @@ class BibleOptionsBar extends StatelessWidget {
               splashRadius: 20,
             ),
 
-          // Botões para Tamanho da Fonte
           IconButton(
-            icon: const Icon(Icons.text_decrease_outlined, size: 22),
-            tooltip: "Diminuir Fonte",
-            onPressed: currentFontSizeMultiplier > minFontMultiplier
-                ? onDecreaseFontSize
-                : null,
-            color: currentFontSizeMultiplier > minFontMultiplier
-                ? theme.iconTheme.color
-                : theme.disabledColor,
-            splashRadius: 20,
-          ),
-          IconButton(
-            icon: const Icon(Icons.text_increase_outlined, size: 22),
-            tooltip: "Aumentar Fonte",
-            onPressed: currentFontSizeMultiplier < maxFontMultiplier
-                ? onIncreaseFontSize
-                : null,
-            color: currentFontSizeMultiplier < maxFontMultiplier
-                ? theme.iconTheme.color
-                : theme.disabledColor,
+            icon: const Icon(Icons.format_size_outlined, size: 22),
+            tooltip: "Ajustar Fonte",
+            onPressed: () => _showFontSizeDialog(context),
+            color: theme.iconTheme.color,
             splashRadius: 20,
           ),
         ],

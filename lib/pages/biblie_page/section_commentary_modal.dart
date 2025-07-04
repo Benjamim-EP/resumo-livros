@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/pages/biblie_page/font_size_slider_dialog.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -76,28 +77,32 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
   }
 
   // <<< INÍCIO DA MODIFICAÇÃO 3/3: ADICIONAR FUNÇÕES DE CONTROLE DE FONTE >>>
-  void _increaseFontSize() {
-    if (_currentFontSizeMultiplier < MAX_FONT_MULTIPLIER) {
+  void _updateFontSize(double newMultiplier) {
+    if (mounted) {
       setState(() {
-        _currentFontSizeMultiplier = (_currentFontSizeMultiplier + FONT_STEP)
-            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
+        _currentFontSizeMultiplier =
+            newMultiplier.clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
       });
     }
   }
 
-  void _decreaseFontSize() {
-    if (_currentFontSizeMultiplier > MIN_FONT_MULTIPLIER) {
-      setState(() {
-        _currentFontSizeMultiplier = (_currentFontSizeMultiplier - FONT_STEP)
-            .clamp(MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
-      });
-    }
-  }
-  // <<< FIM DA MODIFICAÇÃO 3/3 >>>
+  void _showFontSizeDialog(BuildContext context) {
+    final double baseFontSize = 15.5; // Tamanho base que você definiu no modal
 
-  // ... (Cole aqui TODAS as suas outras funções de lógica sem alterações) ...
-  // _onTtsStateChanged, _startCommentaryPlayback, _handleAudioControl, etc.
-  // --- INÍCIO DO CÓDIGO A SER COLADO (SEM ALTERAÇÕES) ---
+    showDialog(
+      context: context,
+      builder: (dialogContext) => FontSizeSliderDialog(
+        initialSize: _currentFontSizeMultiplier * baseFontSize,
+        minSize: MIN_FONT_MULTIPLIER * baseFontSize,
+        maxSize: MAX_FONT_MULTIPLIER * baseFontSize,
+        onSizeChanged: (newAbsoluteSize) {
+          final newMultiplier = newAbsoluteSize / baseFontSize;
+          _updateFontSize(newMultiplier); // Atualiza o estado local do modal
+        },
+      ),
+    );
+  }
+
   void _onTtsStateChanged() {
     if (mounted && _playerState != _ttsManager.playerState.value) {
       setState(() => _playerState = _ttsManager.playerState.value);
@@ -574,42 +579,42 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: Text(
-                            widget.sectionTitle,
-                            style: titleStyle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          // >>>>>>>>>>>> INÍCIO DA MODIFICAÇÃO <<<<<<<<<<<<<<<
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.sectionTitle,
+                                style: titleStyle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              // ADICIONADO AQUI: Subtítulo com o nome do autor
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  "Comentário de Matthew Henry",
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                          // >>>>>>>>>>>> FIM DA MODIFICAÇÃO <<<<<<<<<<<<<<<
                         ),
                         // <<< INÍCIO DA MODIFICAÇÃO: Botões de Ação >>>
                         Row(
                           children: [
-                            // Controles de Fonte
+                            // Botão único para abrir o diálogo de fonte
                             IconButton(
-                              icon: const Icon(Icons.text_decrease_outlined),
+                              icon: const Icon(Icons.format_size_outlined),
                               iconSize: 22,
-                              tooltip: "Diminuir Fonte",
-                              color: _currentFontSizeMultiplier >
-                                      MIN_FONT_MULTIPLIER
-                                  ? theme.iconTheme.color
-                                  : theme.disabledColor,
-                              onPressed: _currentFontSizeMultiplier >
-                                      MIN_FONT_MULTIPLIER
-                                  ? _decreaseFontSize
-                                  : null,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.text_increase_outlined),
-                              iconSize: 22,
-                              tooltip: "Aumentar Fonte",
-                              color: _currentFontSizeMultiplier <
-                                      MAX_FONT_MULTIPLIER
-                                  ? theme.iconTheme.color
-                                  : theme.disabledColor,
-                              onPressed: _currentFontSizeMultiplier <
-                                      MAX_FONT_MULTIPLIER
-                                  ? _increaseFontSize
-                                  : null,
+                              tooltip: "Ajustar Fonte",
+                              color: theme.iconTheme.color,
+                              onPressed: () => _showFontSizeDialog(context),
                             ),
                             // Botão de Tradução
                             IconButton(
