@@ -110,7 +110,7 @@ flutter:
     - assets/promises/promessas.json
 
     - assets/devotional/
-
+    - assets/library_books/
     - assets/turretin/
 
     - assets/achievements/

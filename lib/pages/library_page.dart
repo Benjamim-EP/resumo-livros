@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
+import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
@@ -228,6 +229,18 @@ class _LibraryPageState extends State<LibraryPage> {
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'destinationPage': const SpurgeonSermonsIndexPage(),
+        },
+        {
+          'title': "A Palavra de Deus às Mulheres",
+          'description':
+              "Uma análise profunda das escrituras sobre o papel da mulher na igreja e na sociedade.",
+          'author': 'Katharine C. Bushnell',
+          'pageCount': '100 Lições / +500 páginas',
+          'isFullyPremium': true, // Marcar como conteúdo premium
+          'hasPremiumFeature': false,
+          'coverImagePath':
+              'assets/covers/gods_word_to_women_cover.webp', // Crie uma capa para ele!
+          'destinationPage': const GodsWordToWomenIndexPage(),
         },
         {
           'title': "Promessas da Bíblia",
