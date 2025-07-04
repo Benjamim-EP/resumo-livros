@@ -1,0 +1,3 @@
+const int BIBLE_SEARCH_COST = 3;
+const int SERMON_SEARCH_COST = 3;
+const int PDF_GENERATION_COST = 30;

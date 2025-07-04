@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:septima_biblia/consts.dart';
+import 'package:septima_biblia/consts/consts.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_navigation_controls.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_options_bar.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
@@ -546,25 +548,105 @@ class _BiblePageState extends State<BiblePage> {
         selectedChapter == null ||
         booksMap == null) return;
 
-    setState(() => _isGeneratingPdf = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Gerando PDF, por favor aguarde...'),
-          duration: Duration(seconds: 10)),
+    // 1. Obter o estado atual do usuário e da assinatura do Redux
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    final currentUserCoins = store.state.userState.userCoins;
+    final userId = store.state.userState.userId;
+    final isGuest = store.state.userState.isGuestUser;
+
+    // 2. Se for Premium, gera o PDF diretamente
+    if (isPremium) {
+      _generatePdfAndShow(); // Chama a função que realmente faz o trabalho
+      return;
+    }
+
+    // 3. Se não for Premium, verifica se tem moedas suficientes
+    if (currentUserCoins < PDF_GENERATION_COST) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Moedas insuficientes. Você precisa de $PDF_GENERATION_COST moedas.'),
+          action: SnackBarAction(
+            label: 'Ganhar Moedas',
+            onPressed: () => store.dispatch(RequestRewardedAdAction()),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 4. Se tiver moedas, mostra um diálogo de confirmação
+    final bool? shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirmar Ação'),
+        content:
+            Text('Isso custará $PDF_GENERATION_COST moedas. Deseja continuar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
     );
 
+    // 5. Se o usuário confirmou, deduz as moedas e gera o PDF
+    if (shouldProceed == true) {
+      // Deduz as moedas
+      final newCoinTotal = currentUserCoins - PDF_GENERATION_COST;
+      store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+
+      // Persiste a mudança no backend
+      try {
+        if (userId != null) {
+          await _firestoreService.updateUserField(
+              userId, 'userCoins', newCoinTotal);
+        } else if (isGuest) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt(guestUserCoinsPrefsKey, newCoinTotal);
+        }
+
+        // Finalmente, gera o PDF
+        _generatePdfAndShow();
+      } catch (e) {
+        // Em caso de erro ao salvar as moedas, reverte a mudança e notifica o usuário
+        print("Erro ao deduzir moedas para gerar PDF: $e");
+        store.dispatch(UpdateUserCoinsAction(currentUserCoins)); // Reembolsa
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Ocorreu um erro. Suas moedas foram devolvidas.')),
+        );
+      }
+    }
+  }
+
+// NOVO MÉTODO PRIVADO para encapsular a lógica de geração (reutilização)
+  Future<void> _generatePdfAndShow() async {
+    if (mounted) {
+      setState(() => _isGeneratingPdf = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Gerando PDF, por favor aguarde...'),
+            duration: Duration(seconds: 10)),
+      );
+    }
+
     try {
-      // 1. Coletar todos os dados necessários
       final chapterData = await BiblePageHelper.loadChapterDataComparison(
         selectedBook!,
         selectedChapter!,
-        'nvi', // Usamos NVI como base para o texto bíblico no PDF
+        'nvi',
         null,
       );
-
       final List<Map<String, dynamic>> sections =
           List.from(chapterData['sectionStructure'] ?? []);
-
       final Map<String, List<Map<String, dynamic>>> commentaries =
           await _firestoreService.fetchAllCommentariesForChapter(
         selectedBook!,
@@ -572,7 +654,6 @@ class _BiblePageState extends State<BiblePage> {
         sections,
       );
 
-      // 2. Chamar o serviço de geração de PDF
       final String filePath = await _pdfService.generateBibleChapterPdf(
         bookName: booksMap![selectedBook]!['nome'],
         chapterNumber: selectedChapter!,
@@ -581,7 +662,6 @@ class _BiblePageState extends State<BiblePage> {
         commentaries: commentaries,
       );
 
-      // 3. Atualizar a UI e abrir o arquivo
       if (mounted) {
         setState(() {
           _existingPdfPath = filePath;
@@ -589,7 +669,7 @@ class _BiblePageState extends State<BiblePage> {
         });
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF gerado com sucesso!')),
+          const SnackBar(content: Text('PDF gerado com sucesso!')),
         );
         OpenFile.open(filePath);
       }

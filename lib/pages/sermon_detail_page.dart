@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:septima_biblia/consts.dart';
+import 'package:septima_biblia/consts/consts.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
@@ -18,6 +20,7 @@ import 'package:septima_biblia/services/pdf_generation_service.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:redux/redux.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Modelo de dados para o sermão
 class Sermon {
@@ -236,15 +239,93 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   Future<void> _handleGenerateSermonPdf() async {
     if (_isGeneratingPdf || _sermonDataFromFirestore == null) return;
 
-    setState(() => _isGeneratingPdf = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Gerando PDF do sermão...'),
-          duration: Duration(seconds: 10)),
+    // 1. Obter estado do Redux
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    final currentUserCoins = store.state.userState.userCoins;
+    final userId = store.state.userState.userId;
+    final isGuest = store.state.userState.isGuestUser;
+
+    // 2. Acesso direto para Premium
+    if (isPremium) {
+      _generateSermonPdfAndShow(); // Chama a função real
+      return;
+    }
+
+    // 3. Verificação de moedas para não-Premium
+    if (currentUserCoins < PDF_GENERATION_COST) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Moedas insuficientes. Você precisa de $PDF_GENERATION_COST moedas.'),
+          action: SnackBarAction(
+            label: 'Ganhar Moedas',
+            onPressed: () => store.dispatch(RequestRewardedAdAction()),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 4. Diálogo de confirmação
+    final bool? shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirmar Ação'),
+        content:
+            Text('Isso custará $PDF_GENERATION_COST moedas. Deseja continuar?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Confirmar')),
+        ],
+      ),
     );
 
+    // 5. Dedução de moedas e geração do PDF
+    if (shouldProceed == true) {
+      final newCoinTotal = currentUserCoins - PDF_GENERATION_COST;
+      store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+
+      // Persistência da dedução
+      try {
+        final firestoreService =
+            FirestoreService(); // Crie uma instância se não tiver uma global na classe
+        if (userId != null) {
+          await firestoreService.updateUserField(
+              userId, 'userCoins', newCoinTotal);
+        } else if (isGuest) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt(guestUserCoinsPrefsKey, newCoinTotal);
+        }
+        _generateSermonPdfAndShow();
+      } catch (e) {
+        print("Erro ao deduzir moedas para gerar PDF de sermão: $e");
+        store.dispatch(UpdateUserCoinsAction(currentUserCoins)); // Reembolso
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Ocorreu um erro. Suas moedas foram devolvidas.')),
+        );
+      }
+    }
+  }
+
+  // NOVO MÉTODO PRIVADO para encapsular a lógica de geração (reutilização)
+  Future<void> _generateSermonPdfAndShow() async {
+    if (mounted) {
+      setState(() => _isGeneratingPdf = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Gerando PDF do sermão...'),
+            duration: Duration(seconds: 10)),
+      );
+    }
+
     try {
-      // Chama o novo método no serviço de PDF
       final filePath = await _pdfService.generateSermonPdf(
         sermon: _sermonDataFromFirestore!,
       );
