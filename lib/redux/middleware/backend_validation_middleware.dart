@@ -2,39 +2,52 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
-import 'package:septima_biblia/main.dart'; // Para o navigatorKey
+import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart'; // <<< ADICIONAR IMPORT
 
 List<Middleware<AppState>> createBackendValidationMiddleware() {
-  // Instancia a referência para o Firebase Functions na região correta
   final functions = FirebaseFunctions.instanceFor(region: "southamerica-east1");
 
-  // Handler que intercepta a ação após a compra ser verificada no cliente
   void handleGooglePlayPurchaseVerified(
     Store<AppState> store,
     GooglePlayPurchaseVerifiedAction action,
     NextDispatcher next,
   ) async {
-    next(
-        action); // Passa a ação para o reducer, que marca o status como "pendingValidation"
+    // A ação original da UI não precisa mais ter o completer.
+    // O middleware vai controlar o fluxo.
+    next(action);
 
     final purchaseDetails = action.purchaseDetails;
-    print(
-        "BackendValidationMiddleware: Interceptou GooglePlayPurchaseVerifiedAction.");
-    print(
-        "BackendValidationMiddleware: Enviando dados para validação no backend...");
+    final context = navigatorKey.currentContext;
+
+    // Mostra um diálogo de "validando" que bloqueia a UI
+    if (context != null && context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => const PopScope(
+          canPop: false, // Impede o usuário de fechar o diálogo
+          child: AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text("Validando assinatura..."),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     try {
-      // Prepara a chamada para a Cloud Function
       final HttpsCallable callable =
           functions.httpsCallable('validate_google_play_purchase');
-
-      // Envia os dados necessários para a validação
       final HttpsCallableResult result =
           await callable.call<Map<String, dynamic>>({
         'productId': purchaseDetails.productID,
-        // O serverVerificationData contém o token de compra necessário
         'purchaseToken':
             purchaseDetails.verificationData.serverVerificationData,
       });
@@ -42,32 +55,56 @@ List<Middleware<AppState>> createBackendValidationMiddleware() {
       print(
           "BackendValidationMiddleware: Resposta do backend recebida: ${result.data}");
 
-      // Se a validação no backend for bem-sucedida, a própria Cloud Function atualiza o Firestore.
-      // O listener do app (em MainAppScreen) irá detectar a mudança e atualizar o status da assinatura na UI.
-      // Podemos mostrar uma mensagem de sucesso aqui para o usuário.
-      final context = navigatorKey.currentContext;
+      // <<< MUDANÇA CRÍTICA AQUI >>>
+      // Em vez de esperar o listener, despachamos a ação de sucesso AGORA.
+      // O backend já atualizou o Firestore, então os dados para a action podem vir
+      // da resposta da cloud function se ela os retornar, ou podemos usar valores genéricos.
+      store.dispatch(SubscriptionStatusUpdatedAction(
+        status:
+            'active', // Assumimos que a validação bem-sucedida significa ativo
+        endDate:
+            null, // O listener do MainAppScreen vai pegar a data exata depois
+        priceId: purchaseDetails.productID,
+      ));
+
+      // 1. Fecha o diálogo de "validando"
       if (context != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Assinatura ativada com sucesso!')),
-        );
-        // Opcional: fechar a página de compra após o sucesso
-        Navigator.of(context).pop();
+        Navigator.of(context, rootNavigator: true)
+            .pop(); // Fecha o diálogo de loading
+      }
+
+      // 2. Fecha a página de assinatura
+      if (context != null && context.mounted) {
+        // Verifique se a página de assinatura está no topo antes de dar pop
+        if (ModalRoute.of(context)?.settings.name != '/mainAppScreen') {
+          Navigator.of(context).pop();
+        }
       }
     } on FirebaseFunctionsException catch (e) {
       print(
-          "BackendValidationMiddleware: Erro FirebaseFunctionsException ao chamar backend: ${e.code} - ${e.message}");
-      // Despacha uma ação de falha para a UI poder reagir (ex: mostrar mensagem de erro)
-      store.dispatch(GooglePlayPaymentFailedAction(
-          e.message ?? "Falha na comunicação com o servidor."));
-      final context = navigatorKey.currentContext;
+          "BackendValidationMiddleware: Erro FirebaseFunctionsException: ${e.message}");
+
+      if (context != null && context.mounted) {
+        Navigator.of(context, rootNavigator: true)
+            .pop(); // Fecha o diálogo de loading
+      }
+
+      store.dispatch(
+          GooglePlayPaymentFailedAction(e.message ?? "Falha na validação."));
+
       if (context != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro ao validar assinatura: ${e.message}')),
         );
       }
     } catch (e) {
-      print(
-          "BackendValidationMiddleware: Erro inesperado ao chamar backend: $e");
+      print("BackendValidationMiddleware: Erro inesperado: $e");
+
+      if (context != null && context.mounted) {
+        Navigator.of(context, rootNavigator: true)
+            .pop(); // Fecha o diálogo de loading
+      }
+
       store.dispatch(
           GooglePlayPaymentFailedAction("Ocorreu um erro inesperado."));
     }

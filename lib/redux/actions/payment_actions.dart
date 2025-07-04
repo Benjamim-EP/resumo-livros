@@ -1,4 +1,6 @@
 // lib/redux/actions/payment_actions.dart
+import 'dart:async';
+
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart'; // Para PurchaseDetails
 
 // Ações existentes para Stripe (mantidas para referência ou se você tiver Stripe para web/iOS)
@@ -37,7 +39,9 @@ class GooglePlayPurchaseInitiatedAction {
 // contendo os detalhes da compra para serem enviados ao backend para verificação.
 class GooglePlayPurchaseVerifiedAction {
   final PurchaseDetails purchaseDetails;
-  GooglePlayPurchaseVerifiedAction({required this.purchaseDetails});
+  final Completer? completer;
+  GooglePlayPurchaseVerifiedAction(
+      {required this.purchaseDetails, this.completer});
 }
 
 // Disparada se houver um erro durante o processo de compra no cliente (antes da verificação do backend)

@@ -1,7 +1,9 @@
 // redux/store.dart
+import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/middleware/backend_validation_middleware.dart';
 import 'package:septima_biblia/redux/middleware/bible_progress_middleware.dart';
+import 'package:septima_biblia/redux/middleware/fake_payment_middleware.dart';
 import 'package:septima_biblia/redux/middleware/firestore_sync_middleware.dart';
 import 'package:septima_biblia/redux/middleware/metadata_middleware.dart';
 import 'package:septima_biblia/redux/middleware/payment_middleware.dart';
@@ -110,24 +112,45 @@ final Store<AppState> store = Store<AppState>(
     sermonSearchState:
         SermonSearchState(), // NOVO: Estado inicial para busca de sermões
   ),
-  middleware: [
-    // Combina todos os middlewares dos arquivos separados
+  middleware: createAppMiddleware(),
+);
+
+// Função para criar a lista de middlewares dinamicamente
+List<Middleware<AppState>> createAppMiddleware() {
+  // Lista de middlewares que rodam em ambos os modos (debug e release)
+  List<Middleware<AppState>> commonMiddleware = [
     ...createBookMiddleware(),
     ...createAuthorMiddleware(),
     ...createUserMiddleware(),
     ...createTopicMiddleware(),
     ...createMiscMiddleware(),
-    ...createPaymentMiddleware(),
     ...createThemeMiddleware(),
     ...createAdMiddleware(),
-    ...createBibleSearchMiddleware(), // NOVO: Middleware para busca semântica bíblica
+    ...createBibleSearchMiddleware(),
     ...createBibleProgressMiddleware(),
     ...createMetadataMiddleware(),
-    ...createFirestoreSyncMiddleware(), // NOVO
+    ...createFirestoreSyncMiddleware(),
     ...createSermonSearchMiddleware(),
     ...createBackendValidationMiddleware(),
-  ],
-);
+  ];
+
+  // A constante kDebugMode é verdadeira apenas quando você roda em modo debug
+  if (kDebugMode) {
+    print("<<<<< MODO DEBUG: Usando Middleware de Pagamento FALSO >>>>>");
+    // Adiciona o middleware falso
+    return [
+      ...commonMiddleware,
+      ...createFakePaymentMiddleware(), // <<< USA O FALSO
+    ];
+  } else {
+    print("<<<<< MODO RELEASE: Usando Middleware de Pagamento REAL >>>>>");
+    // Adiciona os middlewares reais de pagamento
+    return [
+      ...commonMiddleware,
+      ...createPaymentMiddleware(), // <<< USA O REAL
+    ];
+  }
+}
 
 class MetadataState {
   final Map<String, dynamic> bibleSectionCounts;

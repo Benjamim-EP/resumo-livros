@@ -1,14 +1,19 @@
 // lib/pages/purschase_pages/subscription_selection_page.dart
+
+import 'dart:async'; // Para o Completer da lógica de compra
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:septima_biblia/redux/actions.dart'; // Para showLoginRequiredDialog e outras ações
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/consts.dart'; // <<< IMPORTA SUAS CONSTANTES GLOBAIS
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/components/login_required.dart';
 
 // ViewModel para obter os dados necessários do store
 class _ViewModel {
-  final bool isLoading;
+  final bool isLoading; // Loading global do estado de subscrição
   final AppThemeOption activeTheme;
   final bool isGuest;
 
@@ -27,11 +32,18 @@ class _ViewModel {
   }
 }
 
-class SubscriptionSelectionPage extends StatelessWidget {
+// Convertido para StatefulWidget para gerenciar o estado de loading local
+class SubscriptionSelectionPage extends StatefulWidget {
   const SubscriptionSelectionPage({super.key});
 
-  static const String googlePlayMonthlyProductId = "premium_monthly_v1";
-  static const String googlePlayQuarterlyProductId = "premium_quarterly_v1";
+  @override
+  State<SubscriptionSelectionPage> createState() =>
+      _SubscriptionSelectionPageState();
+}
+
+class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
+  // Estado para controlar qual botão está em processo de compra
+  String? _processingProductId;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +59,8 @@ class SubscriptionSelectionPage extends StatelessWidget {
       body: StoreConnector<AppState, _ViewModel>(
         converter: (store) => _ViewModel.fromStore(store),
         builder: (context, viewModel) {
+          // Usa o loading global do Redux como um fallback,
+          // mas o loading local (_processingProductId) é mais responsivo.
           if (viewModel.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -57,20 +71,20 @@ class SubscriptionSelectionPage extends StatelessWidget {
               children: [
                 _buildFreePlanCard(context, theme),
                 const SizedBox(height: 24),
-                // Passa a informação do tema ativo para o card Premium
                 _buildPremiumPlanCard(
                     context, theme, viewModel.activeTheme, viewModel.isGuest),
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text(
-                    "As assinaturas são processadas pela Google Play Store e podem ser gerenciadas a qualquer momento nas configurações da sua conta.",
+                    "As assinaturas são processadas pela Google Play Store e podem ser gerenciadas a qualquer momento nas configurações da sua conta na Play Store.",
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           );
@@ -94,36 +108,20 @@ class SubscriptionSelectionPage extends StatelessWidget {
           children: [
             Text("Plano Gratuito", style: theme.textTheme.headlineSmall),
             const SizedBox(height: 20),
-
-            // Seção de benefícios gratuitos
             _buildFeatureRow(Icons.menu_book_outlined,
                 "Bíblia completa em 3 versões", theme),
             const SizedBox(height: 16),
-            _buildFeatureRow(Icons.comment_bank_outlined,
-                "Comentários bíblicos selecionados", theme),
-            const SizedBox(height: 16),
-            _buildFeatureRow(Icons.wb_sunny_outlined,
-                "Devocionais Diários (Spurgeon)", theme),
-            const SizedBox(height: 16),
-            _buildFeatureRow(Icons.format_paint_outlined,
-                "Sermões de Spurgeon (+3000)", theme),
-            const SizedBox(height: 16),
-            _buildFeatureRow(Icons.format_paint_outlined,
-                "Marcações e notas na Bíblia no Comentário Bíblico", theme),
+            _buildFeatureRow(
+                Icons.comment_bank_outlined, "Comentários por seção", theme),
             const SizedBox(height: 16),
             _buildFeatureRow(
-                Icons.format_paint_outlined,
-                "Promessas da Bíblia- Compêndio com todas as promessas bíblicas",
-                theme),
-
+                Icons.wb_sunny_outlined, "Devocionais Diários", theme),
+            const SizedBox(height: 16),
+            _buildFeatureRow(Icons.history_edu_outlined,
+                "Sermões e Roteiros de Estudo", theme),
             const Divider(height: 32),
-
-            // Seção de limitações
             _buildLimitationRow(
                 Icons.ad_units_outlined, "Anúncios durante a navegação", theme),
-            const SizedBox(height: 16),
-            _buildLimitationRow(
-                Icons.search_off_rounded, "Buscas com custo de moedas", theme),
           ],
         ),
       ),
@@ -151,15 +149,9 @@ class SubscriptionSelectionPage extends StatelessWidget {
               const SizedBox(height: 20),
               _buildPremiumFeatureRow(Icons.all_inclusive,
                   "Tudo do plano gratuito, e mais:", theme),
-              _buildSubFeatureRow("História da Igreja (+5000 pág.)", theme),
-              _buildSubFeatureRow("Institutas de Turretin (+2000 pág.)", theme),
               const SizedBox(height: 16),
               _buildPremiumFeatureRow(Icons.do_not_disturb_on_outlined,
                   "Experiência sem anúncios", theme),
-              const SizedBox(height: 16),
-              _buildPremiumFeatureRow(Icons.saved_search_rounded,
-                  "Busca Semântica Ilimitada", theme,
-                  isHighlighted: true),
               const SizedBox(height: 16),
               _buildPremiumFeatureRow(
                   Icons.translate_rounded, "Estudo Interlinear", theme,
@@ -167,15 +159,22 @@ class SubscriptionSelectionPage extends StatelessWidget {
               _buildSubFeatureRow(
                   "Hebraico e Grego com Léxico de Strong", theme),
               const SizedBox(height: 16),
-              _buildPremiumFeatureRow(Icons.format_paint_outlined,
-                  "Marcações em toda a biblioteca", theme),
+              _buildPremiumFeatureRow(
+                  Icons.format_paint_outlined, "Marcações coloridas", theme),
+              _buildSubFeatureRow(
+                  "Destaque e adicione tags em toda a biblioteca", theme),
+              const SizedBox(height: 16),
+              _buildPremiumFeatureRow(Icons.school_outlined,
+                  "Conteúdo Exclusivo em Expansão", theme),
+              _buildSubFeatureRow("História da Igreja (8 volumes)", theme),
+              _buildSubFeatureRow("Institutas de Turretin (3 volumes)", theme),
               const Divider(height: 40),
               _buildPlanOptionButton(
                 context,
                 theme,
                 title: "Assinar Plano Mensal",
                 price: "R\$ 19,99 / mês",
-                productId: googlePlayMonthlyProductId,
+                productId: googlePlayMonthlyProductId, // Constante
                 activeTheme: activeTheme,
                 isGuest: isGuest,
               ),
@@ -185,7 +184,7 @@ class SubscriptionSelectionPage extends StatelessWidget {
                 theme,
                 title: "Assinar Plano Trimestral",
                 price: "R\$ 47,99 / 3 meses",
-                productId: googlePlayQuarterlyProductId,
+                productId: googlePlayQuarterlyProductId, // Constante
                 activeTheme: activeTheme,
                 isGuest: isGuest,
               ),
@@ -196,7 +195,7 @@ class SubscriptionSelectionPage extends StatelessWidget {
     );
   }
 
-  // Widget para uma linha de benefício Gratuito (positivo)
+  // Widget para uma linha de benefício Gratuito
   Widget _buildFeatureRow(IconData icon, String text, ThemeData theme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,18 +204,15 @@ class SubscriptionSelectionPage extends StatelessWidget {
             color: theme.colorScheme.secondary, size: 22),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.9),
-            ),
-          ),
+          child: Text(text,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.9))),
         ),
       ],
     );
   }
 
-  // Widget para uma linha de limitação (negativo)
+  // Widget para uma linha de limitação
   Widget _buildLimitationRow(IconData icon, String text, ThemeData theme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,12 +221,9 @@ class SubscriptionSelectionPage extends StatelessWidget {
             color: theme.colorScheme.onSurface.withOpacity(0.5), size: 22),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
+          child: Text(text,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7))),
         ),
       ],
     );
@@ -248,8 +241,8 @@ class SubscriptionSelectionPage extends StatelessWidget {
           child: Text(
             text,
             style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-            ),
+                fontWeight:
+                    isHighlighted ? FontWeight.bold : FontWeight.normal),
           ),
         ),
         if (isHighlighted)
@@ -267,28 +260,28 @@ class SubscriptionSelectionPage extends StatelessWidget {
     );
   }
 
-  // >>> NOVO WIDGET para sub-item de benefício <<<
+  // Widget para sub-item de benefício
   Widget _buildSubFeatureRow(String text, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.only(
-          left: 38.0, top: 4.0), // Indentação para alinhar com o texto
-      child: Text(
-        "• $text",
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurface.withOpacity(0.75),
-        ),
-      ),
+      padding: const EdgeInsets.only(left: 38.0, top: 4.0),
+      child: Text("• $text",
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.75))),
     );
   }
 
-  // Widget para os botões de seleção de plano (sem alterações)
-  Widget _buildPlanOptionButton(BuildContext context, ThemeData theme,
-      {required String title,
-      required String price,
-      required String productId,
-      required AppThemeOption activeTheme,
-      required bool isGuest}) {
+  // Widget para os botões de seleção de plano com a lógica de compra
+  Widget _buildPlanOptionButton(
+    BuildContext context,
+    ThemeData theme, {
+    required String title,
+    required String price,
+    required String productId,
+    required AppThemeOption activeTheme,
+    required bool isGuest,
+  }) {
     final bool isGreenTheme = activeTheme == AppThemeOption.green;
+    final bool isLoading = _processingProductId == productId;
 
     final Color titleColor;
     final Color priceColor;
@@ -312,41 +305,28 @@ class SubscriptionSelectionPage extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // <<< LÓGICA PRINCIPAL DA MUDANÇA >>>
-          if (isGuest) {
-            // Se for convidado, mostra um diálogo para fazer login
-            showDialog(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: const Text("Login Necessário"),
-                content: const Text(
-                    "Para fazer uma assinatura, você precisa criar uma conta ou fazer login."),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: const Text("Cancelar"),
-                  ),
-                  FilledButton(
-                    onPressed: () {
-                      // Fecha o diálogo e navega para a tela de login,
-                      // removendo todas as rotas anteriores.
-                      Navigator.of(dialogContext).pop();
-                      Navigator.of(context)
-                          .pushNamedAndRemoveUntil('/login', (route) => false);
-                    },
-                    child: const Text("Fazer Login"),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            // Se não for convidado, dispara a ação de compra normalmente
-            StoreProvider.of<AppState>(context, listen: false).dispatch(
-              InitiateGooglePlaySubscriptionAction(productId: productId),
-            );
-          }
-        },
+        onTap: isLoading
+            ? null // Desabilita o clique se estiver processando
+            : () {
+                if (isGuest) {
+                  showLoginRequiredDialog(context,
+                      featureName: "fazer uma assinatura");
+                } else {
+                  // Define o estado de loading localmente para este botão
+                  setState(() {
+                    _processingProductId = productId;
+                  });
+                  // Despacha a ação de compra. O middleware cuidará do resto.
+                  StoreProvider.of<AppState>(context, listen: false).dispatch(
+                    InitiateGooglePlaySubscriptionAction(productId: productId),
+                  );
+                  // O loading será removido quando o fluxo de compra terminar
+                  // (seja com sucesso, erro ou cancelamento) através de uma
+                  // atualização no estado de subscrição global, ou podemos
+                  // resetar o _processingProductId no `dispose` ou em um `then`.
+                  // Por enquanto, o middleware irá mostrar diálogos de loading.
+                }
+              },
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -366,7 +346,17 @@ class SubscriptionSelectionPage extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, color: iconColor)
+              if (isLoading)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.black54,
+                  ),
+                )
+              else
+                Icon(Icons.arrow_forward_ios_rounded, color: iconColor),
             ],
           ),
         ),
