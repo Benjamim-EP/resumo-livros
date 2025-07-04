@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
-import 'package:septima_biblia/components/login_required.dart'; // Importação que estava faltando na sua versão original
+import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
@@ -16,17 +16,15 @@ import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/user_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
-import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/middleware/ad_middleware.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/services/ad_helper.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
-// >>> INÍCIO DO NOVO IMPORT <<<
 import 'package:septima_biblia/services/notification_service.dart';
-// >>> FIM DO NOVO IMPORT <<<
+import 'package:showcaseview/showcaseview.dart';
+import 'package:septima_biblia/services/tutorial_service.dart'; // <<< ARQUIVO REFATORADO
 
-// ViewModel para o StoreConnector das moedas (como antes)
+// ViewModels (sem alterações)
 class _UserCoinsViewModel {
   final int userCoins;
   final bool isPremium;
@@ -50,483 +48,6 @@ class _UserCoinsViewModel {
     return _UserCoinsViewModel(
       userCoins: store.state.userState.userCoins,
       isPremium: premiumStatus,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _UserCoinsViewModel &&
-          runtimeType == other.runtimeType &&
-          userCoins == other.userCoins &&
-          isPremium == other.isPremium;
-
-  @override
-  int get hashCode => userCoins.hashCode ^ isPremium.hashCode;
-}
-
-class MainAppScreen extends StatefulWidget {
-  const MainAppScreen({super.key});
-  @override
-  _MainAppScreenState createState() => _MainAppScreenState();
-}
-
-class _MainAppScreenState extends State<MainAppScreen> {
-  int _selectedIndex = 0;
-
-  final GlobalKey<NavigatorState> _userNavigatorKey =
-      GlobalKey<NavigatorState>();
-  final GlobalKey<NavigatorState> _bibleNavigatorKey =
-      GlobalKey<NavigatorState>();
-
-  late final List<Widget> _pages;
-  StreamSubscription? _userDocSubscription;
-  bool _isPremiumFromState = false;
-
-  // >>> INÍCIO DA NOVA VARIÁVEL DE CONTROLE <<<
-  // Garante que o agendamento só aconteça uma vez por sessão.
-  static bool _notificationsInitialized = false;
-  // >>> FIM DA NOVA VARIÁVEL DE CONTROLE <<<
-
-  @override
-  void initState() {
-    super.initState();
-    _setupUserListener();
-
-    // >>> INÍCIO DO NOVO BLOCO DE CÓDIGO <<<
-    // Agenda as notificações aqui, de forma segura, apenas uma vez.
-    if (!_notificationsInitialized) {
-      _scheduleNotifications();
-      _notificationsInitialized = true;
-    }
-    // >>> FIM DO NOVO BLOCO DE CÓDIGO <<<
-
-    _pages = [
-      _buildTabNavigator(_userNavigatorKey, const UserPage()),
-      _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
-      const LibraryPage(),
-      const DevotionalDiaryPage(),
-    ];
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final storeInstance =
-            StoreProvider.of<AppState>(context, listen: false);
-
-        int initialTargetIndexFromRedux =
-            storeInstance.state.userState.targetBottomNavIndex ?? -1;
-        final bool isGuest = storeInstance.state.userState.isGuestUser;
-
-        int newInitialIndex = 0;
-
-        if (isGuest) {
-          newInitialIndex = (initialTargetIndexFromRedux != -1)
-              ? initialTargetIndexFromRedux
-              : 1;
-        } else if (initialTargetIndexFromRedux != -1) {
-          newInitialIndex = initialTargetIndexFromRedux;
-        }
-
-        if (newInitialIndex < 0 || newInitialIndex >= _pages.length) {
-          newInitialIndex = isGuest ? 1 : 0;
-        }
-
-        if (newInitialIndex != _selectedIndex) {
-          setState(() {
-            _selectedIndex = newInitialIndex;
-          });
-        }
-
-        if (initialTargetIndexFromRedux != -1) {
-          storeInstance.dispatch(ClearTargetBottomNavAction());
-        }
-
-        final initialViewModel = _UserCoinsViewModel.fromStore(storeInstance);
-        _updatePremiumUI(initialViewModel.isPremium);
-      }
-    });
-  }
-
-  // >>> INÍCIO DA NOVA FUNÇÃO <<<
-  /// Agenda as notificações diárias de forma segura.
-  Future<void> _scheduleNotifications() async {
-    try {
-      print("MainAppScreen: Tentando agendar notificações...");
-      final NotificationService notificationService = NotificationService();
-      await notificationService.init(); // Inicializa o serviço
-      await notificationService
-          .scheduleDailyDevotionals(); // Agenda as notificações
-      print("MainAppScreen: Notificações agendadas com sucesso.");
-    } catch (e) {
-      print("MainAppScreen: Erro ao agendar notificações: $e");
-      // Não trava o app, apenas loga o erro.
-    }
-  }
-  // >>> FIM DA NOVA FUNÇÃO <<<
-
-  @override
-  void dispose() {
-    _userDocSubscription?.cancel();
-    super.dispose();
-  }
-
-  void _setupUserListener() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final userId = user.uid;
-      final storeInstance = store;
-      _userDocSubscription?.cancel();
-      _userDocSubscription = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots()
-          .listen((DocumentSnapshot snapshot) {
-        if (snapshot.exists && snapshot.data() != null && mounted) {
-          final userData = snapshot.data() as Map<String, dynamic>;
-          final Timestamp? endDateTimestamp =
-              userData['subscriptionEndDate'] as Timestamp?;
-          final DateTime? endDateDateTime = endDateTimestamp?.toDate();
-
-          storeInstance.dispatch(SubscriptionStatusUpdatedAction(
-            status: userData['subscriptionStatus'] ?? 'inactive',
-            endDate: endDateDateTime,
-            subscriptionId: userData['stripeSubscriptionId'] as String?,
-            customerId: userData['stripeCustomerId'] as String?,
-            priceId: userData['activePriceId'] as String?,
-          ));
-          storeInstance.dispatch(UserDetailsLoadedAction(userData));
-
-          final currentViewModel = _UserCoinsViewModel.fromStore(storeInstance);
-          _updatePremiumUI(currentViewModel.isPremium);
-        }
-      });
-    }
-  }
-
-  void _updatePremiumUI(bool isNowPremium) {
-    if (!mounted) return;
-    if (isNowPremium != _isPremiumFromState) {
-      setState(() {
-        _isPremiumFromState = isNowPremium;
-      });
-    }
-  }
-
-  Widget _buildTabNavigator(
-      GlobalKey<NavigatorState>? navigatorKey, Widget child) {
-    if (navigatorKey == null) {
-      return child;
-    }
-    return Navigator(
-      key: navigatorKey,
-      onGenerateRoute: (settings) {
-        WidgetBuilder? builder;
-        if (settings.name == '/queryResults') {
-          builder = (_) => const QueryResultsPage();
-        }
-        builder ??= (_) => child;
-        return MaterialPageRoute(builder: builder, settings: settings);
-      },
-    );
-  }
-
-  GlobalKey<NavigatorState>? get _currentNavigatorKey {
-    switch (_selectedIndex) {
-      case 0:
-        return _userNavigatorKey;
-      case 1:
-        return _bibleNavigatorKey;
-      default:
-        return null;
-    }
-  }
-
-  Future<bool> _onWillPop() async {
-    final currentKey = _currentNavigatorKey;
-    if (currentKey == null ||
-        currentKey.currentState == null ||
-        !currentKey.currentState!.canPop()) {
-      return true;
-    }
-    currentKey.currentState!.pop();
-    return false;
-  }
-
-  String _getAppBarTitle(int index) {
-    switch (index) {
-      case 0:
-        return "Meu Perfil";
-      case 1:
-        return "Bíblia";
-      case 2:
-        return "Biblioteca";
-      case 3:
-        return "Diário";
-      default:
-        return "Septima";
-    }
-  }
-
-  int _calculateActualIndexFromTarget(int targetIndexFromAction) {
-    if (targetIndexFromAction >= 0 && targetIndexFromAction < _pages.length) {
-      return targetIndexFromAction;
-    }
-    return 0;
-  }
-
-  AppThemeOption _getNextTheme(AppThemeOption currentTheme) {
-    final themes = AppThemeOption.values;
-    final currentIndex = themes.indexOf(currentTheme);
-    final nextIndex = (currentIndex + 1) % themes.length;
-    return themes[nextIndex];
-  }
-
-  IconData _getThemeIcon(AppThemeOption currentTheme) {
-    switch (currentTheme) {
-      case AppThemeOption.green:
-        return Icons.eco_outlined;
-      case AppThemeOption.septimaDark:
-        return Icons.nightlight_round;
-      case AppThemeOption.septimaLight:
-        return Icons.wb_sunny_outlined;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final storeInstance = StoreProvider.of<AppState>(context, listen: false);
-    final ThemeData currentThemeData = Theme.of(context);
-
-    return StoreConnector<AppState, _MainAppScreenViewModel>(
-      converter: (store) => _MainAppScreenViewModel.fromStore(store),
-      onDidChange: (previousViewModel, newViewModel) {
-        if (!mounted) return;
-        if (newViewModel != null && previousViewModel != newViewModel) {
-          _updatePremiumUI(newViewModel.isPremium);
-
-          if (newViewModel.targetBottomNavIndex != null) {
-            int targetIndex = newViewModel.targetBottomNavIndex!;
-            int actualNewIndex = _calculateActualIndexFromTarget(targetIndex);
-
-            if (actualNewIndex != _selectedIndex) {
-              setState(() {
-                _selectedIndex = actualNewIndex;
-              });
-            }
-            storeInstance.dispatch(ClearTargetBottomNavAction());
-          }
-        }
-      },
-      builder: (context, mainScreenViewModel) {
-        if (mainScreenViewModel == null) {
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
-        }
-
-        final AppThemeOption currentThemeOptionFromRedux =
-            mainScreenViewModel.activeThemeOption;
-
-        return WillPopScope(
-          onWillPop: _onWillPop,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(_getAppBarTitle(_selectedIndex)),
-              actions: [
-                IconButton(
-                  icon: Icon(_getThemeIcon(currentThemeOptionFromRedux)),
-                  tooltip: 'Mudar Tema',
-                  onPressed: () {
-                    final nextTheme =
-                        _getNextTheme(currentThemeOptionFromRedux);
-                    storeInstance.dispatch(SetThemeAction(nextTheme));
-                  },
-                ),
-                StoreConnector<AppState, _UserCoinsViewModel>(
-                  converter: (store) => _UserCoinsViewModel.fromStore(store),
-                  builder: (context, coinsViewModel) {
-                    if (coinsViewModel.isPremium) {
-                      return const SizedBox.shrink();
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.monetization_on,
-                            color: currentThemeData.colorScheme.primary,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${coinsViewModel.userCoins}',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: currentThemeData
-                                      .appBarTheme.titleTextStyle?.color ??
-                                  currentThemeData.colorScheme.onPrimary,
-                            ),
-                          ),
-                          if (coinsViewModel.userCoins < MAX_COINS_LIMIT)
-                            IconButton(
-                              icon: Icon(
-                                Icons.add_circle_outline,
-                                color: currentThemeData.colorScheme.primary,
-                                size: 24,
-                              ),
-                              tooltip: 'Ganhar Moedas',
-                              onPressed: () {
-                                storeInstance
-                                    .dispatch(RequestRewardedAdAction());
-                              },
-                            )
-                          else
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
-                              child: Icon(Icons.check_circle,
-                                  color: currentThemeData.colorScheme.primary
-                                      .withOpacity(0.7),
-                                  size: 22),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                // >>> NOVO BOTÃO PREMIUM <<<
-                StoreConnector<AppState, bool>(
-                  converter: (store) =>
-                      _UserCoinsViewModel.fromStore(store).isPremium,
-                  builder: (context, isPremium) {
-                    if (isPremium) {
-                      // Se o usuário é premium, mostra um ícone de agradecimento ou nada
-                      return const Padding(
-                        padding: EdgeInsets.only(right: 8.0),
-                        child: Icon(Icons.verified_user_outlined,
-                            color: Colors.amber),
-                      );
-                    }
-                    // Se não for premium, mostra o botão para assinar
-                    return IconButton(
-                      icon: const Icon(Icons.workspace_premium_outlined),
-                      tooltip: 'Torne-se Premium',
-                      onPressed: () {
-                        // Navega para a página de seleção de assinatura
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const SubscriptionSelectionPage()),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-            body: IndexedStack(
-              index: _selectedIndex,
-              children: _pages,
-            ),
-            bottomNavigationBar: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                BottomNavigationBar(
-                  type: BottomNavigationBarType.fixed,
-                  currentIndex: _selectedIndex,
-                  // As cores já são definidas pelo tema do app
-                  onTap: (index) {
-                    if (!mounted) return;
-
-                    // 1. Verifica se é um convidado tentando acessar a página de usuário
-                    if (storeInstance.state.userState.isGuestUser &&
-                        index == 0) {
-                      showLoginRequiredDialog(context,
-                          featureName: "seu perfil");
-                      return;
-                    }
-
-                    int previousIndex = _selectedIndex;
-
-                    // 2. Só executa a lógica se a aba selecionada for diferente da atual
-                    if (previousIndex != index) {
-                      // >>> INÍCIO DA MODIFICAÇÃO: LÓGICA DE ANÚNCIOS <<<
-                      final bool isPremium =
-                          _UserCoinsViewModel.fromStore(storeInstance)
-                              .isPremium;
-
-                      // Função para navegar, para não repetir código
-                      void navigateToNewTab() {
-                        if (mounted) {
-                          setState(() {
-                            _selectedIndex = index;
-                          });
-
-                          // Sincroniza o progresso da Bíblia ao sair da aba
-                          if (previousIndex == 1 && index != 1) {
-                            final userState = storeInstance.state.userState;
-                            if (userState.userId != null) {
-                              final pendingToAdd =
-                                  userState.pendingSectionsToAdd;
-                              final pendingToRemove =
-                                  userState.pendingSectionsToRemove;
-                              if (pendingToAdd.isNotEmpty ||
-                                  pendingToRemove.isNotEmpty) {
-                                storeInstance.dispatch(
-                                    ProcessPendingBibleProgressAction());
-                              }
-                            }
-                          }
-                        }
-                      }
-
-                      // Se o usuário NÃO for premium, tenta mostrar o anúncio antes de navegar
-                      if (!isPremium) {
-                        interstitialManager
-                            .tryShowInterstitial(
-                                fromScreen:
-                                    "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
-                            .then((_) {
-                          // Navega DEPOIS que a tentativa de anúncio terminar
-                          navigateToNewTab();
-                        });
-                      } else {
-                        // Se for premium, navega instantaneamente
-                        print("Usuário premium, pulando anúncio intersticial.");
-                        navigateToNewTab();
-                      }
-                      // >>> FIM DA MODIFICAÇÃO <<<
-                    } else {
-                      // Se o usuário tocou na mesma aba, não faz nada
-                      // ou você pode adicionar uma lógica de "voltar ao topo" aqui se desejar.
-                      return;
-                    }
-                  },
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.account_circle),
-                      label: 'Usuário',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.book_outlined),
-                      label: 'Bíblia',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.local_library_outlined),
-                      label: 'Biblioteca',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.edit_note_outlined),
-                      label: 'Diário',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -565,21 +86,432 @@ class _MainAppScreenViewModel {
       activeThemeOption: store.state.themeState.activeThemeOption,
     );
   }
+}
+
+class MainAppScreen extends StatefulWidget {
+  const MainAppScreen({super.key});
+  @override
+  _MainAppScreenState createState() => _MainAppScreenState();
+}
+
+class _MainAppScreenState extends State<MainAppScreen> {
+  int _selectedIndex = 0;
+  final GlobalKey<NavigatorState> _userNavigatorKey =
+      GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _bibleNavigatorKey =
+      GlobalKey<NavigatorState>();
+  late final List<Widget> _pages;
+  StreamSubscription? _userDocSubscription;
+  bool _isPremiumFromState = false;
+  static bool _notificationsInitialized = false;
+
+  // --- LÓGICA DO TUTORIAL AGORA É GERENCIADA PELO SERVIÇO ---
+  final TutorialService _tutorialService = TutorialService();
+  bool _tutorialHasBeenChecked = false; // Flag de controle de execução
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _MainAppScreenViewModel &&
-          runtimeType == other.runtimeType &&
-          mapEquals(userDetails, other.userDetails) &&
-          targetBottomNavIndex == other.targetBottomNavIndex &&
-          isPremium == other.isPremium &&
-          activeThemeOption == other.activeThemeOption;
+  void initState() {
+    super.initState();
+    _setupUserListener();
+
+    if (!_notificationsInitialized) {
+      _scheduleNotifications();
+      _notificationsInitialized = true;
+    }
+
+    _pages = [
+      _buildTabNavigator(_userNavigatorKey, const UserPage()),
+      _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
+      const LibraryPage(),
+      const DevotionalDiaryPage(),
+    ];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeScreenState();
+      }
+    });
+  }
+
+  void _initializeScreenState() {
+    final storeInstance = StoreProvider.of<AppState>(context, listen: false);
+    int initialTargetIndexFromRedux =
+        storeInstance.state.userState.targetBottomNavIndex ?? -1;
+    final bool isGuest = storeInstance.state.userState.isGuestUser;
+    int newInitialIndex = 0;
+    if (isGuest) {
+      newInitialIndex =
+          (initialTargetIndexFromRedux != -1) ? initialTargetIndexFromRedux : 1;
+    } else if (initialTargetIndexFromRedux != -1) {
+      newInitialIndex = initialTargetIndexFromRedux;
+    }
+    if (newInitialIndex < 0 || newInitialIndex >= _pages.length) {
+      newInitialIndex = isGuest ? 1 : 0;
+    }
+    if (newInitialIndex != _selectedIndex) {
+      setState(() => _selectedIndex = newInitialIndex);
+    }
+    if (initialTargetIndexFromRedux != -1) {
+      storeInstance.dispatch(ClearTargetBottomNavAction());
+    }
+    final initialViewModel = _UserCoinsViewModel.fromStore(storeInstance);
+    _updatePremiumUI(initialViewModel.isPremium);
+  }
+
+  Future<void> _scheduleNotifications() async {
+    try {
+      final NotificationService notificationService = NotificationService();
+      await notificationService.init();
+      await notificationService.scheduleDailyDevotionals();
+    } catch (e) {
+      print("MainAppScreen: Erro ao agendar notificações: $e");
+    }
+  }
 
   @override
-  int get hashCode =>
-      userDetails.hashCode ^
-      targetBottomNavIndex.hashCode ^
-      isPremium.hashCode ^
-      activeThemeOption.hashCode;
+  void dispose() {
+    _userDocSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _setupUserListener() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userId = user.uid;
+      final storeInstance = store;
+      _userDocSubscription?.cancel();
+      _userDocSubscription = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots()
+          .listen((snapshot) {
+        if (snapshot.exists && snapshot.data() != null && mounted) {
+          final userData = snapshot.data() as Map<String, dynamic>;
+          storeInstance.dispatch(UserDetailsLoadedAction(userData));
+          final currentViewModel = _UserCoinsViewModel.fromStore(storeInstance);
+          _updatePremiumUI(currentViewModel.isPremium);
+        }
+      });
+    }
+  }
+
+  void _updatePremiumUI(bool isNowPremium) {
+    if (mounted && isNowPremium != _isPremiumFromState) {
+      setState(() => _isPremiumFromState = isNowPremium);
+    }
+  }
+
+  Widget _buildTabNavigator(
+      GlobalKey<NavigatorState>? navigatorKey, Widget child) {
+    if (navigatorKey == null) return child;
+    return Navigator(
+      key: navigatorKey,
+      onGenerateRoute: (settings) {
+        return MaterialPageRoute(
+            builder: (settings.name == '/queryResults')
+                ? (_) => const QueryResultsPage()
+                : (_) => child,
+            settings: settings);
+      },
+    );
+  }
+
+  // ... (outros métodos auxiliares: _onWillPop, _getAppBarTitle, etc. sem alterações)
+  Future<bool> _onWillPop() async {
+    final currentKey = _currentNavigatorKey;
+    if (currentKey == null ||
+        currentKey.currentState == null ||
+        !currentKey.currentState!.canPop()) {
+      return true;
+    }
+    currentKey.currentState!.pop();
+    return false;
+  }
+
+  GlobalKey<NavigatorState>? get _currentNavigatorKey {
+    switch (_selectedIndex) {
+      case 0:
+        return _userNavigatorKey;
+      case 1:
+        return _bibleNavigatorKey;
+      default:
+        return null;
+    }
+  }
+
+  String _getAppBarTitle(int index) {
+    switch (index) {
+      case 0:
+        return "Meu Perfil";
+      case 1:
+        return "Bíblia";
+      case 2:
+        return "Biblioteca";
+      case 3:
+        return "Diário";
+      default:
+        return "Septima";
+    }
+  }
+
+  int _calculateActualIndexFromTarget(int targetIndexFromAction) {
+    return (targetIndexFromAction >= 0 && targetIndexFromAction < _pages.length)
+        ? targetIndexFromAction
+        : 0;
+  }
+
+  AppThemeOption _getNextTheme(AppThemeOption currentTheme) {
+    final themes = AppThemeOption.values;
+    final currentIndex = themes.indexOf(currentTheme);
+    final nextIndex = (currentIndex + 1) % themes.length;
+    return themes[nextIndex];
+  }
+
+  IconData _getThemeIcon(AppThemeOption currentTheme) {
+    switch (currentTheme) {
+      case AppThemeOption.green:
+        return Icons.eco_outlined;
+      case AppThemeOption.septimaDark:
+        return Icons.nightlight_round;
+      case AppThemeOption.septimaLight:
+        return Icons.wb_sunny_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ShowCaseWidget(
+      // O builder nos dá um contexto que está "dentro" do ShowCaseWidget.
+      // Isso é essencial para que ShowCaseWidget.of() funcione.
+      builder: (showcaseContext) {
+        // Usamos um StatefulWidget para controlar a flag e evitar loops.
+        // A lógica de verificação é movida para dentro do builder,
+        // onde temos acesso tanto ao contexto correto quanto ao estado do Redux.
+        final storeInstance =
+            StoreProvider.of<AppState>(context, listen: false);
+        final isGuest = storeInstance.state.userState.isGuestUser;
+        final isLoggedIn = storeInstance.state.userState.isLoggedIn;
+
+        // Se for a primeira vez que este build é executado E o usuário está logado (não é convidado)
+        if (!_tutorialHasBeenChecked && isLoggedIn && !isGuest) {
+          // Marca como verificado para não rodar de novo
+          _tutorialHasBeenChecked = true;
+
+          // Chama o serviço do tutorial com o contexto correto
+          _tutorialService.startMainTutorial(showcaseContext);
+        }
+
+        // Finalmente, retorna o Scaffold, que é a UI principal da tela.
+        return _buildScaffold();
+      },
+      autoPlay: false,
+      blurValue: 2,
+    );
+  }
+
+  Widget _buildScaffold() {
+    final storeInstance = StoreProvider.of<AppState>(context, listen: false);
+    final ThemeData currentThemeData = Theme.of(context);
+
+    return StoreConnector<AppState, _MainAppScreenViewModel>(
+      converter: (store) => _MainAppScreenViewModel.fromStore(store),
+      onDidChange: (previousViewModel, newViewModel) {
+        if (mounted &&
+            newViewModel != null &&
+            previousViewModel != newViewModel) {
+          _updatePremiumUI(newViewModel.isPremium);
+          if (newViewModel.targetBottomNavIndex != null) {
+            int targetIndex = newViewModel.targetBottomNavIndex!;
+            int actualNewIndex = _calculateActualIndexFromTarget(targetIndex);
+            if (actualNewIndex != _selectedIndex) {
+              setState(() => _selectedIndex = actualNewIndex);
+            }
+            storeInstance.dispatch(ClearTargetBottomNavAction());
+          }
+        }
+      },
+      builder: (context, mainScreenViewModel) {
+        if (mainScreenViewModel == null) {
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
+        }
+
+        final AppThemeOption currentThemeOptionFromRedux =
+            mainScreenViewModel.activeThemeOption;
+
+        return WillPopScope(
+          onWillPop: _onWillPop,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(_getAppBarTitle(_selectedIndex)),
+              actions: [
+                _tutorialService.buildShowcase(
+                  key: _tutorialService.keyMudarTema,
+                  title: 'Mudar Tema',
+                  description:
+                      'Toque aqui para alternar entre os temas de cores do aplicativo.',
+                  child: IconButton(
+                    icon: Icon(_getThemeIcon(currentThemeOptionFromRedux)),
+                    tooltip: 'Mudar Tema',
+                    onPressed: () {
+                      final nextTheme =
+                          _getNextTheme(currentThemeOptionFromRedux);
+                      storeInstance.dispatch(SetThemeAction(nextTheme));
+                    },
+                  ),
+                ),
+                _tutorialService.buildShowcase(
+                  key: _tutorialService.keyMoedas,
+                  title: 'Suas Moedas',
+                  description:
+                      'Use moedas para buscas avançadas. Assista a um anúncio para ganhar mais!',
+                  child: StoreConnector<AppState, _UserCoinsViewModel>(
+                    converter: (store) => _UserCoinsViewModel.fromStore(store),
+                    builder: (context, coinsViewModel) {
+                      if (coinsViewModel.isPremium)
+                        return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.monetization_on,
+                                color: currentThemeData.colorScheme.primary,
+                                size: 22),
+                            const SizedBox(width: 4),
+                            Text('${coinsViewModel.userCoins}',
+                                style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: currentThemeData.appBarTheme
+                                            .titleTextStyle?.color ??
+                                        currentThemeData
+                                            .colorScheme.onPrimary)),
+                            if (coinsViewModel.userCoins < MAX_COINS_LIMIT)
+                              IconButton(
+                                icon: Icon(Icons.add_circle_outline,
+                                    color: currentThemeData.colorScheme.primary,
+                                    size: 24),
+                                tooltip: 'Ganhar Moedas',
+                                onPressed: () => storeInstance
+                                    .dispatch(RequestRewardedAdAction()),
+                              )
+                            else
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: Icon(Icons.check_circle,
+                                    color: currentThemeData.colorScheme.primary
+                                        .withOpacity(0.7),
+                                    size: 22),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                _tutorialService.buildShowcase(
+                  key: _tutorialService.keySejaPremium,
+                  title: 'Seja Premium',
+                  description:
+                      'Toque aqui para desbloquear todos os recursos e remover os anúncios.',
+                  child: StoreConnector<AppState, bool>(
+                    converter: (store) =>
+                        _UserCoinsViewModel.fromStore(store).isPremium,
+                    builder: (context, isPremium) {
+                      if (isPremium) {
+                        return const Padding(
+                          padding: EdgeInsets.only(right: 8.0),
+                          child: Icon(Icons.verified_user_outlined,
+                              color: Colors.amber),
+                        );
+                      }
+                      return IconButton(
+                        icon: const Icon(Icons.workspace_premium_outlined),
+                        tooltip: 'Torne-se Premium',
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const SubscriptionSelectionPage())),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            body: IndexedStack(index: _selectedIndex, children: _pages),
+            bottomNavigationBar: BottomNavigationBar(
+              type: BottomNavigationBarType.fixed,
+              currentIndex: _selectedIndex,
+              onTap: (index) {
+                if (!mounted) return;
+                if (storeInstance.state.userState.isGuestUser && index == 0) {
+                  showLoginRequiredDialog(context, featureName: "seu perfil");
+                  return;
+                }
+                int previousIndex = _selectedIndex;
+                if (previousIndex != index) {
+                  final bool isPremium =
+                      _UserCoinsViewModel.fromStore(storeInstance).isPremium;
+                  void navigateToNewTab() {
+                    if (mounted) {
+                      setState(() => _selectedIndex = index);
+                      if (previousIndex == 1 && index != 1) {
+                        final userState = storeInstance.state.userState;
+                        if (userState.userId != null) {
+                          if (userState.pendingSectionsToAdd.isNotEmpty ||
+                              userState.pendingSectionsToRemove.isNotEmpty) {
+                            storeInstance
+                                .dispatch(ProcessPendingBibleProgressAction());
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  if (!isPremium) {
+                    interstitialManager
+                        .tryShowInterstitial(
+                            fromScreen:
+                                "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
+                        .then((_) {
+                      navigateToNewTab();
+                    });
+                  } else {
+                    navigateToNewTab();
+                  }
+                }
+              },
+              items: [
+                _tutorialService.buildShowcasedBottomNavItem(
+                    key: _tutorialService.keyAbaUsuario,
+                    icon: Icons.account_circle,
+                    label: 'Usuário',
+                    description: 'Acesse seu perfil, progresso e notas aqui.'),
+                _tutorialService.buildShowcasedBottomNavItem(
+                    key: _tutorialService.keyAbaBiblia,
+                    icon: Icons.book_outlined,
+                    label: 'Bíblia',
+                    description:
+                        'Navegue pelos livros da Bíblia e faça estudos profundos.'),
+                _tutorialService.buildShowcasedBottomNavItem(
+                    key: _tutorialService.keyAbaBiblioteca,
+                    icon: Icons.local_library_outlined,
+                    label: 'Biblioteca',
+                    description:
+                        'Explore uma vasta coleção de sermões, livros e outros recursos.'),
+                _tutorialService.buildShowcasedBottomNavItem(
+                    key: _tutorialService.keyAbaDiario,
+                    icon: Icons.edit_note_outlined,
+                    label: 'Diário',
+                    description:
+                        'Registre suas reflexões diárias, orações e promessas.'),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
