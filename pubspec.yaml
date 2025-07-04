@@ -66,6 +66,7 @@ dependencies:
   path_provider: ^2.1.5
   open_file_plus: ^3.4.1+1
   printing: ^5.14.2
+  flutter_dotenv: ^5.2.1
   
 flutter_localizations:
     sdk: flutter
@@ -476,6 +477,8 @@ flutter:
     - assets/Biblia/blocos/3jo/
     - assets/Biblia/blocos/jd/
     - assets/Biblia/blocos/ap/
+
+    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:

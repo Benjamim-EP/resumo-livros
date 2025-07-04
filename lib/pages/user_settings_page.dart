@@ -9,6 +9,7 @@ import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/services/subscription_manager.dart';
 import 'package:redux/redux.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ViewModel para a página, obtendo todos os dados necessários do Redux
 class _SettingsViewModel {
@@ -73,6 +74,20 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     super.dispose();
   }
 
+  Future<void> _launchPrivacyPolicy() async {
+    final Uri url = Uri.parse(
+        'https://benjamim-ep.github.io/septima_biblia_privacy_policy/privacy_policy.html');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      // Se não conseguir abrir a URL, mostra um erro para o usuário
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Não foi possível abrir a política de privacidade.')),
+        );
+      }
+    }
+  }
   // --- Funções de Lógica e Diálogos ---
 
   void _saveChanges() {
@@ -293,6 +308,17 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   ),
                   const SizedBox(height: 16),
+                  // <<< 3. ADICIONE O BOTÃO/LINK AQUI >>>
+                  // Opção A: Usando um ListTile para um visual mais limpo
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: const Text('Política de Privacidade'),
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: _launchPrivacyPolicy,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  ),
+
+                  const SizedBox(height: 10), // Espaçamento
                   ElevatedButton.icon(
                     icon: Icon(Icons.logout, color: theme.colorScheme.onError),
                     label: const Text('Sair da Conta'),

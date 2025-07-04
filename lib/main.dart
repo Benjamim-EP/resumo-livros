@@ -1,6 +1,7 @@
 // Em: lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:septima_biblia/redux/actions.dart';
@@ -17,6 +18,7 @@ void main() async {
   // Garante que todos os bindings do Flutter estejam inicializados antes de
   // qualquer código assíncrono ou de inicialização de plugins.
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
 
   // Inicializa a formatação de data e hora para o local 'pt_BR'.
   // Crucial para que datas como "15 de Outubro de 2024" sejam exibidas corretamente.
