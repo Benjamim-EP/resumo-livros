@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:septima_biblia/pages/sermon_detail_page.dart';
 
 class PdfGenerationService {
   Future<String> generateBibleChapterPdf({
@@ -201,6 +202,102 @@ class PdfGenerationService {
     return contentWidgets;
   }
   // <<<<<<<<< FIM DA CORREÇÃO
+
+  Future<String> generateSermonPdf({
+    required Sermon sermon,
+  }) async {
+    final pdf = pw.Document();
+
+    // Reutilizando as fontes já carregadas
+    final font = await pw.Font.ttf(
+        await rootBundle.load("assets/fonts/Poppins-Regular.ttf"));
+    final fontBold = await pw.Font.ttf(
+        await rootBundle.load("assets/fonts/Poppins-Bold.ttf"));
+    final fontItalic = await pw.Font.ttf(
+        await rootBundle.load("assets/fonts/Poppins-Italic.ttf"));
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(
+            base: font, bold: fontBold, italic: fontItalic),
+        header: (context) => _buildSermonHeader(context, sermon),
+        footer: (context) => _buildFooter(context), // O rodapé é o mesmo
+        build: (context) => _buildSermonPdfBody(sermon),
+      ),
+    );
+
+    // O nome do arquivo usa o ID do sermão para ser único e evitar caracteres inválidos
+    return _saveDocument(
+      name: 'sermon_${sermon.generatedSermonId}.pdf',
+      pdf: pdf,
+    );
+  }
+
+  // --- Widgets Auxiliares para o PDF do Sermão ---
+
+  pw.Widget _buildSermonHeader(pw.Context context, Sermon sermon) {
+    return pw.Container(
+      alignment: pw.Alignment.centerRight,
+      margin: const pw.EdgeInsets.only(bottom: 3.0 * PdfPageFormat.mm),
+      padding: const pw.EdgeInsets.only(bottom: 3.0 * PdfPageFormat.mm),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(
+            bottom: pw.BorderSide(width: 0.5, color: PdfColors.grey600)),
+      ),
+      child: pw.Text(
+        'Sermão de ${sermon.preacher ?? "C.H. Spurgeon"}',
+        style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 9),
+      ),
+    );
+  }
+
+  List<pw.Widget> _buildSermonPdfBody(Sermon sermon) {
+    List<pw.Widget> contentWidgets = [];
+
+    // Título do Sermão
+    contentWidgets.add(pw.Text(
+      sermon.translatedTitle,
+      style: pw.TextStyle(
+          fontSize: 22,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.blueGrey800),
+      textAlign: pw.TextAlign.center,
+    ));
+
+    // Referência Principal
+    if (sermon.mainScripturePassageAbbreviated != null) {
+      contentWidgets.add(pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 8),
+        child: pw.Text(
+          sermon.mainScripturePassageAbbreviated!,
+          style: pw.TextStyle(
+              fontSize: 14,
+              fontStyle: pw.FontStyle.italic,
+              color: PdfColors.grey700),
+          textAlign: pw.TextAlign.center,
+        ),
+      ));
+    }
+
+    contentWidgets.add(pw.Divider(height: 30));
+
+    // Corpo do Sermão (parágrafo por parágrafo)
+    for (var paragraphText in sermon.paragraphsToDisplay) {
+      if (paragraphText.isNotEmpty) {
+        contentWidgets.add(
+          pw.Paragraph(
+            text: paragraphText,
+            textAlign: pw.TextAlign.justify,
+            style: const pw.TextStyle(lineSpacing: 2),
+            margin: const pw.EdgeInsets.only(bottom: 12.0),
+          ),
+        );
+      }
+    }
+
+    return contentWidgets;
+  }
 
   Future<String> _saveDocument({
     required String name,

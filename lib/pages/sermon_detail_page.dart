@@ -1,7 +1,11 @@
 // lib/pages/sermon_detail_page.dart
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:open_file_plus/open_file_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
@@ -10,6 +14,7 @@ import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
+import 'package:septima_biblia/services/pdf_generation_service.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:redux/redux.dart';
@@ -144,6 +149,10 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   TtsPlayerState _sermonPlayerState = TtsPlayerState.stopped;
   final Map<String, GlobalKey> _paragraphKeys = {};
 
+  final PdfGenerationService _pdfService = PdfGenerationService();
+  bool _isGeneratingPdf = false;
+  String? _existingPdfPath;
+
   // >>> MUDANÇA: Diálogo de acesso premium <<<
   void _showPremiumRequiredDialog(BuildContext context) {
     showDialog(
@@ -194,6 +203,73 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
 
   // (O resto das suas funções permanece aqui: _scrollToSnippet, initState, dispose, _onTtsStateChanged, etc.)
   // ... (cole suas funções existentes aqui)
+  // =======================================================================
+  // >>>>>>>>>>>> NOVOS MÉTODOS PARA GERENCIAR PDF <<<<<<<<<<<<<<<
+  // =======================================================================
+
+  // Gera o nome de arquivo único para o PDF do sermão
+  String _getSermonPdfFilename() {
+    // Usar o ID gerado garante um nome de arquivo único e seguro
+    return 'sermon_${widget.sermonGeneratedId}.pdf';
+  }
+
+  // Verifica se um PDF já existe localmente
+  Future<void> _checkIfSermonPdfExists() async {
+    if (_sermonDataFromFirestore == null) return;
+
+    final fileName = _getSermonPdfFilename();
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/$fileName');
+
+      if (await file.exists()) {
+        if (mounted) setState(() => _existingPdfPath = file.path);
+      } else {
+        if (mounted) setState(() => _existingPdfPath = null);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _existingPdfPath = null);
+    }
+  }
+
+  // Função principal que é chamada pelo botão para gerar o PDF
+  Future<void> _handleGenerateSermonPdf() async {
+    if (_isGeneratingPdf || _sermonDataFromFirestore == null) return;
+
+    setState(() => _isGeneratingPdf = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Gerando PDF do sermão...'),
+          duration: Duration(seconds: 10)),
+    );
+
+    try {
+      // Chama o novo método no serviço de PDF
+      final filePath = await _pdfService.generateSermonPdf(
+        sermon: _sermonDataFromFirestore!,
+      );
+
+      if (mounted) {
+        setState(() {
+          _existingPdfPath = filePath;
+          _isGeneratingPdf = false;
+        });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF do sermão gerado com sucesso!')),
+        );
+        OpenFile.open(filePath);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isGeneratingPdf = false);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao gerar PDF do sermão: $e')),
+        );
+      }
+    }
+  }
 
   void _scrollToSnippet() {
     if (widget.snippetToScrollTo == null) return;
@@ -219,6 +295,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     _loadSermonDataFromFirestore().then((_) {
       if (mounted) {
         _scrollToSnippet();
+        _checkIfSermonPdfExists();
       }
     });
     _ttsManager.playerState.addListener(_onTtsStateChanged);
@@ -467,6 +544,42 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         actions: [
+          if (_sermonDataFromFirestore != null) ...[
+            // Só mostra botões se os dados do sermão estiverem carregados
+            if (_isGeneratingPdf)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.5)),
+              )
+            else if (_existingPdfPath != null)
+              PopupMenuButton<String>(
+                icon: Icon(Icons.picture_as_pdf,
+                    color: theme.colorScheme.primary),
+                tooltip: "Opções do PDF do Sermão",
+                onSelected: (value) {
+                  if (value == 'view') {
+                    OpenFile.open(_existingPdfPath!);
+                  } else if (value == 'regenerate') {
+                    _handleGenerateSermonPdf();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                      value: 'view', child: Text('Ver PDF Salvo')),
+                  const PopupMenuItem(
+                      value: 'regenerate', child: Text('Gerar Novamente')),
+                ],
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                tooltip: "Gerar PDF do Sermão",
+                onPressed: _handleGenerateSermonPdf,
+              ),
+          ],
           if (!_isLoading && _error == null)
             IconButton(
                 icon: Icon(_getAudioIcon(),
