@@ -1,8 +1,11 @@
 // lib/pages/bible_page.dart
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:open_file_plus/open_file_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_navigation_controls.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_options_bar.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
@@ -18,6 +21,7 @@ import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
+import 'package:septima_biblia/services/pdf_generation_service.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
@@ -99,6 +103,10 @@ class _BiblePageState extends State<BiblePage> {
   String? _currentlyPlayingSectionId;
   TtsContentType? _currentlyPlayingContentType;
 
+  final PdfGenerationService _pdfService = PdfGenerationService();
+  bool _isGeneratingPdf = false;
+  String? _existingPdfPath;
+
   @override
   void initState() {
     _loadFontSizePreference();
@@ -126,8 +134,39 @@ class _BiblePageState extends State<BiblePage> {
               "-> A lista 'allUserTags' no estado JÁ ESTÁ CARREGADA com ${store.state.userState.allUserTags.length} tags.");
           print("------------------------");
         }
+        _checkIfPdfExists();
       }
     });
+  }
+
+  // NOVO MÉTODO: Verifica se o PDF já existe para o capítulo atual
+  Future<void> _checkIfPdfExists() async {
+    if (selectedBook == null || selectedChapter == null) return;
+
+    final bookName = booksMap?[selectedBook]?['nome'] ?? selectedBook!;
+    final fileName =
+        'septima_biblia_${bookName.replaceAll(' ', '_')}_${selectedChapter!}.pdf';
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/$fileName');
+
+      if (await file.exists()) {
+        if (mounted) {
+          setState(() {
+            _existingPdfPath = file.path;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _existingPdfPath = null;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _existingPdfPath = null);
+    }
   }
 
   @override
@@ -493,10 +532,75 @@ class _BiblePageState extends State<BiblePage> {
           if (_showGreekInterlinear) _loadCurrentChapterGreekDataIfNeeded();
         }
       });
+      _checkIfPdfExists();
     }
 
     if (bookOrChapterChanged || forceKeyUpdate) {
       _recordHistory(book, chapter);
+    }
+  }
+
+  Future<void> _handleGeneratePdf() async {
+    if (_isGeneratingPdf ||
+        selectedBook == null ||
+        selectedChapter == null ||
+        booksMap == null) return;
+
+    setState(() => _isGeneratingPdf = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Gerando PDF, por favor aguarde...'),
+          duration: Duration(seconds: 10)),
+    );
+
+    try {
+      // 1. Coletar todos os dados necessários
+      final chapterData = await BiblePageHelper.loadChapterDataComparison(
+        selectedBook!,
+        selectedChapter!,
+        'nvi', // Usamos NVI como base para o texto bíblico no PDF
+        null,
+      );
+
+      final List<Map<String, dynamic>> sections =
+          List.from(chapterData['sectionStructure'] ?? []);
+
+      final Map<String, List<Map<String, dynamic>>> commentaries =
+          await _firestoreService.fetchAllCommentariesForChapter(
+        selectedBook!,
+        selectedChapter!,
+        sections,
+      );
+
+      // 2. Chamar o serviço de geração de PDF
+      final String filePath = await _pdfService.generateBibleChapterPdf(
+        bookName: booksMap![selectedBook]!['nome'],
+        chapterNumber: selectedChapter!,
+        sections: sections,
+        verseData: chapterData['verseData'],
+        commentaries: commentaries,
+      );
+
+      // 3. Atualizar a UI e abrir o arquivo
+      if (mounted) {
+        setState(() {
+          _existingPdfPath = filePath;
+          _isGeneratingPdf = false;
+        });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF gerado com sucesso!')),
+        );
+        OpenFile.open(filePath);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isGeneratingPdf = false);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao gerar PDF: $e')),
+        );
+      }
     }
   }
 
@@ -991,31 +1095,38 @@ class _BiblePageState extends State<BiblePage> {
 
   List<Widget> _buildAppBarActions(
       BuildContext context, ThemeData theme, _BiblePageViewModel viewModel) {
-    Color defaultIconColor = theme.appBarTheme.actionsIconTheme?.color ??
+    // Cores padrão para os ícones, baseadas no tema atual
+    final Color defaultIconColor = theme.appBarTheme.actionsIconTheme?.color ??
         theme.colorScheme.onPrimary;
-    Color activeSemanticSearchIconColor = theme.colorScheme.secondary;
+    final Color activeSemanticSearchIconColor = theme.colorScheme.secondary;
 
+    // 1. Caso especial: Modo Foco (Leitura)
+    // Se o modo foco estiver ativo, mostramos apenas o botão para sair dele.
     if (_isFocusModeActive) {
       return [
         IconButton(
-            icon: Icon(Icons.fullscreen_exit, color: defaultIconColor),
-            tooltip: "Sair do Modo Foco",
-            onPressed: () => setState(() => _isFocusModeActive = false)),
+          icon: Icon(Icons.fullscreen_exit, color: defaultIconColor),
+          tooltip: "Sair do Modo Foco",
+          onPressed: () => setState(() => _isFocusModeActive = false),
+        ),
       ];
     }
 
-    List<Widget> actions = [];
+    // Lista para acumular os botões de ação que serão exibidos
+    final List<Widget> actions = [];
 
+    // 2. Botão de controle de áudio (TTS)
+    // Aparece sempre que o player de áudio não estiver parado.
     if (_currentPlayerState != TtsPlayerState.stopped) {
       actions.add(
         IconButton(
           icon: Icon(
-              _currentPlayerState == TtsPlayerState.playing
-                  ? Icons.pause_circle_outline_rounded
-                  : Icons.play_circle_outline_rounded,
-              color: const Color.fromARGB(
-                  255, 253, 242, 242), //theme.colorScheme.secondary,
-              size: 28),
+            _currentPlayerState == TtsPlayerState.playing
+                ? Icons.pause_circle_outline_rounded
+                : Icons.play_circle_outline_rounded,
+            color: theme.colorScheme.primary, // Cor de destaque
+            size: 28,
+          ),
           tooltip: _currentPlayerState == TtsPlayerState.playing
               ? "Pausar Leitura"
               : "Continuar Leitura",
@@ -1024,41 +1135,122 @@ class _BiblePageState extends State<BiblePage> {
       );
     }
 
+    // 3. Lógica principal: Modo de Busca Semântica vs. Modo Normal
     if (_isSemanticSearchActive) {
-      actions.add(IconButton(
+      // Ações para quando a busca semântica está ativa
+      actions.addAll([
+        IconButton(
           icon: Icon(Icons.search,
               color: activeSemanticSearchIconColor, size: 26),
           tooltip: "Buscar",
-          onPressed: _applyFiltersToReduxAndSearch));
-      actions.add(IconButton(
+          onPressed: _applyFiltersToReduxAndSearch,
+        ),
+        IconButton(
           icon: Icon(Icons.close, color: defaultIconColor, size: 26),
           tooltip: "Fechar Busca",
           onPressed: () => setState(() {
-                _isSemanticSearchActive = false;
-                _semanticQueryController.clear();
-              })));
+            _isSemanticSearchActive = false;
+            _semanticQueryController.clear();
+          }),
+        ),
+      ]);
     } else {
-      actions.add(IconButton(
+      // Ações para o modo de visualização normal (não-busca)
+
+      // Adiciona o botão de trocar voz
+      actions.add(
+        IconButton(
+          icon: Icon(Icons.record_voice_over_outlined, color: defaultIconColor),
+          tooltip: "Alterar Voz",
+          onPressed: _showVoiceSelectionDialog,
+        ),
+      );
+
+      // --- LÓGICA DO BOTÃO DE PDF ---
+      if (_isGeneratingPdf) {
+        // Estado 1: Gerando o PDF
+        actions.add(Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+                strokeWidth: 2.5, color: defaultIconColor),
+          ),
+        ));
+      } else if (_existingPdfPath != null) {
+        // Estado 2: O PDF já existe, mostra opções
+        actions.add(
+          PopupMenuButton<String>(
+            icon: Icon(Icons.picture_as_pdf,
+                color: theme.colorScheme.primary, size: 26),
+            tooltip: "Opções do PDF",
+            onSelected: (value) {
+              if (value == 'view') {
+                OpenFile.open(_existingPdfPath!);
+              } else if (value == 'regenerate') {
+                _handleGeneratePdf();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'view',
+                child: ListTile(
+                    leading: Icon(Icons.visibility),
+                    title: Text('Ver PDF Salvo')),
+              ),
+              const PopupMenuItem<String>(
+                value: 'regenerate',
+                child: ListTile(
+                    leading: Icon(Icons.refresh),
+                    title: Text('Gerar Novamente')),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Estado 3: O PDF não existe, mostra o botão para gerar
+        actions.add(
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf_outlined,
+                color: defaultIconColor, size: 26),
+            tooltip: "Gerar PDF do Capítulo",
+            onPressed: _handleGeneratePdf,
+          ),
+        );
+      }
+      // --- FIM DA LÓGICA DO BOTÃO DE PDF ---
+
+      actions.addAll([
+        IconButton(
           icon: Icon(Icons.manage_search_outlined,
               color: defaultIconColor, size: 26),
           tooltip: "Ir para referência",
-          onPressed: _showGoToDialog));
-      actions.add(IconButton(
-          icon: SvgPicture.asset('assets/icons/buscasemantica.svg',
-              colorFilter: ColorFilter.mode(defaultIconColor, BlendMode.srcIn),
-              width: 24,
-              height: 24),
+          onPressed: _showGoToDialog,
+        ),
+        IconButton(
+          icon: SvgPicture.asset(
+            'assets/icons/buscasemantica.svg',
+            colorFilter: ColorFilter.mode(defaultIconColor, BlendMode.srcIn),
+            width: 24,
+            height: 24,
+          ),
           tooltip: "Busca Semântica",
           onPressed: () => setState(() {
-                _isSemanticSearchActive = true;
-                _showExtraOptions = false;
-              })));
-      actions.add(IconButton(
+            _isSemanticSearchActive = true;
+            _showExtraOptions =
+                false; // Garante que a barra de opções extra se feche
+          }),
+        ),
+        IconButton(
           icon: Icon(Icons.more_vert, color: defaultIconColor, size: 26),
           tooltip: "Mais Opções",
           onPressed: () =>
-              setState(() => _showExtraOptions = !_showExtraOptions)));
+              setState(() => _showExtraOptions = !_showExtraOptions),
+        ),
+      ]);
     }
+
     return actions;
   }
 
@@ -1125,13 +1317,6 @@ class _BiblePageState extends State<BiblePage> {
             title: Text(appBarTitleText),
             leading: _isFocusModeActive ? const SizedBox.shrink() : null,
             actions: [
-              if (!_isSemanticSearchActive)
-                IconButton(
-                  icon: Icon(Icons.record_voice_over_outlined,
-                      color: theme.iconTheme.color),
-                  tooltip: "Alterar Voz",
-                  onPressed: _showVoiceSelectionDialog,
-                ),
               ..._buildAppBarActions(context, theme, viewModel),
             ],
           ),

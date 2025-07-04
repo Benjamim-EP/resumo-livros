@@ -8,6 +8,55 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   static const int READING_HISTORY_LIMIT = 20;
 
+  Future<Map<String, List<Map<String, dynamic>>>>
+      fetchAllCommentariesForChapter(String bookAbbrev, int chapterNumber,
+          List<Map<String, dynamic>> sections) async {
+    if (sections.isEmpty) return {};
+
+    final Map<String, List<Map<String, dynamic>>> results = {};
+    String abbrevForFirestore =
+        bookAbbrev.toLowerCase() == 'job' ? 'jó' : bookAbbrev;
+
+    // Constrói a lista de IDs de documentos de comentários a serem buscados
+    List<String> commentaryDocIds = sections
+        .map((section) {
+          final List<int> verseNumbers =
+              (section['verses'] as List?)?.cast<int>() ?? [];
+          if (verseNumbers.isEmpty) return null;
+          final String versesRangeStr = verseNumbers.length == 1
+              ? verseNumbers.first.toString()
+              : "${verseNumbers.first}-${verseNumbers.last}";
+          return "${abbrevForFirestore}_c${chapterNumber}_v$versesRangeStr";
+        })
+        .whereType<String>()
+        .toList();
+
+    if (commentaryDocIds.isEmpty) return {};
+
+    // O Firestore permite buscar até 30 documentos por vez com `whereIn`
+    final querySnapshot = await _db
+        .collection('commentary_sections')
+        .where(FieldPath.documentId, whereIn: commentaryDocIds)
+        .get();
+
+    for (var doc in querySnapshot.docs) {
+      final commentaryData = doc.data();
+      final List<Map<String, dynamic>> items =
+          (commentaryData['commentary'] as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [];
+
+      // Mapeia de volta para a chave 'versesRangeStr'
+      final String docId = doc.id;
+      final String versesRangeStr = docId.split('_v').last;
+
+      results[versesRangeStr] = items;
+    }
+
+    return results;
+  }
+
   // --- User Methods ---
   Future<List<Map<String, dynamic>>> getUserRoutes(String userId) async {
     try {
