@@ -494,6 +494,14 @@ class BiblePageWidgets {
     final String? currentHighlightColorHex =
         currentHighlightData?['color'] as String?;
     final bool hasNote = userNotes.any((note) => note['verseId'] == verseId);
+    String? currentNoteText;
+    if (hasNote) {
+      currentNoteText = userNotes.firstWhere(
+        (note) => note['verseId'] == verseId,
+        orElse: () => {},
+      )['noteText'] as String?;
+    }
+    // final bool hasNote = userNotes.any((note) => note['verseId'] == verseId);
     final backgroundColor = currentHighlightColorHex != null
         ? Color(int.parse(currentHighlightColorHex.replaceFirst('#', '0xff')))
             .withOpacity(0.30)
@@ -678,13 +686,26 @@ class BiblePageWidgets {
                     !isGreekInterlinear &&
                     !showHebrewInterlinear &&
                     !showGreekInterlinear)
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: 5.0, right: 2.0, top: 2.0),
-                    child: Icon(Icons.note_alt_rounded,
+                  IconButton(
+                    icon: Icon(Icons.note_alt_rounded,
                         color: theme.colorScheme.primary.withOpacity(0.8),
                         size: 16 * fontSizeMultiplier),
-                  ),
+                    tooltip: "Ver Nota",
+                    padding:
+                        EdgeInsets.zero, // Para deixar o botão mais compacto
+                    constraints:
+                        const BoxConstraints(), // Remove o tamanho mínimo
+                    visualDensity: VisualDensity.compact, // Reduz o espaço
+                    onPressed: () {
+                      if (currentNoteText != null &&
+                          currentNoteText.isNotEmpty) {
+                        final String referenceForDialog =
+                            "$selectedBook $selectedChapter:$verseNumber";
+                        _showViewNoteDialog(
+                            context, referenceForDialog, currentNoteText);
+                      }
+                    },
+                  )
               ],
             ),
             if (complementaryHebrewInterlinearWidget != null)
@@ -1248,6 +1269,34 @@ class BiblePageWidgets {
               );
             });
       },
+    );
+  }
+
+  static void _showViewNoteDialog(
+      BuildContext context, String verseReference, String noteText) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: theme.dialogBackgroundColor,
+        title: Text(
+          "Nota para $verseReference",
+          style: TextStyle(
+              color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            noteText,
+            style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Fechar"),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+        ],
+      ),
     );
   }
 }
