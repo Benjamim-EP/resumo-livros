@@ -2,6 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -72,6 +73,24 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRestorePurchases() async {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verificando suas compras...')),
+      );
+    }
+    try {
+      await InAppPurchase.instance.restorePurchases();
+    } catch (e) {
+      print("Erro ao tentar restaurar compras: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ocorreu um erro: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _launchPrivacyPolicy() async {
@@ -295,7 +314,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         color: theme.colorScheme.primary),
                   ),
                   const SizedBox(height: 16),
-                  _buildSubscriptionButton(
+                  // <<< PASSO 3: MODIFICAR A UI PARA INCLUIR O NOVO BOTÃO >>>
+                  _buildSubscriptionSection(
                       context, theme, isPremium, viewModel),
                   _buildDivider(),
 
@@ -392,17 +412,18 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     );
   }
 
-  Widget _buildSubscriptionButton(BuildContext context, ThemeData theme,
+  // <<< MÉTODO _buildSubscriptionButton RENOMEADO E MODIFICADO >>>
+  Widget _buildSubscriptionSection(BuildContext context, ThemeData theme,
       bool isPremium, _SettingsViewModel viewModel) {
     if (isPremium) {
+      // Se for premium, mostra apenas o botão de gerenciar
       return ElevatedButton.icon(
         icon: const Icon(Icons.manage_accounts_outlined),
         label: const Text('Gerenciar Assinatura'),
         onPressed: () async {
           if (viewModel.activeProductId != null) {
             try {
-              const String packageName =
-                  "com.septima.septimabiblia"; // << SEU PACKAGE NAME
+              const String packageName = "com.septima.septimabiblia";
               await SubscriptionManager.openSubscriptionManagement(
                   viewModel.activeProductId!, packageName);
             } catch (e) {
@@ -425,16 +446,30 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         ),
       );
     } else {
-      return ElevatedButton.icon(
-        icon: const Icon(Icons.workspace_premium_outlined),
-        label: const Text('Seja Premium'),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => const SubscriptionSelectionPage()),
-          );
-        },
+      // Se não for premium, mostra os botões de assinar e restaurar
+      return Column(
+        children: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.workspace_premium_outlined),
+            label: const Text('Seja Premium'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const SubscriptionSelectionPage()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            icon: const Icon(Icons.restore),
+            label: const Text('Restaurar Compras'),
+            onPressed: _handleRestorePurchases,
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.secondary,
+            ),
+          ),
+        ],
       );
     }
   }

@@ -44,7 +44,7 @@ class DevotionalCard extends StatelessWidget {
           children: [
             Icon(
               isMorning ? Icons.wb_sunny_outlined : Icons.nightlight_round,
-              color: theme.colorScheme.secondary,
+              color: theme.colorScheme.primary,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -65,7 +65,7 @@ class DevotionalCard extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(
                 fontStyle: FontStyle.italic,
                 color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)),
-            maxLines: 1,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
         ),
