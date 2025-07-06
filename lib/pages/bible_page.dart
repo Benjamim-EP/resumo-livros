@@ -1512,10 +1512,21 @@ class _BiblePageState extends State<BiblePage> {
               PopupMenuItem<String>(
                 value: 'hebrew',
                 child: ListTile(
-                  leading: Icon(Icons.book_outlined,
-                      color: isPremium
-                          ? (_showHebrewInterlinear ? premiumIconColor : null)
-                          : premiumIconColor),
+                  leading: SvgPicture.asset(
+                    // <<< MUDANÇA AQUI
+                    'assets/icons/interlinear_icon.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(
+                      isPremium
+                          ? (_showHebrewInterlinear
+                              ? premiumIconColor
+                              : theme.iconTheme
+                                  .color!) // Cor normal se não selecionado
+                          : premiumIconColor, // Cor de destaque se não for premium
+                      BlendMode.srcIn,
+                    ),
+                  ),
                   title: Text('Hebraico Interlinear',
                       style: TextStyle(
                           color: isPremium ? null : premiumIconColor)),
@@ -1525,10 +1536,21 @@ class _BiblePageState extends State<BiblePage> {
               PopupMenuItem<String>(
                 value: 'greek',
                 child: ListTile(
-                  leading: Icon(Icons.book_outlined,
-                      color: isPremium
-                          ? (_showGreekInterlinear ? premiumIconColor : null)
-                          : premiumIconColor),
+                  leading: SvgPicture.asset(
+                    // <<< MUDANÇA AQUI
+                    'assets/icons/interlinear_icon.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(
+                      isPremium
+                          ? (_showGreekInterlinear
+                              ? premiumIconColor
+                              : theme.iconTheme
+                                  .color!) // Cor normal se não selecionado
+                          : premiumIconColor, // Cor de destaque se não for premium
+                      BlendMode.srcIn,
+                    ),
+                  ),
                   title: Text('Grego Interlinear',
                       style: TextStyle(
                           color: isPremium ? null : premiumIconColor)),
@@ -1587,14 +1609,17 @@ class _BiblePageState extends State<BiblePage> {
         String appBarTitleText;
         if (_isSemanticSearchActive) {
           appBarTitleText = "Busca na Bíblia";
+        } else if (_isCompareModeActive) {
+          // <<< MUDANÇA AQUI
+          appBarTitleText =
+              '${selectedTranslation1.toUpperCase()} / ${selectedTranslation2?.toUpperCase() ?? "..."}';
         } else {
           appBarTitleText = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
           if (_isFocusModeActive) {
             if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
-          } else if (_isCompareModeActive) {
-            appBarTitleText = 'Comparar Traduções';
-          } else if (!_showExtraOptions && selectedChapter != null) {
-            appBarTitleText += ' $selectedChapter';
+          } else {
+            // Removido o `else if (!_showExtraOptions)` que não existe mais
+            if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
           }
         }
 
@@ -1654,29 +1679,120 @@ class _BiblePageState extends State<BiblePage> {
                               currentChapterGreekData: _currentChapterGreekData,
                             ),
                 ),
-                if (!_isFocusModeActive &&
-                    !_isSemanticSearchActive &&
-                    !_showExtraOptions)
-                  BibleNavigationControls(
-                    selectedBook: selectedBook,
-                    selectedChapter: selectedChapter,
-                    booksMap: booksMap,
-                    onPreviousChapter: _previousChapter,
-                    onNextChapter: _nextChapter,
-                    onBookChanged: (value) {
-                      if (mounted && value != null)
-                        _navigateToChapter(value, 1);
-                    },
-                    onChapterChanged: (value) {
-                      if (mounted && value != null && selectedBook != null)
-                        _navigateToChapter(selectedBook!, value);
-                    },
-                  ),
+                if (!_isFocusModeActive && !_isSemanticSearchActive)
+                  // Se o modo de comparação estiver ativo, mostra o novo seletor
+                  if (_isCompareModeActive)
+                    _buildComparisonSelectorBar()
+                  // Senão, mostra a navegação de capítulo normal
+                  else
+                    BibleNavigationControls(
+                      selectedBook: selectedBook,
+                      selectedChapter: selectedChapter,
+                      booksMap: booksMap,
+                      onPreviousChapter: _previousChapter,
+                      onNextChapter: _nextChapter,
+                      onBookChanged: (value) {
+                        if (mounted && value != null)
+                          _navigateToChapter(value, 1);
+                      },
+                      onChapterChanged: (value) {
+                        if (mounted && value != null && selectedBook != null)
+                          _navigateToChapter(selectedBook!, value);
+                      },
+                    ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildComparisonSelectorBar() {
+    final theme = Theme.of(context);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    // Função auxiliar para criar um botão de seletor
+    Widget _buildSelectorButton(
+        String currentTranslation, Function(String) onSelected) {
+      return Expanded(
+        child: TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.1),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+          onPressed: () {
+            BiblePageWidgets.showTranslationSelection(
+              context: context,
+              selectedTranslation: currentTranslation,
+              onTranslationSelected: onSelected,
+              currentSelectedBookAbbrev: selectedBook,
+              booksMap: booksMap,
+              isPremium: isPremium,
+            );
+          },
+          child: Text(
+            currentTranslation.toUpperCase(),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          _buildSelectorButton(
+            selectedTranslation1,
+            (newVersion) {
+              // Garante que a nova versão não seja igual à do outro lado
+              if (newVersion != selectedTranslation2) {
+                setState(() {
+                  selectedTranslation1 = newVersion;
+                });
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content:
+                      Text('Selecione uma versão diferente da outra coluna.'),
+                  duration: Duration(seconds: 2),
+                ));
+              }
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Icon(Icons.compare_arrows_rounded,
+                color: theme.iconTheme.color),
+          ),
+          _buildSelectorButton(
+            selectedTranslation2 ?? '...',
+            (newVersion) {
+              if (newVersion != selectedTranslation1) {
+                setState(() {
+                  selectedTranslation2 = newVersion;
+                });
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content:
+                      Text('Selecione uma versão diferente da outra coluna.'),
+                  duration: Duration(seconds: 2),
+                ));
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
