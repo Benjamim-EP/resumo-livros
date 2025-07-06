@@ -21,9 +21,9 @@ enum TtsPlayerState { playing, stopped, paused }
 // --- Chave de Persistência ---
 const String _ttsVoicePrefsKey = 'user_selected_tts_voice';
 const Map<String, String> _voiceDisplayNames = {
-  'pt-br-x-afs-local': 'Voz Masculina 1 (Offline)',
+  'pt-br-x-afs-local': 'Voz Feminina 2 (Offline)',
   'pt-br-x-pte-local': 'Voz Feminina 1 (Offline)',
-  'pt-br-x-ptd-local': 'Voz Masculina 2 (Offline)',
+  'pt-br-x-ptd-local': 'Voz Masculina 1 (Offline)',
 };
 
 /// Gerencia a funcionalidade de Text-to-Speech (TTS) para todo o aplicativo.

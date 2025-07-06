@@ -228,7 +228,13 @@ class _BiblePageState extends State<BiblePage> {
   }
 
   void _onTtsStateChanged() {
-    if (mounted && _currentPlayerState != _ttsManager.playerState.value) {
+    // >>> INÍCIO DA MODIFICAÇÃO <<<
+    // Verifica se o widget ainda está montado ANTES de qualquer coisa.
+    if (!mounted) return;
+
+    // A condição crucial: só chama setState se o valor realmente mudou.
+    // Sua implementação já faz isso, o que é ótimo. Vamos mantê-la.
+    if (_currentPlayerState != _ttsManager.playerState.value) {
       setState(() {
         _currentPlayerState = _ttsManager.playerState.value;
         if (_currentPlayerState == TtsPlayerState.stopped) {
@@ -237,6 +243,7 @@ class _BiblePageState extends State<BiblePage> {
         }
       });
     }
+    // >>> FIM DA MODIFICAÇÃO <<<
   }
 
   void _handlePlayRequest(String sectionId, TtsContentType contentType) {
@@ -1104,18 +1111,49 @@ class _BiblePageState extends State<BiblePage> {
 
   Future<void> _showVoiceSelectionDialog() async {
     final theme = Theme.of(context);
-    // A função getAvailableVoices agora retorna APENAS as vozes que queremos
-    final availableVoices = await _ttsManager.getAvailableVoices();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Usa um ValueNotifier para o estado de loading dentro do diálogo.
+    // Isso evita qualquer chamada a setState na BiblePage.
+    final ValueNotifier<bool> isLoadingVoices = ValueNotifier(true);
+
+    // Carrega as vozes ANTES de abrir o diálogo principal
+    List<Map<dynamic, dynamic>> availableVoices = [];
+    String? loadingError;
+
+    try {
+      availableVoices = await _ttsManager.getAvailableVoices();
+    } catch (e, s) {
+      print("ERRO GRAVE ao obter vozes TTS: $e\n$s");
+      loadingError =
+          'Não foi possível carregar as vozes. O motor de voz deste dispositivo pode não ser compatível.';
+    } finally {
+      isLoadingVoices.value = false;
+    }
+
+    // Se o contexto foi descartado enquanto as vozes carregavam, não faz nada.
     if (!mounted) return;
 
-    // Mostra um aviso se nenhuma das vozes desejadas for encontrada no dispositivo do usuário
+    // Se houve um erro durante o carregamento, mostra o erro e não abre o diálogo.
+    if (loadingError != null) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(loadingError),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    // Se não há vozes, informa o usuário e não abre o diálogo.
     if (availableVoices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      scaffoldMessenger.showSnackBar(const SnackBar(
           content: Text(
               "Nenhuma das vozes padrão foi encontrada neste dispositivo.")));
       return;
     }
 
+    // Mostra o diálogo de seleção de voz
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -1130,22 +1168,19 @@ class _BiblePageState extends State<BiblePage> {
               itemCount: availableVoices.length,
               itemBuilder: (context, index) {
                 final voice = availableVoices[index];
-
-                // --- INÍCIO DA MODIFICAÇÃO: Usar a nova função do TtsManager ---
                 final String rawVoiceName = voice['name'] as String? ?? '';
-                // Usamos a função auxiliar que criamos no TtsManager para obter o nome amigável
                 final String displayName =
                     _ttsManager.getVoiceDisplayName(rawVoiceName);
-                // --- FIM DA MODIFICAÇÃO ---
 
                 return ListTile(
-                  title: Text(displayName, // A mágica acontece aqui!
+                  title: Text(displayName,
                       style: TextStyle(color: theme.colorScheme.onSurface)),
                   onTap: () {
-                    // A lógica aqui permanece a mesma, pois setVoice precisa do objeto `voice` completo
+                    // Simplesmente chama o método do TtsManager e fecha o diálogo.
+                    // NENHUMA CHAMADA a setState aqui.
                     _ttsManager.setVoice(voice);
                     Navigator.of(dialogContext).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    scaffoldMessenger.showSnackBar(SnackBar(
                         content: Text("Voz alterada para: $displayName")));
                   },
                 );
