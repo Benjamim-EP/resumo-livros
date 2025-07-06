@@ -11,6 +11,7 @@ import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/services/subscription_manager.dart';
 import 'package:redux/redux.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ViewModel para a página, obtendo todos os dados necessários do Redux
 class _SettingsViewModel {
@@ -27,13 +28,37 @@ class _SettingsViewModel {
     this.activeProductId,
     required this.isGuest,
   });
-
   static _SettingsViewModel fromStore(Store<AppState> store) {
+    final subState = store.state.subscriptionState;
+    final userDetails = store.state.userState.userDetails ?? {};
+    bool isConsideredPremium = false;
+
+    // Cenário 1: O estado Redux da assinatura já diz que é premium.
+    if (subState.status == SubscriptionStatus.premiumActive) {
+      isConsideredPremium = true;
+    }
+    // Cenário 2: Fallback - O estado Redux não foi atualizado, mas os detalhes do usuário no Firestore sim.
+    // Isso é útil durante o carregamento inicial do app.
+    else {
+      final statusString = userDetails['subscriptionStatus'] as String?;
+      final endDate =
+          (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+
+      if (statusString == 'active' &&
+          endDate != null &&
+          endDate.isAfter(DateTime.now())) {
+        isConsideredPremium = true;
+      }
+    }
+
     return _SettingsViewModel(
-      userDetails: store.state.userState.userDetails ?? {},
-      activeThemeOption: store.state.themeState.activeThemeOption,
-      subscriptionStatus: store.state.subscriptionState.status,
-      activeProductId: store.state.subscriptionState.activeProductId,
+      userDetails: userDetails,
+      activeThemeOption:
+          store.state.themeState.activeThemeOption, // <<< CORREÇÃO AQUI
+      subscriptionStatus: isConsideredPremium
+          ? SubscriptionStatus.premiumActive
+          : subState.status,
+      activeProductId: subState.activeProductId ?? userDetails['activePriceId'],
       isGuest: store.state.userState.isGuestUser,
     );
   }
@@ -239,7 +264,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           }
         },
         builder: (context, viewModel) {
+          // O viewModel aqui é a instância de _SettingsViewModel
           final theme = Theme.of(context);
+          // >>>>> CORREÇÃO AQUI <<<<<
+          // A variável `isPremium` é determinada pela lógica consolidada no ViewModel
           final bool isPremium =
               viewModel.subscriptionStatus == SubscriptionStatus.premiumActive;
 
@@ -314,9 +342,12 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         color: theme.colorScheme.primary),
                   ),
                   const SizedBox(height: 16),
-                  // <<< PASSO 3: MODIFICAR A UI PARA INCLUIR O NOVO BOTÃO >>>
                   _buildSubscriptionSection(
-                      context, theme, isPremium, viewModel),
+                      // Passa as variáveis corretas
+                      context,
+                      theme,
+                      isPremium,
+                      viewModel),
                   _buildDivider(),
 
                   // --- SEÇÃO OUTRAS AÇÕES ---
