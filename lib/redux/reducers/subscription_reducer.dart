@@ -66,6 +66,15 @@ class SubscriptionState {
 
 // Reducer para SubscriptionState
 SubscriptionState subscriptionReducer(SubscriptionState state, dynamic action) {
+  if (action is InitiateGooglePlaySubscriptionAction) {
+    return state.copyWith(isLoading: true, clearError: true);
+  }
+
+  // >>>>> ADICIONE ESTE BLOCO <<<<<
+  if (action is FinalizePurchaseAttemptAction) {
+    // Esta ação é despachada em caso de erro ou cancelamento para resetar o loading
+    return state.copyWith(isLoading: false);
+  }
   if (action is InitiateStripePaymentAction ||
       action is InitiateGooglePlaySubscriptionAction) {
     // Adicionada nova ação
@@ -139,6 +148,12 @@ SubscriptionState subscriptionReducer(SubscriptionState state, dynamic action) {
     // Adicionada nova ação
     return state.copyWith(
         isLoading: false,
+        status: SubscriptionStatus.error,
+        lastError: action.error);
+  }
+  if (action is GooglePlayPaymentFailedAction) {
+    return state.copyWith(
+        isLoading: false, // Garante que isLoading seja false em caso de falha
         status: SubscriptionStatus.error,
         lastError: action.error);
   }

@@ -1,13 +1,12 @@
 // lib/pages/purschase_pages/subscription_selection_page.dart
 
-import 'dart:async'; // Para o Completer da lógica de compra
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:septima_biblia/redux/actions.dart'; // Para showLoginRequiredDialog e outras ações
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
-import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
+import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/consts.dart'; // <<< IMPORTA SUAS CONSTANTES GLOBAIS
+import 'package:septima_biblia/consts.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/login_required.dart';
 
@@ -25,6 +24,7 @@ class _ViewModel {
 
   static _ViewModel fromStore(Store<AppState> store) {
     return _ViewModel(
+      // <<< A UI agora depende diretamente deste estado global >>>
       isLoading: store.state.subscriptionState.isLoading,
       activeTheme: store.state.themeState.activeThemeOption,
       isGuest: store.state.userState.isGuestUser,
@@ -32,7 +32,7 @@ class _ViewModel {
   }
 }
 
-// Convertido para StatefulWidget para gerenciar o estado de loading local
+// O widget continua sendo um StatefulWidget, mas sem estado de loading local.
 class SubscriptionSelectionPage extends StatefulWidget {
   const SubscriptionSelectionPage({super.key});
 
@@ -42,8 +42,8 @@ class SubscriptionSelectionPage extends StatefulWidget {
 }
 
 class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
-  // Estado para controlar qual botão está em processo de compra
-  String? _processingProductId;
+  // O estado de loading local foi removido.
+  // String? _processingProductId; // <<<< REMOVIDO
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +56,26 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: theme.textTheme.bodyLarge?.color,
       ),
+      // O StoreConnector principal envolve toda a tela para reagir ao isLoading global
+      // e mostrar um loader de tela cheia, se necessário.
       body: StoreConnector<AppState, _ViewModel>(
         converter: (store) => _ViewModel.fromStore(store),
         builder: (context, viewModel) {
-          // Usa o loading global do Redux como um fallback,
-          // mas o loading local (_processingProductId) é mais responsivo.
+          // Se o processo de pagamento estiver em andamento (estado global),
+          // mostramos um loader de tela cheia.
           if (viewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text("Processando..."),
+                ],
+              ),
+            );
           }
+
           return SingleChildScrollView(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -169,13 +181,14 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
               _buildSubFeatureRow("História da Igreja (8 volumes)", theme),
               _buildSubFeatureRow("Institutas de Turretin (3 volumes)", theme),
               const Divider(height: 40),
+
+              // >>>>> OS BOTÕES AGORA SÃO STATELESS, APENAS DESPACHAM A AÇÃO <<<<<
               _buildPlanOptionButton(
                 context,
                 theme,
                 title: "Assinar Plano Mensal",
                 price: "R\$ 19,99 / mês",
-                productId: googlePlayMonthlyProductId, // Constante
-                activeTheme: activeTheme,
+                productId: googlePlayMonthlyProductId,
                 isGuest: isGuest,
               ),
               const SizedBox(height: 16),
@@ -184,8 +197,7 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
                 theme,
                 title: "Assinar Plano Trimestral",
                 price: "R\$ 47,99 / 3 meses",
-                productId: googlePlayQuarterlyProductId, // Constante
-                activeTheme: activeTheme,
+                productId: googlePlayQuarterlyProductId,
                 isGuest: isGuest,
               ),
             ],
@@ -270,97 +282,70 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // Widget para os botões de seleção de plano com a lógica de compra
+  // O botão de plano agora é um widget simples que apenas despacha a ação.
+  // Ele não precisa mais de um StoreConnector próprio, pois o loading
+  // é tratado pela tela inteira.
   Widget _buildPlanOptionButton(
     BuildContext context,
     ThemeData theme, {
     required String title,
     required String price,
     required String productId,
-    required AppThemeOption activeTheme,
     required bool isGuest,
   }) {
-    final bool isGreenTheme = activeTheme == AppThemeOption.green;
-    final bool isLoading = _processingProductId == productId;
-
-    final Color titleColor;
-    final Color priceColor;
-    final Color backgroundColor;
-    final Color iconColor;
-
-    if (isGreenTheme) {
-      backgroundColor = const Color(0xFFCDE7BE);
-      titleColor = const Color(0xFF181A1A);
-      priceColor = const Color(0xFF181A1A).withOpacity(0.7);
-      iconColor = Colors.black54;
-    } else {
-      backgroundColor = theme.colorScheme.primary.withOpacity(0.1);
-      titleColor = theme.colorScheme.primary;
-      priceColor = theme.colorScheme.primary.withOpacity(0.8);
-      iconColor = theme.colorScheme.primary;
-    }
-
-    return Material(
-      color: backgroundColor,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: isLoading
-            ? null // Desabilita o clique se estiver processando
-            : () {
-                if (isGuest) {
-                  showLoginRequiredDialog(context,
-                      featureName: "fazer uma assinatura");
-                } else {
-                  // Define o estado de loading localmente para este botão
-                  setState(() {
-                    _processingProductId = productId;
-                  });
-                  // Despacha a ação de compra. O middleware cuidará do resto.
-                  StoreProvider.of<AppState>(context, listen: false).dispatch(
-                    InitiateGooglePlaySubscriptionAction(productId: productId),
-                  );
-                  // O loading será removido quando o fluxo de compra terminar
-                  // (seja com sucesso, erro ou cancelamento) através de uma
-                  // atualização no estado de subscrição global, ou podemos
-                  // resetar o _processingProductId no `dispose` ou em um `then`.
-                  // Por enquanto, o middleware irá mostrar diálogos de loading.
-                }
-              },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    // Usamos o StoreConnector para obter o estado de loading mais recente.
+    return StoreConnector<AppState, _ViewModel>(
+        converter: (store) => _ViewModel.fromStore(store),
+        builder: (context, viewModel) {
+          return Material(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: viewModel
+                      .isLoading // Desabilita se QUALQUER compra estiver em progresso
+                  ? null
+                  : () {
+                      if (isGuest) {
+                        showLoginRequiredDialog(context,
+                            featureName: "fazer uma assinatura");
+                      } else {
+                        StoreProvider.of<AppState>(context, listen: false)
+                            .dispatch(
+                          InitiateGooglePlaySubscriptionAction(
+                              productId: productId),
+                        );
+                      }
+                    },
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                            color: titleColor, fontWeight: FontWeight.bold)),
-                    Text(price,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: priceColor)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.bold)),
+                          Text(price,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.primary
+                                      .withOpacity(0.8))),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        color: theme.colorScheme.primary),
                   ],
                 ),
               ),
-              if (isLoading)
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.black54,
-                  ),
-                )
-              else
-                Icon(Icons.arrow_forward_ios_rounded, color: iconColor),
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+          );
+        });
   }
 }

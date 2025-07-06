@@ -79,3 +79,9 @@ class SubscriptionStatusUpdatedAction {
     this.priceId,
   });
 }
+
+class FinalizePurchaseAttemptAction {
+  final String? productId; // O produto que estava sendo processado
+
+  FinalizePurchaseAttemptAction({this.productId});
+}

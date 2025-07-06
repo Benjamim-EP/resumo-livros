@@ -47,41 +47,42 @@ List<Middleware<AppState>> createPaymentMiddleware() {
   void _handlePurchaseUpdates(
     List<PurchaseDetails> purchaseDetailsList,
     Store<AppState> store,
-    InAppPurchase connection, // <<< TIPO CORRIGIDO AQUI
+    InAppPurchase connection,
   ) async {
     for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
       print(
           "PaymentMiddleware: Atualização de Compra Recebida - ID: ${purchaseDetails.purchaseID}, Produto: ${purchaseDetails.productID}, Status: ${purchaseDetails.status}, Erro: ${purchaseDetails.error}");
 
+      // >>>>> INÍCIO DA MODIFICAÇÃO PRINCIPAL <<<<<
       if (purchaseDetails.status == PurchaseStatus.pending) {
         print(
-            "PaymentMiddleware: Compra pendente para ${purchaseDetails.productID}. Aguardando finalização.");
-        // UI pode mostrar um indicador de pendência
+            "PaymentMiddleware: Compra pendente para ${purchaseDetails.productID}.");
+        // Não finalizamos o loading aqui, pois a compra ainda está em andamento.
       } else {
         if (purchaseDetails.status == PurchaseStatus.error) {
           print(
               "PaymentMiddleware: Erro na compra: ${purchaseDetails.error?.message}");
           store.dispatch(GooglePlayPurchaseErrorAction(
-              error: purchaseDetails.error?.message ??
-                  "Erro desconhecido na compra.",
+              error: purchaseDetails.error?.message ?? "Erro desconhecido.",
               productId: purchaseDetails.productID));
-          _showErrorDialog(purchaseDetails.error?.message ??
-              "Ocorreu um erro durante a compra.");
+          // FINALIZA A TENTATIVA
+          store.dispatch(FinalizePurchaseAttemptAction(
+              productId: purchaseDetails.productID));
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
           print(
-              "PaymentMiddleware: Compra ${purchaseDetails.status == PurchaseStatus.purchased ? 'bem-sucedida' : 'restaurada'} para ${purchaseDetails.productID}.");
+              "PaymentMiddleware: Compra ${purchaseDetails.status == PurchaseStatus.purchased ? 'bem-sucedida' : 'restaurada'}...");
 
+          // Despacha para validação no backend. O backend irá finalizar o loading da UI.
           store.dispatch(GooglePlayPurchaseVerifiedAction(
               purchaseDetails: purchaseDetails));
-          print(
-              "PaymentMiddleware: GooglePlayPurchaseVerifiedAction despachada para validação no backend.");
+
+          // Não despachamos FinalizePurchaseAttemptAction aqui, pois a validação do backend
+          // cuidará de fechar os diálogos e resetar o estado.
 
           if (purchaseDetails.pendingCompletePurchase) {
-            await connection
-                .completePurchase(purchaseDetails); // <<< USA A CONEXÃO CORRETA
-            print(
-                "PaymentMiddleware: Compra finalizada (completePurchase) para ${purchaseDetails.productID}.");
+            await connection.completePurchase(purchaseDetails);
+            print("PaymentMiddleware: Compra finalizada (completePurchase).");
           }
         } else if (purchaseDetails.status == PurchaseStatus.canceled) {
           print(
@@ -89,9 +90,12 @@ List<Middleware<AppState>> createPaymentMiddleware() {
           store.dispatch(GooglePlayPurchaseErrorAction(
               error: "Compra cancelada pelo usuário.",
               productId: purchaseDetails.productID));
-          _showInfoDialog("Compra cancelada.");
+          // FINALIZA A TENTATIVA
+          store.dispatch(FinalizePurchaseAttemptAction(
+              productId: purchaseDetails.productID));
         }
       }
+      // >>>>> FIM DA MODIFICAÇÃO PRINCIPAL <<<<<
     }
   }
 
