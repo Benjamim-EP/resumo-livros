@@ -252,40 +252,33 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                                       strokeWidth: 2))))
                     else
                       // Usamos um Tooltip para manter a dica de "Ver Comentário"
-                      Tooltip(
-                        message: "Ver Comentário da Seção",
-                        child: InkWell(
-                          onTap: () => _showCommentary(context),
-                          // Define o formato do "splash" para ser circular
-                          customBorder: const CircleBorder(),
-                          child: Container(
-                            width:
-                                32, // Tamanho total do widget (imagem + borda)
-                            height: 32,
-                            padding:
-                                const EdgeInsets.all(2.0), // Espessura da borda
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary
-                                  .withOpacity(0.7), // Cor da borda
-                              shape: BoxShape.circle,
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/matthew_henry.jpg', // <<< Caminho para sua imagem
-                                fit: BoxFit
-                                    .cover, // Garante que a imagem preencha o círculo
-                                // Opcional: Adicionar um fallback caso a imagem não carregue
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.comment_outlined,
-                                    color:
-                                        theme.iconTheme.color?.withOpacity(0.7),
-                                    size: 20,
-                                  );
-                                },
-                              ),
-                            ),
+                      TextButton.icon(
+                        onPressed: () => _showCommentary(context),
+                        icon: Icon(
+                          Icons.school_outlined, // Ícone que remete a "estudo"
+                          size: 20, // Tamanho do ícone
+                        ),
+                        label: const Text(
+                          "Estudo",
+                          style: TextStyle(
+                            fontFamily: 'Poppins', // <<< FONTE ESPECIFICADA
+                            fontWeight: FontWeight.bold, // Poppins-Bold
+                            fontSize: 14,
                           ),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme
+                              .colorScheme.primary, // Cor do texto e do ícone
+                          backgroundColor: theme.colorScheme.primary
+                              .withOpacity(0.1), // Fundo sutil
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                20), // Bordas arredondadas
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          visualDensity:
+                              VisualDensity.compact, // Deixa o botão mais justo
                         ),
                       ),
                     // >>>>> FIM DA ALTERAÇÃO <<<<<
