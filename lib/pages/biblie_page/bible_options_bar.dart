@@ -116,16 +116,20 @@ class BibleOptionsBar extends StatelessWidget {
         color: theme.cardColor.withOpacity(0.1),
         border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8.0,
-        runSpacing: 4.0,
+      child: Row(
+        // Usamos uma Row para alinhar os botões principais
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Botão para selecionar a Tradução 1
+          // BOTÃO 1: SELEÇÃO DE TRADUÇÃO (Principal)
           ElevatedButton.icon(
-            icon: const Icon(Icons.translate, size: 18),
-            label: Text(selectedTranslation1.toUpperCase(),
-                style: const TextStyle(fontSize: 12)),
+            icon: const Icon(Icons.translate,
+                size: 18), // Ícone mantido para clareza
+            label: Text(
+                isCompareModeActive
+                    ? '${selectedTranslation1.toUpperCase()} / ${selectedTranslation2?.toUpperCase() ?? '...'}'
+                    : selectedTranslation1.toUpperCase(),
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             onPressed: () {
               BiblePageWidgets.showTranslationSelection(
                 context: context,
@@ -137,150 +141,110 @@ class BibleOptionsBar extends StatelessWidget {
               );
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: theme.cardColor,
-                foregroundColor: theme.textTheme.bodyLarge?.color,
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+                foregroundColor: theme.colorScheme.primary,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20)),
-                elevation: 1),
+                elevation: 0),
           ),
 
-          // Botão para selecionar a Tradução 2 (se estiver no modo de comparação)
-          if (isCompareModeActive)
-            ElevatedButton.icon(
-              icon: const Icon(Icons.translate, size: 18),
-              label: Text(selectedTranslation2?.toUpperCase() ?? '...',
-                  style: const TextStyle(fontSize: 12)),
-              onPressed: () {
-                BiblePageWidgets.showTranslationSelection(
-                    context: context,
-                    selectedTranslation: selectedTranslation2 ?? 'acf',
-                    onTranslationSelected: onTranslation2Changed,
-                    currentSelectedBookAbbrev: selectedBook,
-                    booksMap: booksMap,
-                    isPremium: isPremium);
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.cardColor,
-                  foregroundColor: theme.textTheme.bodyLarge?.color,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  elevation: 1),
-            ),
+          // BOTÃO 2: FERRAMENTAS DE VISUALIZAÇÃO (Agrupador)
+          PopupMenuButton<String>(
+            icon: Icon(Icons.tune_outlined, color: theme.iconTheme.color),
+            tooltip: "Ferramentas de Visualização",
+            onSelected: (value) {
+              switch (value) {
+                case 'focus':
+                  onToggleFocusMode();
+                  break;
+                case 'compare':
+                  onToggleCompareMode();
+                  break;
+                case 'fontSize':
+                  _showFontSizeDialog(context);
+                  break;
+                case 'hebrew':
+                  if (isPremium) {
+                    onToggleHebrewInterlinear();
+                  } else {
+                    _showPremiumDialog(context);
+                  }
+                  break;
+                case 'greek':
+                  if (isPremium) {
+                    onToggleGreekInterlinear();
+                  } else {
+                    _showPremiumDialog(context);
+                  }
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              // Opção Modo Foco
+              PopupMenuItem<String>(
+                value: 'focus',
+                child: ListTile(
+                  leading: Icon(isFocusModeActive
+                      ? Icons.fullscreen_exit
+                      : Icons.fullscreen),
+                  title: Text(
+                      isFocusModeActive ? "Sair do Modo Foco" : "Modo Leitura"),
+                ),
+              ),
+              // Opção Modo Comparação
+              PopupMenuItem<String>(
+                value: 'compare',
+                child: ListTile(
+                  leading: Icon(isCompareModeActive
+                      ? Icons.compare_arrows
+                      : Icons.compare_arrows_outlined),
+                  title: Text(isCompareModeActive
+                      ? "Desativar Comparação"
+                      : "Comparar Traduções"),
+                ),
+              ),
+              // Opção Ajuste de Fonte
+              const PopupMenuItem<String>(
+                value: 'fontSize',
+                child: ListTile(
+                  leading: Icon(Icons.format_size_outlined),
+                  title: Text('Ajustar Fonte'),
+                ),
+              ),
+              // Separador
+              if (canShowHebrewToggle || canShowGreekToggle)
+                const PopupMenuDivider(),
 
-          // // Botão de Estudos
-          // ElevatedButton.icon(
-          //   icon: const Icon(Icons.school_outlined, size: 18),
-          //   label: const Text("Estudos", style: TextStyle(fontSize: 12)),
-          //   onPressed: () {
-          //     interstitialManager
-          //         .tryShowInterstitial(fromScreen: "BiblePage_To_StudyHub")
-          //         .then((_) {
-          //       if (context.mounted) {
-          //         Navigator.push(
-          //             context,
-          //             MaterialPageRoute(
-          //                 builder: (context) => const StudyHubPage()));
-          //       }
-          //     });
-          //   },
-          //   style: ElevatedButton.styleFrom(
-          //       backgroundColor: theme.cardColor,
-          //       foregroundColor: theme.textTheme.bodyLarge?.color,
-          //       padding:
-          //           const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          //       shape: RoundedRectangleBorder(
-          //           borderRadius: BorderRadius.circular(20)),
-          //       elevation: 1),
-          // ),
-
-          // Botão Modo Foco
-          IconButton(
-            icon: Icon(
-                isFocusModeActive ? Icons.fullscreen_exit : Icons.fullscreen,
-                size: 22),
-            tooltip: isFocusModeActive ? "Sair do Modo Foco" : "Modo Leitura",
-            onPressed: onToggleFocusMode,
-            color: isFocusModeActive
-                ? theme.colorScheme.secondary
-                : theme.iconTheme.color,
-            splashRadius: 20,
-          ),
-
-          // Botão Modo Comparação
-          IconButton(
-            icon: Icon(
-                isCompareModeActive
-                    ? Icons.compare_arrows
-                    : Icons.compare_arrows_outlined,
-                size: 22),
-            tooltip: isCompareModeActive
-                ? "Desativar Comparação"
-                : "Comparar Traduções",
-            onPressed: onToggleCompareMode,
-            color: isCompareModeActive
-                ? theme.colorScheme.secondary
-                : theme.iconTheme.color,
-            splashRadius: 20,
-          ),
-
-          // Botão Toggle Hebraico Interlinear
-          if (canShowHebrewToggle)
-            IconButton(
-              icon: Icon(
-                  showHebrewInterlinear
-                      ? Icons.font_download_off_outlined
-                      : Icons.font_download_outlined,
-                  size: 22),
-              tooltip: "Hebraico Interlinear (Premium)",
-              onPressed: () {
-                if (isPremium) {
-                  onToggleHebrewInterlinear();
-                } else {
-                  _showPremiumDialog(context);
-                }
-              },
-              color: isPremium
-                  ? (showHebrewInterlinear
-                      ? premiumIconColor
-                      : theme.iconTheme.color)
-                  : premiumIconColor.withOpacity(1),
-              splashRadius: 20,
-            ),
-
-          // Botão Toggle Grego Interlinear
-          if (canShowGreekToggle)
-            IconButton(
-              icon: Icon(
-                  showGreekInterlinear
-                      ? Icons.font_download_off_outlined
-                      : Icons.font_download_outlined,
-                  size: 22),
-              tooltip: "Grego Interlinear (Premium)",
-              onPressed: () {
-                if (isPremium) {
-                  onToggleGreekInterlinear();
-                } else {
-                  _showPremiumDialog(context);
-                }
-              },
-              color: isPremium
-                  ? (showGreekInterlinear
-                      ? premiumIconColor
-                      : theme.iconTheme.color)
-                  : premiumIconColor.withOpacity(1),
-              splashRadius: 20,
-            ),
-
-          IconButton(
-            icon: const Icon(Icons.format_size_outlined, size: 22),
-            tooltip: "Ajustar Fonte",
-            onPressed: () => _showFontSizeDialog(context),
-            color: theme.iconTheme.color,
-            splashRadius: 20,
+              // Opções Premium
+              if (canShowHebrewToggle)
+                PopupMenuItem<String>(
+                  value: 'hebrew',
+                  child: ListTile(
+                    leading: Icon(Icons.font_download_outlined,
+                        color: isPremium
+                            ? (showHebrewInterlinear ? premiumIconColor : null)
+                            : premiumIconColor),
+                    title: Text('Hebraico Interlinear',
+                        style: TextStyle(
+                            color: isPremium ? null : premiumIconColor)),
+                  ),
+                ),
+              if (canShowGreekToggle)
+                PopupMenuItem<String>(
+                  value: 'greek',
+                  child: ListTile(
+                    leading: Icon(Icons.font_download_outlined,
+                        color: isPremium
+                            ? (showGreekInterlinear ? premiumIconColor : null)
+                            : premiumIconColor),
+                    title: Text('Grego Interlinear',
+                        style: TextStyle(
+                            color: isPremium ? null : premiumIconColor)),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

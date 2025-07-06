@@ -11,9 +11,12 @@ import 'package:septima_biblia/consts/consts.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_navigation_controls.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_options_bar.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_reader_view.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_semantic_search_view.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_search_filter_bar.dart';
+import 'package:septima_biblia/pages/biblie_page/font_size_slider_dialog.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -61,6 +64,8 @@ class _BiblePageState extends State<BiblePage> {
   String? _filterSelectedBookAbbrev;
   String? _filterSelectedContentType;
 
+  bool _isSemanticSearchActive = false;
+
   String selectedTranslation1 = 'nvi';
   String? selectedTranslation2 = 'acf';
   bool _isCompareModeActive = false;
@@ -82,7 +87,6 @@ class _BiblePageState extends State<BiblePage> {
 
   bool _hasProcessedInitialNavigation = false;
 
-  bool _isSemanticSearchActive = false;
   final TextEditingController _semanticQueryController =
       TextEditingController();
   bool _showExtraOptions = false;
@@ -138,6 +142,64 @@ class _BiblePageState extends State<BiblePage> {
         }
         _checkIfPdfExists();
       }
+    });
+  }
+
+  void _showPremiumDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'O estudo com Hebraico e Grego Interlinear é exclusivo para assinantes Premium. Desbloqueie este e outros recursos!'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Agora não')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFontSizeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        // É preciso usar um StatefulBuilder para que o slider atualize
+        // a UI do diálogo em tempo real sem reconstruir a página inteira.
+        return StatefulBuilder(
+          builder: (stfContext, stfSetState) {
+            return FontSizeSliderDialog(
+              initialSize: _currentFontSizeMultiplier * 16.0,
+              minSize: MIN_FONT_MULTIPLIER * 16.0,
+              maxSize: MAX_FONT_MULTIPLIER * 16.0,
+              onSizeChanged: (newAbsoluteSize) {
+                final newMultiplier = newAbsoluteSize / 16.0;
+                // Chama o setState da BiblePage para atualizar a fonte na tela principal
+                setState(() {
+                  _currentFontSizeMultiplier = newMultiplier.clamp(
+                      MIN_FONT_MULTIPLIER, MAX_FONT_MULTIPLIER);
+                });
+                // Também atualiza o estado do diálogo para o texto de exemplo
+                stfSetState(() {});
+              },
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Salva a preferência de fonte quando o diálogo for fechado
+      _saveFontSizePreference(_currentFontSizeMultiplier);
     });
   }
 
@@ -1198,15 +1260,16 @@ class _BiblePageState extends State<BiblePage> {
     );
   }
 
-  List<Widget> _buildAppBarActions(
-      BuildContext context, ThemeData theme, _BiblePageViewModel viewModel) {
-    // Cores padrão para os ícones, baseadas no tema atual
+  List<Widget> _buildAppBarActions() {
+    // <<< OBTEMOS O TEMA E isPremium AQUI DENTRO >>>
+    final theme = Theme.of(context);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
     final Color defaultIconColor = theme.appBarTheme.actionsIconTheme?.color ??
         theme.colorScheme.onPrimary;
-    final Color activeSemanticSearchIconColor = theme.colorScheme.secondary;
 
-    // 1. Caso especial: Modo Foco (Leitura)
-    // Se o modo foco estiver ativo, mostramos apenas o botão para sair dele.
+    // Caso 1: Modo Foco está ativo
     if (_isFocusModeActive) {
       return [
         IconButton(
@@ -1217,36 +1280,11 @@ class _BiblePageState extends State<BiblePage> {
       ];
     }
 
-    // Lista para acumular os botões de ação que serão exibidos
-    final List<Widget> actions = [];
-
-    // 2. Botão de controle de áudio (TTS)
-    // Aparece sempre que o player de áudio não estiver parado.
-    if (_currentPlayerState != TtsPlayerState.stopped) {
-      actions.add(
-        IconButton(
-          icon: Icon(
-            _currentPlayerState == TtsPlayerState.playing
-                ? Icons.pause_circle_outline_rounded
-                : Icons.play_circle_outline_rounded,
-            color: theme.colorScheme.primary, // Cor de destaque
-            size: 28,
-          ),
-          tooltip: _currentPlayerState == TtsPlayerState.playing
-              ? "Pausar Leitura"
-              : "Continuar Leitura",
-          onPressed: _handleGlobalAudioControl,
-        ),
-      );
-    }
-
-    // 3. Lógica principal: Modo de Busca Semântica vs. Modo Normal
+    // Caso 2: Modo de Busca Semântica está ativo
     if (_isSemanticSearchActive) {
-      // Ações para quando a busca semântica está ativa
-      actions.addAll([
+      return [
         IconButton(
-          icon: Icon(Icons.search,
-              color: activeSemanticSearchIconColor, size: 26),
+          icon: Icon(Icons.search, color: theme.colorScheme.primary, size: 26),
           tooltip: "Buscar",
           onPressed: _applyFiltersToReduxAndSearch,
         ),
@@ -1258,105 +1296,248 @@ class _BiblePageState extends State<BiblePage> {
             _semanticQueryController.clear();
           }),
         ),
-      ]);
-    } else {
-      // Ações para o modo de visualização normal (não-busca)
+      ];
+    }
 
-      // Adiciona o botão de trocar voz
-      actions.add(
+    // Caso 3: Modo de visualização normal
+    return [
+      // --- BOTÃO DE ÁUDIO ---
+      if (_currentPlayerState != TtsPlayerState.stopped)
+        IconButton(
+          icon: Icon(
+            _currentPlayerState == TtsPlayerState.playing
+                ? Icons.pause_circle_outline_rounded
+                : Icons.play_circle_outline_rounded,
+            color: theme.colorScheme.primary,
+            size: 28,
+          ),
+          tooltip: _currentPlayerState == TtsPlayerState.playing
+              ? "Pausar Leitura"
+              : "Continuar Leitura",
+          onPressed: _handleGlobalAudioControl,
+        )
+      else
         IconButton(
           icon: Icon(Icons.record_voice_over_outlined, color: defaultIconColor),
-          tooltip: "Alterar Voz",
+          tooltip: "Ouvir Capítulo / Alterar Voz",
           onPressed: _showVoiceSelectionDialog,
         ),
-      );
 
-      // --- LÓGICA DO BOTÃO DE PDF ---
-      if (_isGeneratingPdf) {
-        // Estado 1: Gerando o PDF
-        actions.add(Padding(
-          padding: const EdgeInsets.all(12.0),
+      // --- BOTÃO DE PDF ---
+      if (_isGeneratingPdf)
+        const Padding(
+          padding: EdgeInsets.all(12.0),
           child: SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-                strokeWidth: 2.5, color: defaultIconColor),
+                strokeWidth: 2.5, color: Colors.white),
           ),
-        ));
-      } else if (_existingPdfPath != null) {
-        // Estado 2: O PDF já existe, mostra opções
-        actions.add(
-          PopupMenuButton<String>(
-            icon: Icon(Icons.picture_as_pdf,
-                color: theme.colorScheme.primary, size: 26),
-            tooltip: "Opções do PDF",
-            onSelected: (value) {
-              if (value == 'view') {
-                OpenFile.open(_existingPdfPath!);
-              } else if (value == 'regenerate') {
-                _handleGeneratePdf();
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'view',
-                child: ListTile(
-                    leading: Icon(Icons.visibility),
-                    title: Text('Ver PDF Salvo')),
-              ),
-              const PopupMenuItem<String>(
-                value: 'regenerate',
-                child: ListTile(
-                    leading: Icon(Icons.refresh),
-                    title: Text('Gerar Novamente')),
-              ),
-            ],
-          ),
-        );
-      } else {
-        // Estado 3: O PDF não existe, mostra o botão para gerar
-        actions.add(
-          IconButton(
-            icon: Icon(Icons.picture_as_pdf_outlined,
-                color: defaultIconColor, size: 26),
-            tooltip: "Gerar PDF do Capítulo",
-            onPressed: _handleGeneratePdf,
-          ),
-        );
-      }
-      // --- FIM DA LÓGICA DO BOTÃO DE PDF ---
-
-      actions.addAll([
+        )
+      else if (_existingPdfPath != null)
+        PopupMenuButton<String>(
+          icon: Icon(Icons.picture_as_pdf,
+              color: theme.colorScheme.primary, size: 26),
+          tooltip: "Opções do PDF",
+          onSelected: (value) {
+            if (value == 'view') {
+              OpenFile.open(_existingPdfPath!);
+            } else if (value == 'regenerate') {
+              _handleGeneratePdf();
+            }
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'view',
+              child: ListTile(
+                  leading: Icon(Icons.visibility),
+                  title: Text('Ver PDF Salvo')),
+            ),
+            const PopupMenuItem<String>(
+              value: 'regenerate',
+              child: ListTile(
+                  leading: Icon(Icons.refresh), title: Text('Gerar Novamente')),
+            ),
+          ],
+        )
+      else
         IconButton(
-          icon: Icon(Icons.manage_search_outlined,
+          icon: Icon(Icons.picture_as_pdf_outlined,
               color: defaultIconColor, size: 26),
-          tooltip: "Ir para referência",
-          onPressed: _showGoToDialog,
+          tooltip: "Gerar PDF do Capítulo",
+          onPressed: _handleGeneratePdf,
         ),
-        IconButton(
-          icon: SvgPicture.asset(
-            'assets/icons/buscasemantica.svg',
-            colorFilter: ColorFilter.mode(defaultIconColor, BlendMode.srcIn),
-            width: 24,
-            height: 24,
-          ),
-          tooltip: "Busca Semântica",
-          onPressed: () => setState(() {
-            _isSemanticSearchActive = true;
-            _showExtraOptions =
-                false; // Garante que a barra de opções extra se feche
-          }),
-        ),
-        IconButton(
-          icon: Icon(Icons.more_vert, color: defaultIconColor, size: 26),
-          tooltip: "Mais Opções",
-          onPressed: () =>
-              setState(() => _showExtraOptions = !_showExtraOptions),
-        ),
-      ]);
-    }
 
-    return actions;
+      // --- MENU AGRUPADO DE BUSCA ---
+      PopupMenuButton<String>(
+        icon: Icon(Icons.search, color: defaultIconColor, size: 26),
+        tooltip: "Opções de Busca",
+        onSelected: (value) {
+          if (value == 'reference') {
+            _showGoToDialog();
+          } else if (value == 'semantic') {
+            setState(() => _isSemanticSearchActive = true);
+          }
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          const PopupMenuItem<String>(
+            value: 'reference',
+            child: ListTile(
+              leading: Icon(Icons.manage_search_outlined),
+              title: Text('Busca por Referência'),
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'semantic',
+            child: ListTile(
+              leading: SvgPicture.asset(
+                'assets/icons/buscasemantica.svg',
+                colorFilter:
+                    ColorFilter.mode(theme.iconTheme.color!, BlendMode.srcIn),
+                width: 24,
+                height: 24,
+              ),
+              title: const Text('Busca Semântica'),
+            ),
+          ),
+        ],
+      ),
+
+      // --- MENU AGRUPADO DE FERRAMENTAS DE VISUALIZAÇÃO ---
+      PopupMenuButton<String>(
+        icon: Icon(Icons.tune_outlined, color: defaultIconColor, size: 26),
+        tooltip: "Ferramentas de Visualização",
+        onSelected: (value) {
+          switch (value) {
+            case 'version':
+              BiblePageWidgets.showTranslationSelection(
+                context: context,
+                selectedTranslation: selectedTranslation1,
+                onTranslationSelected: (newVal) =>
+                    setState(() => selectedTranslation1 = newVal),
+                currentSelectedBookAbbrev: selectedBook,
+                booksMap: booksMap,
+                isPremium: isPremium,
+              );
+              break;
+            case 'focus':
+              setState(() => _isFocusModeActive = !_isFocusModeActive);
+              break;
+            case 'compare':
+              setState(() => _isCompareModeActive = !_isCompareModeActive);
+              break;
+            case 'fontSize':
+              _showFontSizeDialog(context);
+              break;
+            case 'hebrew':
+              if (isPremium) {
+                setState(() {
+                  _showHebrewInterlinear = !_showHebrewInterlinear;
+                  if (_showHebrewInterlinear) {
+                    _showGreekInterlinear = false;
+                    _loadCurrentChapterHebrewDataIfNeeded();
+                  } else {
+                    _currentChapterHebrewData = null;
+                  }
+                });
+              } else {
+                _showPremiumDialog(context);
+              }
+              break;
+            case 'greek':
+              if (isPremium) {
+                setState(() {
+                  _showGreekInterlinear = !_showGreekInterlinear;
+                  if (_showGreekInterlinear) {
+                    _showHebrewInterlinear = false;
+                    _loadCurrentChapterGreekDataIfNeeded();
+                  } else {
+                    _currentChapterGreekData = null;
+                  }
+                });
+              } else {
+                _showPremiumDialog(context);
+              }
+              break;
+          }
+        },
+        itemBuilder: (BuildContext context) {
+          final premiumIconColor = Colors.amber.shade700;
+          final bool canShowHebrew =
+              booksMap?[selectedBook]?['testament'] == 'Antigo' &&
+                  !_isCompareModeActive;
+          final bool canShowGreek =
+              booksMap?[selectedBook]?['testament'] == 'Novo' &&
+                  !_isCompareModeActive;
+
+          return <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'version',
+              child: ListTile(
+                leading: Icon(Icons.translate_outlined),
+                title: Text('Alterar Versão'),
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'fontSize',
+              child: ListTile(
+                leading: Icon(Icons.format_size_outlined),
+                title: Text('Ajustar Fonte'),
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'focus',
+              child: ListTile(
+                leading: Icon(_isFocusModeActive
+                    ? Icons.lightbulb
+                    : Icons.lightbulb_outline),
+                title: Text(
+                    _isFocusModeActive ? "Sair do Modo Foco" : "Modo Foco"),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'compare',
+              child: ListTile(
+                leading: Icon(_isCompareModeActive
+                    ? Icons.swap_horiz
+                    : Icons.swap_horizontal_circle_outlined),
+                title: Text(_isCompareModeActive
+                    ? "Ver Versão Única"
+                    : "Comparar Versões"),
+              ),
+            ),
+            if (canShowHebrew || canShowGreek) const PopupMenuDivider(),
+            if (canShowHebrew)
+              PopupMenuItem<String>(
+                value: 'hebrew',
+                child: ListTile(
+                  leading: Icon(Icons.book_outlined,
+                      color: isPremium
+                          ? (_showHebrewInterlinear ? premiumIconColor : null)
+                          : premiumIconColor),
+                  title: Text('Hebraico Interlinear',
+                      style: TextStyle(
+                          color: isPremium ? null : premiumIconColor)),
+                ),
+              ),
+            if (canShowGreek)
+              PopupMenuItem<String>(
+                value: 'greek',
+                child: ListTile(
+                  leading: Icon(Icons.book_outlined,
+                      color: isPremium
+                          ? (_showGreekInterlinear ? premiumIconColor : null)
+                          : premiumIconColor),
+                  title: Text('Grego Interlinear',
+                      style: TextStyle(
+                          color: isPremium ? null : premiumIconColor)),
+                ),
+              ),
+          ];
+        },
+      ),
+    ];
   }
 
   @override
@@ -1421,9 +1602,7 @@ class _BiblePageState extends State<BiblePage> {
           appBar: AppBar(
             title: Text(appBarTitleText),
             leading: _isFocusModeActive ? const SizedBox.shrink() : null,
-            actions: [
-              ..._buildAppBarActions(context, theme, viewModel),
-            ],
+            actions: _buildAppBarActions(),
           ),
           body: PageStorage(
             bucket: _pageStorageBucket,
@@ -1433,86 +1612,6 @@ class _BiblePageState extends State<BiblePage> {
                   _buildSemanticSearchTextField(theme),
                 if (_isSemanticSearchActive && !_isFocusModeActive)
                   _buildSemanticSearchFilterWidgets(theme),
-                if (_showExtraOptions &&
-                    !_isSemanticSearchActive &&
-                    !_isFocusModeActive)
-                  BibleOptionsBar(
-                    selectedTranslation1: selectedTranslation1,
-                    selectedTranslation2: selectedTranslation2,
-                    selectedBook: selectedBook,
-                    booksMap: booksMap,
-                    isCompareModeActive: _isCompareModeActive,
-                    isFocusModeActive: _isFocusModeActive,
-                    showHebrewInterlinear: _showHebrewInterlinear,
-                    showGreekInterlinear: _showGreekInterlinear,
-                    currentFontSizeMultiplier: _currentFontSizeMultiplier,
-                    minFontMultiplier: MIN_FONT_MULTIPLIER,
-                    maxFontMultiplier: MAX_FONT_MULTIPLIER,
-                    isPremium: isUserPremium, // <<< PASSA O VALOR AQUI
-                    onTranslation1Changed: (value) {
-                      if (mounted && value != selectedTranslation2) {
-                        interstitialManager
-                            .tryShowInterstitial(
-                                fromScreen:
-                                    "BiblePage_ChangeTranslation1_To_$value")
-                            .then((_) {
-                          if (mounted)
-                            setState(() {
-                              selectedTranslation1 = value;
-                            });
-                        });
-                      }
-                    },
-                    onTranslation2Changed: (value) {
-                      if (mounted && value != selectedTranslation1) {
-                        interstitialManager
-                            .tryShowInterstitial(
-                                fromScreen:
-                                    "BiblePage_ChangeTranslation2_To_$value")
-                            .then((_) {
-                          if (mounted)
-                            setState(() {
-                              selectedTranslation2 = value;
-                            });
-                        });
-                      }
-                    },
-                    onToggleCompareMode: () {
-                      if (mounted)
-                        setState(
-                            () => _isCompareModeActive = !_isCompareModeActive);
-                    },
-                    onToggleFocusMode: () {
-                      if (mounted)
-                        setState(
-                            () => _isFocusModeActive = !_isFocusModeActive);
-                    },
-                    onToggleHebrewInterlinear: () {
-                      if (mounted)
-                        setState(() {
-                          _showHebrewInterlinear = !_showHebrewInterlinear;
-                          if (_showHebrewInterlinear) {
-                            _showGreekInterlinear = false;
-                            _loadCurrentChapterHebrewDataIfNeeded();
-                          } else {
-                            _currentChapterHebrewData = null;
-                          }
-                        });
-                    },
-                    onToggleGreekInterlinear: () {
-                      if (mounted)
-                        setState(() {
-                          _showGreekInterlinear = !_showGreekInterlinear;
-                          if (_showGreekInterlinear) {
-                            _showHebrewInterlinear = false;
-                            _loadCurrentChapterGreekDataIfNeeded();
-                          } else {
-                            _currentChapterGreekData = null;
-                          }
-                        });
-                    },
-                    onFontSizeChanged: _updateFontSize,
-                  ),
                 Expanded(
                   child: (selectedBook == null ||
                           selectedChapter == null ||
