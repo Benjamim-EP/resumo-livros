@@ -16,6 +16,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_reader_view.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_semantic_search_view.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_search_filter_bar.dart';
 import 'package:septima_biblia/pages/biblie_page/font_size_slider_dialog.dart';
+import 'package:septima_biblia/pages/biblie_page/summary_display_modal.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
@@ -113,6 +114,8 @@ class _BiblePageState extends State<BiblePage> {
   bool _isGeneratingPdf = false;
   String? _existingPdfPath;
 
+  static const String _unlockedSummariesPrefsKey = 'unlocked_bible_summaries';
+
   @override
   void initState() {
     _loadFontSizePreference();
@@ -143,6 +146,20 @@ class _BiblePageState extends State<BiblePage> {
         _checkIfPdfExists();
       }
     });
+  }
+
+  Future<Set<String>> _getUnlockedSummaries() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> unlockedList =
+        prefs.getStringList(_unlockedSummariesPrefsKey) ?? [];
+    return unlockedList.toSet();
+  }
+
+  Future<void> _addUnlockedSummary(String sectionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final Set<String> unlockedSet = await _getUnlockedSummaries();
+    unlockedSet.add(sectionId);
+    await prefs.setStringList(_unlockedSummariesPrefsKey, unlockedSet.toList());
   }
 
   void _showPremiumDialog(BuildContext context) {
@@ -201,6 +218,102 @@ class _BiblePageState extends State<BiblePage> {
       // Salva a preferência de fonte quando o diálogo for fechado
       _saveFontSizePreference(_currentFontSizeMultiplier);
     });
+  }
+
+  Future<void> _handleShowSummary(String sectionId, String sectionTitle) async {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    final unlockedSummaries = await _getUnlockedSummaries();
+
+    bool isUnlocked = isPremium || unlockedSummaries.contains(sectionId);
+
+    // Se já está desbloqueado, apenas carrega e mostra.
+    if (isUnlocked) {
+      await _loadAndShowSummary(sectionId, sectionTitle);
+      return;
+    }
+
+    // Se não, verifica o custo.
+    final currentUserCoins = store.state.userState.userCoins;
+    const int summaryCost = 3; // Custo para desbloquear um resumo
+
+    if (currentUserCoins < summaryCost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Moedas insuficientes. Você precisa de $summaryCost moedas.'),
+          action: SnackBarAction(
+            label: 'Ganhar Moedas',
+            onPressed: () => store.dispatch(RequestRewardedAdAction()),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Se tem moedas, confirma com o usuário.
+    final bool? shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Desbloquear Resumo'),
+        content: Text('Isso custará $summaryCost moedas. Deseja continuar?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Confirmar')),
+        ],
+      ),
+    );
+
+    if (shouldProceed == true) {
+      // Deduz as moedas e persiste
+      final newCoinTotal = currentUserCoins - summaryCost;
+      store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+
+      final userId = store.state.userState.userId;
+      if (userId != null) {
+        await _firestoreService.updateUserField(
+            userId, 'userCoins', newCoinTotal);
+      }
+
+      // Marca como desbloqueado e mostra
+      await _addUnlockedSummary(sectionId);
+      await _loadAndShowSummary(sectionId, sectionTitle);
+    }
+  }
+
+// Função auxiliar para carregar e mostrar o modal
+  Future<void> _loadAndShowSummary(
+      String sectionId, String sectionTitle) async {
+    try {
+      // Constrói o caminho para o arquivo .md
+      final String summaryPath = 'assets/commentary_summaries/$sectionId.md';
+      final String summaryContent = await rootBundle.loadString(summaryPath);
+
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => SummaryDisplayModal(
+            title: sectionTitle,
+            summaryContent: summaryContent,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Erro ao carregar resumo para $sectionId: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Resumo para esta seção não encontrado.')),
+        );
+      }
+    }
   }
 
   // NOVO MÉTODO: Verifica se o PDF já existe para o capítulo atual
@@ -1684,6 +1797,7 @@ class _BiblePageState extends State<BiblePage> {
                               currentChapterHebrewData:
                                   _currentChapterHebrewData,
                               currentChapterGreekData: _currentChapterGreekData,
+                              onShowSummaryRequest: _handleShowSummary,
                             ),
                 ),
                 if (!store.state.userState.isFocusMode &&

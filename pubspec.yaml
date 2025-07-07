@@ -110,6 +110,8 @@ flutter:
     - assets/timelines/
     - assets/promises/promessas.json
 
+    - assets/commentary_summaries/
+
     - assets/devotional/
     - assets/library_books/
     - assets/turretin/

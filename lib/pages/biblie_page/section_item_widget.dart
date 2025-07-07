@@ -1,7 +1,7 @@
 // lib/pages/biblie_page/section_item_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:redux/redux.dart'; // Para o tipo Store
+import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -13,13 +13,12 @@ import 'package:septima_biblia/services/tts_manager.dart';
 
 // ViewModel para conectar o SectionItemWidget aos dados do Redux
 class _SectionItemViewModel {
-  final List<String> allUserTags; // Lista de todas as tags do usuário
+  final List<String> allUserTags;
   final bool isPremium;
 
   _SectionItemViewModel({required this.allUserTags, required this.isPremium});
 
   static _SectionItemViewModel fromStore(Store<AppState> store) {
-    // Lógica para obter o status premium (reutilizada de outros locais)
     bool premiumStatus = store.state.subscriptionState.status ==
         SubscriptionStatus.premiumActive;
     return _SectionItemViewModel(
@@ -52,6 +51,8 @@ class SectionItemWidget extends StatefulWidget {
   final String? currentlyPlayingSectionId;
   final TtsContentType? currentlyPlayingContentType;
   final List<String> allUserTags;
+  final Future<void> Function(String, String)
+      onShowSummary; // <<< NOVO CALLBACK
 
   const SectionItemWidget({
     super.key,
@@ -77,6 +78,7 @@ class SectionItemWidget extends StatefulWidget {
     this.currentlyPlayingSectionId,
     this.currentlyPlayingContentType,
     required this.allUserTags,
+    required this.onShowSummary, // <<< NOVO PARÂMETRO
   });
 
   @override
@@ -111,20 +113,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   }
 
   Future<void> _showCommentary(BuildContext context) async {
-    // showDialog(
-    //   context: context,
-    //   builder: (ctx) => AlertDialog(
-    //     title: const Text('Recurso Premium 👑'),
-    //     content: const Text(
-    //         'O acesso aos comentários das seções é exclusivo para assinantes Premium.'),
-    //     actions: [
-    //       TextButton(
-    //           onPressed: () => Navigator.of(ctx).pop(),
-    //           child: const Text('Entendi')),
-    //     ],
-    //   ),
-    // );
-
     if (!mounted) return;
     TtsManager().stop();
     setState(() => _isLoadingCommentary = true);
@@ -172,8 +160,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     final TtsContentType? playingType = widget.currentlyPlayingContentType;
     final Color defaultIconColor =
         theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
-    final Color activeIconColor = theme.iconTheme.color?.withOpacity(0.7) ??
-        theme.colorScheme.primary.withOpacity(0.8);
+    final Color activeIconColor = theme.colorScheme.primary.withOpacity(0.8);
 
     IconData versesIcon = Icons.play_circle_outline;
     Color versesIconColor = defaultIconColor;
@@ -192,11 +179,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       }
     }
 
-    // <<< MUDANÇA PRINCIPAL: ENVOLVENDO O CARD COM O STORECONNECTOR >>>
     return StoreConnector<AppState, _SectionItemViewModel>(
       converter: (store) => _SectionItemViewModel.fromStore(store),
       builder: (context, viewModel) {
-        // Agora 'viewModel.allUserTags' está disponível aqui
         final allUserTags = viewModel.allUserTags;
 
         return Card(
@@ -217,71 +202,107 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                        child: Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(widget.sectionTitle,
-                                style: TextStyle(
-                                    color: currentIsRead
-                                        ? theme.primaryColor
-                                        : theme.colorScheme.primary,
-                                    fontSize: 18 * widget.fontSizeMultiplier,
-                                    fontWeight: FontWeight.bold)))),
-                    IconButton(
-                        icon:
-                            Icon(versesIcon, color: versesIconColor, size: 26),
-                        tooltip: versesTooltip,
-                        onPressed: () =>
-                            _handlePlayRequest(TtsContentType.versesOnly)),
-                    // IconButton(
-                    //     icon: Icon(studyIcon, color: studyIconColor, size: 24),
-                    //     tooltip: studyTooltip,
-                    //     onPressed: () => _handlePlayRequest(
-                    //         TtsContentType.versesAndCommentary)),
-                    if (_isLoadingCommentary)
-                      const SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: Center(
-                              child: Padding(
-                                  padding: EdgeInsets.all(10.0),
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2))))
-                    else
-                      // Usamos um Tooltip para manter a dica de "Ver Comentário"
-                      TextButton.icon(
-                        onPressed: () => _showCommentary(context),
-                        icon: Icon(
-                          Icons.school_outlined, // Ícone que remete a "estudo"
-                          size: 20, // Tamanho do ícone
-                        ),
-                        label: const Text(
-                          "Estudo",
-                          style: TextStyle(
-                            fontFamily: 'Poppins', // <<< FONTE ESPECIFICADA
-                            fontWeight: FontWeight.bold, // Poppins-Bold
-                            fontSize: 14,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: theme
-                              .colorScheme.primary, // Cor do texto e do ícone
-                          backgroundColor: theme.colorScheme.primary
-                              .withOpacity(0.1), // Fundo sutil
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                20), // Bordas arredondadas
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          visualDensity:
-                              VisualDensity.compact, // Deixa o botão mais justo
-                        ),
+                    // 1. O TÍTULO AGORA FICA SOZINHO NO TOPO
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          bottom: 8.0, top: 4.0, right: 8.0),
+                      child: Text(
+                        widget.sectionTitle,
+                        style: TextStyle(
+                            color: currentIsRead
+                                ? theme.primaryColor
+                                : theme.colorScheme.primary,
+                            fontSize: 18 * widget.fontSizeMultiplier,
+                            fontWeight: FontWeight.bold),
                       ),
-                    // >>>>> FIM DA ALTERAÇÃO <<<<<
+                    ),
+
+                    // 2. OS BOTÕES DE AÇÃO FICAM EM SUA PRÓPRIA ROW
+                    Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.end, // Alinha os botões à direita
+                      children: [
+                        // Botão de Play (Ouvir Versículos)
+                        IconButton(
+                          icon: Icon(versesIcon,
+                              color: versesIconColor, size: 26),
+                          tooltip: versesTooltip,
+                          onPressed: () =>
+                              _handlePlayRequest(TtsContentType.versesOnly),
+                          splashRadius: 24,
+                        ),
+
+                        // Botão de Resumo Rápido
+                        TextButton.icon(
+                          onPressed: () => widget.onShowSummary(
+                            _commentaryDocId,
+                            widget.sectionTitle,
+                          ),
+                          icon: const Icon(Icons.bolt_outlined, size: 20),
+                          label: const Text(
+                            "Resumo",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.primary,
+                            backgroundColor:
+                                theme.colorScheme.primary.withOpacity(0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Botão de Estudo (Comentário Completo)
+                        if (_isLoadingCommentary)
+                          const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(10.0),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          )
+                        else
+                          TextButton.icon(
+                            onPressed: () => _showCommentary(context),
+                            icon: const Icon(Icons.school_outlined, size: 20),
+                            label: const Text(
+                              "Estudo",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: theme.colorScheme.primary,
+                              backgroundColor:
+                                  theme.colorScheme.primary.withOpacity(0.1),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
                 Divider(color: theme.dividerColor.withOpacity(0.5)),
@@ -321,7 +342,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     }
 
                     if (mainTranslationVerseDataItem != null) {
-                      // Modificando a chamada para buildVerseItem para passar allUserTags
                       return BiblePageWidgets.buildVerseItem(
                         key: ValueKey<String>(
                             '${widget.bookAbbrev}_${widget.chapterNumber}_${verseNumber}'),
@@ -332,8 +352,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         context: context,
                         userHighlights: widget.userHighlights,
                         userNotes: widget.userNotes,
-                        allUserTags:
-                            allUserTags, // <<< PASSANDO A LISTA DE TAGS AQUI
+                        allUserTags: allUserTags,
                         isHebrew: widget.isHebrew,
                         isGreekInterlinear: widget.isGreekInterlinear,
                         showHebrewInterlinear:

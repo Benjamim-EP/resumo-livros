@@ -74,6 +74,7 @@ class BibleReaderView extends StatefulWidget {
   final ScrollController scrollController2;
   final Map<String, dynamic>? currentChapterHebrewData;
   final Map<String, dynamic>? currentChapterGreekData;
+  final Future<void> Function(String, String) onShowSummaryRequest;
 
   const BibleReaderView({
     super.key,
@@ -95,6 +96,7 @@ class BibleReaderView extends StatefulWidget {
     required this.scrollController2,
     this.currentChapterHebrewData,
     this.currentChapterGreekData,
+    required this.onShowSummaryRequest,
   });
 
   @override
@@ -329,6 +331,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 currentlyPlayingSectionId: widget.currentlyPlayingSectionId,
                 currentlyPlayingContentType: widget.currentlyPlayingContentType,
                 allUserTags: contentViewModel.allUserTags,
+                onShowSummary: widget.onShowSummaryRequest,
               );
             } else {
               final verseNumber = index + 1;
