@@ -1,7 +1,10 @@
 // lib/services/notification_service.dart
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -44,6 +47,52 @@ class NotificationService {
     );
   }
 
+  Future<Map<String, String>?> _getRandomVerse() async {
+    try {
+      // 1. Carrega o mapa de livros
+      final String abbrevMapString = await rootBundle
+          .loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
+      final Map<String, dynamic> booksMap = json.decode(abbrevMapString);
+      final List<String> bookKeys = booksMap.keys.toList();
+
+      if (bookKeys.isEmpty) return null;
+
+      // 2. Sorteia um livro
+      final random = Random();
+      final String randomBookAbbrev = bookKeys[random.nextInt(bookKeys.length)];
+      final bookData = booksMap[randomBookAbbrev];
+      final String bookName = bookData['nome'];
+      final int totalChapters = bookData['capitulos'];
+
+      if (totalChapters <= 0) return null;
+
+      // 3. Sorteia um capítulo
+      final int randomChapterNum = (1 + random.nextInt(totalChapters)) as int;
+
+      // 4. Carrega o arquivo do capítulo para descobrir o número de versículos
+      // Usaremos a NVI como padrão para as notificações
+      final String chapterJsonString = await rootBundle.loadString(
+          'assets/Biblia/completa_traducoes/nvi/$randomBookAbbrev/$randomChapterNum.json');
+      final List<dynamic> verses = json.decode(chapterJsonString);
+
+      if (verses.isEmpty) return null;
+
+      // 5. Sorteia um versículo
+      final int randomVerseIndex = random.nextInt(verses.length);
+      final String verseText = verses[randomVerseIndex];
+      final int verseNumber = randomVerseIndex + 1;
+
+      // 6. Retorna o texto e a referência formatada
+      return {
+        'reference': '$bookName $randomChapterNum:$verseNumber',
+        'text': verseText,
+      };
+    } catch (e) {
+      print("Erro ao obter versículo aleatório: $e");
+      return null;
+    }
+  }
+
   void onDidReceiveNotificationResponse(
       NotificationResponse notificationResponse) async {
     final String? payload = notificationResponse.payload;
@@ -69,10 +118,10 @@ class NotificationService {
 
   /// Agenda as notificações diárias para os devocionais.
   Future<void> scheduleDailyDevotionals() async {
+    // A verificação de permissões permanece a mesma
     if (Platform.isAndroid) {
       bool notificationsGranted = await _requestBasicNotificationPermission();
       if (!notificationsGranted) return;
-
       bool exactAlarmsGranted = await _requestExactAlarmPermission();
       if (!exactAlarmsGranted) {
         print(
@@ -83,34 +132,86 @@ class NotificationService {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
       'devotional_channel_id',
-      'Lembretes Devocionais',
-      channelDescription:
-          'Notificações para lembrar da leitura devocional diária.',
+      'Lembretes Diários', // Nome do canal mais genérico agora
+      channelDescription: 'Notificações diárias com devocionais e versículos.',
       importance: Importance.max,
       priority: Priority.high,
     );
     const NotificationDetails notificationDetails =
         NotificationDetails(android: androidNotificationDetails);
 
-    // --- CÓDIGO DE PRODUÇÃO ATIVADO ---
+    // --- NOTIFICAÇÃO 1: DEVOCIONAL DA MANHÃ (6:00) ---
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      0,
+      0, // ID 0 para o devocional da manhã
       'Sua Leitura da Manhã',
       'Reserve um momento para seu devocional matutino.',
-      _nextInstanceOfTime(8, 0), // Agenda para 8:00 AM
+      _nextInstanceOfTime(6, 0), // <<< MUDANÇA: Horário alterado para 6:00 AM
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents:
-          DateTimeComponents.time, // Repete todo dia nesse horário
+      matchDateTimeComponents: DateTimeComponents.time,
     );
+    print("Notificação do devocional da manhã agendada para 6:00.");
 
+    // --- NOTIFICAÇÃO 2: VERSÍCULO DO DIA (8:00) ---
+    final randomVerse = await _getRandomVerse();
+    if (randomVerse != null) {
+      // <<< INÍCIO DA MUDANÇA >>>
+
+      // 1. Pega o texto e a referência do versículo
+      final String verseReference = randomVerse['reference']!;
+      final String verseText = randomVerse['text']!;
+
+      // 2. Cria um estilo de notificação que permite texto longo
+      final BigTextStyleInformation bigTextStyleInformation =
+          BigTextStyleInformation(
+        verseText, // O texto completo que será exibido quando a notificação for expandida
+        htmlFormatBigText: false,
+        contentTitle: verseReference, // O título que aparece no modo expandido
+        summaryText: 'Versículo do Dia', // Um pequeno texto de sumário
+      );
+
+      // 3. Cria os detalhes da notificação para Android, agora com o novo estilo
+      final AndroidNotificationDetails androidVerseNotificationDetails =
+          AndroidNotificationDetails(
+        'verse_of_the_day_channel_id', // Um ID de canal diferente é uma boa prática
+        'Versículo do Dia',
+        channelDescription:
+            'Uma notificação diária com um versículo da Bíblia.',
+        importance: Importance.max,
+        priority: Priority.high,
+        styleInformation: bigTextStyleInformation, // <<< APLICA O ESTILO AQUI
+      );
+
+      // 4. Junta os detalhes para todas as plataformas
+      final NotificationDetails verseNotificationDetails =
+          NotificationDetails(android: androidVerseNotificationDetails);
+
+      // 5. Agenda a notificação usando os novos detalhes
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        2,
+        verseReference,
+        verseText, // O corpo da notificação (pode aparecer cortado no modo recolhido)
+        _nextInstanceOfTime(8, 0),
+        verseNotificationDetails, // <<< USA OS DETALHES ESPECÍFICOS AQUI
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      print("Notificação do versículo do dia agendada para 8:00.");
+    } else {
+      print(
+          "Não foi possível agendar o versículo do dia por falha ao obter o texto.");
+    }
+
+    // --- NOTIFICAÇÃO 3: DEVOCIONAL DA NOITE (20:00) ---
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      1,
+      1, // ID 1 (mantido) para o devocional da noite
       'Sua Leitura da Noite',
       'Finalize seu dia com uma reflexão devocional.',
-      _nextInstanceOfTime(20, 0), // Agenda para 20:00 (8 PM)
+      _nextInstanceOfTime(20, 0), // Horário mantido
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
@@ -118,7 +219,7 @@ class NotificationService {
       matchDateTimeComponents: DateTimeComponents.time,
     );
 
-    print("Notificações diárias de devocional agendadas para 8:00 e 20:00.");
+    print("Notificação do devocional da noite agendada para 20:00.");
   }
 
   Future<bool> _requestBasicNotificationPermission() async {
