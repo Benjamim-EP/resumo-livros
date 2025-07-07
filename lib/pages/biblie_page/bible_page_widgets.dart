@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/pages/biblie_page/tag_editor_dialog.dart';
+import 'package:septima_biblia/pages/sharing/image_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/saveVerseDialog.dart';
@@ -762,14 +763,16 @@ class BiblePageWidgets {
       builder: (modalContext) {
         return Padding(
           padding: EdgeInsets.only(
-              top: 16.0,
-              left: 8.0,
-              right: 8.0,
-              bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16.0),
+            top: 16.0,
+            left: 8.0,
+            right: 8.0,
+            bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16.0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Cabeçalho do Modal
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
@@ -779,9 +782,10 @@ class BiblePageWidgets {
                     Text(
                       "Opções para: $bookAbbrev $chapter:$verseNum",
                       style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -789,9 +793,10 @@ class BiblePageWidgets {
                           ? verseText
                           : "[Conteúdo interlinear]",
                       style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.75),
-                          fontStyle: FontStyle.italic,
-                          fontSize: 14),
+                        color: theme.colorScheme.onSurface.withOpacity(0.75),
+                        fontStyle: FontStyle.italic,
+                        fontSize: 14,
+                      ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -799,18 +804,23 @@ class BiblePageWidgets {
                 ),
               ),
               Divider(color: theme.dividerColor.withOpacity(0.5), height: 20),
+
+              // Opção 1: Destacar Versículo
               ListTile(
-                leading: Icon(Icons.format_paint_outlined,
-                    color: currentHighlightColor != null
-                        ? Color(int.parse(
-                            currentHighlightColor.replaceFirst('#', '0xff')))
-                        : theme.iconTheme.color?.withOpacity(0.8)),
+                leading: Icon(
+                  Icons.format_paint_outlined,
+                  color: currentHighlightColor != null
+                      ? Color(int.parse(
+                          currentHighlightColor.replaceFirst('#', '0xff')))
+                      : theme.iconTheme.color?.withOpacity(0.8),
+                ),
                 title: Text(
-                    currentHighlightColor != null
-                        ? "Editar Destaque/Tags"
-                        : "Destacar Versículo",
-                    style: TextStyle(
-                        color: theme.colorScheme.onSurface, fontSize: 15)),
+                  currentHighlightColor != null
+                      ? "Editar Destaque/Tags"
+                      : "Destacar Versículo",
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface, fontSize: 15),
+                ),
                 onTap: () async {
                   Navigator.pop(modalContext);
                   final result = await showDialog<HighlightResult?>(
@@ -834,16 +844,44 @@ class BiblePageWidgets {
                   }
                 },
               ),
+
+              // <<< NOVA OPÇÃO ADICIONADA AQUI >>>
+              // Opção 2: Compartilhar Versículo
               ListTile(
-                leading: Icon(
-                    currentNote != null
-                        ? Icons.edit_note_outlined
-                        : Icons.note_add_outlined,
+                leading: Icon(Icons.share_outlined,
                     color: theme.iconTheme.color?.withOpacity(0.8)),
                 title: Text(
-                    currentNote != null ? "Editar Nota" : "Adicionar Nota",
-                    style: TextStyle(
-                        color: theme.colorScheme.onSurface, fontSize: 15)),
+                  "Compartilhar Versículo",
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface, fontSize: 15),
+                ),
+                onTap: () {
+                  Navigator.pop(modalContext); // Fecha o modal de opções
+                  Navigator.push(
+                    context, // Usa o contexto da página original
+                    MaterialPageRoute(
+                      builder: (context) => ImageSelectionPage(
+                        verseText: verseText,
+                        verseReference: "$bookAbbrev $chapter:$verseNum",
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              // Opção 3: Adicionar/Editar Nota
+              ListTile(
+                leading: Icon(
+                  currentNote != null
+                      ? Icons.edit_note_outlined
+                      : Icons.note_add_outlined,
+                  color: theme.iconTheme.color?.withOpacity(0.8),
+                ),
+                title: Text(
+                  currentNote != null ? "Editar Nota" : "Adicionar Nota",
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface, fontSize: 15),
+                ),
                 onTap: () {
                   Navigator.pop(modalContext);
                   showDialog(
@@ -859,20 +897,25 @@ class BiblePageWidgets {
                   );
                 },
               ),
+
+              // Opção 4: Remover Nota (só aparece se houver uma nota)
               if (currentNote != null && currentNote.isNotEmpty)
                 ListTile(
                   leading: Icon(Icons.delete_outline,
                       color: theme.colorScheme.error.withOpacity(0.8)),
-                  title: Text("Remover Nota",
-                      style: TextStyle(
-                          color: theme.colorScheme.error, fontSize: 15)),
+                  title: Text(
+                    "Remover Nota",
+                    style:
+                        TextStyle(color: theme.colorScheme.error, fontSize: 15),
+                  ),
                   onTap: () {
                     Navigator.pop(modalContext);
                     store.dispatch(DeleteNoteAction(verseId));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text('Nota removida.'),
-                          duration: Duration(seconds: 2)),
+                        content: Text('Nota removida.'),
+                        duration: Duration(seconds: 2),
+                      ),
                     );
                   },
                 ),
