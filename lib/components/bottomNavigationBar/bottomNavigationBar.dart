@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/components/buttons/animated_infinity_icon.dart';
+import 'package:septima_biblia/components/buttons/animated_premium_button.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
@@ -421,19 +423,22 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     builder: (context, isPremium) {
                       if (isPremium) {
                         return const Padding(
-                          padding: EdgeInsets.only(right: 8.0),
-                          child: Icon(Icons.verified_user_outlined,
-                              color: Colors.amber),
+                          padding: EdgeInsets.only(right: 12.0),
+                          // Usa o novo widget animado
+                          child: AnimatedInfinityIcon(),
                         );
                       }
-                      return IconButton(
-                        icon: const Icon(Icons.workspace_premium_outlined),
-                        tooltip: 'Torne-se Premium',
-                        onPressed: () => Navigator.push(
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: AnimatedPremiumButton(
+                          onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) =>
-                                    const SubscriptionSelectionPage())),
+                              builder: (context) =>
+                                  const SubscriptionSelectionPage(),
+                            ),
+                          ),
+                        ),
                       );
                     },
                   ),
