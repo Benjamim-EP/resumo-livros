@@ -265,7 +265,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'destinationPage': const ChurchHistoryIndexPage(),
         },
         {
-          'title': "Institutos de Teologia Elenctica",
+          'title': "Compêndio de Teologia Apologética",
           'description': "A obra monumental da teologia sistemática reformada.",
           'author': 'Francis Turretin',
           'pageCount': '3 volumes / +2000 páginas',
