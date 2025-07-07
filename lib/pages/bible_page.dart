@@ -69,7 +69,7 @@ class _BiblePageState extends State<BiblePage> {
   String selectedTranslation1 = 'nvi';
   String? selectedTranslation2 = 'acf';
   bool _isCompareModeActive = false;
-  bool _isFocusModeActive = false;
+  //bool _isFocusModeActive = false;
   final FirestoreService _firestoreService = FirestoreService();
 
   String? _expandedItemId;
@@ -1268,14 +1268,17 @@ class _BiblePageState extends State<BiblePage> {
 
     final Color defaultIconColor = theme.appBarTheme.actionsIconTheme?.color ??
         theme.colorScheme.onPrimary;
+    final bool isFocusModeActive = store.state.userState.isFocusMode;
 
     // Caso 1: Modo Foco está ativo
-    if (_isFocusModeActive) {
+    if (isFocusModeActive) {
       return [
         IconButton(
-          icon: Icon(Icons.fullscreen_exit, color: defaultIconColor),
+          icon: Icon(Icons.fullscreen_exit,
+              color: theme.colorScheme.primary), // Cor de destaque para sair
           tooltip: "Sair do Modo Foco",
-          onPressed: () => setState(() => _isFocusModeActive = false),
+          // <<< MUDANÇA: Despacha a ação de sair >>>
+          onPressed: () => store.dispatch(ExitFocusModeAction()),
         ),
       ];
     }
@@ -1421,7 +1424,8 @@ class _BiblePageState extends State<BiblePage> {
               );
               break;
             case 'focus':
-              setState(() => _isFocusModeActive = !_isFocusModeActive);
+              // <<< MUDANÇA: Despacha a ação de entrar >>>
+              store.dispatch(EnterFocusModeAction());
               break;
             case 'compare':
               setState(() => _isCompareModeActive = !_isCompareModeActive);
@@ -1489,11 +1493,9 @@ class _BiblePageState extends State<BiblePage> {
             PopupMenuItem<String>(
               value: 'focus',
               child: ListTile(
-                leading: Icon(_isFocusModeActive
-                    ? Icons.lightbulb
-                    : Icons.lightbulb_outline),
-                title: Text(
-                    _isFocusModeActive ? "Sair do Modo Foco" : "Modo Foco"),
+                leading: const Icon(Icons
+                    .lightbulb_outline), // Ícone agora é sempre para "entrar"
+                title: const Text("Modo Foco"),
               ),
             ),
             PopupMenuItem<String>(
@@ -1615,7 +1617,7 @@ class _BiblePageState extends State<BiblePage> {
               '${selectedTranslation1.toUpperCase()} / ${selectedTranslation2?.toUpperCase() ?? "..."}';
         } else {
           appBarTitleText = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
-          if (_isFocusModeActive) {
+          if (store.state.userState.isFocusMode) {
             if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
           } else {
             // Removido o `else if (!_showExtraOptions)` que não existe mais
@@ -1626,23 +1628,28 @@ class _BiblePageState extends State<BiblePage> {
         return Scaffold(
           appBar: AppBar(
             title: Text(appBarTitleText),
-            leading: _isFocusModeActive ? const SizedBox.shrink() : null,
+            leading: store.state.userState.isFocusMode
+                ? const SizedBox.shrink()
+                : null,
             actions: _buildAppBarActions(),
           ),
           body: PageStorage(
             bucket: _pageStorageBucket,
             child: Column(
               children: [
-                if (_isSemanticSearchActive && !_isFocusModeActive)
+                if (_isSemanticSearchActive &&
+                    !store.state.userState.isFocusMode)
                   _buildSemanticSearchTextField(theme),
-                if (_isSemanticSearchActive && !_isFocusModeActive)
+                if (_isSemanticSearchActive &&
+                    !store.state.userState.isFocusMode)
                   _buildSemanticSearchFilterWidgets(theme),
                 Expanded(
                   child: (selectedBook == null ||
                           selectedChapter == null ||
                           _selectedBookSlug == null)
                       ? const SizedBox.shrink()
-                      : (_isSemanticSearchActive && !_isFocusModeActive)
+                      : (_isSemanticSearchActive &&
+                              !store.state.userState.isFocusMode)
                           ? BibleSemanticSearchView(
                               onToggleItemExpansion:
                                   _toggleItemExpansionInBiblePage,
@@ -1655,14 +1662,14 @@ class _BiblePageState extends State<BiblePage> {
                             )
                           : BibleReaderView(
                               key: ValueKey(
-                                  '$selectedBook-$selectedChapter-$selectedTranslation1-$selectedTranslation2-$_isCompareModeActive-$_showHebrewInterlinear-$_showGreekInterlinear-$_currentFontSizeMultiplier'),
+                                  '$selectedBook-$selectedChapter-$selectedTranslation1-$selectedTranslation2-$_isCompareModeActive-${store.state.userState.isFocusMode}-$_showHebrewInterlinear-$_showGreekInterlinear-$_currentFontSizeMultiplier'),
                               selectedBook: selectedBook!,
                               selectedChapter: selectedChapter!,
                               selectedTranslation1: selectedTranslation1,
                               selectedTranslation2: selectedTranslation2,
                               bookSlug: _selectedBookSlug,
                               isCompareMode: _isCompareModeActive,
-                              isFocusMode: _isFocusModeActive,
+                              isFocusMode: store.state.userState.isFocusMode,
                               showHebrewInterlinear: _showHebrewInterlinear,
                               showGreekInterlinear: _showGreekInterlinear,
                               fontSizeMultiplier: _currentFontSizeMultiplier,
@@ -1679,7 +1686,8 @@ class _BiblePageState extends State<BiblePage> {
                               currentChapterGreekData: _currentChapterGreekData,
                             ),
                 ),
-                if (!_isFocusModeActive && !_isSemanticSearchActive)
+                if (!store.state.userState.isFocusMode &&
+                    !_isSemanticSearchActive)
                   // Se o modo de comparação estiver ativo, mostra o novo seletor
                   if (_isCompareModeActive)
                     _buildComparisonSelectorBar()

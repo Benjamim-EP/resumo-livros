@@ -59,12 +59,14 @@ class _MainAppScreenViewModel {
   final int? targetBottomNavIndex;
   final bool isPremium;
   final AppThemeOption activeThemeOption;
+  final bool isFocusMode;
 
   _MainAppScreenViewModel({
     this.userDetails,
     this.targetBottomNavIndex,
     required this.isPremium,
     required this.activeThemeOption,
+    required this.isFocusMode,
   });
 
   static _MainAppScreenViewModel fromStore(Store<AppState> store) {
@@ -86,6 +88,7 @@ class _MainAppScreenViewModel {
       targetBottomNavIndex: store.state.userState.targetBottomNavIndex,
       isPremium: premiumStatus,
       activeThemeOption: store.state.themeState.activeThemeOption,
+      isFocusMode: store.state.userState.isFocusMode,
     );
   }
 }
@@ -344,176 +347,191 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return WillPopScope(
           onWillPop: _onWillPop,
           child: Scaffold(
-            appBar: AppBar(
-              title: Text(_getAppBarTitle(_selectedIndex)),
-              actions: [
-                _tutorialService.buildShowcase(
-                  key: _tutorialService.keyMudarTema,
-                  title: 'Mudar Tema',
-                  description:
-                      'Toque aqui para alternar entre os temas de cores do aplicativo.',
-                  child: IconButton(
-                    icon: Icon(_getThemeIcon(currentThemeOptionFromRedux)),
-                    tooltip: 'Mudar Tema',
-                    onPressed: () {
-                      final nextTheme =
-                          _getNextTheme(currentThemeOptionFromRedux);
-                      storeInstance.dispatch(SetThemeAction(nextTheme));
-                    },
-                  ),
-                ),
-                _tutorialService.buildShowcase(
-                  key: _tutorialService.keyMoedas,
-                  title: 'Suas Moedas',
-                  description:
-                      'Use moedas para buscas avançadas. Assista a um anúncio para ganhar mais!',
-                  child: StoreConnector<AppState, _UserCoinsViewModel>(
-                    converter: (store) => _UserCoinsViewModel.fromStore(store),
-                    builder: (context, coinsViewModel) {
-                      if (coinsViewModel.isPremium)
-                        return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.monetization_on,
-                                color: currentThemeData.colorScheme.primary,
-                                size: 22),
-                            const SizedBox(width: 4),
-                            Text('${coinsViewModel.userCoins}',
-                                style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                    color: currentThemeData.appBarTheme
-                                            .titleTextStyle?.color ??
-                                        currentThemeData
-                                            .colorScheme.onPrimary)),
-                            if (coinsViewModel.userCoins < MAX_COINS_LIMIT)
-                              IconButton(
-                                icon: Icon(Icons.add_circle_outline,
-                                    color: currentThemeData.colorScheme.primary,
-                                    size: 24),
-                                tooltip: 'Ganhar Moedas',
-                                onPressed: () => storeInstance
-                                    .dispatch(RequestRewardedAdAction()),
-                              )
-                            else
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0),
-                                child: Icon(Icons.check_circle,
-                                    color: currentThemeData.colorScheme.primary
-                                        .withOpacity(0.7),
-                                    size: 22),
+            appBar: mainScreenViewModel.isFocusMode
+                ? null
+                : AppBar(
+                    title: Text(_getAppBarTitle(_selectedIndex)),
+                    actions: [
+                      _tutorialService.buildShowcase(
+                        key: _tutorialService.keyMudarTema,
+                        title: 'Mudar Tema',
+                        description:
+                            'Toque aqui para alternar entre os temas de cores do aplicativo.',
+                        child: IconButton(
+                          icon:
+                              Icon(_getThemeIcon(currentThemeOptionFromRedux)),
+                          tooltip: 'Mudar Tema',
+                          onPressed: () {
+                            final nextTheme =
+                                _getNextTheme(currentThemeOptionFromRedux);
+                            storeInstance.dispatch(SetThemeAction(nextTheme));
+                          },
+                        ),
+                      ),
+                      _tutorialService.buildShowcase(
+                        key: _tutorialService.keyMoedas,
+                        title: 'Suas Moedas',
+                        description:
+                            'Use moedas para buscas avançadas. Assista a um anúncio para ganhar mais!',
+                        child: StoreConnector<AppState, _UserCoinsViewModel>(
+                          converter: (store) =>
+                              _UserCoinsViewModel.fromStore(store),
+                          builder: (context, coinsViewModel) {
+                            if (coinsViewModel.isPremium)
+                              return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.monetization_on,
+                                      color:
+                                          currentThemeData.colorScheme.primary,
+                                      size: 22),
+                                  const SizedBox(width: 4),
+                                  Text('${coinsViewModel.userCoins}',
+                                      style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold,
+                                          color: currentThemeData.appBarTheme
+                                                  .titleTextStyle?.color ??
+                                              currentThemeData
+                                                  .colorScheme.onPrimary)),
+                                  if (coinsViewModel.userCoins <
+                                      MAX_COINS_LIMIT)
+                                    IconButton(
+                                      icon: Icon(Icons.add_circle_outline,
+                                          color: currentThemeData
+                                              .colorScheme.primary,
+                                          size: 24),
+                                      tooltip: 'Ganhar Moedas',
+                                      onPressed: () => storeInstance
+                                          .dispatch(RequestRewardedAdAction()),
+                                    )
+                                  else
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8.0),
+                                      child: Icon(Icons.check_circle,
+                                          color: currentThemeData
+                                              .colorScheme.primary
+                                              .withOpacity(0.7),
+                                          size: 22),
+                                    ),
+                                ],
                               ),
-                          ],
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ),
-                _tutorialService.buildShowcase(
-                  key: _tutorialService.keySejaPremium,
-                  title: 'Seja Premium',
-                  description:
-                      'Toque aqui para desbloquear todos os recursos e remover os anúncios.',
-                  child: StoreConnector<AppState, bool>(
-                    converter: (store) =>
-                        _UserCoinsViewModel.fromStore(store).isPremium,
-                    builder: (context, isPremium) {
-                      if (isPremium) {
-                        return const Padding(
-                          padding: EdgeInsets.only(right: 12.0),
-                          // Usa o novo widget animado
-                          child: AnimatedInfinityIcon(),
-                        );
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: AnimatedPremiumButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const SubscriptionSelectionPage(),
-                            ),
-                          ),
+                      ),
+                      _tutorialService.buildShowcase(
+                        key: _tutorialService.keySejaPremium,
+                        title: 'Seja Premium',
+                        description:
+                            'Toque aqui para desbloquear todos os recursos e remover os anúncios.',
+                        child: StoreConnector<AppState, bool>(
+                          converter: (store) =>
+                              _UserCoinsViewModel.fromStore(store).isPremium,
+                          builder: (context, isPremium) {
+                            if (isPremium) {
+                              return const Padding(
+                                padding: EdgeInsets.only(right: 12.0),
+                                // Usa o novo widget animado
+                                child: AnimatedInfinityIcon(),
+                              );
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: AnimatedPremiumButton(
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SubscriptionSelectionPage(),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
             body: IndexedStack(index: _selectedIndex, children: _pages),
-            bottomNavigationBar: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              currentIndex: _selectedIndex,
-              onTap: (index) {
-                if (!mounted) return;
-                if (storeInstance.state.userState.isGuestUser && index == 0) {
-                  showLoginRequiredDialog(context, featureName: "seu perfil");
-                  return;
-                }
-                int previousIndex = _selectedIndex;
-                if (previousIndex != index) {
-                  final bool isPremium =
-                      _UserCoinsViewModel.fromStore(storeInstance).isPremium;
-                  void navigateToNewTab() {
-                    if (mounted) {
-                      setState(() => _selectedIndex = index);
-                      if (previousIndex == 1 && index != 1) {
-                        final userState = storeInstance.state.userState;
-                        if (userState.userId != null) {
-                          if (userState.pendingSectionsToAdd.isNotEmpty ||
-                              userState.pendingSectionsToRemove.isNotEmpty) {
-                            storeInstance
-                                .dispatch(ProcessPendingBibleProgressAction());
+            bottomNavigationBar: mainScreenViewModel.isFocusMode
+                ? null
+                : BottomNavigationBar(
+                    type: BottomNavigationBarType.fixed,
+                    currentIndex: _selectedIndex,
+                    onTap: (index) {
+                      if (!mounted) return;
+                      if (storeInstance.state.userState.isGuestUser &&
+                          index == 0) {
+                        showLoginRequiredDialog(context,
+                            featureName: "seu perfil");
+                        return;
+                      }
+                      int previousIndex = _selectedIndex;
+                      if (previousIndex != index) {
+                        final bool isPremium =
+                            _UserCoinsViewModel.fromStore(storeInstance)
+                                .isPremium;
+                        void navigateToNewTab() {
+                          if (mounted) {
+                            setState(() => _selectedIndex = index);
+                            if (previousIndex == 1 && index != 1) {
+                              final userState = storeInstance.state.userState;
+                              if (userState.userId != null) {
+                                if (userState.pendingSectionsToAdd.isNotEmpty ||
+                                    userState
+                                        .pendingSectionsToRemove.isNotEmpty) {
+                                  storeInstance.dispatch(
+                                      ProcessPendingBibleProgressAction());
+                                }
+                              }
+                            }
                           }
                         }
-                      }
-                    }
-                  }
 
-                  if (!isPremium) {
-                    interstitialManager
-                        .tryShowInterstitial(
-                            fromScreen:
-                                "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
-                        .then((_) {
-                      navigateToNewTab();
-                    });
-                  } else {
-                    navigateToNewTab();
-                  }
-                }
-              },
-              items: [
-                _tutorialService.buildShowcasedBottomNavItem(
-                    key: _tutorialService.keyAbaUsuario,
-                    icon: Icons.account_circle,
-                    label: 'Usuário',
-                    description: 'Acesse seu perfil, progresso e notas aqui.'),
-                _tutorialService.buildShowcasedBottomNavItem(
-                    key: _tutorialService.keyAbaBiblia,
-                    icon: Icons.book_outlined,
-                    label: 'Bíblia',
-                    description:
-                        'Navegue pelos livros da Bíblia e faça estudos profundos.'),
-                _tutorialService.buildShowcasedBottomNavItem(
-                    key: _tutorialService.keyAbaBiblioteca,
-                    icon: Icons.local_library_outlined,
-                    label: 'Biblioteca',
-                    description:
-                        'Explore uma vasta coleção de sermões, livros e outros recursos.'),
-                _tutorialService.buildShowcasedBottomNavItem(
-                    key: _tutorialService.keyAbaDiario,
-                    icon: Icons.edit_note_outlined,
-                    label: 'Diário',
-                    description:
-                        'Registre suas reflexões diárias, orações e promessas.'),
-              ],
-            ),
+                        if (!isPremium) {
+                          interstitialManager
+                              .tryShowInterstitial(
+                                  fromScreen:
+                                      "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
+                              .then((_) {
+                            navigateToNewTab();
+                          });
+                        } else {
+                          navigateToNewTab();
+                        }
+                      }
+                    },
+                    items: [
+                      _tutorialService.buildShowcasedBottomNavItem(
+                          key: _tutorialService.keyAbaUsuario,
+                          icon: Icons.account_circle,
+                          label: 'Usuário',
+                          description:
+                              'Acesse seu perfil, progresso e notas aqui.'),
+                      _tutorialService.buildShowcasedBottomNavItem(
+                          key: _tutorialService.keyAbaBiblia,
+                          icon: Icons.book_outlined,
+                          label: 'Bíblia',
+                          description:
+                              'Navegue pelos livros da Bíblia e faça estudos profundos.'),
+                      _tutorialService.buildShowcasedBottomNavItem(
+                          key: _tutorialService.keyAbaBiblioteca,
+                          icon: Icons.local_library_outlined,
+                          label: 'Biblioteca',
+                          description:
+                              'Explore uma vasta coleção de sermões, livros e outros recursos.'),
+                      _tutorialService.buildShowcasedBottomNavItem(
+                          key: _tutorialService.keyAbaDiario,
+                          icon: Icons.edit_note_outlined,
+                          label: 'Diário',
+                          description:
+                              'Registre suas reflexões diárias, orações e promessas.'),
+                    ],
+                  ),
           ),
         );
       },

@@ -623,3 +623,7 @@ class DeleteUserAccountFailureAction {
   final String error;
   DeleteUserAccountFailureAction(this.error);
 }
+
+class EnterFocusModeAction {}
+
+class ExitFocusModeAction {}

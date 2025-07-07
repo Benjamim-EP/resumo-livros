@@ -237,6 +237,8 @@ class UserState {
   final List<String> allUserTags;
   final bool isLoadingLogin;
 
+  final bool isFocusMode;
+
   UserState({
     this.userId,
     this.email,
@@ -282,6 +284,7 @@ class UserState {
     this.initialBibleSectionIdToScrollTo, // NOVO
     this.allUserTags = const [],
     this.isLoadingLogin = false,
+    this.isFocusMode = false,
     this.userNotes = const [],
   });
 
@@ -290,6 +293,7 @@ class UserState {
     String? email,
     String? nome,
     bool? isLoggedIn,
+    bool? isFocusMode,
     // List<String>? tags,
     Map<String, dynamic>? userDetails, // Sem os campos movidos
     // Map<String, List<Map<String, String>>>? userBooks,
@@ -420,6 +424,7 @@ class UserState {
               this.initialBibleSectionIdToScrollTo), // NOVO
       allUserTags: allUserTags ?? this.allUserTags,
       isLoadingLogin: isLoadingLogin ?? this.isLoadingLogin,
+      isFocusMode: isFocusMode ?? this.isFocusMode,
     );
   }
 }
@@ -821,6 +826,10 @@ UserState userReducer(UserState state, dynamic action) {
         initialBibleChapter: action.chapter,
         clearInitialBibleLocation:
             action.bookAbbrev == null && action.chapter == null);
+  } else if (action is EnterFocusModeAction) {
+    return state.copyWith(isFocusMode: true);
+  } else if (action is ExitFocusModeAction) {
+    return state.copyWith(isFocusMode: false);
   }
 
   return state;
