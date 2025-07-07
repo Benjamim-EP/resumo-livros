@@ -341,7 +341,7 @@ flutter:
     - assets/Biblia/completa_traducoes/aa/jd/
     - assets/Biblia/completa_traducoes/aa/ap/
 
-        - assets/Biblia/completa_traducoes/kjf/gn/
+    - assets/Biblia/completa_traducoes/kjf/gn/
     - assets/Biblia/completa_traducoes/kjf/ex/
     - assets/Biblia/completa_traducoes/kjf/lv/
     - assets/Biblia/completa_traducoes/kjf/nm/
@@ -409,7 +409,7 @@ flutter:
     - assets/Biblia/completa_traducoes/kjf/jd/
     - assets/Biblia/completa_traducoes/kjf/ap/
 
-        - assets/Biblia/completa_traducoes/kja/gn/
+    - assets/Biblia/completa_traducoes/kja/gn/
     - assets/Biblia/completa_traducoes/kja/ex/
     - assets/Biblia/completa_traducoes/kja/lv/
     - assets/Biblia/completa_traducoes/kja/nm/

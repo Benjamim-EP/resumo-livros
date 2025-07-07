@@ -150,6 +150,24 @@ class BiblePageWidgets {
             onTranslationSelected('acf');
             Navigator.pop(context);
           }),
+      buildTranslationButton(
+          context: context,
+          translationKey: 'kja', // <<< ID da pasta
+          translationLabel: 'KJA', // <<< Texto que aparece no botão
+          selectedTranslation: selectedTranslation,
+          onPressed: () {
+            onTranslationSelected('kja');
+            Navigator.pop(context);
+          }),
+      buildTranslationButton(
+          context: context,
+          translationKey: 'kjf', // <<< ID da pasta
+          translationLabel: 'KJF', // <<< Texto que aparece no botão
+          selectedTranslation: selectedTranslation,
+          onPressed: () {
+            onTranslationSelected('kjf');
+            Navigator.pop(context);
+          }),
     ];
 
     if (isOldTestament) {

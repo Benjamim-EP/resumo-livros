@@ -1405,8 +1405,8 @@ class _BiblePageState extends State<BiblePage> {
 
       // --- MENU AGRUPADO DE FERRAMENTAS DE VISUALIZAÇÃO ---
       PopupMenuButton<String>(
-        icon: Icon(Icons.tune_outlined, color: defaultIconColor, size: 26),
-        tooltip: "Ferramentas de Visualização",
+        icon: Icon(Icons.add, color: defaultIconColor, size: 30),
+        tooltip: "Mais Opções",
         onSelected: (value) {
           switch (value) {
             case 'version':
