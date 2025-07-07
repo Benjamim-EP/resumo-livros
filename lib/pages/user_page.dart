@@ -184,6 +184,51 @@ class _UserPageState extends State<UserPage> {
     }
   }
 
+  Widget _buildFilterChip({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required HighlightType? value,
+    required HighlightType? groupValue,
+    required Function(bool) onSelected,
+  }) {
+    final theme = Theme.of(context);
+    final bool isSelected = value == groupValue;
+
+    return ChoiceChip(
+      label: Text(label),
+      avatar: Icon(
+        icon,
+        size: 16, // <<< MUDANÇA: Ícone um pouco menor
+        color: isSelected
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.primary,
+      ),
+      selected: isSelected,
+      onSelected: onSelected,
+      labelStyle: TextStyle(
+        fontSize: 12.5, // <<< MUDANÇA: Fonte um pouco menor
+        fontWeight: FontWeight.w600,
+        color: isSelected
+            ? theme.colorScheme.onPrimary
+            : theme.textTheme.bodyLarge?.color,
+      ),
+      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+      selectedColor: theme.colorScheme.primary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+        ),
+      ),
+      // <<< MUDANÇA PRINCIPAL: Padding reduzido para um botão mais compacto >>>
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      materialTapTargetSize: MaterialTapTargetSize
+          .shrinkWrap, // Remove o padding extra da área de toque
+      showCheckmark: false,
+    );
+  }
+
   Widget _buildTestamentProgress(String title, double progress,
       int readSections, int totalSections, ThemeData theme) {
     // ... (sem alterações, apenas ajuste de estilo se desejar) ...
@@ -697,41 +742,54 @@ class _UserPageState extends State<UserPage> {
             // Botões de filtro atualizados
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 9.0, vertical: 10.0),
-              child: SegmentedButton<HighlightType?>(
-                // >>> INÍCIO DA MODIFICAÇÃO <<<
-                segments: const <ButtonSegment<HighlightType?>>[
-                  ButtonSegment<HighlightType?>(
-                    value: null, // Todos
-                    // Label removido para economizar espaço
-                    icon: Icon(Icons.list_alt_rounded),
-                    tooltip: "Mostrar Todos os Destaques",
+                  const EdgeInsets.symmetric(horizontal: 2.0, vertical: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  // Botão "Todos"
+                  Expanded(
+                    child: _buildFilterChip(
+                      context: context,
+                      label: "Todos",
+                      icon: Icons.list_alt_rounded,
+                      value: null,
+                      groupValue: _selectedHighlightType,
+                      onSelected: (value) {
+                        setState(() => _selectedHighlightType = null);
+                      },
+                    ),
                   ),
-                  ButtonSegment<HighlightType?>(
-                    value: HighlightType.verse,
-                    // Label removido
-                    icon: Icon(Icons.menu_book),
-                    tooltip: "Mostrar Apenas Versículos",
+
+                  // Botão "Bíblia"
+                  Expanded(
+                    child: _buildFilterChip(
+                      context: context,
+                      label: "Bíblia",
+                      icon: Icons.menu_book,
+                      value: HighlightType.verse,
+                      groupValue: _selectedHighlightType,
+                      onSelected: (value) {
+                        setState(
+                            () => _selectedHighlightType = HighlightType.verse);
+                      },
+                    ),
                   ),
-                  ButtonSegment<HighlightType?>(
-                    value: HighlightType.literature,
-                    // Label removido
-                    icon: Icon(Icons.import_contacts_outlined),
-                    tooltip: "Mostrar Apenas Literatura",
+
+                  // Botão "Biblioteca" (um nome mais intuitivo que "Literatura")
+                  Expanded(
+                    child: _buildFilterChip(
+                      context: context,
+                      label: "Biblioteca",
+                      icon: Icons.import_contacts_outlined,
+                      value: HighlightType.literature,
+                      groupValue: _selectedHighlightType,
+                      onSelected: (value) {
+                        setState(() =>
+                            _selectedHighlightType = HighlightType.literature);
+                      },
+                    ),
                   ),
                 ],
-                selected: <HighlightType?>{_selectedHighlightType},
-                onSelectionChanged: (Set<HighlightType?> newSelection) {
-                  if (mounted) {
-                    setState(() => _selectedHighlightType = newSelection.first);
-                  }
-                },
-                style: SegmentedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surface.withOpacity(0.1),
-                  foregroundColor: theme.colorScheme.onSurface,
-                  selectedForegroundColor: theme.colorScheme.onPrimary,
-                  selectedBackgroundColor: theme.colorScheme.primary,
-                ),
               ),
             ),
 
