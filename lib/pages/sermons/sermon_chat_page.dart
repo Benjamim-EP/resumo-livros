@@ -3,10 +3,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:redux/redux.dart';
 
-// --- Modelos de Dados para o Chat ---
+// --- Modelos de Dados ---
 enum MessageAuthor { user, bot }
 
 class ChatMessage {
@@ -20,24 +25,38 @@ class ChatMessage {
     this.sources,
   });
 
-  // Converte um objeto ChatMessage em um Map para poder ser salvo em JSON
   Map<String, dynamic> toJson() => {
         'text': text,
-        'author': author.name, // Salva o nome do enum (ex: 'user', 'bot')
+        'author': author.name,
         'sources': sources,
       };
 
-  // Cria um objeto ChatMessage a partir de um Map (lido do JSON)
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
         text: json['text'],
         author: MessageAuthor.values.firstWhere(
           (e) => e.name == json['author'],
-          orElse: () => MessageAuthor.bot, // Padrão seguro
+          orElse: () => MessageAuthor.bot,
         ),
         sources: (json['sources'] as List<dynamic>?)
             ?.map((source) => Map<String, dynamic>.from(source))
             .toList(),
       );
+}
+
+// --- ViewModel para conectar a UI ao estado do Redux ---
+class _ChatViewModel {
+  final int userCoins;
+  final bool isPremium;
+
+  _ChatViewModel({required this.userCoins, required this.isPremium});
+
+  static _ChatViewModel fromStore(Store<AppState> store) {
+    return _ChatViewModel(
+      userCoins: store.state.userState.userCoins,
+      isPremium: store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive,
+    );
+  }
 }
 
 // --- Widget da Tela Principal do Chat ---
@@ -55,6 +74,7 @@ class _SermonChatPageState extends State<SermonChatPage> {
   bool _isLoading = false;
 
   static const String _chatHistoryKey = 'sermon_chat_history';
+  static const int chatCost = 5;
 
   @override
   void initState() {
@@ -62,34 +82,35 @@ class _SermonChatPageState extends State<SermonChatPage> {
     _loadChatHistory();
   }
 
-  // --- Funções de Persistência ---
+  // --- Funções de Persistência e Controle ---
 
   Future<void> _saveChatHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<Map<String, dynamic>> chatHistoryJson =
-        _messages.map((m) => m.toJson()).toList();
-    await prefs.setString(_chatHistoryKey, json.encode(chatHistoryJson));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<Map<String, dynamic>> chatHistoryJson =
+          _messages.map((m) => m.toJson()).toList();
+      await prefs.setString(_chatHistoryKey, json.encode(chatHistoryJson));
+    } catch (e) {
+      print("Erro ao salvar histórico do chat: $e");
+    }
   }
 
   Future<void> _loadChatHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? chatHistoryString = prefs.getString(_chatHistoryKey);
+    if (!mounted) return;
 
-    if (mounted) {
-      if (chatHistoryString != null) {
-        final List<dynamic> chatHistoryJson = json.decode(chatHistoryString);
-        setState(() {
-          _messages.clear();
-          _messages.addAll(
-              chatHistoryJson.map((json) => ChatMessage.fromJson(json)));
-        });
-      } else {
-        _resetChat(
-            save:
-                false); // Inicia com a mensagem de boas-vindas se não houver histórico
-      }
-      _scrollToBottom();
+    final String? chatHistoryString = prefs.getString(_chatHistoryKey);
+    if (chatHistoryString != null) {
+      final List<dynamic> chatHistoryJson = json.decode(chatHistoryString);
+      setState(() {
+        _messages.clear();
+        _messages
+            .addAll(chatHistoryJson.map((json) => ChatMessage.fromJson(json)));
+      });
+    } else {
+      _resetChat(save: false);
     }
+    _scrollToBottom();
   }
 
   void _resetChat({bool save = true}) {
@@ -128,9 +149,35 @@ class _SermonChatPageState extends State<SermonChatPage> {
     final query = _textController.text.trim();
     if (query.isEmpty) return;
 
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final viewModel = _ChatViewModel.fromStore(store);
+
+    if (!viewModel.isPremium && viewModel.userCoins < chatCost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Moedas insuficientes. Você precisa de $chatCost moedas.'),
+          action: SnackBarAction(
+            label: 'Ganhar Moedas',
+            onPressed: () => store.dispatch(RequestRewardedAdAction()),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // <<< INÍCIO DA CORREÇÃO PRINCIPAL >>>
+
+    // 1. Atualização Otimista: Deduz as moedas no estado Redux IMEDIATAMENTE.
+    if (!viewModel.isPremium) {
+      final newCoinTotal = viewModel.userCoins - chatCost;
+      store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+      print("Frontend: Atualização otimista das moedas para $newCoinTotal");
+    }
+
+    // 2. Atualiza a UI com a mensagem do usuário e o loader.
     final userMessage = ChatMessage(text: query, author: MessageAuthor.user);
     _textController.clear();
-
     setState(() {
       _messages.add(userMessage);
       _isLoading = true;
@@ -138,6 +185,7 @@ class _SermonChatPageState extends State<SermonChatPage> {
     _scrollToBottom();
     await _saveChatHistory();
 
+    // 3. Chama a Cloud Function (que fará a dedução real no Firestore).
     try {
       final functions =
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
@@ -175,16 +223,34 @@ class _SermonChatPageState extends State<SermonChatPage> {
               text: botResponse, author: MessageAuthor.bot, sources: sources));
         });
       }
+
+      // A sincronização (LoadUserDetailsAction) pode ser removida daqui se a atualização otimista
+      // for suficiente, ou mantida como uma verificação periódica. Por enquanto, vamos remover
+      // para evitar chamadas redundantes. A atualização otimista já resolve a UI.
     } on FirebaseFunctionsException catch (e) {
       if (mounted) {
+        String errorMessage = "Ocorreu um erro: ${e.message}";
+        if (e.code == 'resource-exhausted') {
+          errorMessage =
+              "Moedas insuficientes. Você precisa de $chatCost moedas para continuar.";
+          // Se o backend diz que não há moedas, força a sincronização para corrigir o valor no app.
+          store.dispatch(LoadUserDetailsAction());
+        } else if (!viewModel.isPremium) {
+          // Se houve outro erro na função, REEMBOLSA as moedas otimisticamente.
+          store.dispatch(UpdateUserCoinsAction(viewModel.userCoins));
+          print("Frontend: Reembolso otimista das moedas devido a erro na CF.");
+        }
         setState(() {
-          _messages.add(ChatMessage(
-              text: "Ocorreu um erro ao buscar a resposta: ${e.message}",
-              author: MessageAuthor.bot));
+          _messages
+              .add(ChatMessage(text: errorMessage, author: MessageAuthor.bot));
         });
       }
     } catch (e) {
       if (mounted) {
+        // Reembolsa em caso de erro de rede, etc.
+        if (!viewModel.isPremium) {
+          store.dispatch(UpdateUserCoinsAction(viewModel.userCoins));
+        }
         setState(() {
           _messages.add(ChatMessage(
               text: "Ocorreu um erro inesperado. Verifique sua conexão.",
@@ -193,9 +259,7 @@ class _SermonChatPageState extends State<SermonChatPage> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
         _scrollToBottom();
         await _saveChatHistory();
       }
@@ -204,40 +268,57 @@ class _SermonChatPageState extends State<SermonChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Conversar com Spurgeon AI"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: "Nova Conversa",
-            onPressed: () => _resetChat(),
+    return StoreConnector<AppState, _ChatViewModel>(
+      converter: (store) => _ChatViewModel.fromStore(store),
+      builder: (context, viewModel) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text("Conversar com Spurgeon AI"),
+            actions: [
+              if (!viewModel.isPremium)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Chip(
+                    avatar: Icon(Icons.monetization_on,
+                        color: Theme.of(context).colorScheme.primary, size: 18),
+                    label: Text(viewModel.userCoins.toString()),
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                  ),
+                ),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: "Nova Conversa",
+                onPressed: () => _resetChat(),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _messages.length + (_isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isLoading && index == _messages.length) {
-                  return const _BotTypingIndicator();
-                }
-                final message = _messages[index];
-                if (message.author == MessageAuthor.user) {
-                  return _UserMessageBubble(message: message);
-                } else {
-                  return _BotMessageBubble(message: message);
-                }
-              },
-            ),
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: _messages.length + (_isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (_isLoading && index == _messages.length) {
+                      return const _BotTypingIndicator();
+                    }
+                    final message = _messages[index];
+                    if (message.author == MessageAuthor.user) {
+                      return _UserMessageBubble(message: message);
+                    } else {
+                      return _BotMessageBubble(message: message);
+                    }
+                  },
+                ),
+              ),
+              _buildTextComposer(),
+            ],
           ),
-          _buildTextComposer(),
-        ],
-      ),
+        );
+      },
     );
   }
 

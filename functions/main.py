@@ -19,6 +19,8 @@ from googleapiclient.discovery import build
 # >>> FIM DOS NOVOS IMPORTS <<<
 
 print(">>>> main.py (VERSÃO LAZY INIT - CORRETA) <<<<")
+CHAT_COST = 5
+
 
 try:
     import bible_search_service
@@ -524,12 +526,92 @@ async def _process_rtdn_async(event: pubsub_fn.CloudEvent[pubsub_fn.MessagePubli
 
 # --- CLOUD FUNCTION PARA CHAT RAG COM SERMÕES ---
 @https_fn.on_call(
-    secrets=["openai-api-key", "pinecone-api-key"], # Reutiliza os mesmos secrets
+    secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_512, # Aumentar a memória pode ser útil para prompts grandes
-    timeout_sec=120 # Aumentar o timeout, pois a chamada ao GPT pode demorar
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=120
 )
+
 def chatWithSermons(request: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    # 1. VERIFICAÇÃO DE AUTENTICAÇÃO (ESSENCIAL PARA COBRANÇA)
+    if not request.auth or not request.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='Você precisa estar logado para usar o chat.'
+        )
+    
+    user_id = request.auth.uid
+    user_query = request.data.get("query")
+    chat_history = request.data.get("history")
+
+    print(f"Handler chatWithSermons chamado por User ID: {user_id}")
+    
+    if chat_service is None:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat indisponível).")
+
+    if not user_query or not isinstance(user_query, str):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'query' (string) é obrigatório.")
+    
+    if chat_history and not isinstance(chat_history, list):
+         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'history' deve ser uma lista.")
+
+    try:
+        # 2. LÓGICA DE CUSTO E VERIFICAÇÃO DE ASSINATURA
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
+        
+        user_data = user_doc.to_dict()
+        subscription_status = user_data.get('subscriptionStatus', 'inactive')
+        subscription_end_date = user_data.get('subscriptionEndDate') # Timestamp
+
+        is_premium = False
+        if subscription_status == 'active':
+            if isinstance(subscription_end_date, datetime) and subscription_end_date > datetime.now(timezone.utc):
+                is_premium = True
+            elif isinstance(subscription_end_date, Timestamp) and subscription_end_date.to_datetime().replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
+                is_premium = True
+
+        if not is_premium:
+            print(f"Usuário {user_id} não é Premium. Verificando moedas.")
+            current_coins = user_data.get('userCoins', 0)
+            if current_coins < CHAT_COST:
+                print(f"Moedas insuficientes para {user_id}. Possui: {current_coins}, Custo: {CHAT_COST}")
+                raise https_fn.HttpsError(
+                    code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
+                    message=f"Moedas insuficientes. Você precisa de {CHAT_COST} moedas para enviar uma mensagem."
+                )
+            
+            # Deduz as moedas atomicamente usando uma transação para segurança
+            print(f"Deduzindo {CHAT_COST} moedas de {user_id}.")
+            new_coin_total = current_coins - CHAT_COST
+            user_ref.update({'userCoins': new_coin_total})
+            # Opcional: Logar a transação em uma subcoleção separada para auditoria.
+
+        else:
+            print(f"Usuário {user_id} é Premium. Chat gratuito.")
+
+        # 3. PROSSEGUE COM A LÓGICA DO CHAT (se a verificação de custo passou)
+        chat_result = _run_async_handler_wrapper(
+            chat_service.get_rag_chat_response(user_query, chat_history)
+        )
+        
+        return {
+            "success": True,
+            "response": chat_result.get("response"),
+            "sources": chat_result.get("sources", [])
+        }
+
+    except https_fn.HttpsError as e:
+        # Relança os erros esperados (como moedas insuficientes)
+        raise e
+    except Exception as e:
+        print(f"Erro inesperado em chatWithSermons (main.py): {e}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
     """
     Endpoint para o chat RAG. Recebe a pergunta do usuário e o histórico do chat.
     """
