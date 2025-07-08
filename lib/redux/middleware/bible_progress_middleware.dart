@@ -14,6 +14,48 @@ const String _pendingBibleToRemoveKey = 'pendingBibleSectionsToRemove';
 
 List<Middleware<AppState>> createBibleProgressMiddleware() {
   final firestoreService = FirestoreService();
+  // <<< NOVA FUNÇÃO HANDLER >>>
+  void handleMarkChapterAsRead(Store<AppState> store,
+      MarkChapterAsReadAction action, NextDispatcher next) async {
+    next(action); // Passa a ação para o próximo middleware/reducer
+
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print("MarkChapterAsReadMiddleware: Usuário não logado.");
+      return;
+    }
+
+    try {
+      print(
+          "MarkChapterAsReadMiddleware: Marcando capítulo ${action.bookAbbrev} ${action.chapterNumber} como lido...");
+
+      // A ação já contém a lista de IDs de seção, então não precisamos buscá-la novamente.
+      final sectionsToAdd = action.sectionIdsInChapter;
+
+      // Chama a função de batch update que já existe no seu FirestoreService.
+      // O `totalSectionsInBookFromMetadata` já é pego de dentro do `batchUpdateBibleProgress`.
+      await firestoreService.batchUpdateBibleProgress(
+        userId,
+        action.bookAbbrev,
+        sectionsToAdd, // Adiciona todas as seções do capítulo
+        [], // Nenhuma para remover
+        store.state.metadataState.bibleSectionCounts['livros']
+                ?[action.bookAbbrev]?['total_secoes_livro'] as int? ??
+            sectionsToAdd.length,
+      );
+
+      print(
+          "MarkChapterAsReadMiddleware: Sincronização do capítulo completo com o Firestore BEM-SUCEDIDA.");
+
+      // Após a escrita bem-sucedida, despacha uma ação para recarregar o progresso do livro
+      // para garantir que a UI reflita o estado 100% lido.
+      store.dispatch(LoadBibleBookProgressAction(action.bookAbbrev));
+    } catch (e) {
+      print(
+          "MarkChapterAsReadMiddleware: ERRO ao marcar capítulo como lido: $e");
+      // Opcional: despachar uma ação de falha para a UI.
+    }
+  }
 
   // --- HANDLER PARA CARREGAR PROGRESSO DE UM LIVRO ESPECÍFICO ---
   void handleLoadBibleBookProgress(Store<AppState> store,
@@ -298,6 +340,8 @@ List<Middleware<AppState>> createBibleProgressMiddleware() {
         .call,
     TypedMiddleware<AppState, LoadPendingBibleProgressAction>(
             handleLoadPendingProgress)
+        .call,
+    TypedMiddleware<AppState, MarkChapterAsReadAction>(handleMarkChapterAsRead)
         .call,
   ];
 }

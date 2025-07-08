@@ -147,3 +147,16 @@ class UserBibleProgressDocumentLoadedAction {
     this.lastReadTimestamp,
   });
 }
+
+class MarkChapterAsReadAction {
+  final String bookAbbrev;
+  final int chapterNumber;
+  final List<String>
+      sectionIdsInChapter; // Passamos todos os IDs para o middleware
+
+  MarkChapterAsReadAction({
+    required this.bookAbbrev,
+    required this.chapterNumber,
+    required this.sectionIdsInChapter,
+  });
+}

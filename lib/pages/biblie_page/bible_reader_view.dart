@@ -6,6 +6,7 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
+import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:flutter/foundation.dart';
@@ -248,6 +249,14 @@ class _BibleReaderViewState extends State<BibleReaderView> {
           _BibleContentViewModel.fromStore(store, widget.selectedBook),
       distinct: true,
       builder: (context, contentViewModel) {
+        // Aumenta o itemCount em 1 para dar espaço ao rodapé.
+        // Se a lista de seções estiver vazia, usa o número de versículos.
+        final bool hasSections = sections.isNotEmpty;
+        final int contentCount = hasSections
+            ? sections.length
+            : (primaryTranslationVerseData as List?)?.length ?? 0;
+        final int itemCount = contentCount + 1;
+
         return ListView.builder(
           key: PageStorageKey<String>(
               '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation1}-singleView-${widget.showHebrewInterlinear}-${widget.showGreekInterlinear}-${widget.fontSizeMultiplier}'),
@@ -256,11 +265,16 @@ class _BibleReaderViewState extends State<BibleReaderView> {
               right: 16.0,
               bottom: 16.0,
               top: widget.isFocusMode ? 8.0 : 0.0),
-          itemCount: sections.isNotEmpty
-              ? sections.length
-              : (primaryTranslationVerseData as List?)?.length ?? 0,
+          itemCount: itemCount,
           itemBuilder: (context, index) {
-            if (sections.isNotEmpty) {
+            // Se for o último item da lista, renderiza o rodapé.
+            if (index == contentCount) {
+              return _buildChapterFooter(
+                  context, theme, contentViewModel, sections);
+            }
+
+            // Se o JSON tiver uma estrutura de seções, renderiza por seção.
+            if (hasSections) {
               final section = sections[index];
               final List<int> verseNumbersInSection =
                   (section['verses'] as List?)?.cast<int>() ?? [];
@@ -303,7 +317,6 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 }
               }
 
-              // CORREÇÃO AQUI: As propriedades do widget são acessadas com 'widget.'
               return SectionItemWidget(
                 sectionTitle: section['title'] ?? 'Seção Desconhecida',
                 verseNumbersInSection: verseNumbersInSection,
@@ -314,11 +327,8 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 versesRangeStr: versesRangeStrInSection,
                 userHighlights: contentViewModel.userHighlights,
                 userNotes: contentViewModel.userNotes,
-                isHebrew: widget.selectedTranslation1 == 'hebrew_original',
-                isGreekInterlinear:
-                    widget.selectedTranslation1 == 'greek_interlinear',
                 isRead: contentViewModel.readSectionsForCurrentBook.contains(
-                    "${widget.selectedBook}_c${widget.selectedChapter}_v$versesRangeStrInSection"), // CORREÇÃO AQUI
+                    "${widget.selectedBook}_c${widget.selectedChapter}_v$versesRangeStrInSection"),
                 showHebrewInterlinear: widget.showHebrewInterlinear &&
                     !(widget.selectedTranslation1 == 'hebrew_original'),
                 showGreekInterlinear: widget.showGreekInterlinear &&
@@ -331,9 +341,11 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 currentlyPlayingSectionId: widget.currentlyPlayingSectionId,
                 currentlyPlayingContentType: widget.currentlyPlayingContentType,
                 allUserTags: contentViewModel.allUserTags,
-                onShowSummary: widget.onShowSummaryRequest,
+                onShowSummaryRequest: widget.onShowSummaryRequest,
               );
-            } else {
+            }
+            // Senão, renderiza versículo por versículo (fallback).
+            else {
               final verseNumber = index + 1;
               return BiblePageWidgets.buildVerseItem(
                 key: ValueKey(
@@ -429,5 +441,80 @@ class _BibleReaderViewState extends State<BibleReaderView> {
             },
           );
         });
+  }
+
+  Widget _buildChapterFooter(
+      BuildContext context,
+      ThemeData theme,
+      _BibleContentViewModel contentViewModel,
+      List<Map<String, dynamic>> sections) {
+    // Obtém todos os IDs de seção para o capítulo atual
+    final allSectionIdsInChapter = sections
+        .map((section) {
+          final List<int> verseNumbers =
+              (section['verses'] as List?)?.cast<int>() ?? [];
+          if (verseNumbers.isEmpty) return null;
+          final String versesRangeStr = verseNumbers.length == 1
+              ? verseNumbers.first.toString()
+              : "${verseNumbers.first}-${verseNumbers.last}";
+          return "${widget.selectedBook}_c${widget.selectedChapter}_v$versesRangeStr";
+        })
+        .whereType<String>()
+        .toSet();
+
+    // Verifica se TODAS as seções deste capítulo já foram lidas
+    final bool isChapterComplete = allSectionIdsInChapter.isNotEmpty &&
+        contentViewModel.readSectionsForCurrentBook
+            .containsAll(allSectionIdsInChapter);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 16.0),
+      margin: const EdgeInsets.only(top: 16.0),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: Center(
+        child: ElevatedButton.icon(
+          icon: Icon(
+            isChapterComplete ? Icons.check_circle : Icons.check_circle_outline,
+            color: isChapterComplete ? Colors.white : theme.colorScheme.primary,
+          ),
+          label: Text(isChapterComplete
+              ? "Capítulo Lido"
+              : "Marcar Capítulo Como Lido"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isChapterComplete
+                ? theme.colorScheme.primary
+                : theme.colorScheme.surface,
+            foregroundColor:
+                isChapterComplete ? Colors.white : theme.colorScheme.primary,
+            side: isChapterComplete
+                ? null
+                : BorderSide(color: theme.colorScheme.primary),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            textStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          // Se o capítulo já está completo, o botão é desabilitado
+          onPressed: isChapterComplete
+              ? null
+              : () {
+                  StoreProvider.of<AppState>(context, listen: false).dispatch(
+                    MarkChapterAsReadAction(
+                      bookAbbrev: widget.selectedBook,
+                      chapterNumber: widget.selectedChapter,
+                      sectionIdsInChapter: allSectionIdsInChapter.toList(),
+                    ),
+                  );
+                  // Opcional: Mostrar um feedback imediato
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            '${widget.selectedBook.toUpperCase()} ${widget.selectedChapter} marcado como lido!')),
+                  );
+                },
+        ),
+      ),
+    );
   }
 }

@@ -30,7 +30,36 @@ class BiblePageHelper {
       return {};
     }
   }
+
   // >>> FIM DA CORREÇÃO <<<
+  static Future<List<String>> getAllSectionIdsForChapter(
+      String bookAbbrev, int chapter) async {
+    final List<String> sectionIds = [];
+    try {
+      final String sectionStructurePath =
+          'assets/Biblia/blocos/$bookAbbrev/$chapter.json';
+      final String sectionDataString =
+          await rootBundle.loadString(sectionStructurePath);
+      final List<dynamic> sections = json.decode(sectionDataString);
+
+      for (var section in sections) {
+        if (section is Map<String, dynamic>) {
+          final List<int> verseNumbers =
+              (section['verses'] as List?)?.cast<int>() ?? [];
+          if (verseNumbers.isNotEmpty) {
+            final String versesRangeStr = verseNumbers.length == 1
+                ? verseNumbers.first.toString()
+                : "${verseNumbers.first}-${verseNumbers.last}";
+            sectionIds.add("${bookAbbrev}_c${chapter}_v$versesRangeStr");
+          }
+        }
+      }
+      return sectionIds;
+    } catch (e) {
+      print("Erro ao obter IDs de seção para $bookAbbrev $chapter: $e");
+      return [];
+    }
+  }
 
   static Future<Map<String, dynamic>> loadBooksMap() async {
     final String data = await rootBundle

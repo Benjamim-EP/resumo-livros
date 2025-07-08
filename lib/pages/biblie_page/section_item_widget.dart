@@ -51,8 +51,9 @@ class SectionItemWidget extends StatefulWidget {
   final String? currentlyPlayingSectionId;
   final TtsContentType? currentlyPlayingContentType;
   final List<String> allUserTags;
-  final Future<void> Function(String, String)
-      onShowSummary; // <<< NOVO CALLBACK
+  //final Future<void> Function(String, String)
+  //onShowSummary; // <<< NOVO CALLBACK
+  final Future<void> Function(String, String) onShowSummaryRequest;
 
   const SectionItemWidget({
     super.key,
@@ -78,7 +79,8 @@ class SectionItemWidget extends StatefulWidget {
     this.currentlyPlayingSectionId,
     this.currentlyPlayingContentType,
     required this.allUserTags,
-    required this.onShowSummary, // <<< NOVO PARÂMETRO
+    //required this.onShowSummary, // <<< NOVO PARÂMETRO
+    required this.onShowSummaryRequest,
   });
 
   @override
@@ -237,7 +239,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
                         // Botão de Resumo Rápido
                         TextButton.icon(
-                          onPressed: () => widget.onShowSummary(
+                          onPressed: () => widget.onShowSummaryRequest(
+                            // <<< GARANTA QUE ESTE É O NOME USADO
                             _commentaryDocId,
                             widget.sectionTitle,
                           ),
