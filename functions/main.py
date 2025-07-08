@@ -5,7 +5,7 @@ import firebase_admin
 import google.auth
 from firebase_admin import initialize_app, firestore, credentials, auth
 from firebase_functions import https_fn, options,pubsub_fn
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 import asyncio
 import traceback
 
@@ -41,6 +41,12 @@ try:
 except ImportError as e_import_chat:
     chat_service = None
     print(f"AVISO: Não foi possível importar 'chat_service': {e_import_chat}")
+try:
+    import bible_chat_service
+    print("Módulo 'bible_chat_service' importado com sucesso.")
+except ImportError as e_import_bible_chat:
+    bible_chat_service = None
+    print(f"AVISO: Não foi possível importar 'bible_chat_service': {e_import_bible_chat}")
 # --- Inicialização do Firebase Admin ---
 if not firebase_admin._apps:
     try:
@@ -643,4 +649,222 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
 
     except Exception as e:
         print(f"Erro inesperado em chatWithSermons (main.py): {e}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
+
+
+@https_fn.on_call(
+    secrets=["openai-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=120
+)
+def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    # Validação e Autenticação (continua igual)
+    if not request.auth or not request.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Você precisa estar logado para usar o chat.')
+    
+    user_id = request.auth.uid
+    data = request.data
+    user_query = data.get("query")
+    chat_history = data.get("history")
+    book_abbrev = data.get("bookAbbrev")
+    chapter_number = data.get("chapterNumber")
+    verses_range_str = data.get("versesRangeStr")
+    use_strongs = data.get("useStrongsKnowledge", False)
+
+    if not all([user_query, book_abbrev, chapter_number, verses_range_str]):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Parâmetros essenciais da seção bíblica estão faltando.")
+
+    print(f"Handler chatWithBibleSection chamado por User ID: {user_id} para {book_abbrev} {chapter_number}:{verses_range_str}")
+    
+    try:
+        # Lógica de Custo (continua igual)
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
+        
+        user_data = user_doc.to_dict()
+        subscription_status = user_data.get('subscriptionStatus', 'inactive')
+        is_premium = subscription_status == 'active'
+
+        if use_strongs and not is_premium:
+            raise https_fn.HttpsError(
+                code=https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+                message="A análise etimológica é um recurso Premium."
+            )
+        
+        if not is_premium:
+            current_coins = user_data.get('userCoins', 0)
+            if current_coins < CHAT_COST:
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message=f"Moedas insuficientes.")
+            user_ref.update({'userCoins': current_coins - CHAT_COST})
+        
+        # <<< A CORREÇÃO PRINCIPAL ESTÁ AQUI >>>
+        # Garante que o serviço correto foi importado e chama a função correta
+        if bible_chat_service is None:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat da Bíblia indisponível).")
+
+        final_response = _run_async_handler_wrapper(
+            bible_chat_service.get_bible_chat_response( # <<< USA bible_chat_service
+                db=db,
+                user_query=user_query,
+                chat_history=chat_history,
+                book_abbrev=book_abbrev,
+                chapter_number=chapter_number,
+                verses_range_str=verses_range_str,
+                use_strongs=use_strongs
+            )
+        )
+        
+        return {
+            "success": True,
+            "response": final_response
+        }
+
+    except https_fn.HttpsError as e:
+        raise e
+    except Exception as e:
+        print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
+    db = get_db()
+    
+    if not request.auth or not request.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Você precisa estar logado para usar o chat.')
+    
+    user_id = request.auth.uid
+    data = request.data
+    user_query = data.get("query")
+    chat_history = data.get("history")
+    book_abbrev = data.get("bookAbbrev")
+    chapter_number = data.get("chapterNumber")
+    verses_range_str = data.get("versesRangeStr")
+    use_strongs = data.get("useStrongsKnowledge", False)
+
+    if not all([user_query, book_abbrev, chapter_number, verses_range_str]):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Parâmetros essenciais da seção bíblica estão faltando.")
+
+    print(f"Handler chatWithBibleSection chamado por User ID: {user_id} para {book_abbrev} {chapter_number}:{verses_range_str}")
+    
+    try:
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
+        
+        user_data = user_doc.to_dict()
+        subscription_status = user_data.get('subscriptionStatus', 'inactive')
+        is_premium = subscription_status == 'active'
+
+        if use_strongs and not is_premium:
+            raise https_fn.HttpsError(
+                code=https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+                message="A análise etimológica é um recurso Premium."
+            )
+        
+        if not is_premium:
+            current_coins = user_data.get('userCoins', 0)
+            if current_coins < CHAT_COST:
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message=f"Moedas insuficientes.")
+            user_ref.update({'userCoins': current_coins - CHAT_COST})
+            print(f"Deduzindo {CHAT_COST} moedas de {user_id} para o chat da Bíblia.")
+        else:
+            print(f"Usuário {user_id} é Premium. Chat da Bíblia gratuito.")
+            
+        # <<< MUDANÇA PRINCIPAL: CHAMANDO O SERVIÇO >>>
+        if chat_service is None:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat indisponível).")
+
+        final_response = _run_async_handler_wrapper(
+            chat_service.get_bible_chat_response(
+                db=db,
+                user_query=user_query,
+                chat_history=chat_history,
+                book_abbrev=book_abbrev,
+                chapter_number=chapter_number,
+                verses_range_str=verses_range_str,
+                use_strongs=use_strongs
+            )
+        )
+        
+        return {
+            "success": True,
+            "response": final_response
+        }
+
+    except https_fn.HttpsError as e:
+        raise e
+    except Exception as e:
+        print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
+    db = get_db()
+    
+    # 1. Validação e Autenticação
+    if not request.auth or not request.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Você precisa estar logado para usar o chat.')
+    
+    user_id = request.auth.uid
+    
+    # 2. Extração dos Dados da Requisição
+    data = request.data
+    user_query = data.get("query")
+    chat_history = data.get("history")
+    book_abbrev = data.get("bookAbbrev")
+    chapter_number = data.get("chapterNumber")
+    verses_range_str = data.get("versesRangeStr")
+    use_strongs = data.get("useStrongsKnowledge", False)
+
+    # Validação dos parâmetros essenciais
+    if not all([user_query, book_abbrev, chapter_number, verses_range_str]):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Parâmetros essenciais da seção bíblica estão faltando.")
+
+    print(f"Handler chatWithBibleSection chamado por User ID: {user_id} para {book_abbrev} {chapter_number}:{verses_range_str}")
+    
+    try:
+        # 3. Lógica de Custo (idêntica à do chat de sermões)
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
+        
+        user_data = user_doc.to_dict()
+        subscription_status = user_data.get('subscriptionStatus', 'inactive')
+        is_premium = subscription_status == 'active' # Simplificando a verificação
+        
+        if not is_premium:
+            current_coins = user_data.get('userCoins', 0)
+            if current_coins < CHAT_COST:
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message=f"Moedas insuficientes.")
+            user_ref.update({'userCoins': current_coins - CHAT_COST})
+            print(f"Deduzindo {CHAT_COST} moedas de {user_id} para o chat da Bíblia.")
+        else:
+            print(f"Usuário {user_id} é Premium. Chat da Bíblia gratuito.")
+            
+        # 4. Chamar um novo serviço para lidar com a lógica do RAG da Bíblia
+        # (Por enquanto, vamos simular a resposta para testar o fluxo)
+        
+        # TODO: Implementar a busca de contexto (Comentário, Strongs) e a chamada ao GPT
+        #
+        # SIMULAÇÃO DA RESPOSTA:
+        simulated_response = f"Analisando '{user_query}' no contexto de {book_abbrev} {chapter_number}:{verses_range_str}."
+        if use_strongs:
+            simulated_response += " A análise etimológica com o Léxico de Strong foi solicitada."
+        
+        time.sleep(2) # Simula o tempo de processamento
+
+        return {
+            "success": True,
+            "response": simulated_response
+            # Não há 'sources' aqui, pois o contexto é a própria seção
+        }
+
+    except https_fn.HttpsError as e:
+        raise e
+    except Exception as e:
+        print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
+        traceback.print_exc()
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/pages/bible_chat/section_chat_page.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -51,8 +52,6 @@ class SectionItemWidget extends StatefulWidget {
   final String? currentlyPlayingSectionId;
   final TtsContentType? currentlyPlayingContentType;
   final List<String> allUserTags;
-  //final Future<void> Function(String, String)
-  //onShowSummary; // <<< NOVO CALLBACK
   final Future<void> Function(String, String) onShowSummaryRequest;
 
   const SectionItemWidget({
@@ -79,7 +78,6 @@ class SectionItemWidget extends StatefulWidget {
     this.currentlyPlayingSectionId,
     this.currentlyPlayingContentType,
     required this.allUserTags,
-    //required this.onShowSummary, // <<< NOVO PARÂMETRO
     required this.onShowSummaryRequest,
   });
 
@@ -207,7 +205,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. O TÍTULO AGORA FICA SOZINHO NO TOPO
                     Padding(
                       padding: const EdgeInsets.only(
                           bottom: 8.0, top: 4.0, right: 8.0),
@@ -221,13 +218,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             fontWeight: FontWeight.bold),
                       ),
                     ),
-
-                    // 2. OS BOTÕES DE AÇÃO FICAM EM SUA PRÓPRIA ROW
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.end, // Alinha os botões à direita
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        // Botão de Play (Ouvir Versículos)
                         IconButton(
                           icon: Icon(versesIcon,
                               color: versesIconColor, size: 26),
@@ -236,11 +229,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                               _handlePlayRequest(TtsContentType.versesOnly),
                           splashRadius: 24,
                         ),
-
-                        // Botão de Resumo Rápido
                         TextButton.icon(
                           onPressed: () => widget.onShowSummaryRequest(
-                            // <<< GARANTA QUE ESTE É O NOME USADO
                             _commentaryDocId,
                             widget.sectionTitle,
                           ),
@@ -266,8 +256,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                           ),
                         ),
                         const SizedBox(width: 8),
-
-                        // Botão de Estudo (Comentário Completo)
                         if (_isLoadingCommentary)
                           const SizedBox(
                             width: 40,
@@ -377,54 +365,122 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   },
                 ),
                 const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        StoreProvider.of<AppState>(context, listen: false)
-                            .dispatch(
-                          ToggleSectionReadStatusAction(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          final List<String> verseTexts =
+                              widget.verseNumbersInSection.map((vNum) {
+                            if (widget.allVerseDataInChapter is List &&
+                                vNum > 0 &&
+                                vNum <=
+                                    (widget.allVerseDataInChapter as List)
+                                        .length) {
+                              return (widget.allVerseDataInChapter
+                                      as List)[vNum - 1]
+                                  .toString();
+                            }
+                            return "[Texto do versículo $vNum indisponível]";
+                          }).toList();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SectionChatPage(
+                                bookAbbrev: widget.bookAbbrev,
+                                chapterNumber: widget.chapterNumber,
+                                versesRangeStr: widget.versesRangeStr,
+                                sectionTitle: widget.sectionTitle,
+                                sectionVerseTexts: verseTexts,
+                              ),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        splashColor: theme.colorScheme.primary,
+                        highlightColor: theme.primaryColor,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: theme.primaryColor,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded,
+                                  size: 18, color: theme.primaryColor),
+                              const SizedBox(width: 6),
+                              Text(
+                                "Chat",
+                                style: TextStyle(
+                                  color: theme.primaryColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          StoreProvider.of<AppState>(context, listen: false)
+                              .dispatch(
+                            ToggleSectionReadStatusAction(
                               bookAbbrev: widget.bookAbbrev,
                               sectionId: _sectionIdForTracking,
-                              markAsRead: !currentIsRead),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      splashColor: theme.primaryColor.withOpacity(0.3),
-                      highlightColor: theme.primaryColor.withOpacity(0.15),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
+                              markAsRead: !currentIsRead,
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
                                 currentIsRead
                                     ? Icons.check_circle
                                     : Icons.check_circle_outline,
                                 color: currentIsRead
                                     ? theme.primaryColor
                                     : theme.iconTheme.color?.withOpacity(0.8),
-                                size: 20),
-                            const SizedBox(width: 6),
-                            Text(currentIsRead ? "Lido" : "Marcar como Lido",
+                                size: 20,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                currentIsRead ? "Lido" : "Marcar como Lido",
                                 style: TextStyle(
-                                    color: currentIsRead
-                                        ? theme.primaryColor
-                                        : theme.textTheme.bodyMedium?.color
-                                            ?.withOpacity(0.9),
-                                    fontSize: 13,
-                                    fontWeight: currentIsRead
-                                        ? FontWeight.bold
-                                        : FontWeight.normal)),
-                          ],
+                                  color: currentIsRead
+                                      ? theme.primaryColor
+                                      : theme.textTheme.bodyMedium?.color
+                                          ?.withOpacity(0.9),
+                                  fontSize: 13,
+                                  fontWeight: currentIsRead
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
+                  ],
+                )
               ],
             ),
           ),
