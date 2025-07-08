@@ -33,7 +33,12 @@ try:
 except ImportError as e_import_sermon:
     sermons_service = None
     print(f"AVISO: Não foi possível importar 'sermons_service': {e_import_sermon}")
-
+try:
+    import chat_service
+    print("Módulo 'chat_service' importado com sucesso.")
+except ImportError as e_import_chat:
+    chat_service = None
+    print(f"AVISO: Não foi possível importar 'chat_service': {e_import_chat}")
 # --- Inicialização do Firebase Admin ---
 if not firebase_admin._apps:
     try:
@@ -515,3 +520,45 @@ async def _process_rtdn_async(event: pubsub_fn.CloudEvent[pubsub_fn.MessagePubli
         # e o Pub/Sub tente reenviar a mensagem. O erro é logado para depuração.
         print(f"ERRO CRÍTICO ao processar a notificação: {e}")
         traceback.print_exc()
+
+
+# --- CLOUD FUNCTION PARA CHAT RAG COM SERMÕES ---
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"], # Reutiliza os mesmos secrets
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512, # Aumentar a memória pode ser útil para prompts grandes
+    timeout_sec=120 # Aumentar o timeout, pois a chamada ao GPT pode demorar
+)
+def chatWithSermons(request: https_fn.CallableRequest) -> dict:
+    """
+    Endpoint para o chat RAG. Recebe a pergunta do usuário e o histórico do chat.
+    """
+    print("Handler síncrono chatWithSermons chamado.")
+    user_query = request.data.get("query")
+    chat_history = request.data.get("history") # Opcional: lista de mensagens anteriores
+
+    if chat_service is None:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat indisponível).")
+
+    if not user_query or not isinstance(user_query, str):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'query' (string) é obrigatório.")
+    
+    if chat_history and not isinstance(chat_history, list):
+         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'history' deve ser uma lista.")
+
+    try:
+        # Chama a função principal do nosso serviço de chat
+        chat_result = _run_async_handler_wrapper(
+            chat_service.get_rag_chat_response(user_query, chat_history)
+        )
+        
+        # Retorna a resposta e as fontes para o app
+        return {
+            "success": True,
+            "response": chat_result.get("response"),
+            "sources": chat_result.get("sources", [])
+        }
+
+    except Exception as e:
+        print(f"Erro inesperado em chatWithSermons (main.py): {e}"); traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")

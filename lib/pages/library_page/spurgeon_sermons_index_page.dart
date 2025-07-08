@@ -12,6 +12,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
+import 'package:septima_biblia/pages/sermons/sermon_chat_page.dart';
 import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
 import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
@@ -389,109 +390,122 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
       converter: (store) => _SermonsViewModel.fromStore(store),
       builder: (context, viewModel) {
         return Scaffold(
-          appBar: AppBar(
-            title: Text(_isSemanticSearchModeActive
-                ? "Busca Inteligente de Sermões"
-                : "Sermões de C.H. Spurgeon"),
-            backgroundColor: theme.appBarTheme.backgroundColor,
-            foregroundColor: theme.appBarTheme.foregroundColor,
-          ),
-          body: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 8.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: SvgPicture.asset(
-                        'assets/icons/buscasemantica.svg',
-                        colorFilter: ColorFilter.mode(
-                            _isSemanticSearchModeActive
-                                ? theme.colorScheme.primary
-                                : (theme.iconTheme.color?.withOpacity(0.7) ??
-                                    theme.hintColor),
-                            BlendMode.srcIn),
-                        width: 24,
-                        height: 24,
-                      ),
-                      tooltip: _isSemanticSearchModeActive
-                          ? "Alternar para Lista/Filtros"
-                          : "Alternar para Busca Inteligente",
-                      onPressed: _toggleSemanticSearchMode,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _isSemanticSearchModeActive
-                            ? _semanticSermonSearchController
-                            : _localTitleSearchController,
-                        style: TextStyle(
-                            color: theme.textTheme.bodyLarge?.color,
-                            fontSize: 14.5),
-                        decoration: InputDecoration(
-                          hintText: _isSemanticSearchModeActive
-                              ? "Busca inteligente nos sermões..."
-                              : "Buscar por título na lista...",
-                          hintStyle: TextStyle(
-                              color: theme.hintColor.withOpacity(0.8),
-                              fontSize: 14),
-                          suffixIcon: IconButton(
-                            icon: Icon(Icons.search_rounded,
-                                color: theme.iconTheme.color?.withOpacity(0.9),
-                                size: 24),
-                            tooltip: "Buscar",
-                            onPressed: _isSemanticSearchModeActive
-                                ? _performSemanticSermonSearch
-                                : () =>
-                                    _applyLocalFiltersAndDisplayPreloadedSermons(),
-                          ),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                          filled: true,
-                          fillColor: theme.inputDecorationTheme.fillColor ??
-                              theme.cardColor.withOpacity(0.5),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25.0),
-                              borderSide: BorderSide.none),
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25.0),
-                              borderSide: BorderSide(
-                                  color: theme.dividerColor.withOpacity(0.3),
-                                  width: 0.8)),
-                          focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25.0),
-                              borderSide: BorderSide(
-                                  color: theme.colorScheme.primary,
-                                  width: 1.5)),
+            // <<< O WIDGET SCAFFOLD É A CHAVE
+            appBar: AppBar(
+              title: Text(_isSemanticSearchModeActive
+                  ? "Busca Inteligente de Sermões"
+                  : "Sermões de C.H. Spurgeon"),
+              backgroundColor: theme.appBarTheme.backgroundColor,
+              foregroundColor: theme.appBarTheme.foregroundColor,
+            ),
+            body: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 8.0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: SvgPicture.asset(
+                          'assets/icons/buscasemantica.svg',
+                          colorFilter: ColorFilter.mode(
+                              _isSemanticSearchModeActive
+                                  ? theme.colorScheme.primary
+                                  : (theme.iconTheme.color?.withOpacity(0.7) ??
+                                      theme.hintColor),
+                              BlendMode.srcIn),
+                          width: 24,
+                          height: 24,
                         ),
-                        onSubmitted: (_) => _isSemanticSearchModeActive
-                            ? _performSemanticSermonSearch()
-                            : _applyLocalFiltersAndDisplayPreloadedSermons(),
-                        textInputAction: TextInputAction.search,
+                        tooltip: _isSemanticSearchModeActive
+                            ? "Alternar para Lista/Filtros"
+                            : "Alternar para Busca Inteligente",
+                        onPressed: _toggleSemanticSearchMode,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _isSemanticSearchModeActive
+                              ? _semanticSermonSearchController
+                              : _localTitleSearchController,
+                          style: TextStyle(
+                              color: theme.textTheme.bodyLarge?.color,
+                              fontSize: 14.5),
+                          decoration: InputDecoration(
+                            hintText: _isSemanticSearchModeActive
+                                ? "Busca inteligente nos sermões..."
+                                : "Buscar por título na lista...",
+                            hintStyle: TextStyle(
+                                color: theme.hintColor.withOpacity(0.8),
+                                fontSize: 14),
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.search_rounded,
+                                  color:
+                                      theme.iconTheme.color?.withOpacity(0.9),
+                                  size: 24),
+                              tooltip: "Buscar",
+                              onPressed: _isSemanticSearchModeActive
+                                  ? _performSemanticSermonSearch
+                                  : () =>
+                                      _applyLocalFiltersAndDisplayPreloadedSermons(),
+                            ),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            filled: true,
+                            fillColor: theme.inputDecorationTheme.fillColor ??
+                                theme.cardColor.withOpacity(0.5),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                                borderSide: BorderSide.none),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                                borderSide: BorderSide(
+                                    color: theme.dividerColor.withOpacity(0.3),
+                                    width: 0.8)),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                                borderSide: BorderSide(
+                                    color: theme.colorScheme.primary,
+                                    width: 1.5)),
+                          ),
+                          onSubmitted: (_) => _isSemanticSearchModeActive
+                              ? _performSemanticSermonSearch()
+                              : _applyLocalFiltersAndDisplayPreloadedSermons(),
+                          textInputAction: TextInputAction.search,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (!_isSemanticSearchModeActive)
-                _buildFilterBarForPreload(theme, viewModel.isPremium),
-              Expanded(
-                child: StoreConnector<AppState, SermonSearchState>(
-                  converter: (store) => store.state.sermonSearchState,
-                  distinct: true,
-                  builder: (context, sermonSearchState) {
-                    if (_isSemanticSearchModeActive) {
-                      return _buildSemanticSearchUI(theme, sermonSearchState);
-                    } else {
-                      return _buildPreloadedSermonsList(theme);
-                    }
-                  },
+                if (!_isSemanticSearchModeActive)
+                  _buildFilterBarForPreload(theme, viewModel.isPremium),
+                Expanded(
+                  child: StoreConnector<AppState, SermonSearchState>(
+                    converter: (store) => store.state.sermonSearchState,
+                    distinct: true,
+                    builder: (context, sermonSearchState) {
+                      if (_isSemanticSearchModeActive) {
+                        return _buildSemanticSearchUI(theme, sermonSearchState);
+                      } else {
+                        return _buildPreloadedSermonsList(theme);
+                      }
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
+              ],
+            ),
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SermonChatPage()),
+                );
+              },
+              label: const Text("Conversar com IA"),
+              icon: const Icon(Icons.chat_bubble_outline),
+              tooltip: "Faça perguntas sobre os sermões de Spurgeon",
+            ));
       },
     );
   }
