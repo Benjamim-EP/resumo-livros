@@ -393,51 +393,39 @@ async def _process_rtdn_async(event: pubsub_fn.CloudEvent[pubsub_fn.MessagePubli
     a busca do usuário e a atualização do status da assinatura no Firestore.
     """
     try:
-        # 1. Validação do Payload do Evento
-        # Garante que a notificação tem a estrutura esperada.
+        # 1. Validação e Decodificação (sem alterações)
         if not event.data or not event.data.message or not event.data.message.data:
-            print("Erro: Evento Pub/Sub malformado ou sem dados. Ignorando.")
+            print("Erro: Evento Pub/Sub malformado. Ignorando.")
             return
 
-        # 2. Decodificação da Mensagem
-        # A mensagem do Pub/Sub vem em Base64.
         payload_base64 = event.data.message.data
         payload_str = base64.b64decode(payload_base64).decode('utf-8')
         notification_data = json.loads(payload_str)
         
-        # Log detalhado do payload para depuração
-        print(f"Payload da notificação decodificado: {json.dumps(notification_data, indent=2)}")
+        print(f"Payload da notificação: {json.dumps(notification_data, indent=2)}")
 
-        # 3. Filtragem de Notificações Relevantes
-        # Processamos apenas notificações de assinatura. Outros tipos (ex: one-time products) são ignorados.
         if 'subscriptionNotification' not in notification_data:
             print("Notificação não é de assinatura. Ignorando.")
             return
 
         sub_notification = notification_data['subscriptionNotification']
         purchase_token = sub_notification.get('purchaseToken')
-        subscription_id = sub_notification.get('subscriptionId') # Ex: 'premium_monthly_v1'
+        subscription_id = sub_notification.get('subscriptionId')
         notification_type = sub_notification.get('notificationType')
 
         if not all([purchase_token, subscription_id, notification_type]):
-            print("Erro: Dados essenciais (token, id, tipo) faltando na notificação. Ignorando.")
+            print("Erro: Dados essenciais faltando na notificação. Ignorando.")
             return
 
         print(f"Processando notificação: Tipo={notification_type}, Produto={subscription_id}, Token={purchase_token[:15]}...")
 
-        # --- LÓGICA DE ATUALIZAÇÃO NO FIRESTORE ---
-        
-        # 4. Encontrar o Usuário no Firestore
-        # O `lastPurchaseToken` foi salvo durante a validação inicial da compra.
+        # 2. Encontrar o Usuário no Firestore (sem alterações)
         db = get_db()
         users_ref = db.collection('users')
         query = users_ref.where('lastPurchaseToken', '==', purchase_token).limit(1)
-        
-        # Executa a query síncrona em uma thread separada para não bloquear o loop de eventos.
         docs = await asyncio.to_thread(lambda: list(query.stream()))
 
         if not docs:
-            # Se nenhum usuário for encontrado, não há o que fazer.
             print(f"ERRO: Nenhum usuário encontrado com o purchaseToken: {purchase_token[:15]}...")
             return
 
@@ -445,87 +433,76 @@ async def _process_rtdn_async(event: pubsub_fn.CloudEvent[pubsub_fn.MessagePubli
         user_id = user_doc.id
         print(f"Usuário {user_id} encontrado para a notificação.")
 
-        update_data = {}
+        # <<< INÍCIO DA MUDANÇA PRINCIPAL >>>
+
+        # 3. Sempre verificar o estado atual na API do Google para notificações de ciclo de vida
+        # Tipos de notificação relevantes que indicam uma mudança de estado
+        relevant_notification_types = [
+            1,  # SUBSCRIPTION_RECOVERED
+            2,  # SUBSCRIPTION_RENEWED
+            3,  # SUBSCRIPTION_CANCELED
+            4,  # SUBSCRIPTION_PURCHASED
+            5,  # SUBSCRIPTION_ON_HOLD
+            6,  # SUBSCRIPTION_IN_GRACE_PERIOD
+            8,  # SUBSCRIPTION_RESTARTED
+            12, # SUBSCRIPTION_EXPIRED
+            13, # SUBSCRIPTION_REVOKED
+        ]
+
+        if notification_type not in relevant_notification_types:
+            print(f"Tipo de notificação {notification_type} não requer ação. Ignorando.")
+            return
+            
+        print(f"Notificação tipo {notification_type} requer verificação na API do Google.")
+        try:
+            creds = _get_google_api_credentials()
+            android_publisher = build('androidpublisher', 'v3', credentials=creds)
+
+            purchase = await asyncio.to_thread(
+                lambda: android_publisher.purchases().subscriptions().get(
+                    packageName=PACKAGE_NAME,
+                    subscriptionId=subscription_id,
+                    token=purchase_token
+                ).execute()
+            )
+            
+            print(f"Resposta da API do Google: {json.dumps(purchase, indent=2)}")
+
+            expiry_time_millis = int(purchase.get('expiryTimeMillis', 0))
+            expiry_date = datetime.fromtimestamp(expiry_time_millis / 1000, tz=timezone.utc)
+            payment_state = purchase.get('paymentState')
+
+            update_data = {}
+
+            # 4. Lógica de atualização simplificada e robusta
+            if payment_state == 1:  # Assinatura está ATIVA (pode ser renovada, recuperada, etc.)
+                print(f"API confirmou: ATIVA. Nova data de expiração: {expiry_date}")
+                update_data = {
+                    'subscriptionStatus': 'active',
+                    'subscriptionEndDate': expiry_date,
+                    'activePriceId': subscription_id,
+                    'lastPurchaseToken': purchase_token, # Reafirma o token
+                }
+            else: # Qualquer outro estado (cancelada, expirada, em hold, revogada)
+                print(f"API confirmou: INATIVA (Estado: {payment_state}). Resetando status.")
+                update_data = {
+                    'subscriptionStatus': 'inactive',
+                    'subscriptionEndDate': None,
+                    'activePriceId': None
+                }
+
+            # 5. Atualiza o Firestore se houver dados para atualizar
+            if update_data:
+                await asyncio.to_thread(user_doc.reference.set, update_data, merge=True)
+                print(f"Firestore atualizado para o usuário {user_id} com os dados: {update_data}")
+
+        except Exception as api_e:
+            print(f"ERRO ao verificar assinatura na API do Google: {api_e}. A atualização foi ignorada.")
+            # Não faz nada para evitar dados incorretos. O erro será logado.
         
-        # 5. Lógica de Negócio por Tipo de Notificação
-        # Códigos de notificação: https://developer.android.com/google/play/billing/rtdn-reference#subscription
-        
-        if notification_type in [1, 2, 3, 4, 12, 13]: # Tipos que exigem verificação na API do Google
-            print(f"Notificação tipo {notification_type} requer verificação na API do Google.")
-            try:
-                creds = _get_google_api_credentials()
-                android_publisher = build('androidpublisher', 'v3', credentials=creds)
-
-                # Verifica o status atual da assinatura na API do Google
-                purchase = await asyncio.to_thread(
-                    lambda: android_publisher.purchases().subscriptions().get(
-                        packageName=PACKAGE_NAME,
-                        subscriptionId=subscription_id,
-                        token=purchase_token
-                    ).execute()
-                )
-                
-                print(f"Resposta da API do Google: {json.dumps(purchase, indent=2)}")
-
-                expiry_time_millis = int(purchase.get('expiryTimeMillis', 0))
-                expiry_date = datetime.fromtimestamp(expiry_time_millis / 1000, tz=timezone.utc)
-                payment_state = purchase.get('paymentState') # 0: PENDENTE, 1: ATIVO, 2: EM PERÍODO DE CARÊNCIA
-                auto_renewing = purchase.get('autoRenewing', False)
-
-                # Com base na resposta da API, atualiza o status
-                if payment_state == 1: # Assinatura está ATIVA
-                    update_data['subscriptionStatus'] = 'active'
-                    update_data['subscriptionEndDate'] = expiry_date
-                    update_data['activePriceId'] = subscription_id
-                    print(f"API confirmou: ATIVA. Nova data de expiração: {expiry_date}")
-                elif notification_type == 12: # SUBSCRIPTION_EXPIRED
-                    update_data = {
-                        'subscriptionStatus': 'inactive',
-                        'activePriceId': None,
-                        'subscriptionEndDate': None
-                    }
-                    print("API confirmou: EXPIRADA. Resetando status.")
-                elif notification_type == 2: # SUBSCRIPTION_CANCELED
-                     # Mesmo que cancelada, o status pode ainda ser 'active' até a data de expiração
-                    if expiry_date.isAfter(datetime.now(timezone.utc)):
-                         update_data['subscriptionStatus'] = 'active' # Ou um status 'canceled_will_expire' se preferir
-                         update_data['subscriptionEndDate'] = expiry_date
-                         print(f"API confirmou: CANCELADA, mas ainda ativa até {expiry_date}")
-                    else: # Já expirou
-                         update_data = {
-                            'subscriptionStatus': 'inactive', 'activePriceId': None, 'subscriptionEndDate': None
-                         }
-                         print("API confirmou: CANCELADA e já expirada.")
-                elif notification_type == 13: # SUBSCRIPTION_REVOKED
-                    update_data = {
-                        'subscriptionStatus': 'inactive', 'activePriceId': None, 'subscriptionEndDate': None
-                    }
-                    print("API confirmou: REVOGADA. Acesso removido.")
-                else:
-                    # Para outros casos (ON_HOLD, IN_GRACE_PERIOD, etc.), você pode tratá-los aqui
-                    print(f"Status da API ({payment_state}) não resultou em ação imediata no Firestore.")
-
-
-            except Exception as api_e:
-                print(f"ERRO ao verificar assinatura na API do Google: {api_e}. A atualização será ignorada.")
-                # Não atualiza nada se a verificação falhar, para evitar dados incorretos.
-
-        else:
-            # Para notificações que não exigem verificação imediata (ex: PAUSED)
-            print(f"Tipo de notificação {notification_type} não requer verificação na API. Nenhuma ação no Firestore.")
-
-        
-        # 6. Atualiza o Documento do Usuário no Firestore
-        # Apenas executa a escrita se houver dados para atualizar.
-        if update_data:
-            await asyncio.to_thread(user_doc.reference.set, update_data, merge=True)
-            print(f"Firestore atualizado para o usuário {user_id} com os dados: {update_data}")
-        else:
-            print(f"Nenhuma ação de atualização no Firestore necessária para o tipo de notificação {notification_type}.")
+        # <<< FIM DA MUDANÇA PRINCIPAL >>>
 
     except Exception as e:
-        # Captura qualquer erro inesperado no processamento para evitar que a função falhe
-        # e o Pub/Sub tente reenviar a mensagem. O erro é logado para depuração.
         print(f"ERRO CRÍTICO ao processar a notificação: {e}")
         traceback.print_exc()
 
