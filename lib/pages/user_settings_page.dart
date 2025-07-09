@@ -1,12 +1,15 @@
 // lib/pages/user_settings_page.dart
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:septima_biblia/models/denomination_model.dart'; // <<< 1. IMPORTAR MODELO
+import 'package:septima_biblia/pages/user_settings/denomination_selection_modal.dart'; // <<< 2. IMPORTAR MODAL
+import 'package:septima_biblia/services/denomination_service.dart'; // <<< 4. IMPORTAR SERVIÇO
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/redux/reducers.dart'; // Para AppThemeOption
+import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/services/subscription_manager.dart';
 import 'package:redux/redux.dart';
@@ -53,8 +56,7 @@ class _SettingsViewModel {
 
     return _SettingsViewModel(
       userDetails: userDetails,
-      activeThemeOption:
-          store.state.themeState.activeThemeOption, // <<< CORREÇÃO AQUI
+      activeThemeOption: store.state.themeState.activeThemeOption,
       subscriptionStatus: isConsideredPremium
           ? SubscriptionStatus.premiumActive
           : subState.status,
@@ -77,16 +79,14 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   late TextEditingController _descriptionController;
   bool _isLoading = false;
   AppThemeOption? _selectedThemeOption;
+  final DenominationService _denominationService =
+      DenominationService(); // Instancia o serviço
 
   @override
   void initState() {
     super.initState();
-    // Inicializa os controllers vazios. O StoreConnector cuidará de preenchê-los.
     _nameController = TextEditingController();
     _descriptionController = TextEditingController();
-
-    // O tema pode ser inicializado aqui, pois é menos provável que mude
-    // enquanto a página está aberta, mas o StoreConnector também o gerencia.
     _selectedThemeOption = StoreProvider.of<AppState>(context, listen: false)
         .state
         .themeState
@@ -98,6 +98,31 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  // --- Funções de Lógica e Diálogos ---
+
+  void _saveChanges() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      final storeInstance = StoreProvider.of<AppState>(context, listen: false);
+      final newName = _nameController.text.trim();
+      final newDescription = _descriptionController.text.trim();
+
+      storeInstance.dispatch(UpdateUserFieldAction('nome', newName));
+      storeInstance
+          .dispatch(UpdateUserFieldAction('descrição', newDescription));
+
+      // A UI será atualizada reativamente, mas podemos dar um feedback.
+      Future.delayed(const Duration(milliseconds: 700), () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Alterações salvas com sucesso!')),
+          );
+        }
+      });
+    }
   }
 
   Future<void> _handleRestorePurchases() async {
@@ -122,7 +147,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     final Uri url = Uri.parse(
         'https://benjamim-ep.github.io/septima_biblia_privacy_policy/privacy_policy.html');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      // Se não conseguir abrir a URL, mostra um erro para o usuário
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -130,29 +154,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   Text('Não foi possível abrir a política de privacidade.')),
         );
       }
-    }
-  }
-  // --- Funções de Lógica e Diálogos ---
-
-  void _saveChanges() {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      final storeInstance = StoreProvider.of<AppState>(context, listen: false);
-      final newName = _nameController.text.trim();
-      final newDescription = _descriptionController.text.trim();
-
-      storeInstance.dispatch(UpdateUserFieldAction('nome', newName));
-      storeInstance
-          .dispatch(UpdateUserFieldAction('descrição', newDescription));
-
-      Future.delayed(const Duration(milliseconds: 700), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Alterações salvas com sucesso!')),
-          );
-        }
-      });
     }
   }
 
@@ -176,11 +177,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 Navigator.of(dialogContext).pop();
                 await FirebaseAuth.instance.signOut();
                 store.dispatch(UserLoggedOutAction());
-                if (mounted) {
-                  Navigator.of(context, rootNavigator: true)
-                      .pushNamedAndRemoveUntil(
-                          '/login', (Route<dynamic> route) => false);
-                }
+                // O AuthCheck cuidará da navegação para a tela de login
               },
             ),
           ],
@@ -245,29 +242,21 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configurações'),
+        title: const Text('Configurações e Perfil'),
       ),
       body: StoreConnector<AppState, _SettingsViewModel>(
         converter: (store) => _SettingsViewModel.fromStore(store),
         onWillChange: (prev, next) {
-          // Atualiza os controllers se os dados no Redux mudarem
-          if (_nameController.text != (next.userDetails['nome'] ?? '')) {
+          if (prev?.userDetails != next.userDetails) {
             _nameController.text = next.userDetails['nome'] ?? '';
-          }
-          if (_descriptionController.text !=
-              (next.userDetails['descrição'] ?? '')) {
             _descriptionController.text = next.userDetails['descrição'] ?? '';
           }
-          // Atualiza a seleção de tema local
-          if (_selectedThemeOption != next.activeThemeOption) {
+          if (prev?.activeThemeOption != next.activeThemeOption) {
             _selectedThemeOption = next.activeThemeOption;
           }
         },
         builder: (context, viewModel) {
-          // O viewModel aqui é a instância de _SettingsViewModel
           final theme = Theme.of(context);
-          // >>>>> CORREÇÃO AQUI <<<<<
-          // A variável `isPremium` é determinada pela lógica consolidada no ViewModel
           final bool isPremium =
               viewModel.subscriptionStatus == SubscriptionStatus.premiumActive;
 
@@ -279,13 +268,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   // --- SEÇÃO PERFIL ---
-                  Text(
-                    'Editar Perfil',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary),
-                  ),
+                  _buildSectionTitle('Editar Perfil', theme),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _nameController,
@@ -303,6 +286,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         const InputDecoration(labelText: 'Descrição (Bio)'),
                     maxLines: 3,
                   ),
+                  const SizedBox(height: 16),
+                  _buildDenominationSelector(context, theme,
+                      viewModel.userDetails['denomination'] as String?),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     icon: _isLoading
@@ -322,45 +308,21 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   _buildDivider(),
 
                   // --- SEÇÃO TEMA ---
-                  Text(
-                    'Tema do Aplicativo',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary),
-                  ),
+                  _buildSectionTitle('Aparência', theme),
                   const SizedBox(height: 12),
                   _buildThemeDropdown(theme),
                   _buildDivider(),
 
                   // --- SEÇÃO ASSINATURA ---
-                  Text(
-                    'Minha Assinatura',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary),
-                  ),
+                  _buildSectionTitle('Minha Assinatura', theme),
                   const SizedBox(height: 16),
                   _buildSubscriptionSection(
-                      // Passa as variáveis corretas
-                      context,
-                      theme,
-                      isPremium,
-                      viewModel),
+                      context, theme, isPremium, viewModel),
                   _buildDivider(),
 
                   // --- SEÇÃO OUTRAS AÇÕES ---
-                  Text(
-                    'Outras Ações',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                  ),
+                  _buildSectionTitle('Outras Ações', theme, isSubtle: true),
                   const SizedBox(height: 16),
-                  // <<< 3. ADICIONE O BOTÃO/LINK AQUI >>>
-                  // Opção A: Usando um ListTile para um visual mais limpo
                   ListTile(
                     leading: const Icon(Icons.privacy_tip_outlined),
                     title: const Text('Política de Privacidade'),
@@ -368,14 +330,14 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                     onTap: _launchPrivacyPolicy,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 4.0),
                   ),
-
-                  const SizedBox(height: 10), // Espaçamento
+                  const SizedBox(height: 10),
                   ElevatedButton.icon(
                     icon: Icon(Icons.logout, color: theme.colorScheme.onError),
                     label: const Text('Sair da Conta'),
                     onPressed: () => _showLogoutConfirmationDialog(context),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.error),
+                        backgroundColor: theme.colorScheme.errorContainer,
+                        foregroundColor: theme.colorScheme.onErrorContainer),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
@@ -401,6 +363,20 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   }
 
   // --- Widgets Auxiliares ---
+
+  Widget _buildSectionTitle(String title, ThemeData theme,
+      {bool isSubtle = false}) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: isSubtle
+            ? theme.colorScheme.onSurface.withOpacity(0.7)
+            : theme.colorScheme.primary,
+      ),
+    );
+  }
 
   Widget _buildDivider() {
     return const Padding(
@@ -443,11 +419,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     );
   }
 
-  // <<< MÉTODO _buildSubscriptionButton RENOMEADO E MODIFICADO >>>
   Widget _buildSubscriptionSection(BuildContext context, ThemeData theme,
       bool isPremium, _SettingsViewModel viewModel) {
     if (isPremium) {
-      // Se for premium, mostra apenas o botão de gerenciar
       return ElevatedButton.icon(
         icon: const Icon(Icons.manage_accounts_outlined),
         label: const Text('Gerenciar Assinatura'),
@@ -458,17 +432,19 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               await SubscriptionManager.openSubscriptionManagement(
                   viewModel.activeProductId!, packageName);
             } catch (e) {
-              if (context.mounted)
+              if (context.mounted) {
                 ScaffoldMessenger.of(context)
                     .showSnackBar(SnackBar(content: Text(e.toString())));
+              }
             }
           } else {
-            if (context.mounted)
+            if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content: Text(
                         'ID do produto não encontrado para gerenciar a assinatura.')),
               );
+            }
           }
         },
         style: ElevatedButton.styleFrom(
@@ -477,8 +453,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         ),
       );
     } else {
-      // Se não for premium, mostra os botões de assinar e restaurar
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ElevatedButton.icon(
             icon: const Icon(Icons.workspace_premium_outlined),
@@ -504,4 +480,71 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       );
     }
   }
+
+  Widget _buildDenominationSelector(
+      BuildContext context, ThemeData theme, String? currentDenomination) {
+    return InkWell(
+      onTap: () async {
+        final selectedDenomination = await showModalBottomSheet<Denomination>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (ctx) =>
+              DenominationSelectionModal(service: _denominationService),
+        );
+
+        if (selectedDenomination != null && context.mounted) {
+          StoreProvider.of<AppState>(context, listen: false).dispatch(
+              UpdateUserDenominationAction(selectedDenomination.name));
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Denominação',
+          border: const OutlineInputBorder(),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                currentDenomination ?? 'Não especificada',
+                style: theme.textTheme.bodyLarge,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(Icons.arrow_drop_down, color: theme.iconTheme.color),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
+
+/*
+// Em lib/redux/actions/user_actions.dart
+class UpdateUserDenominationAction {
+  final String denominationName;
+  UpdateUserDenominationAction(this.denominationName);
+}
+
+// Em lib/redux/middleware/user_middleware.dart
+void Function(Store<AppState>, UpdateUserDenominationAction, NextDispatcher)
+    _updateUserDenomination(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      await firestoreService.updateUserField(userId, 'denomination', action.denominationName);
+      store.dispatch(LoadUserDetailsAction()); 
+    } catch (e) {
+      print("Erro ao atualizar denominação: $e");
+    }
+  };
+}
+*/

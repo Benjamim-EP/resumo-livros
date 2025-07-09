@@ -179,6 +179,9 @@ List<Middleware<AppState>> createUserMiddleware() {
         .call,
     TypedMiddleware<AppState, DeleteUserAccountAction>(_handleDeleteUserAccount)
         .call,
+    TypedMiddleware<AppState, UpdateUserDenominationAction>(
+            _updateUserDenomination(firestoreService))
+        .call,
   ];
 }
 
@@ -710,6 +713,24 @@ void Function(Store<AppState>, RemoveCommentHighlightAction, NextDispatcher)
       store.dispatch(LoadUserCommentHighlightsAction());
     } catch (e) {
       print("UserMiddleware: Erro ao remover destaque de comentário: $e");
+    }
+  };
+}
+
+void Function(Store<AppState>, UpdateUserDenominationAction, NextDispatcher)
+    _updateUserDenomination(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+    try {
+      // Atualiza o campo 'denomination' no Firestore
+      await firestoreService.updateUserField(
+          userId, 'denomination', action.denominationName);
+      // Recarrega os detalhes do usuário para atualizar a UI em todo o app
+      store.dispatch(LoadUserDetailsAction());
+    } catch (e) {
+      print("Erro ao atualizar denominação: $e");
     }
   };
 }

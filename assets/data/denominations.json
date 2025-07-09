@@ -1,0 +1,2711 @@
+[
+  {
+    "id": 1,
+    "nome": "Igreja Latina",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo",
+    "numero_adeptos": "1,327 bilhão"
+  },
+  {
+    "id": 2,
+    "nome": "Igreja Greco-Católica Ucraniana",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "5,5 milhões"
+  },
+  {
+    "id": 3,
+    "nome": "Igreja Greco-Católica Melquita",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "1,6 milhões"
+  },
+  {
+    "id": 4,
+    "nome": "Igreja Católica Grega Romena",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,5 milhões"
+  },
+  {
+    "id": 5,
+    "nome": "Igreja Greco-Católica Rutena",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,4 milhões"
+  },
+  {
+    "id": 6,
+    "nome": "Igreja Greco-Católica Húngara",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,3 milhões"
+  },
+  {
+    "id": 7,
+    "nome": "Igreja Greco-Católica Eslovaca",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,3 milhões"
+  },
+  {
+    "id": 8,
+    "nome": "Igreja Greco-Católica da Bielorrússia",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,1 milhão"
+  },
+  {
+    "id": 9,
+    "nome": "Igreja Católica Ítalo-Albanesa",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 10,
+    "nome": "Igreja Greco-Católica da Croácia e Sérvia",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 11,
+    "nome": "Igreja Católica Bizantina da Geórgia (not sui iuris)",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 12,
+    "nome": "Igreja Greco-Católica da Albânia",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 13,
+    "nome": "Igreja Católica Grega Russa",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 14,
+    "nome": "Igreja Católica Grega Bizantina",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,006 milhão"
+  },
+  {
+    "id": 15,
+    "nome": "Igreja Greco-Católica da Macedônia",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,001 milhão"
+  },
+  {
+    "id": 16,
+    "nome": "Igreja greco-católica búlgara",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Bizantino",
+    "numero_adeptos": "0,001 milhão"
+  },
+  {
+    "id": 17,
+    "nome": "Igreja Siro-Malabar",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito siríaco oriental",
+    "numero_adeptos": "4,3 milhões"
+  },
+  {
+    "id": 18,
+    "nome": "Igreja Católica Caldéia",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito siríaco oriental",
+    "numero_adeptos": "0,6 milhão"
+  },
+  {
+    "id": 19,
+    "nome": "Igreja Maronita",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito siríaco ocidental",
+    "numero_adeptos": "3,5 milhões"
+  },
+  {
+    "id": 20,
+    "nome": "Igreja Católica Siro-Malankara",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito siríaco ocidental",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 21,
+    "nome": "Igreja Católica Siríaca",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito siríaco ocidental",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 22,
+    "nome": "Igreja Católica Armênia",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Armênio",
+    "numero_adeptos": "0,8 milhão"
+  },
+  {
+    "id": 23,
+    "nome": "Igreja Católica Copta",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Alexandrino",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 24,
+    "nome": "Igreja Católica da Eritreia",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Alexandrino",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 25,
+    "nome": "Igreja Católica Etíope",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Igrejas Católicas Orientais / Rito Alexandrino",
+    "numero_adeptos": "0,07 milhão"
+  },
+  {
+    "id": 26,
+    "nome": "Sociedade de São Pio X",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Grupos canonicamente irregulares",
+    "numero_adeptos": "1 milhão"
+  },
+  {
+    "id": 27,
+    "nome": "Congregação de Maria Rainha Imaculada",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Grupos canonicamente irregulares / Sedevacantistas",
+    "numero_adeptos": null
+  },
+  {
+    "id": 28,
+    "nome": "Fraternidade Sacerdotal de São Pio V",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Grupos canonicamente irregulares / Sedevacantistas",
+    "numero_adeptos": null
+  },
+  {
+    "id": 29,
+    "nome": "Igreja Independente das Filipinas",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "6 milhões"
+  },
+  {
+    "id": 30,
+    "nome": "Associação Católica Patriótica Chinesa",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "5 milhões"
+  },
+  {
+    "id": 31,
+    "nome": "Igreja Católica Apostólica (Filipinas)",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "5 milhões"
+  },
+  {
+    "id": 32,
+    "nome": "Igreja Católica Mexicana-Americana Tradicionalista",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "2 milhões"
+  },
+  {
+    "id": 33,
+    "nome": "Igreja Católica Apostólica Brasileira",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "0,56 milhão"
+  },
+  {
+    "id": 34,
+    "nome": "Antiga Igreja Católica",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "0,1 milhão"
+  },
+  {
+    "id": 35,
+    "nome": "Igreja Católica Nacional Polonesa",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "0,03 milhão"
+  },
+  {
+    "id": 36,
+    "nome": "Igreja Católica Palmariana",
+    "ramo_principal": "Catolicismo",
+    "caminho": "Catolicismo / Catolicismo independente",
+    "numero_adeptos": "0,002 milhão"
+  },
+  {
+    "id": 37,
+    "nome": "Igreja da Inglaterra",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "25,0 milhões"
+  },
+  {
+    "id": 38,
+    "nome": "Igreja da Nigéria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "22 milhões"
+  },
+  {
+    "id": 39,
+    "nome": "Igreja de Uganda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "13,311 milhões"
+  },
+  {
+    "id": 40,
+    "nome": "Igreja Anglicana do Quênia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "5,86 milhões"
+  },
+  {
+    "id": 41,
+    "nome": "Igreja do Sul da Índia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "4,5 milhões"
+  },
+  {
+    "id": 42,
+    "nome": "Província da Igreja Episcopal do Sudão do Sul",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "3,5 milhões"
+  },
+  {
+    "id": 43,
+    "nome": "Igreja Anglicana da Austrália",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "2,49 milhões"
+  },
+  {
+    "id": 44,
+    "nome": "Igreja Anglicana da África Austral",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "2,3 milhões"
+  },
+  {
+    "id": 45,
+    "nome": "Igreja do Norte da Índia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "2,2 milhões"
+  },
+  {
+    "id": 46,
+    "nome": "Igreja Anglicana da Tanzânia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "2,0 milhões"
+  },
+  {
+    "id": 47,
+    "nome": "Igreja Episcopal nos Estados Unidos",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "1,54 milhão"
+  },
+  {
+    "id": 48,
+    "nome": "Província da Igreja Episcopal do Sudão",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "1,1 milhão"
+  },
+  {
+    "id": 49,
+    "nome": "Igreja Anglicana de Ruanda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "1,0 milhão"
+  },
+  {
+    "id": 50,
+    "nome": "Igreja da Província da África Ocidental",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "1,0 milhão"
+  },
+  {
+    "id": 51,
+    "nome": "Igreja Anglicana do Burundi",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,9 milhões"
+  },
+  {
+    "id": 52,
+    "nome": "Igreja da Província da África Central",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,9 milhões"
+  },
+  {
+    "id": 53,
+    "nome": "Igreja na Província das Índias Ocidentais",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,8 milhões"
+  },
+  {
+    "id": 54,
+    "nome": "Igreja da Província do Oceano Índico",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,5 milhões"
+  },
+  {
+    "id": 55,
+    "nome": "Igreja de Cristo no Congo – Comunidade Anglicana do Congo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,5 milhões"
+  },
+  {
+    "id": 56,
+    "nome": "Igreja do Paquistão",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 57,
+    "nome": "Província da Igreja Anglicana do Congo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 58,
+    "nome": "Igreja da Irlanda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 59,
+    "nome": "Igreja Anglicana do Canadá",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,294 milhão"
+  },
+  {
+    "id": 60,
+    "nome": "Igreja Anglicana em Aotearoa, Nova Zelândia e Polinésia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,245 milhões"
+  },
+  {
+    "id": 61,
+    "nome": "Igreja Anglicana da Melanésia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,2 milhões"
+  },
+  {
+    "id": 62,
+    "nome": "Igreja Episcopal Anglicana do Brasil",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Comunhão Anglicana",
+    "numero_adeptos": "0,05 milhão"
+  },
+  {
+    "id": 63,
+    "nome": "Comunhão Anglicana Tradicional",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Movimento anglicano contínuo e igrejas independentes",
+    "numero_adeptos": "0,4 milhões"
+  },
+  {
+    "id": 64,
+    "nome": "Igreja Anglicana na América do Norte",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Movimento anglicano contínuo e igrejas independentes",
+    "numero_adeptos": "0,13 milhões"
+  },
+  {
+    "id": 65,
+    "nome": "Igreja Anglicana Evangélica Reformada da África do Sul",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anglicanismo / Movimento anglicano contínuo e igrejas independentes",
+    "numero_adeptos": "0,09 milhões"
+  },
+  {
+    "id": 66,
+    "nome": "Convenção Batista do Sul",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "12,722 milhões"
+  },
+  {
+    "id": 67,
+    "nome": "Convenção Batista da Nigéria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "9,015 milhões"
+  },
+  {
+    "id": 68,
+    "nome": "Convenção Batista Nacional, EUA, Inc.",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "8,415 milhões"
+  },
+  {
+    "id": 69,
+    "nome": "Convenção Batista Nacional da América, Inc.",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "3,500 milhões"
+  },
+  {
+    "id": 70,
+    "nome": "Convenção Batista da Tanzânia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "2,692 milhões"
+  },
+  {
+    "id": 71,
+    "nome": "Convenção Batista do Quênia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "2,000 milhão"
+  },
+  {
+    "id": 72,
+    "nome": "Convenção Batista Geral do Texas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,898 milhão"
+  },
+  {
+    "id": 73,
+    "nome": "Convenção Batista Brasileira",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,814 milhão"
+  },
+  {
+    "id": 74,
+    "nome": "Comunidade Batista do Rio Congo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,769 milhão"
+  },
+  {
+    "id": 75,
+    "nome": "Convenção Batista de Mianmar",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,723 milhão"
+  },
+  {
+    "id": 76,
+    "nome": "Conselho de Igrejas Batistas no Nordeste da Índia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,564 milhão"
+  },
+  {
+    "id": 77,
+    "nome": "Convenção Batista Nacional Progressiva",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,500 milhão"
+  },
+  {
+    "id": 78,
+    "nome": "Lott Carey Convenção de Missões Estrangeiras",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,200 milhão"
+  },
+  {
+    "id": 79,
+    "nome": "Comunhão Batista Bíblica Internacional",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,2 milhão"
+  },
+  {
+    "id": 80,
+    "nome": "Igrejas Batistas Americanas EUA",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,105 milhão"
+  },
+  {
+    "id": 81,
+    "nome": "Comunidade Batista do Congo Ocidental",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,050 milhões"
+  },
+  {
+    "id": 82,
+    "nome": "Convenção Batista Nacional Primitiva dos EUA",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "1,0 milhão"
+  },
+  {
+    "id": 83,
+    "nome": "Fraternidade Batista Cooperativa",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,725 milhão"
+  },
+  {
+    "id": 84,
+    "nome": "Convenção das Igrejas Batistas Filipinas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,700 milhão"
+  },
+  {
+    "id": 85,
+    "nome": "Convenção Batista Reformada em Ruanda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,662 milhão"
+  },
+  {
+    "id": 86,
+    "nome": "Associação Batista Geral da Virgínia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,610 milhão"
+  },
+  {
+    "id": 87,
+    "nome": "Convenção Batista da Coreia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,550 milhão"
+  },
+  {
+    "id": 88,
+    "nome": "União Batista de Uganda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,550 milhões"
+  },
+  {
+    "id": 89,
+    "nome": "Samavesam das Igrejas Batistas Telugu",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,473 milhão"
+  },
+  {
+    "id": 90,
+    "nome": "Convenção Batista Nacional (Brasil)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,405 milhão"
+  },
+  {
+    "id": 91,
+    "nome": "Convenção Batista Missionária Nacional da América",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,400 milhões"
+  },
+  {
+    "id": 92,
+    "nome": "Convenção Batista do Malawi",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,388 milhão"
+  },
+  {
+    "id": 93,
+    "nome": "Convergir",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,377 milhão"
+  },
+  {
+    "id": 94,
+    "nome": "Convenção Batista do Zimbábue",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,300 milhão"
+  },
+  {
+    "id": 95,
+    "nome": "Convenção Batista de Camarões",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,279 milhão"
+  },
+  {
+    "id": 96,
+    "nome": "Comunidade Batista da Zâmbia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,255 milhão"
+  },
+  {
+    "id": 97,
+    "nome": "Convenção das Igrejas Batistas dos Círculos do Norte (Índia)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,240 milhão"
+  },
+  {
+    "id": 98,
+    "nome": "Federação Euro-Asiática de Uniões de Cristãos Evangélicos-Batistas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,228 milhão"
+  },
+  {
+    "id": 99,
+    "nome": "Comunidade Batista na África Central",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,220 milhão"
+  },
+  {
+    "id": 100,
+    "nome": "União Batista da Zâmbia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,220 milhão"
+  },
+  {
+    "id": 101,
+    "nome": "Associação Batista Conservadora da América",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 102,
+    "nome": "Associação Nacional de Batistas Livres",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 103,
+    "nome": "Convenção de Visayas e Mindanao das Igrejas Batistas do Sul",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,200 milhão"
+  },
+  {
+    "id": 104,
+    "nome": "Convenção Batista de Moçambique",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,175 milhão"
+  },
+  {
+    "id": 105,
+    "nome": "Igreja Baptista Evangélica em Angola",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,174 milhão"
+  },
+  {
+    "id": 106,
+    "nome": "Comunidade das Igrejas Batistas do Congo Oriental",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,145 milhão"
+  },
+  {
+    "id": 107,
+    "nome": "Convenção Batista da Zâmbia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,143 milhão"
+  },
+  {
+    "id": 108,
+    "nome": "Associação Cristã Batista de North Bank (Índia)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,136 milhão"
+  },
+  {
+    "id": 109,
+    "nome": "Igreja Interior do Sudão",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,133 milhão"
+  },
+  {
+    "id": 110,
+    "nome": "Igreja Batista de Mizoram",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,132 milhão"
+  },
+  {
+    "id": 111,
+    "nome": "União Ucraniana de Associações de Cristãos Batistas Evangélicos",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,112 milhão"
+  },
+  {
+    "id": 112,
+    "nome": "Convenção Batista de Uganda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,109 milhão"
+  },
+  {
+    "id": 113,
+    "nome": "Batistas do Sétimo Dia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas batistas",
+    "numero_adeptos": "0,05 milhão"
+  },
+  {
+    "id": 114,
+    "nome": "Igreja Evangélica Etíope Mekane Yesus",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "12,0 milhões"
+  },
+  {
+    "id": 115,
+    "nome": "Igreja Evangélica na Alemanha",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "18,566 milhões"
+  },
+  {
+    "id": 116,
+    "nome": "Igreja Evangélica Luterana na Tanzânia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "8,5 milhões"
+  },
+  {
+    "id": 117,
+    "nome": "Igreja Protestante Cristã Batak",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "6,333 milhões"
+  },
+  {
+    "id": 118,
+    "nome": "Igreja da Suécia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "5,484 milhões"
+  },
+  {
+    "id": 119,
+    "nome": "Igreja da Dinamarca",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "4,235 milhões"
+  },
+  {
+    "id": 120,
+    "nome": "Igreja Luterana Malgaxe",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "4,0 milhões"
+  },
+  {
+    "id": 121,
+    "nome": "Igrejas Evangélicas Luteranas Unidas na Índia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "3,894 milhões"
+  },
+  {
+    "id": 122,
+    "nome": "Igreja Evangélica Luterana da Finlândia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "3,579 milhões"
+  },
+  {
+    "id": 123,
+    "nome": "Igreja da Noruega",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "3,5 milhões"
+  },
+  {
+    "id": 124,
+    "nome": "Igreja Evangélica Luterana na América",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "2,904 milhões"
+  },
+  {
+    "id": 125,
+    "nome": "Igreja Luterana de Cristo na Nigéria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "2,265 milhões"
+  },
+  {
+    "id": 126,
+    "nome": "Igreja Luterana - Sínodo de Missouri",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "1,708 milhão"
+  },
+  {
+    "id": 127,
+    "nome": "Igreja Evangélica Luterana de Papua Nova Guiné",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "1,500 milhão"
+  },
+  {
+    "id": 128,
+    "nome": "Igreja Evangélica Luterana na Namíbia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,853 milhão"
+  },
+  {
+    "id": 129,
+    "nome": "Igreja Evangélica Luterana dos Camarões",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,7 milhão"
+  },
+  {
+    "id": 130,
+    "nome": "Igreja Evangélica de Confissão Luterana no Brasil",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,614 milhão"
+  },
+  {
+    "id": 131,
+    "nome": "Igreja Evangélica Luterana na África Austral",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,6 milhão"
+  },
+  {
+    "id": 132,
+    "nome": "A Igreja Cristã Protestante",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 133,
+    "nome": "Igreja Evangélica Luterana na República da Namíbia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,420 milhão"
+  },
+  {
+    "id": 134,
+    "nome": "Igreja Evangélica Livre da América",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 135,
+    "nome": "Igreja Evangélica Luterana no Zimbábue",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,309 milhão"
+  },
+  {
+    "id": 136,
+    "nome": "A Igreja Cristã Indonésia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 137,
+    "nome": "Congregações Luteranas em Missão para Cristo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 138,
+    "nome": "Igreja Protestante Cristã na Indonésia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 139,
+    "nome": "Sínodo Evangélico Luterano de Wisconsin",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 140,
+    "nome": "Igreja Evangélica Luterana da Letônia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,250 milhão"
+  },
+  {
+    "id": 141,
+    "nome": "Igreja Evangélica da Confissão de Augsburgo na Áustria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,247 milhão"
+  },
+  {
+    "id": 142,
+    "nome": "Igreja Evangélica Luterana do Brasil",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,245 milhão"
+  },
+  {
+    "id": 143,
+    "nome": "Igreja da Islândia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,227 milhão"
+  },
+  {
+    "id": 144,
+    "nome": "Igreja Cristã Protestante de Simalungun",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,227 milhão"
+  },
+  {
+    "id": 145,
+    "nome": "Igreja Protestante de Augsburg Confissão da Alsácia e Lorena",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,220 milhão"
+  },
+  {
+    "id": 146,
+    "nome": "Igreja Evangélica da Confissão de Augsburgo na Eslováquia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,193 milhão"
+  },
+  {
+    "id": 147,
+    "nome": "Igreja Evangélica Luterana na Hungria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,176 milhão"
+  },
+  {
+    "id": 148,
+    "nome": "Igreja Evangélica Luterana da Estônia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,160 milhão"
+  },
+  {
+    "id": 149,
+    "nome": "Laestadianismo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Luteranismo",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 150,
+    "nome": "Igreja Presbiteriana da África Oriental",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "4,0 milhões"
+  },
+  {
+    "id": 151,
+    "nome": "Igreja Presbiteriana de Camarões",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "4,0 milhões"
+  },
+  {
+    "id": 152,
+    "nome": "Igreja Presbiteriana da Nigéria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "3,8 milhões"
+  },
+  {
+    "id": 153,
+    "nome": "Igreja Presbiteriana da África",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "3,4 milhões"
+  },
+  {
+    "id": 154,
+    "nome": "Igreja Presbiteriana da África Central",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "3,1 milhões"
+  },
+  {
+    "id": 155,
+    "nome": "Igreja Nacional Presbiteriana do México",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "2,8 milhões"
+  },
+  {
+    "id": 156,
+    "nome": "Igreja de Cristo no Congo – Comunidade Presbiteriana no Congo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "2,5 milhões"
+  },
+  {
+    "id": 157,
+    "nome": "Igreja Presbiteriana na Coreia (HapDong)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "2,25 milhões"
+  },
+  {
+    "id": 158,
+    "nome": "Igreja Presbiteriana da Coreia (TongHap)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "2,20 milhões"
+  },
+  {
+    "id": 159,
+    "nome": "Igreja Presbiteriana na Coreia (BaekSeok)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "2,0 milhões"
+  },
+  {
+    "id": 160,
+    "nome": "Igreja Presbiteriana em Camarões",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "2,0 milhões"
+  },
+  {
+    "id": 161,
+    "nome": "Igreja Presbiteriana em Ruanda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "1,624 milhão"
+  },
+  {
+    "id": 162,
+    "nome": "Igreja Presbiteriana da Índia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "1,6 milhão"
+  },
+  {
+    "id": 163,
+    "nome": "Igreja Presbiteriana do Gana",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "1,2 milhão"
+  },
+  {
+    "id": 164,
+    "nome": "Igreja Presbiteriana do Sudão do Sul e Sudão",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "1,0 milhão"
+  },
+  {
+    "id": 165,
+    "nome": "Igreja Presbiteriana (EUA)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "1,0 milhão"
+  },
+  {
+    "id": 166,
+    "nome": "Igreja Evangélica do Egito",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,750 milhão"
+  },
+  {
+    "id": 167,
+    "nome": "Igreja Presbiteriana do Brasil",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,700 milhão"
+  },
+  {
+    "id": 168,
+    "nome": "Igreja Evangélica Presbiteriana do Gana",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,6 milhão"
+  },
+  {
+    "id": 169,
+    "nome": "Igreja Unida de Cristo nas Filipinas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 170,
+    "nome": "Igreja Presbiteriana Unida na África Austral",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 171,
+    "nome": "Igreja Presbiteriana do Paquistão",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 172,
+    "nome": "Igreja Presbiteriana na América",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 173,
+    "nome": "Igreja Presbiteriana Ortodoxa nos Camarões",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,382 milhão"
+  },
+  {
+    "id": 174,
+    "nome": "Igreja Presbiteriana na Coreia (Kosin)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,378 milhão"
+  },
+  {
+    "id": 175,
+    "nome": "Igreja Unida do Canadá",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,325 milhão"
+  },
+  {
+    "id": 176,
+    "nome": "Igreja Presbiteriana Coreana",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 177,
+    "nome": "Igreja da Escócia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,245 milhão ou 1,5 milhão"
+  },
+  {
+    "id": 178,
+    "nome": "Igreja Unida na Austrália",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,243 milhão"
+  },
+  {
+    "id": 179,
+    "nome": "Igreja Presbiteriana em Taiwan",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,238 milhão"
+  },
+  {
+    "id": 180,
+    "nome": "Igreja Presbiteriana de Moçambique",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 181,
+    "nome": "Igreja Presbiteriana na Irlanda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,200 milhão"
+  },
+  {
+    "id": 182,
+    "nome": "Igreja Presbiteriana na República da Coréia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,193 milhão"
+  },
+  {
+    "id": 183,
+    "nome": "Igreja Presbiteriana Reformada Associada do Paquistão",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,150 milhão"
+  },
+  {
+    "id": 184,
+    "nome": "Igreja Presbiteriana na Coreia (HapShin)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,129 milhão"
+  },
+  {
+    "id": 185,
+    "nome": "Igreja Evangélica Presbiteriana do Togo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,127 milhão"
+  },
+  {
+    "id": 186,
+    "nome": "Ordem do Pacto dos Presbiterianos Evangélicos",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,127 milhão"
+  },
+  {
+    "id": 187,
+    "nome": "Igreja Presbiteriana na Etiópia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,120 milhão"
+  },
+  {
+    "id": 188,
+    "nome": "Igreja Presbiteriana na Coreia (HoHeon)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Presbiterianismo",
+    "numero_adeptos": "0,120 milhão"
+  },
+  {
+    "id": 189,
+    "nome": "Igreja de Cristo nas Nações",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "8,0 milhão"
+  },
+  {
+    "id": 190,
+    "nome": "Igreja de Jesus Cristo em Madagascar",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "6,0 milhão"
+  },
+  {
+    "id": 191,
+    "nome": "Igreja Unida da Zâmbia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "4,0 milhão"
+  },
+  {
+    "id": 192,
+    "nome": "Igreja Protestante na Indonésia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "3,7 milhão"
+  },
+  {
+    "id": 193,
+    "nome": "Igreja Evangélica de Camarões",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "2,5 milhão"
+  },
+  {
+    "id": 194,
+    "nome": "Igreja Reformada Suíça",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "1,9 milhão"
+  },
+  {
+    "id": 195,
+    "nome": "Igreja Reformada Evangélica de Cristo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "1,5 milhão"
+  },
+  {
+    "id": 196,
+    "nome": "Igreja Protestante na Holanda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "1,4 milhão"
+  },
+  {
+    "id": 197,
+    "nome": "Igreja Reformada Neerlandesa (NGK)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "1,1 milhão"
+  },
+  {
+    "id": 198,
+    "nome": "Igreja de Cristo Reformada Universal",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "1,0 milhão"
+  },
+  {
+    "id": 199,
+    "nome": "Igreja Reformada na Zâmbia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "1,0 milhão"
+  },
+  {
+    "id": 200,
+    "nome": "Igreja Reformada da Hungria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,943 milhão"
+  },
+  {
+    "id": 201,
+    "nome": "Igreja Reformada Unificada na África Austral",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,900 milhão"
+  },
+  {
+    "id": 202,
+    "nome": "Igreja Cristã Evangélica em Tanah Papua",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,834 milhão"
+  },
+  {
+    "id": 203,
+    "nome": "Igreja Evangélica de Lesoto na África Austral",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,8 milhão"
+  },
+  {
+    "id": 204,
+    "nome": "Igreja Unida em Papua-Nova Guiné",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,748 milhão"
+  },
+  {
+    "id": 205,
+    "nome": "Igreja Cristã Central de Sulawesi",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,501 milhão"
+  },
+  {
+    "id": 206,
+    "nome": "Igreja Cristã Reformada da Nigéria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 207,
+    "nome": "Igreja Reformada da Romênia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,495 milhão"
+  },
+  {
+    "id": 208,
+    "nome": "Igreja Cristã de Sumba",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,386 milhão"
+  },
+  {
+    "id": 209,
+    "nome": "Igreja Evangélica Kalimantan",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,330 milhão"
+  },
+  {
+    "id": 210,
+    "nome": "Igreja Protestante de Karo Batak",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,317 milhão"
+  },
+  {
+    "id": 211,
+    "nome": "Igreja Cristã Evangélica em Halmahera",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 212,
+    "nome": "Igreja Evangélica Reformada de Angola",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 213,
+    "nome": "Igreja Toraja",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,262 milhão"
+  },
+  {
+    "id": 214,
+    "nome": "Igreja Evangélica do Congo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,225 milhão"
+  },
+  {
+    "id": 215,
+    "nome": "Igreja Protestante Unida da França",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,220 milhão"
+  },
+  {
+    "id": 216,
+    "nome": "Igreja Sudanesa de Cristo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,220 milhão"
+  },
+  {
+    "id": 217,
+    "nome": "Igreja Cristã Evangélica em Bolaang Mongondow",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,210 milhão"
+  },
+  {
+    "id": 218,
+    "nome": "Igreja Cristã Javanesa",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 219,
+    "nome": "Igreja Cristã da Indonésia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 220,
+    "nome": "Igreja Cristã Reformada na América do Norte",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,183 milhão"
+  },
+  {
+    "id": 221,
+    "nome": "Igreja Evangélica Cristã de Sangihe Talaud",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,158 milhão"
+  },
+  {
+    "id": 222,
+    "nome": "Igreja Evangélica Reformada na Alemanha",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,155 milhão"
+  },
+  {
+    "id": 223,
+    "nome": "Igreja de Lippe",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,135 milhão"
+  },
+  {
+    "id": 224,
+    "nome": "Igreja de Cristo na Tailândia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,130 milhão"
+  },
+  {
+    "id": 225,
+    "nome": "Igreja do Interior Africano do Sudão do Sul e Sudão",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,125 milhão"
+  },
+  {
+    "id": 226,
+    "nome": "Igreja Cristã Reformada na África Oriental",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,100 milhão"
+  },
+  {
+    "id": 227,
+    "nome": "Igreja Reformada de Cristo Para as Nações",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,100 milhão"
+  },
+  {
+    "id": 228,
+    "nome": "Igreja Reformada no Zimbábue",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,100 milhão"
+  },
+  {
+    "id": 229,
+    "nome": "Igreja Reformada na América",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Igrejas Reformadas Continentais",
+    "numero_adeptos": "0,064 milhão"
+  },
+  {
+    "id": 230,
+    "nome": "Igreja Congregacional Unida da África Austral",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Congregacionalismo",
+    "numero_adeptos": "1,5 milhão"
+  },
+  {
+    "id": 231,
+    "nome": "Igreja Evangélica Congregacional em Angola",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Congregacionalismo",
+    "numero_adeptos": "0,9 milhão"
+  },
+  {
+    "id": 232,
+    "nome": "Igreja Unida de Cristo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Congregacionalismo",
+    "numero_adeptos": "0,712 milhão"
+  },
+  {
+    "id": 233,
+    "nome": "Igreja Unida de Cristo no Zimbabwe",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Congregacionalismo",
+    "numero_adeptos": "0,200 milhão"
+  },
+  {
+    "id": 234,
+    "nome": "Igreja Protestante Maóhi",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Igrejas reformadas (calvinismo) / Congregacionalismo",
+    "numero_adeptos": "0,130 milhão"
+  },
+  {
+    "id": 235,
+    "nome": "Igreja Metodista Unida",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "9 milhões"
+  },
+  {
+    "id": 236,
+    "nome": "Igreja do Nazareno",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "2,666 milhões"
+  },
+  {
+    "id": 237,
+    "nome": "Igreja Episcopal Metodista Africana",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "2,5 milhões"
+  },
+  {
+    "id": 238,
+    "nome": "Igreja Metodista Nigéria",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "2 milhões"
+  },
+  {
+    "id": 239,
+    "nome": "O Exército de Salvação",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "1,8 milhão"
+  },
+  {
+    "id": 240,
+    "nome": "Igreja Metodista da África Austral",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "1,7 milhão"
+  },
+  {
+    "id": 241,
+    "nome": "Igreja Episcopal Metodista Africana de Sião",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "1,4 milhão"
+  },
+  {
+    "id": 242,
+    "nome": "Igreja Metodista Coreana",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "1,113 milhão"
+  },
+  {
+    "id": 243,
+    "nome": "Igreja Metodista Unida da Costa do Marfim",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "1 milhão"
+  },
+  {
+    "id": 244,
+    "nome": "Igreja Metodista Livre",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,9 milhão"
+  },
+  {
+    "id": 245,
+    "nome": "Igreja Episcopal Metodista Cristã",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,9 milhão"
+  },
+  {
+    "id": 246,
+    "nome": "Igreja Metodista Gana",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,8 milhão"
+  },
+  {
+    "id": 247,
+    "nome": "Igreja Metodista na Índia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,6 milhão"
+  },
+  {
+    "id": 248,
+    "nome": "Igreja Metodista no Quênia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 249,
+    "nome": "Igreja Cristã da Santidade na Coreia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,430 milhão"
+  },
+  {
+    "id": 250,
+    "nome": "Igreja Wesleyana",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 251,
+    "nome": "Igreja Metodista no Brasil",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,262 milhão"
+  },
+  {
+    "id": 252,
+    "nome": "Igreja Metodista de Fiji e Rotuma",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 253,
+    "nome": "Igreja Metodista da Grã-Bretanha",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "0,136 milhão"
+  },
+  {
+    "id": 254,
+    "nome": "Igreja Metodista Global",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Metodismo",
+    "numero_adeptos": "Formada apenas em maio de 2022"
+  },
+  {
+    "id": 255,
+    "nome": "Igreja Adventista do Sétimo Dia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Adventismo",
+    "numero_adeptos": "23,6 milhões"
+  },
+  {
+    "id": 256,
+    "nome": "Igreja de Deus do Sétimo Dia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Adventismo",
+    "numero_adeptos": "0,2 milhão"
+  },
+  {
+    "id": 257,
+    "nome": "Igreja Cristã do Advento",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Adventismo",
+    "numero_adeptos": "0,1 milhão"
+  },
+  {
+    "id": 258,
+    "nome": "Movimento de Reforma Adventista do Sétimo Dia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Adventismo",
+    "numero_adeptos": "0,042 milhão"
+  },
+  {
+    "id": 259,
+    "nome": "Igrejas de Cristo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Restauracionismo",
+    "numero_adeptos": "5 milhões"
+  },
+  {
+    "id": 260,
+    "nome": "Igrejas de Cristo na Austrália",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Restauracionismo",
+    "numero_adeptos": "0,05 milhão"
+  },
+  {
+    "id": 261,
+    "nome": "Igrejas cristãs e igrejas de Cristo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Restauracionismo",
+    "numero_adeptos": "1,1 milhão"
+  },
+  {
+    "id": 262,
+    "nome": "Comunidade dos Discípulos de Cristo no Congo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Restauracionismo",
+    "numero_adeptos": "0,7 milhões"
+  },
+  {
+    "id": 263,
+    "nome": "Igreja Cristã (Discípulos de Cristo)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Restauracionismo",
+    "numero_adeptos": "0,4 milhões"
+  },
+  {
+    "id": 264,
+    "nome": "Menonitas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anabatismo",
+    "numero_adeptos": "2,1 milhões"
+  },
+  {
+    "id": 265,
+    "nome": "Schwarzenau Brethren (batistas alemães)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anabatismo",
+    "numero_adeptos": "1,5 milhão"
+  },
+  {
+    "id": 266,
+    "nome": "Amish",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anabatismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 267,
+    "nome": "Hutteritas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Anabatismo",
+    "numero_adeptos": "0,05 milhão"
+  },
+  {
+    "id": 268,
+    "nome": "Assembleias dos Irmãos",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico",
+    "numero_adeptos": "1 milhão"
+  },
+  {
+    "id": 269,
+    "nome": "Morávios",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Hussitas",
+    "numero_adeptos": "0,825 milhão"
+  },
+  {
+    "id": 270,
+    "nome": "Igreja Hussita da Checoslováquia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Hussitas",
+    "numero_adeptos": "0,14 milhão"
+  },
+  {
+    "id": 271,
+    "nome": "Unidade dos Irmãos",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico / Hussitas",
+    "numero_adeptos": "0,035 milhão"
+  },
+  {
+    "id": 272,
+    "nome": "Quakers",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo histórico",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 273,
+    "nome": "Assembleias de Deus",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "86 milhões"
+  },
+  {
+    "id": 274,
+    "nome": "Igreja Apostólica",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "15 milhões"
+  },
+  {
+    "id": 275,
+    "nome": "Círculo Internacional de Fé",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "11 milhões"
+  },
+  {
+    "id": 276,
+    "nome": "Fangcheng Fellowship",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "10 milhões"
+  },
+  {
+    "id": 277,
+    "nome": "China Gospel Fellowship",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "10 milhões"
+  },
+  {
+    "id": 278,
+    "nome": "Igreja Internacional do Evangelho Quadrangular",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "9 milhões"
+  },
+  {
+    "id": 279,
+    "nome": "Igreja Etíope Kale Heywet",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "9 milhões"
+  },
+  {
+    "id": 280,
+    "nome": "Igreja de Deus em Cristo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "6,5 milhões"
+  },
+  {
+    "id": 281,
+    "nome": "Igreja de Deus (Cleveland, Tennessee)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "6 milhões"
+  },
+  {
+    "id": 282,
+    "nome": "Igreja Etíope dos Crentes do Evangelho Completo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "4,5 milhões"
+  },
+  {
+    "id": 283,
+    "nome": "Igreja Pentecostal Internacional da Santidade",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "4 milhões"
+  },
+  {
+    "id": 284,
+    "nome": "Congregação Cristã do Brasil",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "2,8 milhões"
+  },
+  {
+    "id": 285,
+    "nome": "A Missão Pentecostal",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "2,5 milhões"
+  },
+  {
+    "id": 286,
+    "nome": "Verdadeira Igreja de Jesus",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "2,5 milhões"
+  },
+  {
+    "id": 287,
+    "nome": "A Igreja de Pentecostes",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "2,1 milhões"
+  },
+  {
+    "id": 288,
+    "nome": "Igreja Universal do Reino de Deus",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "2 milhões"
+  },
+  {
+    "id": 289,
+    "nome": "Comunidade Evangélica Sara Nossa Terra",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "1,5 milhão"
+  },
+  {
+    "id": 290,
+    "nome": "Missão de Fé Apostólica da África do Sul",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "1,2 milhão"
+  },
+  {
+    "id": 291,
+    "nome": "Associação de Igrejas Pentecostais de Ruanda",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "1 milhão"
+  },
+  {
+    "id": 292,
+    "nome": "Igreja Jesus é o Senhor em todo o mundo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "1 milhão"
+  },
+  {
+    "id": 293,
+    "nome": "Igreja Pentecostal Deus é Amor",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "0,8 milhão"
+  },
+  {
+    "id": 294,
+    "nome": "Igreja Cristã Maranata",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "0,75 milhão"
+  },
+  {
+    "id": 295,
+    "nome": "Associação de Igrejas Vineyard",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 296,
+    "nome": "Igreja Mundial do Poder de Deus",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Pentecostalismo",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 297,
+    "nome": "Capela do Calvário",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Cristianismo não denominacional",
+    "numero_adeptos": "25 milhões"
+  },
+  {
+    "id": 298,
+    "nome": "Aliança Cristã e Missionária",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Cristianismo não denominacional",
+    "numero_adeptos": "6 milhões"
+  },
+  {
+    "id": 299,
+    "nome": "Movimento Born Again",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Cristianismo não denominacional",
+    "numero_adeptos": "3 milhões"
+  },
+  {
+    "id": 300,
+    "nome": "Igreja de Deus (Anderson, Indiana)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Cristianismo não denominacional",
+    "numero_adeptos": "1,2 milhão"
+  },
+  {
+    "id": 301,
+    "nome": "Igreja Cristã de Sião",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "15 milhões"
+  },
+  {
+    "id": 302,
+    "nome": "Ordem Sagrada Eterna dos Querubins e Serafins",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "10 milhões"
+  },
+  {
+    "id": 303,
+    "nome": "Igreja Kimbanguista",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "5,5 milhões"
+  },
+  {
+    "id": 304,
+    "nome": "Igreja Cristã Redimida de Deus",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "5 milhões"
+  },
+  {
+    "id": 305,
+    "nome": "Igreja do Senhor (Aladura)",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "3,6 milhões"
+  },
+  {
+    "id": 306,
+    "nome": "Conselho de Igrejas Africanas Instituídas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "3 milhões"
+  },
+  {
+    "id": 307,
+    "nome": "Igreja de Cristo Luz do Espírito Santo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "1,4 milhão"
+  },
+  {
+    "id": 308,
+    "nome": "Igreja Africana do Espírito Santo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "0,7 milhão"
+  },
+  {
+    "id": 309,
+    "nome": "African Israel Church Nínive",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno / Igrejas iniciadas na África",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 310,
+    "nome": "Igrejas cristãs patrióticas chinesas",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno",
+    "numero_adeptos": "38 milhões"
+  },
+  {
+    "id": 311,
+    "nome": "Igreja Nova Apostólica",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno",
+    "numero_adeptos": "10 milhões"
+  },
+  {
+    "id": 312,
+    "nome": "Igrejas locais",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno",
+    "numero_adeptos": "1 a 10 milhões"
+  },
+  {
+    "id": 313,
+    "nome": "Judaísmo messiânico",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Protestantismo moderno",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 314,
+    "nome": "Igreja Evangélica Etíope-Eritreia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "16,5 milhões"
+  },
+  {
+    "id": 315,
+    "nome": "Crentes Igreja Oriental",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "3,5 milhões"
+  },
+  {
+    "id": 316,
+    "nome": "Igreja Síria Mar Thoma",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "1 milhão"
+  },
+  {
+    "id": 317,
+    "nome": "Igreja Evangélica Armênia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "0,25 milhão"
+  },
+  {
+    "id": 318,
+    "nome": "Igreja Evangélica de São Tomás da Índia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "0,1 milhão"
+  },
+  {
+    "id": 319,
+    "nome": "Igreja Evangélica da Confissão de Augsburgo na Eslovênia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "0,02 milhão"
+  },
+  {
+    "id": 320,
+    "nome": "Igreja Evangélica da Romênia",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "0,16 milhão"
+  },
+  {
+    "id": 321,
+    "nome": "Igreja Evangélica Protestante do Kosovo",
+    "ramo_principal": "Protestantismo",
+    "caminho": "Protestantismo / Cristianismo protestante oriental",
+    "numero_adeptos": "0,15 milhão"
+  },
+  {
+    "id": 322,
+    "nome": "Igreja Ortodoxa Russa",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "100 milhões"
+  },
+  {
+    "id": 323,
+    "nome": "Igreja Ortodoxa Romena",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "17–18,8 milhões"
+  },
+  {
+    "id": 324,
+    "nome": "Igreja da Grécia",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "10 milhões"
+  },
+  {
+    "id": 325,
+    "nome": "Igreja Ortodoxa Sérvia",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "8-12 milhões"
+  },
+  {
+    "id": 326,
+    "nome": "Igreja Ortodoxa Búlgara",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "8-10 milhões"
+  },
+  {
+    "id": 327,
+    "nome": "Patriarcado Ecumênico de Constantinopla",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "5,25 milhões"
+  },
+  {
+    "id": 328,
+    "nome": "Igreja Ortodoxa Grega de Antioquia",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "4,3 milhões"
+  },
+  {
+    "id": 329,
+    "nome": "Igreja Ortodoxa da Geórgia",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "3,5 milhões"
+  },
+  {
+    "id": 330,
+    "nome": "Igreja Ortodoxa da Macedônia",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "2 milhões"
+  },
+  {
+    "id": 331,
+    "nome": "Igreja de Chipre",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "0,7 milhão"
+  },
+  {
+    "id": 332,
+    "nome": "Igreja Ortodoxa Polonesa",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "0,6 milhão"
+  },
+  {
+    "id": 333,
+    "nome": "Igreja Ortodoxa Grega de Alexandria",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 334,
+    "nome": "Igreja Ortodoxa Albanesa",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 335,
+    "nome": "Igreja Ortodoxa Grega de Jerusalém",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 336,
+    "nome": "Igreja Ortodoxa Checa e Eslovaca",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autocéfalas",
+    "numero_adeptos": "0,075 milhão"
+  },
+  {
+    "id": 337,
+    "nome": "Igreja Ortodoxa Ucraniana (Patriarcado de Moscou)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "2 - 7,2 milhões"
+  },
+  {
+    "id": 338,
+    "nome": "Igreja Ortodoxa da Moldávia (Patriarcado de Moscou)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "3,2 milhões"
+  },
+  {
+    "id": 339,
+    "nome": "Igreja Ortodoxa Russa no Exterior",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 340,
+    "nome": "Igreja Metropolitana da Bessarábia (Moldávia) (Patriarcado Romeno)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,72 milhão"
+  },
+  {
+    "id": 341,
+    "nome": "Arquiepiscopado de Ocrida (Macedônia do Norte)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,34 milhão"
+  },
+  {
+    "id": 342,
+    "nome": "Igreja Ortodoxa Estoniana do Patriarcado de Moscou",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,3 milhão"
+  },
+  {
+    "id": 343,
+    "nome": "Igreja Ortodoxa Finlandesa (Patriarcado Ecumênico)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,06 milhão"
+  },
+  {
+    "id": 344,
+    "nome": "Igreja Ortodoxa Chinesa (Patriarcado de Moscou)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,03 milhão"
+  },
+  {
+    "id": 345,
+    "nome": "Igreja Ortodoxa Japonesa (Patriarcado de Moscou)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,03 milhão"
+  },
+  {
+    "id": 346,
+    "nome": "Igreja Ortodoxa da Letônia (Patriarcado de Moscou)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,02 milhão"
+  },
+  {
+    "id": 347,
+    "nome": "Igreja Ortodoxa da Estônia (Patriarcado Ecumênico)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas autônomas",
+    "numero_adeptos": "0,02 milhão"
+  },
+  {
+    "id": 348,
+    "nome": "Igreja Ortodoxa da Ucrânia",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas em comunhão com as Igrejas Ortodoxas acima, mas com autocefalia contestada",
+    "numero_adeptos": "12–18 milhões"
+  },
+  {
+    "id": 349,
+    "nome": "Igreja Ortodoxa na América",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas em comunhão com as Igrejas Ortodoxas acima, mas com autocefalia contestada",
+    "numero_adeptos": "1 milhão"
+  },
+  {
+    "id": 350,
+    "nome": "Igreja Ortodoxa Autocéfala da Bielorrússia",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas não reconhecidas universalmente",
+    "numero_adeptos": "2,4 milhões"
+  },
+  {
+    "id": 351,
+    "nome": "Igreja Ortodoxa da Grécia (Santo Sínodo na Resistência)",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas não reconhecidas universalmente",
+    "numero_adeptos": "0,75 milhão"
+  },
+  {
+    "id": 352,
+    "nome": "Igreja Ortodoxa Búlgara do Velho Calendário",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas não reconhecidas universalmente",
+    "numero_adeptos": "0,45 milhão"
+  },
+  {
+    "id": 353,
+    "nome": "Igreja Ortodoxa na Itália",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas não reconhecidas universalmente",
+    "numero_adeptos": "0,12 milhão"
+  },
+  {
+    "id": 354,
+    "nome": "Igreja Veterocalendarista Ortodoxa Romena",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas não reconhecidas universalmente",
+    "numero_adeptos": "0,05 milhão"
+  },
+  {
+    "id": 355,
+    "nome": "Igreja Ortodoxa Montenegrina",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Igrejas não reconhecidas universalmente",
+    "numero_adeptos": "0,05 milhão"
+  },
+  {
+    "id": 356,
+    "nome": "Velhos Crentes",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Outros grupos ortodoxos separados",
+    "numero_adeptos": "5,5 milhões"
+  },
+  {
+    "id": 357,
+    "nome": "Antigos calendaristas gregos",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Outros grupos ortodoxos separados",
+    "numero_adeptos": "0,86 milhão"
+  },
+  {
+    "id": 358,
+    "nome": "Verdadeira Igreja Ortodoxa",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Outros grupos ortodoxos separados",
+    "numero_adeptos": "0,85 milhão"
+  },
+  {
+    "id": 359,
+    "nome": "Igreja Evangélica Ortodoxa",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Outros grupos ortodoxos separados",
+    "numero_adeptos": "0,07 milhão"
+  },
+  {
+    "id": 360,
+    "nome": "Patriarcado Ortodoxo Turco Autocéfalo",
+    "ramo_principal": "Ortodoxia Bizantina",
+    "caminho": "Ortodoxia Bizantina / Outros grupos ortodoxos separados",
+    "numero_adeptos": "0,002 milhão"
+  },
+  {
+    "id": 361,
+    "nome": "Igreja Ortodoxa Etíope Tewahedo",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autocéfalas",
+    "numero_adeptos": "37 milhões"
+  },
+  {
+    "id": 362,
+    "nome": "Igreja Ortodoxa Copta",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autocéfalas",
+    "numero_adeptos": "10 milhões"
+  },
+  {
+    "id": 363,
+    "nome": "Igreja Apostôlica Armênia",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autocéfalas",
+    "numero_adeptos": "9 milhões"
+  },
+  {
+    "id": 364,
+    "nome": "Igreja Ortodoxa Eritreia Tewahedo",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autocéfalas",
+    "numero_adeptos": "2 milhões"
+  },
+  {
+    "id": 365,
+    "nome": "Igreja Síria Ortodoxa Malankara",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autocéfalas",
+    "numero_adeptos": "2 milhões"
+  },
+  {
+    "id": 366,
+    "nome": "Igreja Ortodoxa Siríaca",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autocéfalas",
+    "numero_adeptos": "1,4 milhão"
+  },
+  {
+    "id": 367,
+    "nome": "Igreja Cristã Síria Jacobita",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autocéfalas",
+    "numero_adeptos": "1,2 milhão"
+  },
+  {
+    "id": 368,
+    "nome": "Igreja Ortodoxa Copta Francesa",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas autônomas",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 369,
+    "nome": "Igreja síria independente de Malabar",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas que não estão em comunhão",
+    "numero_adeptos": "0,06 milhão"
+  },
+  {
+    "id": 370,
+    "nome": "Igreja Ortodoxa Britânica",
+    "ramo_principal": "Ortodoxia Oriental",
+    "caminho": "Ortodoxia Oriental / Igrejas que não estão em comunhão",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 371,
+    "nome": "A Igreja de Jesus Cristo dos Santos dos Últimos Dias",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Movimento dos Santos dos Últimos Dias (Mormonismo)",
+    "numero_adeptos": "16,8 milhões"
+  },
+  {
+    "id": 372,
+    "nome": "Comunidade de Cristo",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Movimento dos Santos dos Últimos Dias (Mormonismo)",
+    "numero_adeptos": "0,25 milhão"
+  },
+  {
+    "id": 373,
+    "nome": "Testemunhas de Jeová",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário",
+    "numero_adeptos": "8,7 milhões"
+  },
+  {
+    "id": 374,
+    "nome": "Igreja Pentecostal Unida Internacional",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Pentecostalismo da Unidade",
+    "numero_adeptos": "5,5 milhões"
+  },
+  {
+    "id": 375,
+    "nome": "Assembléias Pentecostais do Mundo",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Pentecostalismo da Unidade",
+    "numero_adeptos": "2 milhões"
+  },
+  {
+    "id": 376,
+    "nome": "Igreja de Cristo",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "2,3 milhões"
+  },
+  {
+    "id": 377,
+    "nome": "A Igreja da Unificação (aka Moonies)",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "1–2 milhões"
+  },
+  {
+    "id": 378,
+    "nome": "La Luz del Mundo",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "cerca de um milhão"
+  },
+  {
+    "id": 379,
+    "nome": "Universalismo Unitário",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "0,6 milhões"
+  },
+  {
+    "id": 380,
+    "nome": "Igreja de Cristo, Cientista",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "0,4 milhão"
+  },
+  {
+    "id": 381,
+    "nome": "Igreja de Cristo, 4ª Vigília",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "0,6 milhões"
+  },
+  {
+    "id": 382,
+    "nome": "Amigos do Homem",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "0,07 milhões"
+  },
+  {
+    "id": 383,
+    "nome": "Cristadelfianos",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "0,05 milhões"
+  },
+  {
+    "id": 384,
+    "nome": "Família Internacional",
+    "ramo_principal": "Restauracionismo antitrinitário",
+    "caminho": "Restauracionismo antitrinitário / Denominações menores",
+    "numero_adeptos": "0,01 milhão"
+  },
+  {
+    "id": 385,
+    "nome": "Igreja Assíria do Oriente",
+    "ramo_principal": "Igreja do Oriente",
+    "caminho": "Igreja do Oriente",
+    "numero_adeptos": "0,5 milhão"
+  },
+  {
+    "id": 386,
+    "nome": "Antiga Igreja do Oriente",
+    "ramo_principal": "Igreja do Oriente",
+    "caminho": "Igreja do Oriente",
+    "numero_adeptos": "0,1 milhão"
+  },
+  {
+    "id": 387,
+    "nome": "Igreja Albanesa-Udi",
+    "ramo_principal": "Diversos",
+    "caminho": "Diversos",
+    "numero_adeptos": "0,006 milhão"
+  }
+]

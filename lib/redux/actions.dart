@@ -627,3 +627,8 @@ class DeleteUserAccountFailureAction {
 class EnterFocusModeAction {}
 
 class ExitFocusModeAction {}
+
+class UpdateUserDenominationAction {
+  final String denominationName;
+  UpdateUserDenominationAction(this.denominationName);
+}

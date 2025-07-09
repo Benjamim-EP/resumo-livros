@@ -830,6 +830,10 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(isFocusMode: true);
   } else if (action is ExitFocusModeAction) {
     return state.copyWith(isFocusMode: false);
+  } else if (action is UpdateUserDenominationAction) {
+    final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
+    newDetails['denomination'] = action.denominationName;
+    return state.copyWith(userDetails: newDetails);
   }
 
   return state;

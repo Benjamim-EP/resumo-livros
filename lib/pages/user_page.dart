@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
 import 'package:septima_biblia/models/highlight_item_model.dart';
+import 'package:septima_biblia/pages/user_page/denomination_card.dart';
 import 'package:septima_biblia/pages/user_page/highlight_item_card.dart';
 import 'package:septima_biblia/pages/user_page/user_diary_page.dart';
 import '../components/avatar/profile_picture.dart';
@@ -1327,6 +1328,7 @@ class _UserPageState extends State<UserPage> {
                             ),
                           ],
                         ),
+                        const DenominationCard(),
                         const SizedBox(height: 20), // Espaçamento ajustado
                         Tabs(
                           tabs: _availableTabs,
