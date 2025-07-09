@@ -13,6 +13,9 @@ from math import pow
 
 import base64
 import json
+from unidecode import unidecode # <<< ADICIONE ESTE IMPORT NO TOPO DO ARQUIVO
+import random
+
 
 # >>> INÍCIO DOS NOVOS IMPORTS PARA GOOGLE PLAY <<<
 from google.oauth2 import service_account
@@ -990,3 +993,98 @@ def calculateUserScore(event: Event[Change]) -> None:
     except Exception as e:
         print(f"ERRO em calculateUserScore: Falha ao atualizar o documento para {event.params['userId']}: {e}")
         traceback.print_exc()
+
+
+# --- NOVA FUNÇÃO PARA CRIAR O SEPTIMA ID ---
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256 
+)
+def assignSeptimaId(req: https_fn.CallableRequest) -> dict:
+    """
+    Gera e atribui um 'Septima ID' (username + discriminator) único para um novo usuário.
+    A função é transacional para garantir a unicidade do discriminador.
+    """
+    db = get_db()
+    
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='A função deve ser chamada por um usuário autenticado.'
+        )
+    
+    user_id = req.auth.uid
+    user_ref = db.collection('users').document(user_id)
+    
+    try:
+        @firestore.transactional
+        def generate_and_assign(transaction):
+            user_snapshot = user_ref.get(transaction=transaction)
+            if not user_snapshot.exists:
+                raise Exception("Documento do usuário não encontrado.")
+            
+            user_data = user_snapshot.to_dict()
+
+            # Se o usuário já tem um discriminador, não faz nada.
+            if user_data.get('discriminator'):
+                print(f"assignSeptimaId: Usuário {user_id} já possui um Septima ID. Encerrando.")
+                return {
+                    "username": user_data.get('username'),
+                    "discriminator": user_data.get('discriminator')
+                }
+
+            display_name = user_data.get('nome', 'usuario')
+            if not display_name: display_name = 'usuario'
+
+            # Normaliza o nome para ser usado como username
+            # unidecode remove acentos. Ex: "José" -> "Jose"
+            username_normalized = unidecode(display_name).lower().replace(" ", "")
+
+            # Busca todos os usuários que já têm o mesmo username normalizado
+            users_with_same_name_query = db.collection('users').where('username', '==', username_normalized)
+            
+            # Executa a query DENTRO da transação
+            docs_with_same_name = users_with_same_name_query.stream(transaction=transaction)
+            
+            # Pega todos os discriminadores já em uso para esse nome
+            used_discriminators = {doc.to_dict().get('discriminator') for doc in docs_with_same_name if doc.to_dict().get('discriminator')}
+
+            # Tenta encontrar um discriminador único
+            new_discriminator = None
+            attempts = 0
+            while attempts < 100: # Limite para evitar loop infinito
+                # Gera um número de 4 dígitos como string (ex: '0001', '1234')
+                potential_discriminator = str(random.randint(1, 9999)).zfill(4)
+                
+                if potential_discriminator not in used_discriminators:
+                    new_discriminator = potential_discriminator
+                    break
+                attempts += 1
+            
+            if new_discriminator is None:
+                # Caso extremamente raro onde todos os 9999 discriminadores estão em uso
+                # para um mesmo nome. Pode-se adicionar um sufixo aleatório ao nome.
+                raise Exception("Não foi possível gerar um discriminador único.")
+
+            # Atualiza o documento do usuário com os novos campos
+            update_data = {
+                'username': username_normalized,
+                'discriminator': new_discriminator
+            }
+            transaction.update(user_ref, update_data)
+            
+            return update_data
+
+        # Executa a transação
+        result = generate_and_assign(db.transaction())
+        
+        print(f"assignSeptimaId: Sucesso! ID para {user_id} é {result.get('username')}#{result.get('discriminator')}")
+        return {"status": "success", **result}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em assignSeptimaId para o usuário {user_id}: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao criar seu Septima ID: {e}"
+        )
