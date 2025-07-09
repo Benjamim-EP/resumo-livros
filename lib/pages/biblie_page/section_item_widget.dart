@@ -229,33 +229,33 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                               _handlePlayRequest(TtsContentType.versesOnly),
                           splashRadius: 24,
                         ),
-                        TextButton.icon(
-                          onPressed: () => widget.onShowSummaryRequest(
-                            _commentaryDocId,
-                            widget.sectionTitle,
-                          ),
-                          icon: const Icon(Icons.bolt_outlined, size: 20),
-                          label: const Text(
-                            "Resumo",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: theme.colorScheme.primary,
-                            backgroundColor:
-                                theme.colorScheme.primary.withOpacity(0.1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
+                        // TextButton.icon(
+                        //   onPressed: () => widget.onShowSummaryRequest(
+                        //     _commentaryDocId,
+                        //     widget.sectionTitle,
+                        //   ),
+                        //   icon: const Icon(Icons.bolt_outlined, size: 20),
+                        //   label: const Text(
+                        //     "Resumo",
+                        //     style: TextStyle(
+                        //       fontFamily: 'Poppins',
+                        //       fontWeight: FontWeight.bold,
+                        //       fontSize: 14,
+                        //     ),
+                        //   ),
+                        //   style: TextButton.styleFrom(
+                        //     foregroundColor: theme.colorScheme.primary,
+                        //     backgroundColor:
+                        //         theme.colorScheme.primary.withOpacity(0.1),
+                        //     shape: RoundedRectangleBorder(
+                        //       borderRadius: BorderRadius.circular(20),
+                        //     ),
+                        //     padding: const EdgeInsets.symmetric(
+                        //         horizontal: 12, vertical: 8),
+                        //     visualDensity: VisualDensity.compact,
+                        //   ),
+                        // ),
+                        // const SizedBox(width: 8),
                         if (_isLoadingCommentary)
                           const SizedBox(
                             width: 40,
