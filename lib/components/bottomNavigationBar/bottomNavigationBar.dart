@@ -11,6 +11,7 @@ import 'package:septima_biblia/components/buttons/animated_infinity_icon.dart';
 import 'package:septima_biblia/components/buttons/animated_premium_button.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
+import 'package:septima_biblia/pages/community/community_page.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
@@ -127,6 +128,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
     _pages = [
       _buildTabNavigator(_userNavigatorKey, const UserPage()),
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
+      const CommunityPage(),
       const LibraryPage(),
       const DevotionalDiaryPage(),
     ];
@@ -250,9 +252,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return "Meu Perfil";
       case 1:
         return "Bíblia";
-      case 2:
-        return "Biblioteca";
+      case 2: // Novo índice para a Comunidade
+        return "Comunidade";
       case 3:
+        return "Biblioteca";
+      case 4:
         return "Diário";
       default:
         return "Septima";
@@ -518,6 +522,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
                           label: 'Bíblia',
                           description:
                               'Navegue pelos livros da Bíblia e faça estudos profundos.'),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.groups_outlined),
+                        label: 'Comunidade',
+                      ),
                       _tutorialService.buildShowcasedBottomNavItem(
                           key: _tutorialService.keyAbaBiblioteca,
                           icon: Icons.local_library_outlined,

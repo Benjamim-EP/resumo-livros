@@ -31,6 +31,7 @@ import 'package:septima_biblia/services/pdf_generation_service.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
+import 'package:septima_biblia/services/reading_time_tracker.dart';
 
 class _BiblePageViewModel {
   final String? initialBook;
@@ -56,7 +57,7 @@ class BiblePage extends StatefulWidget {
   _BiblePageState createState() => _BiblePageState();
 }
 
-class _BiblePageState extends State<BiblePage> {
+class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   Map<String, dynamic>? booksMap;
   String? selectedBook;
   int? selectedChapter;
@@ -144,6 +145,12 @@ class _BiblePageState extends State<BiblePage> {
           print("------------------------");
         }
         _checkIfPdfExists();
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Passamos o scrollController principal para o rastreador
+        startReadingTracker(scrollController: _scrollController1);
       }
     });
   }
@@ -348,6 +355,7 @@ class _BiblePageState extends State<BiblePage> {
 
   @override
   void dispose() {
+    stopReadingTracker();
     _semanticQueryController.dispose();
     _scrollController1.removeListener(_syncScrollFrom1To2);
     _scrollController2.removeListener(_syncScrollFrom2To1);
@@ -1680,153 +1688,166 @@ class _BiblePageState extends State<BiblePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return StoreConnector<AppState, _BiblePageViewModel>(
-      converter: (store) => _BiblePageViewModel.fromStore(store),
-      onInit: (store) {
-        _store = store;
-        if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_hasProcessedInitialNavigation) {
-              _processIntentOrInitialLoad(_BiblePageViewModel.fromStore(store));
-            }
-          });
-        }
-        _loadUserDataIfNeeded(context);
-      },
-      builder: (context, viewModel) {
-        final subscriptionState =
-            StoreProvider.of<AppState>(context).state.subscriptionState;
-        final bool isUserPremium =
-            subscriptionState.status == SubscriptionStatus.premiumActive;
-        if (booksMap == null || _bookVariationsMap.isEmpty) {
-          return Scaffold(
-              appBar: AppBar(title: const Text('Bíblia')),
-              body: Center(
-                  child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary)));
-        }
-        if (selectedBook == null || selectedChapter == null) {
+
+    // O buildInteractionDetector do nosso mixin envolve todo o conteúdo da página.
+    // Qualquer toque ou gesto dentro dele será registrado como atividade.
+    return buildInteractionDetector(
+      child: StoreConnector<AppState, _BiblePageViewModel>(
+        converter: (store) => _BiblePageViewModel.fromStore(store),
+        onInit: (store) {
+          _store = store;
           if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted && !_hasProcessedInitialNavigation) {
-                _processIntentOrInitialLoad(viewModel);
+                _processIntentOrInitialLoad(
+                    _BiblePageViewModel.fromStore(store));
               }
             });
           }
-          return Scaffold(
-              appBar: AppBar(title: const Text('Bíblia')),
-              body: Center(
-                  child: Text("Carregando Bíblia...",
-                      style: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color))));
-        }
+          _loadUserDataIfNeeded(context);
+        },
+        builder: (context, viewModel) {
+          // A lógica do builder permanece a mesma
+          final subscriptionState =
+              StoreProvider.of<AppState>(context).state.subscriptionState;
+          final bool isUserPremium =
+              subscriptionState.status == SubscriptionStatus.premiumActive;
 
-        String appBarTitleText;
-        if (_isSemanticSearchActive) {
-          appBarTitleText = "Busca na Bíblia";
-        } else if (_isCompareModeActive) {
-          // <<< MUDANÇA AQUI
-          appBarTitleText =
-              '${selectedTranslation1.toUpperCase()} / ${selectedTranslation2?.toUpperCase() ?? "..."}';
-        } else {
-          appBarTitleText = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
-          if (store.state.userState.isFocusMode) {
-            if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
-          } else {
-            // Removido o `else if (!_showExtraOptions)` que não existe mais
-            if (selectedChapter != null) appBarTitleText += ' $selectedChapter';
+          if (booksMap == null || _bookVariationsMap.isEmpty) {
+            return Scaffold(
+                appBar: AppBar(title: const Text('Bíblia')),
+                body: Center(
+                    child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary)));
           }
-        }
+          if (selectedBook == null || selectedChapter == null) {
+            if (mounted &&
+                booksMap != null &&
+                !_hasProcessedInitialNavigation) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && !_hasProcessedInitialNavigation) {
+                  _processIntentOrInitialLoad(viewModel);
+                }
+              });
+            }
+            return Scaffold(
+                appBar: AppBar(title: const Text('Bíblia')),
+                body: Center(
+                    child: Text("Carregando Bíblia...",
+                        style: TextStyle(
+                            color: theme.textTheme.bodyMedium?.color))));
+          }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(appBarTitleText),
-            leading: store.state.userState.isFocusMode
-                ? const SizedBox.shrink()
-                : null,
-            actions: _buildAppBarActions(),
-          ),
-          body: PageStorage(
-            bucket: _pageStorageBucket,
-            child: Column(
-              children: [
-                if (_isSemanticSearchActive &&
-                    !store.state.userState.isFocusMode)
-                  _buildSemanticSearchTextField(theme),
-                if (_isSemanticSearchActive &&
-                    !store.state.userState.isFocusMode)
-                  _buildSemanticSearchFilterWidgets(theme),
-                Expanded(
-                  child: (selectedBook == null ||
-                          selectedChapter == null ||
-                          _selectedBookSlug == null)
-                      ? const SizedBox.shrink()
-                      : (_isSemanticSearchActive &&
-                              !store.state.userState.isFocusMode)
-                          ? BibleSemanticSearchView(
-                              onToggleItemExpansion:
-                                  _toggleItemExpansionInBiblePage,
-                              onNavigateToVerse: _navigateToVerseFromSearch,
-                              expandedItemId: _expandedItemId,
-                              isLoadingExpandedContent:
-                                  _isLoadingExpandedContent,
-                              loadedExpandedContent: _loadedExpandedContent,
-                              fontSizeMultiplier: _currentFontSizeMultiplier,
-                            )
-                          : BibleReaderView(
-                              key: ValueKey(
-                                  '$selectedBook-$selectedChapter-$selectedTranslation1-$selectedTranslation2-$_isCompareModeActive-${store.state.userState.isFocusMode}-$_showHebrewInterlinear-$_showGreekInterlinear-$_currentFontSizeMultiplier'),
-                              selectedBook: selectedBook!,
-                              selectedChapter: selectedChapter!,
-                              selectedTranslation1: selectedTranslation1,
-                              selectedTranslation2: selectedTranslation2,
-                              bookSlug: _selectedBookSlug,
-                              isCompareMode: _isCompareModeActive,
-                              isFocusMode: store.state.userState.isFocusMode,
-                              showHebrewInterlinear: _showHebrewInterlinear,
-                              showGreekInterlinear: _showGreekInterlinear,
-                              fontSizeMultiplier: _currentFontSizeMultiplier,
-                              onPlayRequest: _handlePlayRequest,
-                              currentPlayerState: _currentPlayerState,
-                              currentlyPlayingSectionId:
-                                  _currentlyPlayingSectionId,
-                              currentlyPlayingContentType:
-                                  _currentlyPlayingContentType,
-                              scrollController1: _scrollController1,
-                              scrollController2: _scrollController2,
-                              currentChapterHebrewData:
-                                  _currentChapterHebrewData,
-                              currentChapterGreekData: _currentChapterGreekData,
-                              onShowSummaryRequest: _handleShowSummary,
-                            ),
-                ),
-                if (!store.state.userState.isFocusMode &&
-                    !_isSemanticSearchActive)
-                  // Se o modo de comparação estiver ativo, mostra o novo seletor
-                  if (_isCompareModeActive)
-                    _buildComparisonSelectorBar()
-                  // Senão, mostra a navegação de capítulo normal
-                  else
-                    BibleNavigationControls(
-                      selectedBook: selectedBook,
-                      selectedChapter: selectedChapter,
-                      booksMap: booksMap,
-                      onPreviousChapter: _previousChapter,
-                      onNextChapter: _nextChapter,
-                      onBookChanged: (value) {
-                        if (mounted && value != null)
-                          _navigateToChapter(value, 1);
-                      },
-                      onChapterChanged: (value) {
-                        if (mounted && value != null && selectedBook != null)
-                          _navigateToChapter(selectedBook!, value);
-                      },
-                    ),
-              ],
+          String appBarTitleText;
+          if (_isSemanticSearchActive) {
+            appBarTitleText = "Busca na Bíblia";
+          } else if (_isCompareModeActive) {
+            appBarTitleText =
+                '${selectedTranslation1.toUpperCase()} / ${selectedTranslation2?.toUpperCase() ?? "..."}';
+          } else {
+            appBarTitleText = (booksMap?[selectedBook]?['nome'] ?? 'Bíblia');
+            if (store.state.userState.isFocusMode) {
+              if (selectedChapter != null)
+                appBarTitleText += ' $selectedChapter';
+            } else {
+              if (selectedChapter != null)
+                appBarTitleText += ' $selectedChapter';
+            }
+          }
+
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(appBarTitleText),
+              leading: store.state.userState.isFocusMode
+                  ? const SizedBox.shrink()
+                  : null,
+              actions: _buildAppBarActions(),
             ),
-          ),
-        );
-      },
+            body: PageStorage(
+              bucket: _pageStorageBucket,
+              child: Column(
+                children: [
+                  if (_isSemanticSearchActive &&
+                      !store.state.userState.isFocusMode)
+                    _buildSemanticSearchTextField(theme),
+                  if (_isSemanticSearchActive &&
+                      !store.state.userState.isFocusMode)
+                    _buildSemanticSearchFilterWidgets(theme),
+                  Expanded(
+                    child: (selectedBook == null ||
+                            selectedChapter == null ||
+                            _selectedBookSlug == null)
+                        ? const SizedBox.shrink()
+                        : (_isSemanticSearchActive &&
+                                !store.state.userState.isFocusMode)
+                            ? BibleSemanticSearchView(
+                                onToggleItemExpansion:
+                                    _toggleItemExpansionInBiblePage,
+                                onNavigateToVerse: _navigateToVerseFromSearch,
+                                expandedItemId: _expandedItemId,
+                                isLoadingExpandedContent:
+                                    _isLoadingExpandedContent,
+                                loadedExpandedContent: _loadedExpandedContent,
+                                fontSizeMultiplier: _currentFontSizeMultiplier,
+                              )
+                            : BibleReaderView(
+                                key: ValueKey(
+                                    '$selectedBook-$selectedChapter-$selectedTranslation1-$selectedTranslation2-$_isCompareModeActive-${store.state.userState.isFocusMode}-$_showHebrewInterlinear-$_showGreekInterlinear-$_currentFontSizeMultiplier'),
+                                selectedBook: selectedBook!,
+                                selectedChapter: selectedChapter!,
+                                selectedTranslation1: selectedTranslation1,
+                                selectedTranslation2: selectedTranslation2,
+                                bookSlug: _selectedBookSlug,
+                                isCompareMode: _isCompareModeActive,
+                                isFocusMode: store.state.userState.isFocusMode,
+                                showHebrewInterlinear: _showHebrewInterlinear,
+                                showGreekInterlinear: _showGreekInterlinear,
+                                fontSizeMultiplier: _currentFontSizeMultiplier,
+                                onPlayRequest: _handlePlayRequest,
+                                currentPlayerState: _currentPlayerState,
+                                currentlyPlayingSectionId:
+                                    _currentlyPlayingSectionId,
+                                currentlyPlayingContentType:
+                                    _currentlyPlayingContentType,
+                                scrollController1: _scrollController1,
+                                scrollController2: _scrollController2,
+                                currentChapterHebrewData:
+                                    _currentChapterHebrewData,
+                                currentChapterGreekData:
+                                    _currentChapterGreekData,
+                                onShowSummaryRequest: _handleShowSummary,
+                              ),
+                  ),
+                  if (!store.state.userState.isFocusMode &&
+                      !_isSemanticSearchActive)
+                    if (_isCompareModeActive)
+                      _buildComparisonSelectorBar()
+                    else
+                      BibleNavigationControls(
+                        selectedBook: selectedBook,
+                        selectedChapter: selectedChapter,
+                        booksMap: booksMap,
+                        onPreviousChapter: _previousChapter,
+                        onNextChapter: _nextChapter,
+                        onBookChanged: (value) {
+                          if (mounted && value != null) {
+                            _navigateToChapter(value, 1);
+                          }
+                        },
+                        onChapterChanged: (value) {
+                          if (mounted &&
+                              value != null &&
+                              selectedBook != null) {
+                            _navigateToChapter(selectedBook!, value);
+                          }
+                        },
+                      ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

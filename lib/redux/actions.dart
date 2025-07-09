@@ -632,3 +632,9 @@ class UpdateUserDenominationAction {
   final String denominationName;
   UpdateUserDenominationAction(this.denominationName);
 }
+
+class UpdateReadingTimeAction {
+  final int accumulatedSeconds;
+
+  UpdateReadingTimeAction({required this.accumulatedSeconds});
+}

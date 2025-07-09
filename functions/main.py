@@ -4,10 +4,12 @@ import sys
 import firebase_admin
 import google.auth
 from firebase_admin import initialize_app, firestore, credentials, auth
-from firebase_functions import https_fn, options,pubsub_fn
+from firebase_functions import https_fn, options,pubsub_fn, firestore_fn
+from firebase_functions.firestore_fn import on_document_updated, Change, Event
 from datetime import datetime, time, timezone
 import asyncio
 import traceback
+from math import pow
 
 import base64
 import json
@@ -845,3 +847,146 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
         print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
         traceback.print_exc()
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
+    
+# --- NOVA CLOUD FUNCTION PARA ATUALIZAR TEMPO DE LEITURA ---
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256 # <<< CORREÇÃO 1: AUMENTO DE MEMÓRIA
+)
+def updateReadingTime(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='A função deve ser chamada por um usuário autenticado.'
+        )
+    
+    user_id = req.auth.uid
+    seconds_to_add = req.data.get("secondsToAdd")
+    
+    if not isinstance(seconds_to_add, int) or seconds_to_add <= 0:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'secondsToAdd' (inteiro positivo) é obrigatório."
+        )
+        
+    print(f"updateReadingTime: Recebidos {seconds_to_add} segundos para adicionar ao usuário {user_id}.")
+    
+    try:
+        progress_doc_ref = db.collection('userBibleProgress').document(user_id)
+        
+        # A transação garante a atomicidade da leitura e escrita
+        @firestore.transactional
+        def update_in_transaction(transaction, doc_ref):
+            snapshot = doc_ref.get(transaction=transaction)
+            
+            # Leitura segura do valor atual, com 0 como padrão se não existir
+            current_time = 0
+            if snapshot.exists:
+                current_time = snapshot.to_dict().get('rawReadingTime', 0)
+            
+            new_time = current_time + seconds_to_add
+            
+            transaction.set(doc_ref, {
+                'rawReadingTime': new_time,
+                'lastTimeUpdate': firestore.SERVER_TIMESTAMP
+            }, merge=True)
+
+        transaction = db.transaction()
+        update_in_transaction(transaction, progress_doc_ref)
+        
+        print(f"updateReadingTime: Tempo de leitura para o usuário {user_id} atualizado com sucesso.")
+        return {"status": "success", "message": f"{seconds_to_add} segundos adicionados."}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em updateReadingTime para o usuário {user_id}: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao atualizar seu tempo de leitura: {e}"
+        )
+
+# --- GATILHO PARA CÁLCULO DE RANKING ---
+_bible_metadata = None
+def _load_bible_metadata():
+    # ... (esta função permanece a mesma)
+    global _bible_metadata
+    if _bible_metadata is None:
+        try:
+            with open('bible_sections_count.json', 'r') as f:
+                _bible_metadata = json.load(f)
+            print("Metadados da Bíblia (bible_sections_count.json) carregados com sucesso.")
+        except Exception as e:
+            print(f"ERRO CRÍTICO: Não foi possível carregar 'bible_sections_count.json': {e}")
+    return _bible_metadata
+
+_load_bible_metadata()
+
+
+@firestore_fn.on_document_updated(
+    document="userBibleProgress/{userId}",
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1, 
+    memory=options.MemoryOption.MB_256 # Aumentar a memória aqui também é uma boa prática
+)
+def calculateUserScore(event: Event[Change]) -> None:
+    if event.data is None:
+        return
+
+    data_before = event.data.before.to_dict() if event.data.before and event.data.before.exists else {}
+    data_after = event.data.after.to_dict() if event.data.after and event.data.after.exists else {}
+    
+    if not data_after:
+        return
+
+    # Leitura segura com valores padrão
+    raw_time_before = data_before.get('rawReadingTime', 0)
+    raw_time_after = data_after.get('rawReadingTime', 0)
+    books_before = data_before.get('books', {})
+    books_after = data_after.get('books', {})
+    
+    if raw_time_after == raw_time_before and books_after == books_before:
+        print("calculateUserScore: Nenhuma mudança relevante em 'rawReadingTime' ou 'books'. Encerrando.")
+        return
+
+    print(f"calculateUserScore: Mudança detectada para o usuário {event.params['userId']}. Iniciando cálculo.")
+    
+    metadata = _load_bible_metadata()
+    if not metadata or 'total_secoes_biblia' not in metadata:
+        print("ERRO em calculateUserScore: Metadados da Bíblia não estão disponíveis.")
+        return
+
+    total_bible_sections = metadata.get('total_secoes_biblia', 1)
+    if total_bible_sections <= 0:
+        return
+
+    total_read_sections = sum(len(progress.get('readSections', [])) for progress in books_after.values() if isinstance(progress, dict))
+    
+    current_progress_percent = (total_read_sections / total_bible_sections) * 100
+    
+    bible_completion_count = data_after.get('bibleCompletionCount', 0)
+    update_payload = {}
+    
+    if current_progress_percent >= 100.0:
+        print(f"calculateUserScore: Usuário {event.params['userId']} completou a Bíblia!")
+        bible_completion_count += 1
+        update_payload['books'] = {} 
+        update_payload['currentProgressPercent'] = 0.0
+    else:
+        update_payload['currentProgressPercent'] = round(current_progress_percent, 2)
+
+    update_payload['bibleCompletionCount'] = bible_completion_count
+
+    progress_for_multiplier = update_payload['currentProgressPercent']
+    progress_multiplier = (1 + (progress_for_multiplier / 100)) * (1 + (bible_completion_count * 0.5))
+    ranking_score = raw_time_after * progress_multiplier
+    update_payload['rankingScore'] = round(ranking_score, 2)
+    
+    print(f"calculateUserScore: Atualizando documento para {event.params['userId']} com payload: {update_payload}")
+    try:
+        doc_ref = event.data.after.reference
+        doc_ref.update(update_payload)
+        print(f"calculateUserScore: Documento de {event.params['userId']} atualizado com sucesso no Firestore.")
+    except Exception as e:
+        print(f"ERRO em calculateUserScore: Falha ao atualizar o documento para {event.params['userId']}: {e}")
+        traceback.print_exc()

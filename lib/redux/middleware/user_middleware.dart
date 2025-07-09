@@ -83,6 +83,44 @@ List<Middleware<AppState>> createUserMiddleware() {
     }
   }
 
+  void _handleUpdateReadingTime(Store<AppState> store,
+      UpdateReadingTimeAction action, NextDispatcher next) {
+    // Não bloqueia a UI, então apenas passa a ação adiante se precisar
+    next(action);
+
+    // Não faz nada se os segundos forem zero
+    if (action.accumulatedSeconds <= 0) return;
+
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print(
+          "UpdateReadingTimeMiddleware: Usuário não logado, tempo não será salvo.");
+      return;
+    }
+
+    print(
+        "UpdateReadingTimeMiddleware: Chamando a Cloud Function 'updateReadingTime'...");
+
+    try {
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('updateReadingTime');
+
+      // Chama a função em background, não precisamos esperar (fire and forget)
+      callable.call({
+        'secondsToAdd': action.accumulatedSeconds,
+      });
+    } on FirebaseFunctionsException catch (e) {
+      print(
+          "UpdateReadingTimeMiddleware: Erro de Firebase Functions ao atualizar tempo: ${e.code} - ${e.message}");
+      // Aqui você poderia ter uma lógica para tentar reenviar mais tarde,
+      // mas por enquanto, apenas logamos o erro.
+    } catch (e) {
+      print(
+          "UpdateReadingTimeMiddleware: Erro inesperado ao chamar a função: $e");
+    }
+  }
+
   return [
     // <<< ESTE HANDLER É CRUCIAL >>>
     TypedMiddleware<AppState, LoadUserTagsAction>((store, action, next) async {
@@ -181,6 +219,8 @@ List<Middleware<AppState>> createUserMiddleware() {
         .call,
     TypedMiddleware<AppState, UpdateUserDenominationAction>(
             _updateUserDenomination(firestoreService))
+        .call,
+    TypedMiddleware<AppState, UpdateReadingTimeAction>(_handleUpdateReadingTime)
         .call,
   ];
 }
