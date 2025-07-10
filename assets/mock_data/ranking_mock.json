@@ -1,0 +1,182 @@
+[
+  {
+    "id": "mock_user_1",
+    "name": "Rachel Grecco",
+    "photoURL": "https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 12580
+  },
+  {
+    "id": "mock_user_2",
+    "name": "Maria Clara",
+    "photoURL": "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 11254
+  },
+  {
+    "id": "mock_user_3",
+    "name": "André F.",
+    "photoURL": "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 10100
+  },
+  {
+    "id": "mock_user_4",
+    "name": "Sofia Lins",
+    "photoURL": "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 9870
+  },
+  {
+    "id": "mock_user_5",
+    "name": "Lucas Pereira",
+    "photoURL": "https://images.pexels.com/photos/846741/pexels-photo-846741.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 9540
+  },
+  {
+    "id": "mock_user_6",
+    "name": "Juliana Santos",
+    "photoURL": "https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 9210
+  },
+  {
+    "id": "mock_user_7",
+    "name": "Marcos Ribeiro",
+    "photoURL": "https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 8880
+  },
+  {
+    "id": "mock_user_8",
+    "name": "Camila Costa",
+    "photoURL": "https://images.pexels.com/photos/1065084/pexels-photo-1065084.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 8550
+  },
+  {
+    "id": "mock_user_9",
+    "name": "Rafael Almeida",
+    "photoURL": "https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 8230
+  },
+  {
+    "id": "mock_user_10",
+    "name": "Beatriz Lima",
+    "photoURL": "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 7990
+  },
+  {
+    "id": "mock_user_11",
+    "name": "Thiago Martins",
+    "photoURL": "https://images.pexels.com/photos/532220/pexels-photo-532220.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 7650
+  },
+  {
+    "id": "mock_user_12",
+    "name": "Gabriela Nunes",
+    "photoURL": "https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 7340
+  },
+  {
+    "id": "mock_user_13",
+    "name": "Fernando Rocha",
+    "photoURL": "https://images.pexels.com/photos/837358/pexels-photo-837358.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 7010
+  },
+  {
+    "id": "mock_user_14",
+    "name": "Larissa Barros",
+    "photoURL": "https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 6800
+  },
+  {
+    "id": "mock_user_15",
+    "name": "Daniel Oliveira",
+    "photoURL": "https://images.pexels.com/photos/874158/pexels-photo-874158.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 6500
+  },
+  {
+    "id": "mock_user_16",
+    "name": "Patrícia Sousa",
+    "photoURL": "https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 6200
+  },
+  {
+    "id": "mock_user_17",
+    "name": "Ricardo Gomes",
+    "photoURL": "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 5900
+  },
+  {
+    "id": "mock_user_18",
+    "name": "Letícia Ramos",
+    "photoURL": "https://images.pexels.com/photos/1181514/pexels-photo-1181514.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 5600
+  },
+  {
+    "id": "mock_user_19",
+    "name": "Felipe Azevedo",
+    "photoURL": "https://images.pexels.com/photos/1462980/pexels-photo-1462980.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 5300
+  },
+  {
+    "id": "mock_user_20",
+    "name": "Amanda Cunha",
+    "photoURL": "https://images.pexels.com/photos/1858175/pexels-photo-1858175.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 5000
+  },
+  {
+    "id": "mock_user_21",
+    "name": "Eduardo Dias",
+    "photoURL": "https://images.pexels.com/photos/1680172/pexels-photo-1680172.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 4700
+  },
+  {
+    "id": "mock_user_22",
+    "name": "Vanessa Freire",
+    "photoURL": "https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 4400
+  },
+  {
+    "id": "mock_user_23",
+    "name": "Bruno Pires",
+    "photoURL": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 4100
+  },
+  {
+    "id": "mock_user_24",
+    "name": "Laura Teixeira",
+    "photoURL": "https://images.pexels.com/photos/762020/pexels-photo-762020.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 3800
+  },
+  {
+    "id": "mock_user_25",
+    "name": "Rodrigo Neves",
+    "photoURL": "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 3500
+  },
+  {
+    "id": "mock_user_26",
+    "name": "Clara Fogaça",
+    "photoURL": "https://images.pexels.com/photos/937481/pexels-photo-937481.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 3200
+  },
+  {
+    "id": "mock_user_27",
+    "name": "Gustavo Moreira",
+    "photoURL": "https://images.pexels.com/photos/819530/pexels-photo-819530.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 2900
+  },
+  {
+    "id": "mock_user_28",
+    "name": "Helena Duarte",
+    "photoURL": "https://images.pexels.com/photos/943084/pexels-photo-943084.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 2600
+  },
+  {
+    "id": "mock_user_29",
+    "name": "Vinícius Bastos",
+    "photoURL": "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 2300
+  },
+  {
+    "id": "mock_user_30",
+    "name": "Manuela Pinto",
+    "photoURL": "https://images.pexels.com/photos/712513/pexels-photo-712513.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "rankingScore": 2000
+  }
+]

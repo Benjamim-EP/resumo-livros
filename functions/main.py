@@ -4,9 +4,9 @@ import sys
 import firebase_admin
 import google.auth
 from firebase_admin import initialize_app, firestore, credentials, auth
-from firebase_functions import https_fn, options,pubsub_fn, firestore_fn
+from firebase_functions import https_fn, options,pubsub_fn, firestore_fn, scheduler_fn
 from firebase_functions.firestore_fn import on_document_updated, Change, Event
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timezone, timedelta
 import asyncio
 import traceback
 from math import pow
@@ -523,7 +523,7 @@ async def _process_rtdn_async(event: pubsub_fn.CloudEvent[pubsub_fn.MessagePubli
 def chatWithSermons(request: https_fn.CallableRequest) -> dict:
     db = get_db()
     
-    # 1. VERIFICAÇÃO DE AUTENTICAÇÃO (ESSENCIAL PARA COBRANÇA)
+    # 1. Validação de Autenticação e Parâmetros
     if not request.auth or not request.auth.uid:
         raise https_fn.HttpsError(
             code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
@@ -546,7 +546,7 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
          raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'history' deve ser uma lista.")
 
     try:
-        # 2. LÓGICA DE CUSTO E VERIFICAÇÃO DE ASSINATURA
+        # 2. Lógica de Custo e Verificação de Assinatura
         user_ref = db.collection('users').document(user_id)
         user_doc = user_ref.get()
 
@@ -555,35 +555,61 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
         
         user_data = user_doc.to_dict()
         subscription_status = user_data.get('subscriptionStatus', 'inactive')
-        subscription_end_date = user_data.get('subscriptionEndDate') # Timestamp
-
+        
+        # Lógica robusta para verificar se a assinatura está ativa
         is_premium = False
         if subscription_status == 'active':
-            if isinstance(subscription_end_date, datetime) and subscription_end_date > datetime.now(timezone.utc):
-                is_premium = True
-            elif isinstance(subscription_end_date, Timestamp) and subscription_end_date.to_datetime().replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
-                is_premium = True
+            subscription_end_date = user_data.get('subscriptionEndDate')
+            if subscription_end_date:
+                end_date_aware = None
+                if isinstance(subscription_end_date, datetime):
+                    end_date_aware = subscription_end_date.replace(tzinfo=timezone.utc)
+                elif isinstance(subscription_end_date, firestore.firestore.Timestamp):
+                    end_date_aware = subscription_end_date.to_datetime().replace(tzinfo=timezone.utc)
+                
+                if end_date_aware and end_date_aware > datetime.now(timezone.utc):
+                    is_premium = True
 
         if not is_premium:
             print(f"Usuário {user_id} não é Premium. Verificando moedas.")
-            current_coins = user_data.get('userCoins', 0)
-            if current_coins < CHAT_COST:
-                print(f"Moedas insuficientes para {user_id}. Possui: {current_coins}, Custo: {CHAT_COST}")
-                raise https_fn.HttpsError(
-                    code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
-                    message=f"Moedas insuficientes. Você precisa de {CHAT_COST} moedas para enviar uma mensagem."
-                )
             
-            # Deduz as moedas atomicamente usando uma transação para segurança
-            print(f"Deduzindo {CHAT_COST} moedas de {user_id}.")
-            new_coin_total = current_coins - CHAT_COST
-            user_ref.update({'userCoins': new_coin_total})
-            # Opcional: Logar a transação em uma subcoleção separada para auditoria.
+            # --- Lógica de Custo Atualizada ---
+            reward_coins = user_data.get('weeklyRewardCoins', 0)
+            reward_expiration_raw = user_data.get('rewardExpiration')
+            
+            has_valid_reward = False
+            if reward_expiration_raw and isinstance(reward_coins, int) and reward_coins >= CHAT_COST:
+                expiration_dt_aware = None
+                if isinstance(reward_expiration_raw, datetime):
+                    expiration_dt_aware = reward_expiration_raw.replace(tzinfo=timezone.utc)
+                elif isinstance(reward_expiration_raw, firestore.firestore.Timestamp):
+                    expiration_dt_aware = reward_expiration_raw.to_datetime().replace(tzinfo=timezone.utc)
+                
+                if expiration_dt_aware and expiration_dt_aware > datetime.now(timezone.utc):
+                    has_valid_reward = True
 
+            if has_valid_reward:
+                print(f"Usando moedas de recompensa. Saldo: {reward_coins}. Custo: {CHAT_COST}")
+                new_reward_coins = reward_coins - CHAT_COST
+                user_ref.update({'weeklyRewardCoins': new_reward_coins})
+            else:
+                print("Sem moedas de recompensa válidas. Verificando moedas normais.")
+                current_coins = user_data.get('userCoins', 0)
+                if current_coins < CHAT_COST:
+                    print(f"Moedas normais insuficientes para {user_id}. Possui: {current_coins}, Custo: {CHAT_COST}")
+                    raise https_fn.HttpsError(
+                        code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
+                        message=f"Moedas insuficientes. Você precisa de {CHAT_COST} moedas para enviar uma mensagem."
+                    )
+                
+                print(f"Deduzindo {CHAT_COST} moedas normais de {user_id}.")
+                new_coin_total = current_coins - CHAT_COST
+                user_ref.update({'userCoins': new_coin_total})
+            # --- Fim da Lógica de Custo ---
         else:
             print(f"Usuário {user_id} é Premium. Chat gratuito.")
 
-        # 3. PROSSEGUE COM A LÓGICA DO CHAT (se a verificação de custo passou)
+        # 3. PROSSEGUE COM A LÓGICA DO CHAT (após a verificação de custo)
         chat_result = _run_async_handler_wrapper(
             chat_service.get_rag_chat_response(user_query, chat_history)
         )
@@ -595,44 +621,12 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
         }
 
     except https_fn.HttpsError as e:
-        # Relança os erros esperados (como moedas insuficientes)
+        # Relança os erros esperados (como moedas insuficientes) para o cliente
         raise e
     except Exception as e:
-        print(f"Erro inesperado em chatWithSermons (main.py): {e}"); traceback.print_exc()
+        print(f"Erro inesperado em chatWithSermons (main.py): {e}")
+        traceback.print_exc()
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
-    """
-    Endpoint para o chat RAG. Recebe a pergunta do usuário e o histórico do chat.
-    """
-    print("Handler síncrono chatWithSermons chamado.")
-    user_query = request.data.get("query")
-    chat_history = request.data.get("history") # Opcional: lista de mensagens anteriores
-
-    if chat_service is None:
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat indisponível).")
-
-    if not user_query or not isinstance(user_query, str):
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'query' (string) é obrigatório.")
-    
-    if chat_history and not isinstance(chat_history, list):
-         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'history' deve ser uma lista.")
-
-    try:
-        # Chama a função principal do nosso serviço de chat
-        chat_result = _run_async_handler_wrapper(
-            chat_service.get_rag_chat_response(user_query, chat_history)
-        )
-        
-        # Retorna a resposta e as fontes para o app
-        return {
-            "success": True,
-            "response": chat_result.get("response"),
-            "sources": chat_result.get("sources", [])
-        }
-
-    except Exception as e:
-        print(f"Erro inesperado em chatWithSermons (main.py): {e}"); traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
-
 
 @https_fn.on_call(
     secrets=["openai-api-key"],
@@ -643,7 +637,7 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
 def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
     db = get_db()
     
-    # Validação e Autenticação (continua igual)
+    # 1. Validação de Autenticação e Parâmetros
     if not request.auth or not request.auth.uid:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Você precisa estar logado para usar o chat.')
     
@@ -662,15 +656,25 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
     print(f"Handler chatWithBibleSection chamado por User ID: {user_id} para {book_abbrev} {chapter_number}:{verses_range_str}")
     
     try:
-        # Lógica de Custo (continua igual)
+        # 2. Lógica de Custo e Verificação de Assinatura
         user_ref = db.collection('users').document(user_id)
         user_doc = user_ref.get()
+
         if not user_doc.exists:
              raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
         
         user_data = user_doc.to_dict()
         subscription_status = user_data.get('subscriptionStatus', 'inactive')
-        is_premium = subscription_status == 'active'
+        
+        # Lógica para verificar se a assinatura está ativa
+        is_premium = False
+        if subscription_status == 'active':
+            subscription_end_date = user_data.get('subscriptionEndDate')
+            if subscription_end_date:
+                # Converte para datetime com timezone para comparação segura
+                end_date_aware = subscription_end_date.replace(tzinfo=timezone.utc)
+                if end_date_aware > datetime.now(timezone.utc):
+                    is_premium = True
 
         if use_strongs and not is_premium:
             raise https_fn.HttpsError(
@@ -679,18 +683,44 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
             )
         
         if not is_premium:
-            current_coins = user_data.get('userCoins', 0)
-            if current_coins < CHAT_COST:
-                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message=f"Moedas insuficientes.")
-            user_ref.update({'userCoins': current_coins - CHAT_COST})
+            print(f"Usuário {user_id} não é Premium. Verificando moedas.")
+            
+            # --- INÍCIO DA LÓGICA DE CUSTO ATUALIZADA ---
+            reward_coins = user_data.get('weeklyRewardCoins', 0)
+            reward_expiration = user_data.get('rewardExpiration') # Pode ser Timestamp
+            
+            has_valid_reward = False
+            if reward_expiration and isinstance(reward_expiration, firestore.firestore.Timestamp):
+                 if reward_expiration.to_datetime().replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
+                     has_valid_reward = True
+
+            if has_valid_reward and reward_coins >= CHAT_COST:
+                print(f"Usando moedas de recompensa. Saldo: {reward_coins}. Custo: {CHAT_COST}")
+                new_reward_coins = reward_coins - CHAT_COST
+                user_ref.update({'weeklyRewardCoins': new_reward_coins})
+            else:
+                print("Sem moedas de recompensa válidas. Verificando moedas normais.")
+                current_coins = user_data.get('userCoins', 0)
+                if current_coins < CHAT_COST:
+                    print(f"Moedas normais insuficientes para {user_id}. Possui: {current_coins}, Custo: {CHAT_COST}")
+                    raise https_fn.HttpsError(
+                        code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
+                        message=f"Moedas insuficientes. Você precisa de {CHAT_COST} moedas."
+                    )
+                
+                print(f"Deduzindo {CHAT_COST} moedas normais de {user_id}.")
+                new_coin_total = current_coins - CHAT_COST
+                user_ref.update({'userCoins': new_coin_total})
+            # --- FIM DA LÓGICA DE CUSTO ATUALIZADA ---
+        else:
+            print(f"Usuário {user_id} é Premium. Chat da Bíblia gratuito.")
         
-        # <<< A CORREÇÃO PRINCIPAL ESTÁ AQUI >>>
-        # Garante que o serviço correto foi importado e chama a função correta
+        # 3. Execução da Lógica Principal do Chat
         if bible_chat_service is None:
             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat da Bíblia indisponível).")
 
         final_response = _run_async_handler_wrapper(
-            bible_chat_service.get_bible_chat_response( # <<< USA bible_chat_service
+            bible_chat_service.get_bible_chat_response(
                 db=db,
                 user_query=user_query,
                 chat_history=chat_history,
@@ -711,146 +741,7 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
     except Exception as e:
         print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
         traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
-    db = get_db()
-    
-    if not request.auth or not request.auth.uid:
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Você precisa estar logado para usar o chat.')
-    
-    user_id = request.auth.uid
-    data = request.data
-    user_query = data.get("query")
-    chat_history = data.get("history")
-    book_abbrev = data.get("bookAbbrev")
-    chapter_number = data.get("chapterNumber")
-    verses_range_str = data.get("versesRangeStr")
-    use_strongs = data.get("useStrongsKnowledge", False)
-
-    if not all([user_query, book_abbrev, chapter_number, verses_range_str]):
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Parâmetros essenciais da seção bíblica estão faltando.")
-
-    print(f"Handler chatWithBibleSection chamado por User ID: {user_id} para {book_abbrev} {chapter_number}:{verses_range_str}")
-    
-    try:
-        user_ref = db.collection('users').document(user_id)
-        user_doc = user_ref.get()
-        if not user_doc.exists:
-             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
-        
-        user_data = user_doc.to_dict()
-        subscription_status = user_data.get('subscriptionStatus', 'inactive')
-        is_premium = subscription_status == 'active'
-
-        if use_strongs and not is_premium:
-            raise https_fn.HttpsError(
-                code=https_fn.FunctionsErrorCode.PERMISSION_DENIED,
-                message="A análise etimológica é um recurso Premium."
-            )
-        
-        if not is_premium:
-            current_coins = user_data.get('userCoins', 0)
-            if current_coins < CHAT_COST:
-                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message=f"Moedas insuficientes.")
-            user_ref.update({'userCoins': current_coins - CHAT_COST})
-            print(f"Deduzindo {CHAT_COST} moedas de {user_id} para o chat da Bíblia.")
-        else:
-            print(f"Usuário {user_id} é Premium. Chat da Bíblia gratuito.")
-            
-        # <<< MUDANÇA PRINCIPAL: CHAMANDO O SERVIÇO >>>
-        if chat_service is None:
-            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat indisponível).")
-
-        final_response = _run_async_handler_wrapper(
-            chat_service.get_bible_chat_response(
-                db=db,
-                user_query=user_query,
-                chat_history=chat_history,
-                book_abbrev=book_abbrev,
-                chapter_number=chapter_number,
-                verses_range_str=verses_range_str,
-                use_strongs=use_strongs
-            )
-        )
-        
-        return {
-            "success": True,
-            "response": final_response
-        }
-
-    except https_fn.HttpsError as e:
-        raise e
-    except Exception as e:
-        print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
-        traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
-    db = get_db()
-    
-    # 1. Validação e Autenticação
-    if not request.auth or not request.auth.uid:
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Você precisa estar logado para usar o chat.')
-    
-    user_id = request.auth.uid
-    
-    # 2. Extração dos Dados da Requisição
-    data = request.data
-    user_query = data.get("query")
-    chat_history = data.get("history")
-    book_abbrev = data.get("bookAbbrev")
-    chapter_number = data.get("chapterNumber")
-    verses_range_str = data.get("versesRangeStr")
-    use_strongs = data.get("useStrongsKnowledge", False)
-
-    # Validação dos parâmetros essenciais
-    if not all([user_query, book_abbrev, chapter_number, verses_range_str]):
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Parâmetros essenciais da seção bíblica estão faltando.")
-
-    print(f"Handler chatWithBibleSection chamado por User ID: {user_id} para {book_abbrev} {chapter_number}:{verses_range_str}")
-    
-    try:
-        # 3. Lógica de Custo (idêntica à do chat de sermões)
-        user_ref = db.collection('users').document(user_id)
-        user_doc = user_ref.get()
-        if not user_doc.exists:
-             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
-        
-        user_data = user_doc.to_dict()
-        subscription_status = user_data.get('subscriptionStatus', 'inactive')
-        is_premium = subscription_status == 'active' # Simplificando a verificação
-        
-        if not is_premium:
-            current_coins = user_data.get('userCoins', 0)
-            if current_coins < CHAT_COST:
-                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message=f"Moedas insuficientes.")
-            user_ref.update({'userCoins': current_coins - CHAT_COST})
-            print(f"Deduzindo {CHAT_COST} moedas de {user_id} para o chat da Bíblia.")
-        else:
-            print(f"Usuário {user_id} é Premium. Chat da Bíblia gratuito.")
-            
-        # 4. Chamar um novo serviço para lidar com a lógica do RAG da Bíblia
-        # (Por enquanto, vamos simular a resposta para testar o fluxo)
-        
-        # TODO: Implementar a busca de contexto (Comentário, Strongs) e a chamada ao GPT
-        #
-        # SIMULAÇÃO DA RESPOSTA:
-        simulated_response = f"Analisando '{user_query}' no contexto de {book_abbrev} {chapter_number}:{verses_range_str}."
-        if use_strongs:
-            simulated_response += " A análise etimológica com o Léxico de Strong foi solicitada."
-        
-        time.sleep(2) # Simula o tempo de processamento
-
-        return {
-            "success": True,
-            "response": simulated_response
-            # Não há 'sources' aqui, pois o contexto é a própria seção
-        }
-
-    except https_fn.HttpsError as e:
-        raise e
-    except Exception as e:
-        print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
-        traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
-    
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")   
 # --- NOVA CLOUD FUNCTION PARA ATUALIZAR TEMPO DE LEITURA ---
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
@@ -1088,3 +979,104 @@ def assignSeptimaId(req: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro ao criar seu Septima ID: {e}"
         )
+    
+
+    # --- FUNÇÃO AGENDADA PARA O RANKING SEMANAL ---
+
+@scheduler_fn.on_schedule(
+    schedule="every sunday 00:01", # Roda todo Domingo à 00:01
+    timezone=scheduler_fn.Timezone("America/Sao_Paulo"), # Fuso horário de São Paulo
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512, # Memória suficiente para processar lotes de usuários
+    timeout_sec=540 # Timeout de 9 minutos para garantir a conclusão
+)
+def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
+    """
+    Processa o ranking semanal. Esta função faz o seguinte:
+    1. Busca os 200 melhores usuários da semana com base no 'rankingScore'.
+    2. Para cada um desses usuários, salva sua posição final no campo 'previousRank' no documento da coleção 'users'.
+    3. Para os 10 primeiros, distribui moedas de recompensa ('weeklyRewardCoins') com uma data de expiração de 7 dias.
+    4. Reseta os campos 'rawReadingTime' e 'rankingScore' para 0 em TODOS os documentos da coleção 'userBibleProgress' para iniciar a nova semana.
+    """
+    print("Iniciando o processamento do ranking semanal...")
+    db = get_db()
+    
+    # Mapeamento de recompensas: Posição -> Moedas
+    rewards = {
+        1: 700, 2: 300, 3: 100, 4: 80, 5: 70,
+        6: 60, 7: 50, 8: 40, 9: 30, 10: 20
+    }
+    
+    try:
+        # --- ETAPA 1: Obter o ranking da semana e preparar as atualizações ---
+        
+        # Busca os 200 melhores scores da coleção de progresso para salvar suas posições finais.
+        # Limitamos a 200 para manter a performance, mas você pode ajustar este número.
+        weekly_ranking_query = db.collection('userBibleProgress').order_by('rankingScore', direction=firestore.Query.DESCENDING).limit(200)
+        weekly_ranking_docs = list(weekly_ranking_query.stream())
+        
+        if not weekly_ranking_docs:
+            print("Nenhum usuário com rankingScore encontrado. Encerrando o processamento da semana.")
+            return
+
+        print(f"Encontrados {len(weekly_ranking_docs)} usuários no ranking desta semana para processamento.")
+        
+        # Prepara a distribuição de recompensas e o salvamento do rank anterior em um único batch
+        batch = db.batch()
+        now = datetime.now(timezone.utc)
+        expiration_date = now + timedelta(days=7) # Moedas expiram em 7 dias
+        
+        for i, progress_doc in enumerate(weekly_ranking_docs):
+            rank = i + 1
+            user_id = progress_doc.id
+            user_ref = db.collection('users').document(user_id) # Referência ao doc na coleção 'users'
+            
+            # A. Salva a posição da semana como 'previousRank' para a próxima semana
+            batch.update(user_ref, {'previousRank': rank})
+            
+            # B. Distribui recompensas para os 10 primeiros
+            reward_amount = rewards.get(rank)
+            if reward_amount:
+                batch.update(user_ref, {
+                    'weeklyRewardCoins': reward_amount,
+                    'rewardExpiration': expiration_date
+                })
+                print(f"Recompensa de {reward_amount} moedas preparada para o usuário {user_id} (Rank {rank}).")
+        
+        # Executa o batch de recompensas e salvamento de rank
+        batch.commit()
+        print("Recompensas e posições anteriores ('previousRank') salvas com sucesso.")
+
+        # --- ETAPA 2: Resetar o tempo de leitura de TODOS os usuários ---
+        
+        print("Iniciando reset do 'rawReadingTime' e 'rankingScore' para todos os usuários...")
+        all_users_progress_ref = db.collection('userBibleProgress')
+        
+        # Processa o reset em lotes para evitar problemas de memória e timeout
+        docs_stream = all_users_progress_ref.stream()
+        
+        reset_batch = db.batch()
+        docs_processed = 0
+        for doc in docs_stream:
+            # Reseta apenas os campos da competição semanal
+            reset_batch.update(doc.reference, {
+                'rawReadingTime': 0,
+                'rankingScore': 0
+            })
+            docs_processed += 1
+            
+            # O Firestore limita um batch a 500 operações. Usamos 400 por segurança.
+            if docs_processed % 400 == 0:
+                reset_batch.commit()
+                reset_batch = db.batch() # Inicia um novo batch
+                print(f"{docs_processed} documentos tiveram o score resetado...")
+
+        # Executa o último batch com os documentos restantes
+        reset_batch.commit()
+        
+        print(f"Reset concluído para um total de {docs_processed} usuários.")
+        print("Processamento do ranking semanal finalizado com sucesso.")
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO durante o processamento do ranking semanal: {e}")
+        traceback.print_exc()

@@ -124,6 +124,8 @@ flutter:
 
     - assets/hinos/hinos.json
 
+    - assets/mock_data/
+
     - assets/Biblia/completa_traducoes/abbrev_map.json
     - assets/Biblia/book_variations_map_search.json
     - assets/Biblia/book_variations_map.json
