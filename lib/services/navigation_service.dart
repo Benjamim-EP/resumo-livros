@@ -8,29 +8,27 @@ import 'package:septima_biblia/pages/signup_page.dart';
 // REMOVIDO: import 'package:septima_biblia/pages/splashViews/finalform_view.dart';
 // REMOVIDO: import 'package:septima_biblia/pages/tribe_selection_page.dart';
 import 'package:septima_biblia/pages/user_settings_page.dart';
+import 'package:septima_biblia/services/custom_page_route.dart';
 
 class NavigationService {
   static Route<dynamic>? generateRoute(RouteSettings settings) {
+    // <<< 2. SUBSTITUA TUDO AQUI >>>
     switch (settings.name) {
       case '/login':
-        return MaterialPageRoute(builder: (_) => const LoginPage());
+        return FadeScalePageRoute(page: const LoginPage());
       case '/signup':
-        return MaterialPageRoute(builder: (_) => const SignUpEmailPage());
+        return FadeScalePageRoute(page: const SignUpEmailPage());
       case '/mainAppScreen':
-        return MaterialPageRoute(builder: (_) => const MainAppScreen());
-
+        return FadeScalePageRoute(page: const MainAppScreen());
       case '/startScreen':
-        return MaterialPageRoute(builder: (_) => const StartScreenPage());
+        return FadeScalePageRoute(page: const StartScreenPage());
       case '/queryResults':
-        return MaterialPageRoute(builder: (_) => const QueryResultsPage());
-      // CASE '/finalForm' REMOVIDO
-      // CASE '/tribeSelection' REMOVIDO
+        return FadeScalePageRoute(page: const QueryResultsPage());
       case '/userSettings':
-        return MaterialPageRoute(builder: (_) => const UserSettingsPage());
+        return FadeScalePageRoute(page: const UserSettingsPage());
       default:
-        // O default pode ser a StartScreenPage, pois o AuthCheck cuidará do redirecionamento
-        // se o usuário já tiver passado por ela ou estiver logado.
-        return MaterialPageRoute(builder: (_) => const StartScreenPage());
+        // A rota padrão também usa a nova transição
+        return FadeScalePageRoute(page: const StartScreenPage());
     }
   }
 }

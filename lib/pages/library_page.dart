@@ -12,6 +12,7 @@ import 'package:septima_biblia/pages/library_page/turretin_elenctic_theology/tur
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/custom_page_route.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:redux/redux.dart';
 
@@ -354,8 +355,8 @@ class _LibraryPageState extends State<LibraryPage> {
                   }
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => itemData['destinationPage']),
+                    // <<< SUBSTITUIÇÃO AQUI >>>
+                    FadeScalePageRoute(page: itemData['destinationPage']),
                   );
                 }
               };
