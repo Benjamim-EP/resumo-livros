@@ -25,6 +25,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/pdf_generation_service.dart';
@@ -744,15 +745,12 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
     // 3. Se não for Premium, verifica se tem moedas suficientes
     if (currentUserCoins < PDF_GENERATION_COST) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Moedas insuficientes. Você precisa de $PDF_GENERATION_COST moedas.'),
-          action: SnackBarAction(
-            label: 'Ganhar Moedas',
-            onPressed: () => store.dispatch(RequestRewardedAdAction()),
-          ),
-        ),
+      CustomNotificationService.showWarningWithAction(
+        context: context,
+        message:
+            'Você precisa de $PDF_GENERATION_COST moedas para gerar o PDF.',
+        buttonText: 'Ganhar Moedas',
+        onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
       );
       return;
     }
@@ -799,10 +797,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         // Em caso de erro ao salvar as moedas, reverte a mudança e notifica o usuário
         print("Erro ao deduzir moedas para gerar PDF: $e");
         store.dispatch(UpdateUserCoinsAction(currentUserCoins)); // Reembolsa
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Ocorreu um erro. Suas moedas foram devolvidas.')),
-        );
+        CustomNotificationService.showError(
+            context, 'Ocorreu um erro. Suas moedas foram devolvidas.');
       }
     }
   }
@@ -811,11 +807,11 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   Future<void> _generatePdfAndShow() async {
     if (mounted) {
       setState(() => _isGeneratingPdf = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Gerando PDF, por favor aguarde...'),
-            duration: Duration(seconds: 10)),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //       content: Text('Gerando PDF, por favor aguarde...'),
+      //       duration: Duration(seconds: 10)),
+      // );
     }
 
     try {
@@ -847,19 +843,14 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
           _existingPdfPath = filePath;
           _isGeneratingPdf = false;
         });
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF gerado com sucesso!')),
-        );
+        CustomNotificationService.showSuccess(
+            context, 'PDF do capítulo gerado com sucesso!');
         OpenFile.open(filePath);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isGeneratingPdf = false);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao gerar PDF: $e')),
-        );
+        CustomNotificationService.showError(context, 'Erro ao gerar PDF: $e');
       }
     }
   }

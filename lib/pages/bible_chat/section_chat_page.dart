@@ -10,6 +10,7 @@ import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // --- Modelos de Dados ---
@@ -153,13 +154,11 @@ class _SectionChatPageState extends State<SectionChatPage> {
     final viewModel = _ChatViewModel.fromStore(store);
 
     if (!viewModel.isPremium && viewModel.userCoins < chatCost) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:
-            Text('Moedas insuficientes. Você precisa de $chatCost moedas.'),
-        action: SnackBarAction(
-            label: 'Ganhar Moedas',
-            onPressed: () => store.dispatch(RequestRewardedAdAction())),
-      ));
+      CustomNotificationService.showWarningWithAction(
+          context: context,
+          message: 'Você precisa de $chatCost moedas para enviar uma mensagem.',
+          buttonText: 'Ganhar Moedas',
+          onButtonPressed: () => store.dispatch(RequestRewardedAdAction()));
       return;
     }
 
@@ -215,8 +214,10 @@ class _SectionChatPageState extends State<SectionChatPage> {
           errorMessage =
               "Moedas insuficientes. Você precisa de $chatCost moedas para continuar.";
           store.dispatch(LoadUserDetailsAction());
+          CustomNotificationService.showError(context, errorMessage);
         } else if (!viewModel.isPremium) {
           store.dispatch(UpdateUserCoinsAction(originalCoins));
+          CustomNotificationService.showError(context, errorMessage);
         }
         setState(() {
           _messages
@@ -228,6 +229,8 @@ class _SectionChatPageState extends State<SectionChatPage> {
         if (!viewModel.isPremium) {
           store.dispatch(UpdateUserCoinsAction(originalCoins));
         }
+        CustomNotificationService.showError(
+            context, "Ocorreu um erro inesperado. Verifique sua conexão.");
         setState(() {
           _messages.add(ChatMessage(
               text: "Ocorreu um erro inesperado. Verifique sua conexão.",

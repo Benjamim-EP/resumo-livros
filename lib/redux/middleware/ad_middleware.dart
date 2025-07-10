@@ -6,6 +6,7 @@ import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/AdHelperStartIo.dart';
 import 'package:septima_biblia/services/ad_helper.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/main.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // NOVO
@@ -287,8 +288,9 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
 
         // Mostra a mensagem de sucesso para ambos os casos se a persistência deu certo
         if (currentContext != null && currentContext.mounted) {
-          ScaffoldMessenger.of(currentContext).showSnackBar(
-            SnackBar(content: Text('Você ganhou $finalCoinsToAdd moedas!')),
+          CustomNotificationService.showSuccess(
+            currentContext,
+            'Você ganhou $finalCoinsToAdd moedas!',
           );
         }
         // >>>>> FIM DA LÓGICA DE PERSISTÊNCIA <<<<<

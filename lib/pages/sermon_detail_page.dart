@@ -14,6 +14,7 @@ import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/pdf_generation_service.dart';
@@ -255,15 +256,12 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
 
     // 3. Verificação de moedas para não-Premium
     if (currentUserCoins < PDF_GENERATION_COST) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Moedas insuficientes. Você precisa de $PDF_GENERATION_COST moedas.'),
-          action: SnackBarAction(
-            label: 'Ganhar Moedas',
-            onPressed: () => store.dispatch(RequestRewardedAdAction()),
-          ),
-        ),
+      CustomNotificationService.showWarningWithAction(
+        context: context,
+        message:
+            'Você precisa de $PDF_GENERATION_COST moedas para gerar o PDF.',
+        buttonText: 'Ganhar Moedas',
+        onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
       );
       return;
     }
@@ -306,10 +304,8 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       } catch (e) {
         print("Erro ao deduzir moedas para gerar PDF de sermão: $e");
         store.dispatch(UpdateUserCoinsAction(currentUserCoins)); // Reembolso
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Ocorreu um erro. Suas moedas foram devolvidas.')),
-        );
+        CustomNotificationService.showError(
+            context, 'Ocorreu um erro. Suas moedas foram devolvidas.');
       }
     }
   }
@@ -318,11 +314,11 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   Future<void> _generateSermonPdfAndShow() async {
     if (mounted) {
       setState(() => _isGeneratingPdf = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Gerando PDF do sermão...'),
-            duration: Duration(seconds: 10)),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //       content: Text('Gerando PDF do sermão...'),
+      //       duration: Duration(seconds: 10)),
+      // );
     }
 
     try {
@@ -335,19 +331,15 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
           _existingPdfPath = filePath;
           _isGeneratingPdf = false;
         });
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF do sermão gerado com sucesso!')),
-        );
+        CustomNotificationService.showSuccess(
+            context, 'PDF do sermão gerado com sucesso!');
         OpenFile.open(filePath);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isGeneratingPdf = false);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao gerar PDF do sermão: $e')),
-        );
+        CustomNotificationService.showError(
+            context, 'Erro ao gerar PDF do sermão: $e');
       }
     }
   }

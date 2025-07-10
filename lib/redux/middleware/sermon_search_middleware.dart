@@ -10,6 +10,7 @@ import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,14 +61,12 @@ void _handleSearchSermons(Store<AppState> store, SearchSermonsAction action,
           "SermonSearchMiddleware: Moedas insuficientes ($originalUserCoins). Custo: $SERMON_SEARCH_COST.");
       store.dispatch(SearchSermonsFailureAction('Moedas insuficientes.'));
       if (currentContext != null && currentContext.mounted) {
-        ScaffoldMessenger.of(currentContext).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Moedas insuficientes para buscar sermões. Você tem $originalUserCoins, são necessárias $SERMON_SEARCH_COST.'),
-            action: SnackBarAction(
-                label: 'Ganhar Moedas',
-                onPressed: () => store.dispatch(RequestRewardedAdAction())),
-          ),
+        CustomNotificationService.showWarningWithAction(
+          context: currentContext,
+          message:
+              'Você tem $originalUserCoins, são necessárias $SERMON_SEARCH_COST para buscar sermões.',
+          buttonText: 'Ganhar Moedas',
+          onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
         );
       }
       return;
@@ -183,10 +182,9 @@ void _reimburseSermonCoins(Store<AppState> store, String? userId, bool isGuest,
   if (context != null && context.mounted) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Suas moedas foram devolvidas devido a um erro na busca.')),
+        CustomNotificationService.showError(
+          context,
+          'Suas moedas foram devolvidas devido a um erro na busca.',
         );
       }
     });

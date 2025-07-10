@@ -10,6 +10,7 @@ import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -62,14 +63,12 @@ void _handleSearchBibleSemantic(Store<AppState> store,
       store.dispatch(SearchBibleSemanticFailureAction('Moedas insuficientes.'));
 
       if (currentContext != null && currentContext.mounted) {
-        ScaffoldMessenger.of(currentContext).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Moedas insuficientes. Você tem $originalUserCoins, são necessárias $BIBLE_SEARCH_COST.'),
-            action: SnackBarAction(
-                label: 'Ganhar Moedas',
-                onPressed: () => store.dispatch(RequestRewardedAdAction())),
-          ),
+        CustomNotificationService.showWarningWithAction(
+          context: currentContext,
+          message:
+              'Você tem $originalUserCoins, são necessárias $BIBLE_SEARCH_COST para esta busca.',
+          buttonText: 'Ganhar Moedas',
+          onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
         );
       }
       return;
@@ -188,10 +187,9 @@ void _reimburseCoins(Store<AppState> store, String? userId, bool isGuest,
   if (context != null && context.mounted) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Suas moedas foram devolvidas devido a um erro na busca.')),
+        CustomNotificationService.showError(
+          context,
+          'Suas moedas foram devolvidas devido a um erro na busca.',
         );
       }
     });
