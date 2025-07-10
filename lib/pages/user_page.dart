@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:septima_biblia/models/highlight_item_model.dart';
 import 'package:septima_biblia/pages/user_page/denomination_card.dart';
 import 'package:septima_biblia/pages/user_page/highlight_item_card.dart';
@@ -522,6 +523,8 @@ class _UserPageState extends State<UserPage> {
                 List<Widget> bookProgressWidgets = [];
                 if (_localBooksMap != null &&
                     vm.bibleSectionCounts.isNotEmpty) {
+                  int index = 0;
+
                   for (String bookAbbrev in CANONICAL_BOOK_ORDER) {
                     // ... (lógica para criar bookProgressWidgets permanece idêntica) ...
                     final bookMetaForName =
@@ -579,7 +582,13 @@ class _UserPageState extends State<UserPage> {
                           ),
                         ],
                       ),
-                    ));
+                    )
+                        .animate(
+                            delay:
+                                (50 * (index % 10)).ms) // Delay para cada item
+                        .fadeIn(duration: 300.ms)
+                        .slideY(begin: 0.2, curve: Curves.easeOut));
+                    index++;
                   }
                 }
 
@@ -887,10 +896,14 @@ class _UserPageState extends State<UserPage> {
                     itemCount: filteredList.length,
                     itemBuilder: (context, index) {
                       final item = filteredList[index];
+                      // <<< ADICIONE A ANIMAÇÃO AQUI >>>
                       return HighlightItemCard(
                         item: item,
                         onNavigateToVerse: _navigateToBibleVerseAndTab,
-                      );
+                      )
+                          .animate()
+                          .fadeIn(duration: 400.ms, delay: (100 * index).ms)
+                          .moveX(begin: -20, curve: Curves.easeOutCubic);
                     },
                   );
                 },
@@ -1070,7 +1083,10 @@ class _UserPageState extends State<UserPage> {
                       ],
                     ),
                   ),
-                );
+                )
+                    .animate()
+                    .fadeIn(duration: 400.ms, delay: (100 * index).ms)
+                    .moveX(begin: -20, curve: Curves.easeOutCubic);
               },
             );
           },

@@ -1,6 +1,7 @@
 // lib/pages/library_page.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
@@ -12,24 +13,21 @@ import 'package:septima_biblia/pages/library_page/turretin_elenctic_theology/tur
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/services/custom_page_route.dart';
+import 'package:septima_biblia/services/custom_page_route.dart'; // Importa a rota customizada
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:redux/redux.dart';
 
-// ViewModel simples para esta página
+// ViewModel para obter o status de premium do usuário
 class _LibraryViewModel {
   final bool isPremium;
 
   _LibraryViewModel({required this.isPremium});
 
   static _LibraryViewModel fromStore(Store<AppState> store) {
-    // Lógica para determinar se o usuário é premium
-    // Esta lógica pode ser movida para um seletor mais robusto no futuro
     final subscriptionState = store.state.subscriptionState;
     bool isCurrentlyPremium =
         subscriptionState.status == SubscriptionStatus.premiumActive;
 
-    // Fallback verificando os detalhes do usuário se a assinatura ainda não foi processada no estado
     if (!isCurrentlyPremium) {
       final userDetails = store.state.userState.userDetails;
       if (userDetails != null) {
@@ -43,19 +41,18 @@ class _LibraryViewModel {
         }
       }
     }
-
     return _LibraryViewModel(isPremium: isCurrentlyPremium);
   }
 }
 
-class ResourceCard extends StatelessWidget {
+// <<< O ResourceCard AGORA É UM STATEFULWIDGET >>>
+class ResourceCard extends StatefulWidget {
   final String title;
   final String description;
   final String author;
   final String pageCount;
   final String? coverImagePath;
   final VoidCallback onTap;
-
   final bool isFullyPremium;
   final bool hasPremiumFeature;
 
@@ -71,15 +68,34 @@ class ResourceCard extends StatelessWidget {
     this.hasPremiumFeature = false,
   });
 
+  @override
+  State<ResourceCard> createState() => _ResourceCardState();
+}
+
+class _ResourceCardState extends State<ResourceCard> {
+  bool _isPressed = false; // Estado para controlar se o card está pressionado
+
+  // Funções para atualizar o estado no início e fim do toque
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+  }
+
+  // Widget auxiliar para as linhas de informação
   Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
     final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-        ),
+        Icon(icon,
+            size: 14,
+            color: theme.textTheme.bodySmall?.color?.withOpacity(0.6)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -98,119 +114,126 @@ class ResourceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool hasCoverImage =
-        coverImagePath != null && coverImagePath!.isNotEmpty;
+        widget.coverImagePath != null && widget.coverImagePath!.isNotEmpty;
 
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.all(0),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-        side: isFullyPremium || hasPremiumFeature
-            ? BorderSide(color: Colors.amber.shade700, width: 1.5)
-            : BorderSide.none,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 3,
-              child: Stack(
-                alignment: Alignment.bottomLeft,
-                children: [
-                  Positioned.fill(
-                    child: hasCoverImage
-                        ? Image.asset(
-                            coverImagePath!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                                color:
-                                    theme.colorScheme.surfaceContainerHighest),
-                          )
-                        : Container(color: theme.colorScheme.primaryContainer),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withOpacity(0.85),
-                          Colors.transparent,
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        stops: const [0.0, 0.8],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    left: 12,
-                    right: 12,
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        shadows: [
-                          const Shadow(blurRadius: 3.0, color: Colors.black87)
-                        ],
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (isFullyPremium || hasPremiumFeature)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.workspace_premium_rounded,
-                          color: Colors.amber.shade600,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    // Define a escala com base no estado _isPressed
+    final double scale = _isPressed ? 0.96 : 1.0;
+
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      onTap: widget.onTap, // A ação de clique original passada como parâmetro
+      child: AnimatedScale(
+        scale: scale,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        child: Card(
+          elevation: 4,
+          margin: const EdgeInsets.all(0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+            side: widget.isFullyPremium || widget.hasPremiumFeature
+                ? BorderSide(color: Colors.amber.shade700, width: 1.5)
+                : BorderSide.none,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Stack(
+                  alignment: Alignment.bottomLeft,
                   children: [
-                    Text(
-                      description,
-                      style: theme.textTheme.bodySmall?.copyWith(height: 1.3),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                    Positioned.fill(
+                      child: hasCoverImage
+                          ? Image.asset(widget.coverImagePath!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                  color: theme
+                                      .colorScheme.surfaceContainerHighest))
+                          : Container(
+                              color: theme.colorScheme.primaryContainer),
                     ),
-                    const Divider(height: 12, thickness: 0.5),
-                    _buildInfoRow(context, Icons.person_outline, author),
-                    _buildInfoRow(context, Icons.menu_book_outlined, pageCount),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.85),
+                            Colors.transparent
+                          ],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          stops: const [0.0, 0.8],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 10,
+                      left: 12,
+                      right: 12,
+                      child: Text(
+                        widget.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          shadows: [
+                            const Shadow(blurRadius: 3.0, color: Colors.black87)
+                          ],
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (widget.isFullyPremium || widget.hasPremiumFeature)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle),
+                          child: Icon(Icons.workspace_premium_rounded,
+                              color: Colors.amber.shade600, size: 20),
+                        ),
+                      ),
                   ],
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Text(widget.description,
+                          style:
+                              theme.textTheme.bodySmall?.copyWith(height: 1.3),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis),
+                      const Divider(height: 12, thickness: 0.5),
+                      _buildInfoRow(
+                          context, Icons.person_outline, widget.author),
+                      _buildInfoRow(
+                          context, Icons.menu_book_outlined, widget.pageCount),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+// A página principal da Biblioteca
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
 
@@ -219,6 +242,7 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
+  // A lista de itens da biblioteca
   List<Map<String, dynamic>> get libraryItems => [
         {
           'title': "Sermões de C.H. Spurgeon",
@@ -237,10 +261,9 @@ class _LibraryPageState extends State<LibraryPage> {
               "Uma análise profunda das escrituras sobre o papel da mulher na igreja e na sociedade.",
           'author': 'Katharine C. Bushnell',
           'pageCount': '100 Lições / +500 páginas',
-          'isFullyPremium': true, // Marcar como conteúdo premium
+          'isFullyPremium': true,
           'hasPremiumFeature': false,
-          'coverImagePath':
-              'assets/covers/gods_word_to_women_cover.webp', // Crie uma capa para ele!
+          'coverImagePath': 'assets/covers/gods_word_to_women_cover.webp',
           'destinationPage': const GodsWordToWomenIndexPage(),
         },
         {
@@ -270,10 +293,9 @@ class _LibraryPageState extends State<LibraryPage> {
           'description': "A obra monumental da teologia sistemática reformada.",
           'author': 'Francis Turretin',
           'pageCount': '3 volumes / +2000 páginas',
-          'isFullyPremium': true, // Totalmente premium
+          'isFullyPremium': true,
           'hasPremiumFeature': false,
-          'coverImagePath':
-              'assets/covers/turretin_cover.webp', // Crie uma capa para ele!
+          'coverImagePath': 'assets/covers/turretin_cover.webp',
           'destinationPage': const TurretinIndexPage(),
         },
         {
@@ -300,6 +322,7 @@ class _LibraryPageState extends State<LibraryPage> {
         },
       ];
 
+  // Função para mostrar o diálogo de assinatura premium
   void _showPremiumDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -353,9 +376,9 @@ class _LibraryPageState extends State<LibraryPage> {
                     interstitialManager.tryShowInterstitial(
                         fromScreen: "Library_To_${itemData['title']}");
                   }
+                  // <<< Usa a nova rota customizada para a transição >>>
                   Navigator.push(
                     context,
-                    // <<< SUBSTITUIÇÃO AQUI >>>
                     FadeScalePageRoute(page: itemData['destinationPage']),
                   );
                 }
@@ -368,9 +391,18 @@ class _LibraryPageState extends State<LibraryPage> {
                 pageCount: itemData['pageCount'],
                 coverImagePath: itemData['coverImagePath'],
                 isFullyPremium: isFullyPremium,
-                hasPremiumFeature: itemData['hasPremiumFeature'],
+                hasPremiumFeature:
+                    itemData['hasPremiumFeature'] as bool? ?? false,
                 onTap: onTapAction,
-              );
+              )
+                  .animate()
+                  .fadeIn(
+                      duration: 600.ms,
+                      delay: (150 * (index % 2))
+                          .ms) // Delay diferente para cada coluna
+                  .scaleXY(
+                      begin: 0.9,
+                      curve: Curves.easeOutBack); // Efeito de escala e "pulo";
             },
           );
         },

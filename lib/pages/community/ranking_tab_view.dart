@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:redux/redux.dart';
@@ -246,7 +247,17 @@ class _RankingTabViewState extends State<RankingTabView> {
                         photoUrl: user.photoURL,
                         score: user.rankingScore.toStringAsFixed(0),
                         previousRank: user.previousRank,
-                      );
+                      )
+                          .animate()
+                          .fadeIn(
+                              duration: 500.ms,
+                              delay: (100 * index)
+                                  .ms) // Fade in com delay crescente
+                          .slideY(
+                              begin: 0.5,
+                              duration: 500.ms,
+                              curve: Curves
+                                  .easeOutCubic); // Desliza de baixo para cima
                     }),
                 ],
               ),

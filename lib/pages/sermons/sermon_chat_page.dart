@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
@@ -309,14 +310,25 @@ class _SermonChatPageState extends State<SermonChatPage> {
                   itemCount: _messages.length + (_isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (_isLoading && index == _messages.length) {
-                      return const _BotTypingIndicator();
+                      // Anima a entrada do indicador de "digitando"
+                      return const _BotTypingIndicator()
+                          .animate()
+                          .fadeIn(duration: 300.ms);
                     }
                     final message = _messages[index];
+                    Widget messageBubble;
                     if (message.author == MessageAuthor.user) {
-                      return _UserMessageBubble(message: message);
+                      messageBubble = _UserMessageBubble(message: message);
                     } else {
-                      return _BotMessageBubble(message: message);
+                      messageBubble = _BotMessageBubble(message: message);
                     }
+
+                    // <<< ADICIONE A ANIMAÇÃO AQUI >>>
+                    // Anima cada bolha de mensagem ao ser adicionada à lista
+                    return messageBubble
+                        .animate()
+                        .fadeIn(duration: 400.ms)
+                        .slideY(begin: 0.5, curve: Curves.easeOutCubic);
                   },
                 ),
               ),

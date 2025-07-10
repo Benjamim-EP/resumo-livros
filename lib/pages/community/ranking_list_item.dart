@@ -25,90 +25,111 @@ class RankingListItem extends StatelessWidget {
     Widget trendWidget;
     if (previousRank != null) {
       if (rank < previousRank!) {
-        // Subiu no ranking
         trendWidget = const Icon(Icons.arrow_drop_up,
             color: Colors.greenAccent, size: 24);
       } else if (rank > previousRank!) {
-        // Desceu no ranking
         trendWidget = const Icon(Icons.arrow_drop_down,
             color: Colors.redAccent, size: 24);
       } else {
-        // Manteve a posição
         trendWidget = Icon(Icons.remove, color: Colors.grey.shade600, size: 20);
       }
     } else {
-      // Usuário novo no ranking, sem posição anterior
-      trendWidget = const SizedBox(width: 24); // Apenas um espaço vazio
+      trendWidget =
+          const SizedBox(width: 24); // Espaço vazio se não houver ícone
     }
     // --- FIM DA LÓGICA DO ÍCONE ---
 
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 5.0),
-      color: theme.cardColor.withOpacity(0.85), // Cor de fundo do card
+      color: theme.cardColor.withOpacity(0.85),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            // Posição no Ranking (à esquerda)
-            SizedBox(
-              width: 35,
-              child: Text(
-                '$rank',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Avatar do Usuário
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: theme.colorScheme.surface,
-              backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
-                  ? NetworkImage(photoUrl!)
-                  : null,
-              child: photoUrl == null || photoUrl!.isEmpty
-                  ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontWeight: FontWeight.bold))
-                  : null,
-            ),
-            const SizedBox(width: 16),
-
-            // Coluna com Nome e Score
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
+      clipBehavior: Clip
+          .antiAlias, // Importante para o InkWell funcionar com o borderRadius
+      child: Stack(
+        // Usamos Stack para colocar o InkWell por cima
+        children: [
+          // 1. Conteúdo principal do Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                // Posição no Ranking (à esquerda)
+                SizedBox(
+                  width: 35,
+                  child: Text(
+                    '$rank',
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Score: $score',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color:
-                          theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
+                ),
+                const SizedBox(width: 12),
+
+                // Avatar do Usuário
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: theme.colorScheme.surface,
+                  backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
+                      ? NetworkImage(photoUrl!)
+                      : null,
+                  child: photoUrl == null || photoUrl!.isEmpty
+                      ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: const TextStyle(fontWeight: FontWeight.bold))
+                      : null,
+                ),
+                const SizedBox(width: 16),
+
+                // Coluna com Nome e Score
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Score: $score',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Ícone de tendência (à direita)
+                trendWidget,
+              ],
+            ),
+          ),
+
+          // 2. Camada de feedback de toque (InkWell)
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  print("Tocou no usuário do ranking: $name (Rank: $rank)");
+                  // No futuro, aqui você pode navegar para o perfil público do usuário.
+                  // Ex: Navigator.push(context, FadeScalePageRoute(page: UserProfilePage(userId: ...)));
+                },
+                splashColor: theme.colorScheme.primary.withOpacity(0.12),
+                highlightColor: theme.colorScheme.primary.withOpacity(0.08),
               ),
             ),
-            const SizedBox(width: 16),
-
-            // Ícone de tendência (à direita)
-            trendWidget,
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
