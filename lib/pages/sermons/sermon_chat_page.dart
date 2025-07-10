@@ -271,7 +271,13 @@ class _SermonChatPageState extends State<SermonChatPage> {
     return StoreConnector<AppState, _ChatViewModel>(
       converter: (store) => _ChatViewModel.fromStore(store),
       builder: (context, viewModel) {
+        // <<< A CORREÇÃO ESTÁ AQUI >>>
         return Scaffold(
+          // Ao definir como 'true', o corpo do Scaffold será redimensionado
+          // para dar espaço ao teclado, empurrando a barra de input para cima.
+          // Por padrão, já é true, mas é bom garantir que não foi definido como false em outro lugar.
+          resizeToAvoidBottomInset: true,
+
           appBar: AppBar(
             title: const Text("Conversar com Spurgeon AI"),
             actions: [
@@ -314,6 +320,7 @@ class _SermonChatPageState extends State<SermonChatPage> {
                   },
                 ),
               ),
+              // O _buildTextComposer() é a sua barra de input
               _buildTextComposer(),
             ],
           ),
