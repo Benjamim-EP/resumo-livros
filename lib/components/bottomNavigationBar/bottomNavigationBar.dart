@@ -9,6 +9,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/buttons/animated_infinity_icon.dart';
 import 'package:septima_biblia/components/buttons/animated_premium_button.dart';
+import 'package:septima_biblia/components/buttons/reward_cooldown_timer.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/community/community_page.dart';
@@ -403,15 +404,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                                                   .colorScheme.onPrimary)),
                                   if (coinsViewModel.userCoins <
                                       MAX_COINS_LIMIT)
-                                    IconButton(
-                                      icon: Icon(Icons.add_circle_outline,
-                                          color: currentThemeData
-                                              .colorScheme.primary,
-                                          size: 24),
-                                      tooltip: 'Ganhar Moedas',
-                                      onPressed: () => storeInstance
-                                          .dispatch(RequestRewardedAdAction()),
-                                    )
+                                    const RewardCooldownTimer()
                                   else
                                     Padding(
                                       padding: const EdgeInsets.only(left: 8.0),
