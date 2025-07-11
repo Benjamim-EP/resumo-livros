@@ -42,6 +42,20 @@ class BiblePageWidgets {
     );
   }
 
+  /// Limpa prefixos de numeração e letras como "1)", "2a.", "(b)", etc., do início de uma string.
+  static String _cleanLexiconEntry(String rawText) {
+    // Esta regex remove padrões comuns de numeração no início da linha.
+    final RegExp prefixRegex =
+        RegExp(r'^\s*(\(?\d+[a-z]?\)?\.?\s*|\([a-z]\)\s*)+');
+    return rawText.replaceFirst(prefixRegex, '').trim();
+  }
+
+  /// Limpa o prefixo "• - " das notas.
+  static String _cleanLexiconNote(String rawText) {
+    final RegExp prefixRegex = RegExp(r'^\s*•\s*-\s*');
+    return rawText.replaceFirst(prefixRegex, '').trim();
+  }
+
   static Widget buildTranslationButton({
     required BuildContext context,
     required String translationKey,
@@ -273,10 +287,17 @@ class BiblePageWidgets {
     if (definitions == null || definitions.isEmpty) {
       return "N/A";
     }
-    String firstFullDefinition = definitions.first.toString().trim();
-    String cleanedDefinition =
-        firstFullDefinition.replaceFirst(RegExp(r'^\d+\s*[.)]\s*'), '');
 
+    // Pega a primeira definição da lista
+    String firstFullDefinition = definitions.first.toString().trim();
+
+    // ✅ CORREÇÃO: Usa a regex mais poderosa para limpar todos os tipos de prefixo
+    final RegExp prefixRegex =
+        RegExp(r'^\s*(\(?\d+[a-z]?\)?\.?\s*|\([a-z]\)\s*)+');
+    String cleanedDefinition =
+        firstFullDefinition.replaceFirst(prefixRegex, '').trim();
+
+    // O resto da lógica para encurtar a definição continua a mesma
     List<String> parts = [];
     if (cleanedDefinition.contains(',')) {
       parts = cleanedDefinition.split(',');
@@ -291,10 +312,17 @@ class BiblePageWidgets {
         .replaceFirst(RegExp(r'^\((TWOT|BDB|KJV|LXX|et al)\.?\)\s*'), '')
         .trim();
 
+    // Adiciona a primeira letra maiúscula para um visual mais limpo
+    if (shortDef.isNotEmpty) {
+      shortDef = shortDef[0].toUpperCase() + shortDef.substring(1);
+    }
+
+    // Trunca a definição se for muito longa
     const maxLength = 25;
     if (shortDef.length > maxLength) {
       return "${shortDef.substring(0, maxLength)}...";
     }
+
     return shortDef.isNotEmpty ? shortDef : "N/A";
   }
 
@@ -405,6 +433,9 @@ class BiblePageWidgets {
     final theme = Theme.of(context);
     final greekText = wordData['text'] ?? '';
     final strongNumber = wordData['strong'] ?? '';
+
+    // ✅ 1. PEGA A TRANSLITERAÇÃO DOS DADOS DA PALAVRA
+    String transliteration = wordData['translit'] ?? "---";
     String shortDefinition = "N/A";
 
     if (strongNumber.isNotEmpty &&
@@ -412,6 +443,13 @@ class BiblePageWidgets {
         greekLexicon != null) {
       final lexiconEntry = greekLexicon[strongNumber] as Map<String, dynamic>?;
       if (lexiconEntry != null) {
+        // ✅ 2. FALLBACK: Se a transliteração não veio nos dados, pega do léxico
+        if (transliteration == "---" &&
+            lexiconEntry['transliteration'] != null) {
+          transliteration = lexiconEntry['transliteration'];
+        }
+
+        // Lógica para definição curta (permanece a mesma)
         List<dynamic>? definitionsPt =
             lexiconEntry['definitions_pt'] as List<dynamic>?;
         List<dynamic>? definitionsOrig =
@@ -429,29 +467,24 @@ class BiblePageWidgets {
     }
 
     final double baseGreekFontSize = 19.0;
-    final double baseStrongFontSize =
-        10.0; // Ajustado para apenas o número de Strong
+    // ✅ 3. ADICIONA UM TAMANHO DE FONTE PARA A TRANSLITERAÇÃO
+    final double baseTranslitFontSize = 10.0;
     final double baseDefinitionFontSize = 9.0;
 
     return GestureDetector(
       onTap: () {
         if (strongNumber.isNotEmpty && strongNumber != "N/A") {
-          _showVerseLexiconModalGreek(
-            context,
-            selectedBook!,
-            selectedChapter!,
-            verseNumber,
-            strongNumber,
-            greekLexicon,
-          );
+          _showVerseLexiconModalGreek(context, selectedBook!, selectedChapter!,
+              verseNumber, strongNumber, greekLexicon);
         }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 1.5),
+        padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.5),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // Palavra em Grego (como antes)
             Text(
               greekText,
               style: TextStyle(
@@ -459,14 +492,17 @@ class BiblePageWidgets {
                 color: theme.textTheme.bodyLarge?.color,
               ),
             ),
-            if (strongNumber.isNotEmpty && strongNumber != "N/A")
-              Text(
-                strongNumber,
-                style: TextStyle(
-                  fontSize: baseStrongFontSize * fontSizeMultiplier,
-                  color: theme.colorScheme.secondary.withOpacity(0.8),
-                ),
+
+            // ✅ 4. EXIBE A TRANSLITERAÇÃO ABAIXO DA PALAVRA GREGA
+            Text(
+              transliteration,
+              style: TextStyle(
+                fontSize: baseTranslitFontSize * fontSizeMultiplier,
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
               ),
+            ),
+
+            // Definição curta (como antes)
             if (shortDefinition.isNotEmpty && shortDefinition != "N/A")
               Padding(
                 padding: const EdgeInsets.only(top: 1.0),
@@ -482,6 +518,8 @@ class BiblePageWidgets {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+
+            // ❌ 5. REMOÇÃO DO NÚMERO DE STRONG (não é mais exibido aqui)
           ],
         ),
       ),
@@ -545,7 +583,7 @@ class BiblePageWidgets {
       }
       mainTranslationWidget = Wrap(
           alignment: WrapAlignment.start,
-          runSpacing: 4.0,
+          runSpacing: 0.0,
           spacing: 4.0,
           children: greekWordWidgets);
     } else if (isHebrew && verseData is List<Map<String, String>>) {
@@ -1058,26 +1096,51 @@ class BiblePageWidgets {
                                   color: theme.colorScheme.onSurface,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500)),
-                          ...definitionsToShow.map((def) => Padding(
-                                padding:
-                                    const EdgeInsets.only(left: 8.0, top: 2.0),
-                                child: Text("• $def",
-                                    style: TextStyle(
+                          ...definitionsToShow.map((def) {
+                            final String cleanedDef = _cleanLexiconEntry(def);
+                            if (cleanedDef.isEmpty)
+                              return const SizedBox
+                                  .shrink(); // Não mostra linhas vazias
+
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("• ",
+                                      style: TextStyle(
+                                          color: theme.colorScheme.primary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13)),
+                                  Expanded(
+                                    child: Text(
+                                      cleanedDef
+                                          .capitalizeFirstOfEach, // Capitaliza a primeira letra
+                                      style: TextStyle(
                                         color:
                                             theme.textTheme.bodyMedium?.color,
-                                        fontSize: 13)),
-                              )),
+                                        fontSize: 13,
+                                        height:
+                                            1.4, // Melhora o espaçamento entre linhas
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                           if (notesToShow.isNotEmpty) ...[
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 16),
                             Text("Notas Adicionais:",
                                 style: TextStyle(
                                     color: theme.colorScheme.onSurface,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500)),
+                            // Mapeia e limpa cada nota antes de exibi-la
                             ...notesToShow.entries.expand((entry) => [
                                   Padding(
                                     padding: const EdgeInsets.only(
-                                        top: 6.0, bottom: 2.0),
+                                        top: 8.0, bottom: 2.0),
                                     child: Text(entry.key,
                                         style: TextStyle(
                                             color: theme.colorScheme.onSurface
@@ -1085,15 +1148,38 @@ class BiblePageWidgets {
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600)),
                                   ),
-                                  ...entry.value.map((noteLine) => Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 8.0, top: 2.0),
-                                        child: Text("• $noteLine",
-                                            style: TextStyle(
+                                  ...entry.value.map((noteLine) {
+                                    final String cleanedNote =
+                                        _cleanLexiconNote(noteLine);
+                                    if (cleanedNote.isEmpty)
+                                      return const SizedBox.shrink();
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 8.0, top: 2.0),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text("- ",
+                                              style: TextStyle(
+                                                  color: theme.textTheme
+                                                      .bodySmall?.color)),
+                                          Expanded(
+                                            child: Text(
+                                              cleanedNote,
+                                              style: TextStyle(
                                                 color: theme.textTheme
                                                     .bodyMedium?.color,
-                                                fontSize: 13)),
-                                      )),
+                                                fontSize: 13,
+                                                height: 1.4,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
                                 ]),
                           ],
                         ],
@@ -1242,17 +1328,38 @@ class BiblePageWidgets {
                                   color: theme.colorScheme.onSurface,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500)),
-                          ...definitionsToShow.map((def) => Padding(
-                                padding:
-                                    const EdgeInsets.only(left: 8.0, top: 2.0),
-                                child: Text("• $def",
-                                    style: TextStyle(
+                          ...definitionsToShow.map((def) {
+                            final String cleanedDef = _cleanLexiconEntry(def);
+                            if (cleanedDef.isEmpty)
+                              return const SizedBox.shrink();
+
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("• ",
+                                      style: TextStyle(
+                                          color: theme.colorScheme.primary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13)),
+                                  Expanded(
+                                    child: Text(
+                                      cleanedDef.capitalizeFirstOfEach,
+                                      style: TextStyle(
                                         color:
                                             theme.textTheme.bodyMedium?.color,
-                                        fontSize: 13)),
-                              )),
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                           if (notesToShow.isNotEmpty) ...[
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 16),
                             Text("Notas Adicionais:",
                                 style: TextStyle(
                                     color: theme.colorScheme.onSurface,
@@ -1261,7 +1368,7 @@ class BiblePageWidgets {
                             ...notesToShow.entries.expand((entry) => [
                                   Padding(
                                     padding: const EdgeInsets.only(
-                                        top: 6.0, bottom: 2.0),
+                                        top: 8.0, bottom: 2.0),
                                     child: Text(entry.key,
                                         style: TextStyle(
                                             color: theme.colorScheme.onSurface
@@ -1269,15 +1376,38 @@ class BiblePageWidgets {
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600)),
                                   ),
-                                  ...entry.value.map((noteLine) => Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 8.0, top: 2.0),
-                                        child: Text("• $noteLine",
-                                            style: TextStyle(
+                                  ...entry.value.map((noteLine) {
+                                    final String cleanedNote =
+                                        _cleanLexiconNote(noteLine);
+                                    if (cleanedNote.isEmpty)
+                                      return const SizedBox.shrink();
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 8.0, top: 2.0),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text("- ",
+                                              style: TextStyle(
+                                                  color: theme.textTheme
+                                                      .bodySmall?.color)),
+                                          Expanded(
+                                            child: Text(
+                                              cleanedNote,
+                                              style: TextStyle(
                                                 color: theme.textTheme
                                                     .bodyMedium?.color,
-                                                fontSize: 13)),
-                                      )),
+                                                fontSize: 13,
+                                                height: 1.4,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
                                 ]),
                           ],
                           if (lexiconEntry['greek_references'] != null &&
