@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:septima_biblia/models/pexels_model.dart';
 import 'package:septima_biblia/services/pexels_service.dart';
 import 'package:septima_biblia/pages/sharing/shareable_image_generator_page.dart';
+import 'package:septima_biblia/services/translation_service.dart'; // Importa o serviço de tradução
 
 class ImageSelectionPage extends StatefulWidget {
   final String verseText;
@@ -23,22 +24,60 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
   final TextEditingController _searchController = TextEditingController();
   late Future<List<PexelsPhoto>> _photosFuture;
 
+  // Instancia o serviço de tradução
+  final TranslationService _translationService = TranslationService();
+  bool _isTranslatingAndSearching = false; // Para mostrar feedback de loading
+
   @override
   void initState() {
     super.initState();
+    // Inicia com as fotos curadas (populares)
     _photosFuture = _pexelsService.getCuratedPhotos();
   }
 
-  void _searchPhotos(String query) {
+  /// Inicia a busca de fotos. Traduz a query para o inglês antes de consultar a API Pexels.
+  void _searchPhotos(String query) async {
+    // Se a busca estiver vazia, volta para as fotos curadas
     if (query.trim().isEmpty) {
       setState(() {
         _photosFuture = _pexelsService.getCuratedPhotos();
       });
       return;
     }
-    setState(() {
-      _photosFuture = _pexelsService.searchPhotos(query);
-    });
+
+    // Ativa o indicador de loading na UI
+    if (mounted) {
+      setState(() {
+        _isTranslatingAndSearching = true;
+      });
+    }
+
+    try {
+      // Traduz o termo de busca para o inglês
+      final String translatedQuery =
+          await _translationService.translateText(query);
+
+      // Atualiza o Future para que o FutureBuilder reconstrua com os novos resultados
+      if (mounted) {
+        setState(() {
+          _photosFuture = _pexelsService.searchPhotos(translatedQuery);
+        });
+      }
+    } finally {
+      // Garante que o loading seja desativado, mesmo em caso de erro
+      if (mounted) {
+        setState(() {
+          _isTranslatingAndSearching = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _translationService.dispose(); // Libera os recursos do tradutor
+    super.dispose();
   }
 
   @override
@@ -46,10 +85,11 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Escolha uma Imagem"),
+        title: const Text("Escolha uma Imagem de Fundo"),
       ),
       body: Column(
         children: [
+          // Campo de busca
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -57,32 +97,61 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
               decoration: InputDecoration(
                 hintText: 'Buscar por tema (ex: céu, natureza, cruz)...',
                 prefixIcon: const Icon(Icons.search),
+                // Mostra um indicador de progresso enquanto traduz e busca
+                suffixIcon: _isTranslatingAndSearching
+                    ? const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onSubmitted: _searchPhotos,
+              // Desabilita o campo enquanto uma busca está em andamento
+              onSubmitted: _isTranslatingAndSearching ? null : _searchPhotos,
             ),
           ),
+          // Grade de imagens
           Expanded(
             child: FutureBuilder<List<PexelsPhoto>>(
               future: _photosFuture,
               builder: (context, snapshot) {
+                // Estado de carregamento
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                // Estado de erro
                 if (snapshot.hasError) {
-                  return const Center(child: Text("Erro ao carregar imagens."));
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(
+                        "Ocorreu um erro ao carregar as imagens. Tente novamente.",
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
                 }
+                // Estado sem dados
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(
-                      child: Text("Nenhuma imagem encontrada."));
+                    child: Text(
+                      "Nenhuma imagem encontrada para sua busca.",
+                      textAlign: TextAlign.center,
+                    ),
+                  );
                 }
 
+                // Estado de sucesso
                 final photos = snapshot.data!;
                 return GridView.builder(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.fromLTRB(8.0, 0, 8.0, 8.0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                    crossAxisCount: 2, // Duas colunas
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
                   ),
@@ -91,7 +160,7 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
                     final photo = photos[index];
                     return GestureDetector(
                       onTap: () {
-                        // A URL vem do nosso modelo agora, o que é mais seguro
+                        // Usa a URL da imagem de alta qualidade
                         final imageUrl = photo.src.large2x;
                         if (imageUrl.isNotEmpty) {
                           Navigator.push(
@@ -106,31 +175,36 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Não foi possível carregar esta imagem.')));
+                            const SnackBar(
+                                content: Text(
+                                    'Não foi possível carregar esta imagem.')),
+                          );
                         }
                       },
                       child: Card(
                         clipBehavior: Clip.antiAlias,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
+                        elevation: 3,
                         child: Image.network(
-                          photo.src.medium.isNotEmpty
-                              ? photo.src.medium
-                              : 'https://via.placeholder.com/150', // Fallback
+                          photo.src.medium, // URL da imagem para a miniatura
                           fit: BoxFit.cover,
+                          // Mostra um placeholder de carregamento para cada imagem
                           loadingBuilder: (context, child, progress) {
                             if (progress == null) return child;
                             return Center(
-                                child: CircularProgressIndicator(
-                                    value: progress.expectedTotalBytes != null
-                                        ? progress.cumulativeBytesLoaded /
-                                            progress.expectedTotalBytes!
-                                        : null));
+                              child: CircularProgressIndicator(
+                                value: progress.expectedTotalBytes != null
+                                    ? progress.cumulativeBytesLoaded /
+                                        progress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2.5,
+                              ),
+                            );
                           },
+                          // Mostra um ícone de erro se a imagem falhar
                           errorBuilder: (context, error, stack) => Icon(
-                              Icons.broken_image,
+                              Icons.broken_image_outlined,
                               color: theme.colorScheme.error),
                         ),
                       ),
