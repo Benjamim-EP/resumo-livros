@@ -119,10 +119,8 @@ final Store<AppState> store = Store<AppState>(
 List<Middleware<AppState>> createAppMiddleware() {
   // Lista de middlewares que rodam em ambos os modos (debug e release)
   List<Middleware<AppState>> commonMiddleware = [
-    ...createBookMiddleware(),
     ...createAuthorMiddleware(),
     ...createUserMiddleware(),
-    ...createTopicMiddleware(),
     ...createMiscMiddleware(),
     ...createThemeMiddleware(),
     ...createAdMiddleware(),

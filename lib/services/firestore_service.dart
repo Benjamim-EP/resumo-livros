@@ -1427,12 +1427,12 @@ class FirestoreService {
       } else {
         print(
             "FirestoreService: Sermão com ID Gerado '$generatedSermonId' não encontrado na coleção 'spurgeon_sermons'.");
-        return null;
+        return null; // Retorna nulo se o documento não existe (não é um erro de conexão)
       }
     } catch (e) {
       print(
           "FirestoreService: Erro ao buscar detalhes do sermão '$generatedSermonId': $e");
-      return null;
+      rethrow; // ✅ CORREÇÃO: Relança o erro para a camada superior (a página) poder tratá-lo.
     }
   }
 

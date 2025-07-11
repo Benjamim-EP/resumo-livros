@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
@@ -154,6 +155,11 @@ class _SermonChatPageState extends State<SermonChatPage> {
     final store = StoreProvider.of<AppState>(context, listen: false);
     final viewModel = _ChatViewModel.fromStore(store);
 
+    if (store.state.userState.isGuestUser) {
+      showLoginRequiredDialog(context, featureName: "enviar mensagens no chat");
+      return; // Impede a continuação da função
+    }
+
     if (!viewModel.isPremium && viewModel.userCoins < chatCost) {
       CustomNotificationService.showWarningWithAction(
         context: context,
@@ -164,16 +170,17 @@ class _SermonChatPageState extends State<SermonChatPage> {
       return;
     }
 
-    // <<< INÍCIO DA CORREÇÃO PRINCIPAL >>>
+    // Guarda o valor original para possível reembolso em caso de erro
+    final int originalCoins = viewModel.userCoins;
+    bool coinsWereDeducted = false;
 
-    // 1. Atualização Otimista: Deduz as moedas no estado Redux IMEDIATAMENTE.
+    // Atualização otimista da UI
     if (!viewModel.isPremium) {
       final newCoinTotal = viewModel.userCoins - chatCost;
       store.dispatch(UpdateUserCoinsAction(newCoinTotal));
-      print("Frontend: Atualização otimista das moedas para $newCoinTotal");
+      coinsWereDeducted = true;
     }
 
-    // 2. Atualiza a UI com a mensagem do usuário e o loader.
     final userMessage = ChatMessage(text: query, author: MessageAuthor.user);
     _textController.clear();
     setState(() {
@@ -183,7 +190,6 @@ class _SermonChatPageState extends State<SermonChatPage> {
     _scrollToBottom();
     await _saveChatHistory();
 
-    // 3. Chama a Cloud Function (que fará a dedução real no Firestore).
     try {
       final functions =
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
@@ -221,40 +227,54 @@ class _SermonChatPageState extends State<SermonChatPage> {
               text: botResponse, author: MessageAuthor.bot, sources: sources));
         });
       }
-
-      // A sincronização (LoadUserDetailsAction) pode ser removida daqui se a atualização otimista
-      // for suficiente, ou mantida como uma verificação periódica. Por enquanto, vamos remover
-      // para evitar chamadas redundantes. A atualização otimista já resolve a UI.
     } on FirebaseFunctionsException catch (e) {
+      // ✅ Ponto principal da correção: Trata os erros da Cloud Function
       if (mounted) {
-        String errorMessage = "Ocorreu um erro: ${e.message}";
-        if (e.code == 'resource-exhausted') {
+        print(
+            "SermonChatPage: Erro FirebaseFunctionsException: ${e.code} - ${e.message}");
+
+        String errorMessage;
+        // Traduz o erro técnico para uma mensagem amigável
+        if (e.code.toUpperCase() == 'UNAVAILABLE' ||
+            e.code.toUpperCase() == 'DEADLINE_EXCEEDED') {
+          errorMessage =
+              "Falha na conexão. Por favor, verifique sua internet e tente novamente.";
+        } else if (e.code == 'resource-exhausted') {
           errorMessage =
               "Moedas insuficientes. Você precisa de $chatCost moedas para continuar.";
-          // Se o backend diz que não há moedas, força a sincronização para corrigir o valor no app.
+          // Força a sincronização do estado de moedas com o backend
           store.dispatch(LoadUserDetailsAction());
-          CustomNotificationService.showError(context, errorMessage);
-        } else if (!viewModel.isPremium) {
-          // Se houve outro erro na função, REEMBOLSA as moedas otimisticamente.
-          store.dispatch(UpdateUserCoinsAction(viewModel.userCoins));
-          print("Frontend: Reembolso otimista das moedas devido a erro na CF.");
+        } else {
+          errorMessage =
+              "Ocorreu um erro ao processar sua pergunta. Tente novamente.";
         }
+
+        // Reembolsa as moedas se o erro não foi por falta delas
+        if (coinsWereDeducted && e.code != 'resource-exhausted') {
+          store.dispatch(UpdateUserCoinsAction(originalCoins));
+        }
+
+        // Adiciona a mensagem de erro amigável ao chat
         setState(() {
           _messages
               .add(ChatMessage(text: errorMessage, author: MessageAuthor.bot));
         });
       }
     } catch (e) {
+      // ✅ Trata erros genéricos (ex: falha de rede)
       if (mounted) {
-        // Reembolsa em caso de erro de rede, etc.
-        if (!viewModel.isPremium) {
-          store.dispatch(UpdateUserCoinsAction(viewModel.userCoins));
+        print("SermonChatPage: Erro inesperado: $e");
+
+        // Reembolsa as moedas
+        if (coinsWereDeducted) {
+          store.dispatch(UpdateUserCoinsAction(originalCoins));
         }
-        CustomNotificationService.showError(
-            context, "Ocorreu um erro inesperado. Verifique sua conexão.");
+
+        // Adiciona uma mensagem de erro genérica e amigável ao chat
         setState(() {
           _messages.add(ChatMessage(
-              text: "Ocorreu um erro inesperado. Verifique sua conexão.",
+              text:
+                  "Ocorreu um erro inesperado. Verifique sua conexão e tente novamente.",
               author: MessageAuthor.bot));
         });
       }

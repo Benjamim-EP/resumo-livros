@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -153,6 +154,11 @@ class _SectionChatPageState extends State<SectionChatPage> {
     final store = StoreProvider.of<AppState>(context, listen: false);
     final viewModel = _ChatViewModel.fromStore(store);
 
+    if (store.state.userState.isGuestUser) {
+      showLoginRequiredDialog(context, featureName: "enviar mensagens no chat");
+      return; // Impede a continuação da função
+    }
+
     if (!viewModel.isPremium && viewModel.userCoins < chatCost) {
       CustomNotificationService.showWarningWithAction(
           context: context,
@@ -209,16 +215,41 @@ class _SectionChatPageState extends State<SectionChatPage> {
       }
     } on FirebaseFunctionsException catch (e) {
       if (mounted) {
-        String errorMessage = "Ocorreu um erro: ${e.message}";
-        if (e.code == 'resource-exhausted') {
+        // ✅ PONTO DA CORREÇÃO
+        print(
+            "SectionChatPage: Erro FirebaseFunctionsException: ${e.code} - ${e.message}");
+
+        String errorMessage;
+        // Traduz o erro técnico para uma mensagem amigável
+        if (e.code.toUpperCase() == 'UNAVAILABLE' ||
+            e.code.toUpperCase() == 'DEADLINE_EXCEEDED') {
+          errorMessage =
+              "Falha na conexão. Por favor, verifique sua internet e tente novamente.";
+          // A notificação externa já informa o usuário, então aqui só corrigimos a mensagem do chat.
+        } else if (e.code == 'resource-exhausted') {
           errorMessage =
               "Moedas insuficientes. Você precisa de $chatCost moedas para continuar.";
           store.dispatch(LoadUserDetailsAction());
-          CustomNotificationService.showError(context, errorMessage);
-        } else if (!viewModel.isPremium) {
-          store.dispatch(UpdateUserCoinsAction(originalCoins));
-          CustomNotificationService.showError(context, errorMessage);
+          // A notificação já é mostrada pelo middleware de busca
+        } else {
+          errorMessage =
+              "Ocorreu um erro ao processar sua pergunta. Tente novamente.";
         }
+
+        // Reembolsa as moedas se necessário
+        if (!viewModel.isPremium && e.code != 'resource-exhausted') {
+          store.dispatch(UpdateUserCoinsAction(originalCoins));
+          // A notificação de erro externa pode informar sobre o reembolso
+          CustomNotificationService.showError(
+              context, "Ocorreu um erro. Suas moedas foram devolvidas.");
+        } else if (e.code == 'resource-exhausted') {
+          CustomNotificationService.showError(context, errorMessage);
+        } else {
+          CustomNotificationService.showError(
+              context, "Ocorreu um erro ao processar sua pergunta.");
+        }
+
+        // Exibe a mensagem amigável no chat
         setState(() {
           _messages
               .add(ChatMessage(text: errorMessage, author: MessageAuthor.bot));
@@ -226,14 +257,18 @@ class _SectionChatPageState extends State<SectionChatPage> {
       }
     } catch (e) {
       if (mounted) {
+        print("SectionChatPage: Erro inesperado: $e");
         if (!viewModel.isPremium) {
           store.dispatch(UpdateUserCoinsAction(originalCoins));
         }
+        // Mostra a notificação externa
         CustomNotificationService.showError(
             context, "Ocorreu um erro inesperado. Verifique sua conexão.");
+        // Adiciona a mensagem amigável no chat
         setState(() {
           _messages.add(ChatMessage(
-              text: "Ocorreu um erro inesperado. Verifique sua conexão.",
+              text:
+                  "Ocorreu um erro inesperado. Verifique sua conexão e tente novamente.",
               author: MessageAuthor.bot));
         });
       }

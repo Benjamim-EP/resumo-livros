@@ -8,6 +8,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart'; // Para _UserCoinsViewModel
+import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
@@ -496,11 +497,23 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
             ),
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SermonChatPage()),
-                );
+                // ✅ NOVA LÓGICA DE VERIFICAÇÃO
+                final store =
+                    StoreProvider.of<AppState>(context, listen: false);
+                final bool isGuest = store.state.userState.isGuestUser;
+
+                if (isGuest) {
+                  // Se for convidado, mostra o diálogo de login
+                  showLoginRequiredDialog(context,
+                      featureName: "o chat com Spurgeon AI");
+                } else {
+                  // Se estiver logado, continua para a tela de chat
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SermonChatPage()),
+                  );
+                }
               },
               label: const Text("Conversar com IA"),
               icon: const Icon(Icons.chat_bubble_outline),

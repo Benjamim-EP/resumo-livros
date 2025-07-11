@@ -6,6 +6,7 @@ import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart'; // ✅ Importado para uso
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -14,11 +15,10 @@ List<Middleware<AppState>> createUserMiddleware() {
   final FirebaseFunctions functions =
       FirebaseFunctions.instanceFor(region: "southamerica-east1");
 
-  // >>> INÍCIO DO NOVO HANDLER <<<
   void _handleDeleteUserAccount(Store<AppState> store,
       DeleteUserAccountAction action, NextDispatcher next) async {
     next(action);
-
+    // ... (Esta função já tem um bom tratamento de UI com dialogs, então a manteremos como está)
     final context = navigatorKey.currentContext;
     if (context == null || !context.mounted) {
       print("Middleware DeleteAccount: Contexto inválido.");
@@ -26,7 +26,6 @@ List<Middleware<AppState>> createUserMiddleware() {
           DeleteUserAccountFailureAction("Erro interno (contexto inválido)."));
       return;
     }
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -35,32 +34,23 @@ List<Middleware<AppState>> createUserMiddleware() {
         child: Center(child: CircularProgressIndicator()),
       ),
     );
-
     try {
       final HttpsCallable callable = functions.httpsCallable('deleteUserData');
       final result = await callable.call();
-
       print(
           'Middleware DeleteAccount: Sucesso da Cloud Function - ${result.data}');
-
       if (context.mounted) Navigator.pop(context);
-
       store.dispatch(UserLoggedOutAction());
       store.dispatch(DeleteUserAccountSuccessAction());
-
-      // >>>>> CORREÇÃO AQUI <<<<<
-      // REMOVA A LINHA DE NAVEGAÇÃO. O AuthCheck cuidará disso.
-      // O SnackBar pode não aparecer, pois a tela será destruída, mas isso corrige o bug principal.
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sua conta foi excluída com sucesso.')),
         );
-        // Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false); // <<<<<<< REMOVA ESTA LINHA
       }
     } on FirebaseFunctionsException catch (e) {
       print(
           'Middleware DeleteAccount: Erro FirebaseFunctionsException - ${e.code} - ${e.message}');
-      if (context.mounted) Navigator.pop(context); // Fecha o loading
+      if (context.mounted) Navigator.pop(context);
       store.dispatch(DeleteUserAccountFailureAction(
           e.message ?? 'Erro ao se comunicar com o servidor.'));
       if (context.mounted) {
@@ -70,7 +60,7 @@ List<Middleware<AppState>> createUserMiddleware() {
       }
     } catch (e) {
       print('Middleware DeleteAccount: Erro inesperado - $e');
-      if (context.mounted) Navigator.pop(context); // Fecha o loading
+      if (context.mounted) Navigator.pop(context);
       store.dispatch(
           DeleteUserAccountFailureAction('Ocorreu um erro inesperado.'));
       if (context.mounted) {
@@ -85,36 +75,27 @@ List<Middleware<AppState>> createUserMiddleware() {
 
   void _handleUpdateReadingTime(Store<AppState> store,
       UpdateReadingTimeAction action, NextDispatcher next) {
-    // Não bloqueia a UI, então apenas passa a ação adiante se precisar
     next(action);
-
-    // Não faz nada se os segundos forem zero
     if (action.accumulatedSeconds <= 0) return;
-
     final userId = store.state.userState.userId;
     if (userId == null) {
       print(
           "UpdateReadingTimeMiddleware: Usuário não logado, tempo não será salvo.");
       return;
     }
-
     print(
         "UpdateReadingTimeMiddleware: Chamando a Cloud Function 'updateReadingTime'...");
-
     try {
       final functions =
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
       final callable = functions.httpsCallable('updateReadingTime');
-
-      // Chama a função em background, não precisamos esperar (fire and forget)
       callable.call({
         'secondsToAdd': action.accumulatedSeconds,
       });
     } on FirebaseFunctionsException catch (e) {
+      // É uma tarefa de background, então apenas logamos o erro.
       print(
           "UpdateReadingTimeMiddleware: Erro de Firebase Functions ao atualizar tempo: ${e.code} - ${e.message}");
-      // Aqui você poderia ter uma lógica para tentar reenviar mais tarde,
-      // mas por enquanto, apenas logamos o erro.
     } catch (e) {
       print(
           "UpdateReadingTimeMiddleware: Erro inesperado ao chamar a função: $e");
@@ -122,23 +103,23 @@ List<Middleware<AppState>> createUserMiddleware() {
   }
 
   return [
-    // <<< ESTE HANDLER É CRUCIAL >>>
     TypedMiddleware<AppState, LoadUserTagsAction>((store, action, next) async {
       next(action);
       final userId = store.state.userState.userId;
       if (userId == null) return;
       try {
-        print(
-            "Middleware: Carregando tags para o usuário $userId..."); // Log para depuração
         final tags = await firestoreService.loadUserTags(userId);
-        print(
-            "Middleware: Tags carregadas do Firestore: $tags"); // Log para depuração
         store.dispatch(UserTagsLoadedAction(tags));
       } catch (e) {
         print("Erro ao carregar tags do usuário: $e");
+        // ✅ ALTERAÇÃO AQUI
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          CustomNotificationService.showError(
+              context, 'Erro ao carregar suas tags.');
+        }
       }
     }).call,
-
     TypedMiddleware<AppState, EnsureUserTagExistsAction>(
         (store, action, next) async {
       next(action);
@@ -148,9 +129,14 @@ List<Middleware<AppState>> createUserMiddleware() {
         await firestoreService.ensureUserTagExists(userId, action.tagName);
       } catch (e) {
         print("Erro ao garantir a existência da tag: $e");
+        // ✅ ALTERAÇÃO AQUI (Opcional, pois é background, mas bom para consistência)
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          CustomNotificationService.showError(
+              context, 'Falha ao salvar nova tag.');
+        }
       }
     }).call,
-
     TypedMiddleware<AppState, LoadUserStatsAction>(
             _loadUserStats(firestoreService))
         .call,
@@ -160,7 +146,6 @@ List<Middleware<AppState>> createUserMiddleware() {
     TypedMiddleware<AppState, UpdateUserFieldAction>(
             _updateUserField(firestoreService))
         .call,
-
     TypedMiddleware<AppState, dynamic>(
             _loadUserCollectionsMiddleware(firestoreService))
         .call,
@@ -176,36 +161,30 @@ List<Middleware<AppState>> createUserMiddleware() {
     TypedMiddleware<AppState, LoadTopicsContentUserSavesAction>(
             _loadTopicsContentUserSaves(firestoreService))
         .call,
-
     TypedMiddleware<AppState, AddDiaryEntryAction>(
             _addDiaryEntry(firestoreService))
         .call,
     TypedMiddleware<AppState, LoadUserDiariesAction>(
             _loadUserDiaries(firestoreService))
         .call,
-
     TypedMiddleware<AppState, RecordReadingHistoryAction>(
             _handleRecordReadingHistory(firestoreService))
         .call,
     TypedMiddleware<AppState, LoadReadingHistoryAction>(
             _handleLoadReadingHistory(firestoreService))
         .call,
-
-    // Destaques de Versículos Bíblicos
     TypedMiddleware<AppState, LoadUserHighlightsAction>(
             _loadUserHighlights(firestoreService))
         .call,
     TypedMiddleware<AppState, ToggleHighlightAction>(
             _toggleHighlight(firestoreService))
         .call,
-
     TypedMiddleware<AppState, LoadUserNotesAction>(
             _loadUserNotes(firestoreService))
         .call,
     TypedMiddleware<AppState, SaveNoteAction>(_saveNote(firestoreService)).call,
     TypedMiddleware<AppState, DeleteNoteAction>(_deleteNote(firestoreService))
         .call,
-
     TypedMiddleware<AppState, LoadUserCommentHighlightsAction>(
             _loadUserCommentHighlights(firestoreService))
         .call,
@@ -225,149 +204,95 @@ List<Middleware<AppState>> createUserMiddleware() {
   ];
 }
 
-// >>> INÍCIO DA CORREÇÃO <<<
-// Corrigindo o handler de LoadUserHighlightsAction
 void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
     _loadUserHighlights(FirestoreService firestoreService) {
   return (store, action, next) async {
     next(action);
     final userId = store.state.userState.userId;
     if (userId == null) {
-      // Despacha um mapa vazio do tipo CORRETO
       store.dispatch(UserHighlightsLoadedAction({}));
       return;
     }
     try {
-      // O serviço agora retorna Map<String, Map<String, dynamic>>
       final highlights = await firestoreService.loadUserHighlights(userId);
       store.dispatch(UserHighlightsLoadedAction(highlights));
     } catch (e) {
       print("Erro ao carregar destaques: $e");
-      // Despacha um mapa vazio do tipo CORRETO em caso de erro
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar seus destaques.');
+      }
       store.dispatch(UserHighlightsLoadedAction({}));
     }
   };
 }
 
-// Corrigindo o handler de ToggleHighlightAction
 void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
     _toggleHighlight(FirestoreService firestoreService) {
   return (store, action, next) async {
-    // 1. Passa a ação para o próximo middleware/reducer (opcional, mas bom padrão)
     next(action);
-
-    // 2. Verifica se há um usuário logado
     final userId = store.state.userState.userId;
-    if (userId == null) {
-      print("ToggleHighlight Middleware: Usuário não logado. Ação ignorada.");
-      return;
-    }
-
+    if (userId == null) return;
     try {
-      // 3. Verifica se é para REMOVER ou ADICIONAR/ATUALIZAR o destaque
       if (action.colorHex == null) {
-        // Se a cor for nula, a intenção é remover o destaque.
-        print(
-            "ToggleHighlight Middleware: Removendo destaque para o versículo ${action.verseId}...");
         await firestoreService.removeHighlight(userId, action.verseId);
-        print("ToggleHighlight Middleware: Destaque removido com sucesso.");
       } else {
-        // Se a cor existe, a intenção é salvar ou atualizar.
-        print(
-            "ToggleHighlight Middleware: Salvando destaque para o versículo ${action.verseId}...");
-
-        // Busca o texto completo do versículo para salvar junto com o destaque.
-        // Isso é útil para exibir o contexto na lista de destaques sem precisar buscar novamente.
         final String verseText =
             await BiblePageHelper.loadSingleVerseText(action.verseId, 'nvi');
-
-        // Salva os dados do destaque no Firestore
         await firestoreService.saveHighlight(
-          userId,
-          action.verseId,
-          action.colorHex!,
-          tags: action.tags,
-          fullVerseText: verseText,
-        );
-        print("ToggleHighlight Middleware: Destaque salvo com sucesso.");
-
-        // Se houver tags, garante que elas existam na coleção de tags do usuário.
+            userId, action.verseId, action.colorHex!,
+            tags: action.tags, fullVerseText: verseText);
         if (action.tags != null && action.tags!.isNotEmpty) {
-          print(
-              "ToggleHighlight Middleware: Garantindo a existência das tags: ${action.tags}");
           for (var tag in action.tags!) {
-            // Despacha uma ação para cada tag. O middleware `EnsureUserTagExistsAction` fará o trabalho.
             store.dispatch(EnsureUserTagExistsAction(tag));
           }
         }
       }
-
-      // 4. Após qualquer operação (salvar ou remover), recarrega os dados para a UI
-      print(
-          "ToggleHighlight Middleware: Recarregando destaques e tags para atualizar a UI.");
-      store.dispatch(
-          LoadUserHighlightsAction()); // Recarrega os destaques de versículos.
-      store.dispatch(
-          LoadUserTagsAction()); // Recarrega a lista completa de tags do usuário.
+      store.dispatch(LoadUserHighlightsAction());
+      store.dispatch(LoadUserTagsAction());
     } catch (e) {
       print("Erro no middleware ToggleHighlightAction: $e");
-      // Opcional: despachar uma ação de erro para a UI.
-      // store.dispatch(HighlightUpdateFailedAction(e.toString()));
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Falha ao salvar o destaque.');
+      }
     }
   };
 }
 
-// Corrigindo o handler de AddCommentHighlightAction
 void Function(Store<AppState>, AddCommentHighlightAction, NextDispatcher)
     _addCommentHighlight(FirestoreService firestoreService) {
   return (store, action, next) async {
-    // 1. Passa a ação para o próximo middleware/reducer
     next(action);
-
-    // 2. Verifica se há um usuário logado
     final userId = store.state.userState.userId;
-    if (userId == null) {
-      print(
-          "AddCommentHighlight Middleware: Usuário não logado. Ação ignorada.");
-      return;
-    }
-
+    if (userId == null) return;
     try {
-      // 3. Salva os dados do destaque de comentário no Firestore
-      print(
-          "AddCommentHighlight Middleware: Salvando destaque de comentário...");
       await firestoreService.addCommentHighlight(
           userId, action.commentHighlightData);
-      print(
-          "AddCommentHighlight Middleware: Destaque de comentário salvo com sucesso.");
-
-      // 4. Garante que as tags (se existirem) sejam salvas na lista de tags do usuário
-      final tags = action.commentHighlightData['tags']
-          as List<dynamic>?; // Pode vir como List<dynamic>
+      final tags = action.commentHighlightData['tags'] as List<dynamic>?;
       if (tags != null && tags.isNotEmpty) {
         final tagList = List<String>.from(tags.map((t) => t.toString()));
-        print(
-            "AddCommentHighlight Middleware: Garantindo a existência das tags: $tagList");
         for (var tag in tagList) {
           store.dispatch(EnsureUserTagExistsAction(tag));
         }
       }
-
-      // 5. Após salvar, recarrega a lista de destaques de comentários e a lista de tags
-      print(
-          "AddCommentHighlight Middleware: Recarregando dados para atualizar a UI.");
       store.dispatch(LoadUserCommentHighlightsAction());
       store.dispatch(LoadUserTagsAction());
     } catch (e) {
       print("Erro no middleware AddCommentHighlightAction: $e");
-      // Opcional: despachar uma ação de erro.
-      // store.dispatch(CommentHighlightUpdateFailedAction(e.toString()));
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Falha ao salvar destaque do comentário.');
+      }
     }
   };
 }
-// >>> FIM DA CORREÇÃO <<<
-
-// --- O resto das funções permanece igual ---
 
 void Function(Store<AppState>, LoadUserStatsAction, NextDispatcher)
     _loadUserStats(FirestoreService firestoreService) {
@@ -383,6 +308,12 @@ void Function(Store<AppState>, LoadUserStatsAction, NextDispatcher)
       }
     } catch (e) {
       print('UserMiddleware: Erro ao carregar stats do usuário: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar suas estatísticas.');
+      }
     }
   };
 }
@@ -401,6 +332,12 @@ void Function(Store<AppState>, LoadUserDetailsAction, NextDispatcher)
       }
     } catch (e) {
       print('UserMiddleware: Erro ao carregar detalhes do usuário: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar detalhes do perfil.');
+      }
     }
   };
 }
@@ -422,6 +359,12 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
     } catch (e) {
       print(
           'UserMiddleware: Erro ao atualizar o campo "${action.field}" para $userId: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Falha ao salvar alterações.');
+      }
     }
   };
 }
@@ -443,6 +386,12 @@ void Function(Store<AppState>, dynamic, NextDispatcher)
         }
       } catch (e) {
         print('UserMiddleware: Erro ao carregar coleções de tópicos: $e');
+        // ✅ ALTERAÇÃO AQUI
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          CustomNotificationService.showError(
+              context, 'Erro ao carregar suas coleções.');
+        }
       }
     }
   };
@@ -460,6 +409,12 @@ void Function(Store<AppState>, SaveTopicToCollectionAction, NextDispatcher)
           userId, action.collectionName, action.topicId);
     } catch (e) {
       print('UserMiddleware: Erro ao salvar tópico na coleção: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao salvar na coleção.');
+      }
     }
   };
 }
@@ -476,6 +431,12 @@ void Function(Store<AppState>, DeleteTopicCollectionAction, NextDispatcher)
           userId, action.collectionName);
     } catch (e) {
       print('UserMiddleware: Erro ao excluir coleção de tópicos: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao excluir a coleção.');
+      }
     }
   };
 }
@@ -493,6 +454,12 @@ void Function(
           userId, action.collectionName, action.topicId);
     } catch (e) {
       print('UserMiddleware: Erro ao excluir tópico da coleção: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao remover item da coleção.');
+      }
     }
   };
 }
@@ -512,14 +479,12 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
       final topicSaves =
           await firestoreService.getUserCollections(userId) ?? {};
       final Map<String, List<Map<String, dynamic>>> topicsByCollection = {};
-
       for (var entry in topicSaves.entries) {
         final collectionName = entry.key;
         final ids = entry.value;
         final List<Map<String, dynamic>> contentList = [];
         List<String> topicIdsToFetch = [];
         List<String> verseIdsToProcess = [];
-
         for (var id in ids) {
           if (id.startsWith("bibleverses-")) {
             verseIdsToProcess.add(id);
@@ -527,13 +492,11 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
             topicIdsToFetch.add(id);
           }
         }
-
         if (topicIdsToFetch.isNotEmpty) {
           final topicsData =
               await firestoreService.fetchTopicsByIds(topicIdsToFetch);
           contentList.addAll(topicsData);
         }
-
         for (var verseIdWithPrefix in verseIdsToProcess) {
           final verseIdProper =
               verseIdWithPrefix.replaceFirst("bibleverses-", "");
@@ -560,8 +523,15 @@ void Function(Store<AppState>, LoadTopicsContentUserSavesAction, NextDispatcher)
       store.dispatch(
           LoadTopicsContentUserSavesSuccessAction(topicsByCollection));
     } catch (e) {
-      store.dispatch(LoadTopicsContentUserSavesFailureAction(
-          'UserMiddleware: Erro ao carregar tópicos salvos: $e'));
+      // ✅ ALTERAÇÃO AQUI
+      final errorMsg = 'UserMiddleware: Erro ao carregar tópicos salvos: $e';
+      print(errorMsg);
+      store.dispatch(LoadTopicsContentUserSavesFailureAction(errorMsg));
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar seus tópicos salvos.');
+      }
     }
   };
 }
@@ -578,6 +548,12 @@ void Function(Store<AppState>, AddDiaryEntryAction, NextDispatcher)
       store.dispatch(LoadUserDiariesAction());
     } catch (e) {
       print("UserMiddleware: Erro ao adicionar diário: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Falha ao salvar nota no diário.');
+      }
     }
   };
 }
@@ -597,6 +573,12 @@ void Function(Store<AppState>, LoadUserDiariesAction, NextDispatcher)
       store.dispatch(LoadUserDiariesSuccessAction(diaries));
     } catch (e) {
       print("UserMiddleware: Erro ao carregar os diários: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar o diário.');
+      }
       store.dispatch(LoadUserDiariesFailureAction(e.toString()));
     }
   };
@@ -621,6 +603,12 @@ void Function(Store<AppState>, RecordReadingHistoryAction, NextDispatcher)
     } catch (e) {
       print(
           'UserMiddleware (RecordHistory): Erro ao salvar histórico/última leitura: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao registrar progresso de leitura.');
+      }
     }
   };
 }
@@ -641,6 +629,12 @@ void Function(Store<AppState>, LoadReadingHistoryAction, NextDispatcher)
     } catch (e) {
       print(
           'UserMiddleware: Erro ao carregar histórico de leitura detalhado: $e');
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar seu histórico.');
+      }
       store.dispatch(ReadingHistoryLoadedAction([]));
     }
   };
@@ -655,40 +649,34 @@ void Function(Store<AppState>, LoadUserNotesAction, NextDispatcher)
       store.dispatch(UserNotesLoadedAction([]));
       return;
     }
-
     try {
-      // 1. O FirestoreService agora precisa retornar dados mais ricos
-      // Vamos assumir que loadUserNotesRaw agora retorna um Map<String, Map<String, dynamic>>
       final Map<String, Map<String, dynamic>> rawNotes =
           await firestoreService.loadUserNotesRaw(userId);
-
       final List<Map<String, dynamic>> richNotesList = [];
-
       for (var entry in rawNotes.entries) {
         final verseId = entry.key;
         final noteData = entry.value;
-
         final String noteText = noteData['text'] as String? ?? '';
         final Timestamp? timestamp = noteData['timestamp'] as Timestamp?;
-
         final String verseContent =
             await BiblePageHelper.loadSingleVerseText(verseId, 'nvi');
-
         richNotesList.add({
           'verseId': verseId,
           'noteText': noteText,
           'verseContent': verseContent,
-          'timestamp': timestamp, // <<< ADICIONA O TIMESTAMP AOS DADOS
+          'timestamp': timestamp
         });
       }
-
-      // A ordenação agora será feita na UI para maior flexibilidade.
-      // Opcional: você pode ordenar aqui se sempre quiser a mesma ordem.
-
       store.dispatch(UserNotesLoadedAction(richNotesList));
     } catch (e) {
       print(
           "UserMiddleware: Erro ao carregar e enriquecer notas de versículos: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar suas notas.');
+      }
       store.dispatch(UserNotesLoadedAction([]));
     }
   };
@@ -704,6 +692,11 @@ void Function(Store<AppState>, SaveNoteAction, NextDispatcher) _saveNote(
       store.dispatch(LoadUserNotesAction());
     } catch (e) {
       print("UserMiddleware: Erro ao salvar nota: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(context, 'Falha ao salvar a nota.');
+      }
     }
   };
 }
@@ -718,6 +711,11 @@ void Function(Store<AppState>, DeleteNoteAction, NextDispatcher) _deleteNote(
       store.dispatch(LoadUserNotesAction());
     } catch (e) {
       print("UserMiddleware: Erro ao deletar nota: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(context, 'Erro ao excluir a nota.');
+      }
     }
   };
 }
@@ -737,6 +735,12 @@ void Function(Store<AppState>, LoadUserCommentHighlightsAction, NextDispatcher)
       store.dispatch(UserCommentHighlightsLoadedAction(highlights));
     } catch (e) {
       print("UserMiddleware: Erro ao carregar destaques de comentários: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao carregar seus destaques da biblioteca.');
+      }
       store.dispatch(UserCommentHighlightsLoadedAction([]));
     }
   };
@@ -753,6 +757,12 @@ void Function(Store<AppState>, RemoveCommentHighlightAction, NextDispatcher)
       store.dispatch(LoadUserCommentHighlightsAction());
     } catch (e) {
       print("UserMiddleware: Erro ao remover destaque de comentário: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Erro ao remover destaque.');
+      }
     }
   };
 }
@@ -764,13 +774,17 @@ void Function(Store<AppState>, UpdateUserDenominationAction, NextDispatcher)
     final userId = store.state.userState.userId;
     if (userId == null) return;
     try {
-      // Atualiza o campo 'denomination' no Firestore
       await firestoreService.updateUserField(
           userId, 'denomination', action.denominationName);
-      // Recarrega os detalhes do usuário para atualizar a UI em todo o app
       store.dispatch(LoadUserDetailsAction());
     } catch (e) {
       print("Erro ao atualizar denominação: $e");
+      // ✅ ALTERAÇÃO AQUI
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Falha ao atualizar a denominação.');
+      }
     }
   };
 }

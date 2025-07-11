@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_chat/section_chat_page.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
@@ -371,33 +372,48 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
+                        // ✅ NOVA LÓGICA DE VERIFICAÇÃO
                         onTap: () {
-                          final List<String> verseTexts =
-                              widget.verseNumbersInSection.map((vNum) {
-                            if (widget.allVerseDataInChapter is List &&
-                                vNum > 0 &&
-                                vNum <=
-                                    (widget.allVerseDataInChapter as List)
-                                        .length) {
-                              return (widget.allVerseDataInChapter
-                                      as List)[vNum - 1]
-                                  .toString();
-                            }
-                            return "[Texto do versículo $vNum indisponível]";
-                          }).toList();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SectionChatPage(
-                                bookAbbrev: widget.bookAbbrev,
-                                chapterNumber: widget.chapterNumber,
-                                versesRangeStr: widget.versesRangeStr,
-                                sectionTitle: widget.sectionTitle,
-                                sectionVerseTexts: verseTexts,
+                          // Pega o estado do usuário do Redux
+                          final store = StoreProvider.of<AppState>(context,
+                              listen: false);
+                          final bool isGuest =
+                              store.state.userState.isGuestUser;
+
+                          if (isGuest) {
+                            // Se for convidado, mostra o diálogo de login
+                            showLoginRequiredDialog(context,
+                                featureName: "o chat com a IA");
+                          } else {
+                            // Se estiver logado, continua para a tela de chat
+                            final List<String> verseTexts =
+                                widget.verseNumbersInSection.map((vNum) {
+                              if (widget.allVerseDataInChapter is List &&
+                                  vNum > 0 &&
+                                  vNum <=
+                                      (widget.allVerseDataInChapter as List)
+                                          .length) {
+                                return (widget.allVerseDataInChapter
+                                        as List)[vNum - 1]
+                                    .toString();
+                              }
+                              return "[Texto do versículo $vNum indisponível]";
+                            }).toList();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SectionChatPage(
+                                  bookAbbrev: widget.bookAbbrev,
+                                  chapterNumber: widget.chapterNumber,
+                                  versesRangeStr: widget.versesRangeStr,
+                                  sectionTitle: widget.sectionTitle,
+                                  sectionVerseTexts: verseTexts,
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         },
+
                         borderRadius: BorderRadius.circular(20),
                         splashColor: theme.colorScheme.primary,
                         highlightColor: theme.primaryColor,

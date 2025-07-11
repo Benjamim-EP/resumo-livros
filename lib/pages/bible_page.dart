@@ -316,10 +316,9 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
     } catch (e) {
       print("Erro ao carregar resumo para $sectionId: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Resumo para esta seção não encontrado.')),
-        );
+        // ✅ ALTERAÇÃO AQUI: Usa o serviço customizado para consistência
+        CustomNotificationService.showError(
+            context, 'Resumo para esta seção não foi encontrado.');
       }
     }
   }
@@ -848,9 +847,12 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         OpenFile.open(filePath);
       }
     } catch (e) {
+      print("Erro ao gerar PDF: $e"); // Mantém o log técnico para você
       if (mounted) {
         setState(() => _isGeneratingPdf = false);
-        CustomNotificationService.showError(context, 'Erro ao gerar PDF: $e');
+        // ✅ ALTERAÇÃO AQUI: Mensagem mais genérica para o usuário
+        CustomNotificationService.showError(
+            context, 'Ocorreu uma falha ao gerar o PDF.');
       }
     }
   }

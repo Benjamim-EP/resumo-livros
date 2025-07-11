@@ -549,17 +549,25 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
           .getSermonDetailsFromFirestore(widget.sermonGeneratedId);
       if (mounted && sermonMap != null) {
         final sermonData = Sermon.fromJson(sermonMap, widget.sermonGeneratedId);
-        setState(() => _sermonDataFromFirestore = sermonData);
+        setState(() {
+          _sermonDataFromFirestore = sermonData;
+          _error = null; // ✅ Limpa qualquer erro anterior em caso de sucesso
+        });
         if (sermonData.mainScripturePassageAbbreviated != null &&
             sermonData.mainScripturePassageAbbreviated!.isNotEmpty) {
           await _loadMainScripture(sermonData.mainScripturePassageAbbreviated!);
         }
       } else if (mounted) {
-        setState(() => _error =
-            "Sermão não encontrado (ID: ${widget.sermonGeneratedId}).");
+        // ✅ Mensagem de erro mais específica se o sermão não for encontrado
+        setState(() => _error = "Sermão não foi encontrado.");
       }
-    } catch (e, s) {
-      if (mounted) setState(() => _error = "Falha ao carregar o sermão.");
+    } catch (e) {
+      if (mounted) {
+        print("Erro ao carregar sermão: $e"); // Log para você
+        // ✅ Mensagem de erro genérica e amigável para o usuário
+        setState(() => _error =
+            "Falha na conexão. Verifique sua internet e tente novamente.");
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
