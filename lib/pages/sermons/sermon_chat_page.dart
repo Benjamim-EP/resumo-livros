@@ -34,16 +34,23 @@ class ChatMessage {
         'sources': sources,
       };
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
-        text: json['text'],
-        author: MessageAuthor.values.firstWhere(
-          (e) => e.name == json['author'],
-          orElse: () => MessageAuthor.bot,
-        ),
-        sources: (json['sources'] as List<dynamic>?)
-            ?.map((source) => Map<String, dynamic>.from(source))
-            .toList(),
-      );
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    List<Map<String, dynamic>>? sources;
+    if (json['sources'] != null && json['sources'] is List) {
+      sources = (json['sources'] as List)
+          .map((source) => Map<String, dynamic>.from(source as Map))
+          .toList();
+    }
+
+    return ChatMessage(
+      text: json['text'] ?? '',
+      author: MessageAuthor.values.firstWhere(
+        (e) => e.name == json['author'],
+        orElse: () => MessageAuthor.bot,
+      ),
+      sources: sources,
+    );
+  }
 }
 
 // --- ViewModel para conectar a UI ao estado do Redux ---
@@ -195,18 +202,32 @@ class _SermonChatPageState extends State<SermonChatPage> {
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
       final callable = functions.httpsCallable('chatWithSermons');
 
-      const int historyLimit = 8;
-      final conversationHistory = _messages.length > 1
-          ? _messages.sublist(0, _messages.length - 1)
-          : [];
-      final recentHistory = conversationHistory.length > historyLimit
-          ? conversationHistory
-              .sublist(conversationHistory.length - historyLimit)
-          : conversationHistory;
+      // ✅ LÓGICA REFINADA: Envia apenas o histórico de conversas reais, ignorando a mensagem de boas-vindas.
+      const int historyLimit =
+          8; // Limite de mensagens para enviar como histórico
+
+      // Pega todas as mensagens, exceto a do usuário que acabou de ser adicionada.
+      final conversationHistory = _messages.sublist(0, _messages.length - 1);
+
+      // Filtra para remover a mensagem inicial do bot, se for a primeira interação.
+      final relevantHistory = conversationHistory
+          .where((msg) => !(msg.author == MessageAuthor.bot &&
+              conversationHistory.indexOf(msg) == 0))
+          .toList();
+
+      // Pega as últimas N mensagens do histórico relevante.
+      final recentHistory = relevantHistory.length > historyLimit
+          ? relevantHistory.sublist(relevantHistory.length - historyLimit)
+          : relevantHistory;
+
+      // Cria o payload para o backend.
       final historyPayload = recentHistory
           .map((msg) => {
                 'role': msg.author == MessageAuthor.user ? 'user' : 'assistant',
-                'content': msg.text
+                'content': msg.text,
+                // Inclui as fontes da resposta do bot para o contexto
+                if (msg.author == MessageAuthor.bot)
+                  'sources': msg.sources ?? []
               })
           .toList();
 
@@ -501,6 +522,15 @@ class _BotMessageBubble extends StatelessWidget {
   }
 
   Widget _buildSourceChip(BuildContext context, Map<String, dynamic> source) {
+    // ✅ NOVA LÓGICA: Extrai os dados do formato correto
+    final String title = source['title'] as String? ?? 'Fonte desconhecida';
+    final String sermonId = source['sermon_id'] as String? ?? '';
+
+    // Se não houver ID do sermão, não faz sentido mostrar o chip
+    if (sermonId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
@@ -509,26 +539,23 @@ class _BotMessageBubble extends StatelessWidget {
           avatar: Icon(Icons.menu_book,
               size: 16, color: Theme.of(context).colorScheme.primary),
           label: Text(
-            source['title'] ?? 'Sermão Desconhecido',
+            title, // ✅ Usa a variável 'title' extraída
             overflow: TextOverflow.ellipsis,
           ),
           labelStyle: TextStyle(
               fontSize: 12,
               color: Theme.of(context).textTheme.bodyMedium?.color),
           onPressed: () {
-            final sermonId = source['sermon_id'] as String?;
-            final title = source['title'] as String?;
-            if (sermonId != null && title != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SermonDetailPage(
-                    sermonGeneratedId: sermonId,
-                    sermonTitle: title,
-                  ),
+            // ✅ Ação de clique agora usa as variáveis corretas
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SermonDetailPage(
+                  sermonGeneratedId: sermonId,
+                  sermonTitle: title,
                 ),
-              );
-            }
+              ),
+            );
           },
         ),
       ),
