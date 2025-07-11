@@ -299,6 +299,43 @@ class _SectionChatPageState extends State<SectionChatPage> {
                 title: Text('Chat: $fullReference'),
                 pinned: true,
                 expandedHeight: 230.0,
+                actions: [
+                  // ✅ NOVO BOTÃO DE LIMPAR CHAT
+                  IconButton(
+                    icon: const Icon(Icons.refresh_rounded),
+                    tooltip: 'Nova Conversa',
+                    onPressed: () {
+                      // Mostra um diálogo de confirmação antes de limpar
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext dialogContext) {
+                          return AlertDialog(
+                            title: const Text('Limpar Conversa'),
+                            content: const Text(
+                                'Tem certeza que deseja apagar o histórico desta conversa?'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('Cancelar'),
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: Text('Limpar',
+                                    style: TextStyle(
+                                        color: theme.colorScheme.error)),
+                                onPressed: () {
+                                  _resetChat(); // Chama a função que você já tem!
+                                  Navigator.of(dialogContext).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: _buildHeaderContent(theme, viewModel),
                 ),
