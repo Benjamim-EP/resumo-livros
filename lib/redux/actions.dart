@@ -638,3 +638,24 @@ class UpdateReadingTimeAction {
 
   UpdateReadingTimeAction({required this.accumulatedSeconds});
 }
+
+/// Disparada pela UI para iniciar a busca por recomendações de livros.
+class SearchBookRecommendationsAction {
+  final String query;
+  SearchBookRecommendationsAction(this.query);
+}
+
+/// Disparada pelo middleware quando a busca é bem-sucedida e os dados são recebidos.
+class BookRecommendationsLoadedAction {
+  final List<Map<String, dynamic>> recommendations;
+  BookRecommendationsLoadedAction(this.recommendations);
+}
+
+/// Disparada pelo middleware em caso de falha na busca.
+class BookRecommendationsFailedAction {
+  final String error;
+  BookRecommendationsFailedAction(this.error);
+}
+
+/// Disparada pela UI para limpar os resultados da busca (ex: ao fechar a tela de busca).
+class ClearBookRecommendationsAction {}

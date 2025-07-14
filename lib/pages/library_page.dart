@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
+import 'package:septima_biblia/pages/library_page/book_search_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
+import 'package:septima_biblia/pages/library_page/glowing_resource_card.dart';
 import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
@@ -242,6 +244,19 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
+  final Map<String, dynamic> _bookSearchCardData = {
+    'title': "Recomendação de Livros",
+    'description':
+        "Encontre o livro perfeito para o seu momento, dúvida ou sentimento.",
+    'author': 'Septima AI',
+    'pageCount': '70+ Livros / 7+ Autores',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/book_recommendation_cover.webp', // Crie ou use uma imagem de capa
+    'destinationPage': const BookSearchPage(),
+    'isSpecial': true, // Flag para identificar nosso card especial
+  };
   // A lista de itens da biblioteca
   List<Map<String, dynamic>> get libraryItems => [
         {
@@ -255,6 +270,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'destinationPage': const SpurgeonSermonsIndexPage(),
         },
+        _bookSearchCardData,
         {
           'title': "A Palavra de Deus às Mulheres",
           'description':
@@ -383,7 +399,17 @@ class _LibraryPageState extends State<LibraryPage> {
                   );
                 }
               };
-
+              // ✅ 4. LÓGICA DE RENDERIZAÇÃO CONDICIONAL
+              // Se for o card especial, usa o GlowingResourceCard
+              if (itemData['isSpecial'] == true) {
+                return GlowingResourceCard(
+                  itemData: itemData,
+                  onTap: onTapAction,
+                )
+                    .animate()
+                    .fadeIn(duration: 600.ms)
+                    .scaleXY(begin: 0.9, curve: Curves.easeOutBack);
+              }
               return ResourceCard(
                 title: itemData['title'],
                 description: itemData['description'],

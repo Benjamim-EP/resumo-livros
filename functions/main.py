@@ -52,6 +52,15 @@ try:
 except ImportError as e_import_bible_chat:
     bible_chat_service = None
     print(f"AVISO: Não foi possível importar 'bible_chat_service': {e_import_bible_chat}")
+
+try:
+    import book_search_service
+    print("Módulo 'book_search_service' importado com sucesso.")
+except ImportError as e_import_book:
+    book_search_service = None
+    print(f"AVISO: Não foi possível importar 'book_search_service': {e_import_book}")
+
+
 # --- Inicialização do Firebase Admin ---
 if not firebase_admin._apps:
     try:
@@ -1080,3 +1089,46 @@ def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
     except Exception as e:
         print(f"ERRO CRÍTICO durante o processamento do ranking semanal: {e}")
         traceback.print_exc()
+
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512, # Memória suficiente para múltiplas chamadas de IA
+    timeout_sec=90 # Timeout maior por causa das múltiplas chamadas
+)
+def semanticBookSearch(request: https_fn.CallableRequest) -> dict:
+    """
+    Recebe a query do usuário, chama o serviço de busca de livros e retorna as recomendações.
+    """
+    print("Handler semanticBookSearch chamado.")
+    
+    # Verifica se o serviço foi importado corretamente
+    if book_search_service is None:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message="Erro interno do servidor (módulo de busca de livros indisponível)."
+        )
+
+    user_query = request.data.get("query")
+    if not user_query or not isinstance(user_query, str):
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'query' (string) é obrigatório."
+        )
+    
+    try:
+        # A função _run_async_handler_wrapper executa nossa lógica assíncrona
+        recommendations = _run_async_handler_wrapper(
+            book_search_service.get_book_recommendations(user_query, top_k=5) # Busca os 5 melhores
+        )
+        
+        print(f"semanticBookSearch: Retornando {len(recommendations)} recomendações para o cliente.")
+        return {"recommendations": recommendations if isinstance(recommendations, list) else []}
+        
+    except Exception as e:
+        print(f"Erro inesperado em semanticBookSearch (main.py): {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Erro ao buscar recomendações de livros: {str(e)}"
+        )

@@ -1154,3 +1154,65 @@ class MetadataState {
     );
   }
 }
+
+// ✅ 1. NOVO ESTADO PARA A BUSCA DE LIVROS
+class BookSearchState {
+  final bool isLoading;
+  final List<Map<String, dynamic>> recommendations;
+  final String? error;
+  final String currentQuery; // Para saber qual a última busca feita
+
+  BookSearchState({
+    this.isLoading = false,
+    this.recommendations = const [],
+    this.error,
+    this.currentQuery = "",
+  });
+
+  BookSearchState copyWith({
+    bool? isLoading,
+    List<Map<String, dynamic>>? recommendations,
+    String? error,
+    String? currentQuery,
+    bool clearError = false,
+  }) {
+    return BookSearchState(
+      isLoading: isLoading ?? this.isLoading,
+      recommendations: recommendations ?? this.recommendations,
+      error: clearError ? null : error ?? this.error,
+      currentQuery: currentQuery ?? this.currentQuery,
+    );
+  }
+}
+
+// ✅ 2. NOVO REDUCER PARA O ESTADO DE BUSCA DE LIVROS
+BookSearchState bookSearchReducer(BookSearchState state, dynamic action) {
+  if (action is SearchBookRecommendationsAction) {
+    // Ao iniciar uma nova busca: ativa o loading, limpa resultados e erros anteriores.
+    return state.copyWith(
+      isLoading: true,
+      recommendations: [],
+      currentQuery: action.query,
+      clearError: true,
+    );
+  }
+  if (action is BookRecommendationsLoadedAction) {
+    // Ao receber os resultados: desativa o loading e preenche a lista de recomendações.
+    return state.copyWith(
+      isLoading: false,
+      recommendations: action.recommendations,
+    );
+  }
+  if (action is BookRecommendationsFailedAction) {
+    // Em caso de falha: desativa o loading e armazena a mensagem de erro.
+    return state.copyWith(
+      isLoading: false,
+      error: action.error,
+    );
+  }
+  if (action is ClearBookRecommendationsAction) {
+    // Limpa o estado, voltando ao inicial.
+    return BookSearchState();
+  }
+  return state;
+}

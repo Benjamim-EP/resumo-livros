@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/middleware/backend_validation_middleware.dart';
 import 'package:septima_biblia/redux/middleware/bible_progress_middleware.dart';
+import 'package:septima_biblia/redux/middleware/book_search_middleware.dart';
 import 'package:septima_biblia/redux/middleware/fake_payment_middleware.dart';
 import 'package:septima_biblia/redux/middleware/firestore_sync_middleware.dart';
 import 'package:septima_biblia/redux/middleware/metadata_middleware.dart';
@@ -32,6 +33,7 @@ class AppState {
   final BibleSearchState
       bibleSearchState; // NOVO: Estado para a busca semântica bíblica
   final SermonSearchState sermonSearchState; // NOVO ESTADO
+  final BookSearchState bookSearchState;
 
   final MetadataState metadataState;
   final SubscriptionState subscriptionState;
@@ -47,6 +49,7 @@ class AppState {
     required this.metadataState,
     required this.subscriptionState,
     required this.sermonSearchState,
+    required this.bookSearchState,
   });
 
   // O método copyWith é útil para testes ou cenários de atualização mais complexos,
@@ -59,6 +62,7 @@ class AppState {
       ChatState? chatState,
       ThemeState? themeState,
       BibleSearchState? bibleSearchState, // NOVO
+      BookSearchState? bookSearchState,
       SubscriptionState? subscriptionState}) {
     return AppState(
       booksState: booksState ?? this.booksState,
@@ -72,6 +76,7 @@ class AppState {
           metadataState ?? metadataState, // Mantém o estado de metadados atual
       subscriptionState: subscriptionState ?? this.subscriptionState,
       sermonSearchState: sermonSearchState ?? this.sermonSearchState,
+      bookSearchState: bookSearchState ?? this.bookSearchState,
     );
   }
 }
@@ -90,6 +95,7 @@ AppState appReducer(AppState state, dynamic action) {
     metadataState: metadataReducer(state.metadataState, action),
     subscriptionState: subscriptionReducer(state.subscriptionState, action),
     sermonSearchState: sermonSearchReducer(state.sermonSearchState, action),
+    bookSearchState: bookSearchReducer(state.bookSearchState, action),
   );
 }
 
@@ -111,6 +117,7 @@ final Store<AppState> store = Store<AppState>(
     subscriptionState: SubscriptionState.initial(),
     sermonSearchState:
         SermonSearchState(), // NOVO: Estado inicial para busca de sermões
+    bookSearchState: BookSearchState(),
   ),
   middleware: createAppMiddleware(),
 );
@@ -130,6 +137,7 @@ List<Middleware<AppState>> createAppMiddleware() {
     ...createFirestoreSyncMiddleware(),
     ...createSermonSearchMiddleware(),
     ...createBackendValidationMiddleware(),
+    ...createBookSearchMiddleware(),
   ];
 
   // A constante kDebugMode é verdadeira apenas quando você roda em modo debug
