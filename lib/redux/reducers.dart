@@ -72,16 +72,16 @@ ThemeState themeReducer(ThemeState state, dynamic action) {
 class BooksState {
   final Map<String, List<Map<String, String>>> booksByTag; // Livros por tag
   final bool isLoading;
-  final Map<String, dynamic>? bookDetails; // Detalhes de um único livro
   final Map<String, dynamic> booksProgress; // Progresso dos livros
   final int nTopicos;
   final List<Map<String, dynamic>> weeklyRecommendations; // Indicação semanal ✅
   final Set<String> booksReading;
+  final Map<String, Map<String, dynamic>> bookDetails;
 
   BooksState(
       {this.booksByTag = const {},
       this.isLoading = false,
-      this.bookDetails,
+      this.bookDetails = const {},
       this.booksProgress = const {},
       this.nTopicos = 1,
       this.weeklyRecommendations = const [], // ✅ Inicializa corretamente
@@ -90,21 +90,23 @@ class BooksState {
   BooksState copyWith(
       {Map<String, List<Map<String, String>>>? booksByTag,
       bool? isLoading,
-      Map<String, dynamic>? bookDetails,
       Map<String, dynamic>? booksProgress,
       int? nTopicos,
       List<Map<String, dynamic>>?
           weeklyRecommendations, // ✅ Adicionado no copyWith
+      Map<String, Map<String, dynamic>>?
+          bookDetails, // ✅ CORREÇÃO: Tipo correto no copyWith
       Set<String>? booksReading}) {
     return BooksState(
       booksByTag: booksByTag ?? this.booksByTag,
       isLoading: isLoading ?? this.isLoading,
-      bookDetails: bookDetails ?? this.bookDetails,
+
       booksProgress: booksProgress ?? this.booksProgress,
       nTopicos: nTopicos ?? this.nTopicos,
       weeklyRecommendations: weeklyRecommendations ??
           this.weeklyRecommendations, // ✅ Agora atualizado corretamente
       booksReading: booksReading ?? this.booksReading,
+      bookDetails: bookDetails ?? this.bookDetails,
     );
   }
 }
@@ -124,10 +126,17 @@ BooksState booksReducer(BooksState state, dynamic action) {
       },
     );
   } else if (action is BookDetailsLoadedAction) {
-    //print('Reducer: Atualizando estado com detalhes do livro ${action.bookId}');
-    return state.copyWith(
-      bookDetails: {...?state.bookDetails, action.bookId: action.bookDetails},
-    );
+    // ✅ LÓGICA CORRIGIDA E MAIS ROBUSTA
+
+    // 1. Cria uma cópia do mapa de detalhes atual.
+    final newBookDetails =
+        Map<String, Map<String, dynamic>>.from(state.bookDetails);
+
+    // 2. Adiciona ou atualiza os detalhes para o bookId específico.
+    newBookDetails[action.bookId] = action.bookDetails;
+
+    // 3. Retorna o novo estado com o mapa atualizado.
+    return state.copyWith(bookDetails: newBookDetails);
   } else if (action is StartBookProgressAction) {
     final updatedBooksProgress = Map<String, dynamic>.from(state.booksProgress);
     updatedBooksProgress[action.bookId] ??= {'progress': 0, 'readTopics': []};

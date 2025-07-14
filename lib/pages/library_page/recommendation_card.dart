@@ -1,6 +1,6 @@
 // lib/pages/library_page/recommendation_card.dart
 import 'package:flutter/material.dart';
-import 'package:septima_biblia/pages/book_details_page.dart'; // Importa a página de detalhes
+import 'package:septima_biblia/pages/book_details_page.dart';
 
 class RecommendationCard extends StatelessWidget {
   final Map<String, dynamic> recommendation;
@@ -14,7 +14,6 @@ class RecommendationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Extrai os dados do mapa com segurança
     final String coverUrl = recommendation['cover'] as String? ?? '';
     final String title =
         recommendation['titulo'] as String? ?? 'Título Desconhecido';
@@ -24,6 +23,9 @@ class RecommendationCard extends StatelessWidget {
         'Recomendado para sua busca.';
     final String bookId = recommendation['book_id'] as String? ?? '';
 
+    const double imageHeight = 120.0;
+    const double imageWidth = 80.0;
+    //print('RecommendationCard: $bookId, $title, $author, $coverUrl');
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
@@ -32,7 +34,7 @@ class RecommendationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Seção da Justificativa (Destaque)
+          // Seção da Justificativa
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16.0),
@@ -45,20 +47,18 @@ class RecommendationCard extends StatelessWidget {
               ),
             ),
           ),
-
           const Divider(height: 1, thickness: 1),
-
-          // Seção de Informações do Livro
+          // ✅ NOVA ESTRUTURA PARA A SEÇÃO DE INFORMAÇÕES
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Imagem da capa
+                // Imagem da capa (com tamanho fixo)
                 if (coverUrl.isNotEmpty)
                   SizedBox(
-                    width: 80,
-                    height: 120,
+                    width: imageWidth,
+                    height: imageHeight,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
@@ -70,45 +70,54 @@ class RecommendationCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(width: 16),
-                // Título, autor e botão
+
+                // Coluna com Título, Autor e Botão
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        author,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color
-                              ?.withOpacity(0.7),
+                  // A Column agora está dentro de uma SizedBox com altura explícita
+                  child: SizedBox(
+                    height:
+                        imageHeight, // Força a coluna a ter a mesma altura da imagem
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment:
+                          MainAxisAlignment.start, // Alinha no topo
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton.tonal(
-                          onPressed: bookId.isNotEmpty
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            BookDetailsPage(bookId: bookId)),
-                                  );
-                                }
-                              : null,
-                          child: const Text('Ver Livro'),
+                        const SizedBox(height: 4),
+                        Text(
+                          author,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.textTheme.bodyMedium?.color
+                                ?.withOpacity(0.7),
+                          ),
                         ),
-                      ),
-                    ],
+                        // Expanded dentro da Column força o botão a ir para o final
+                        const Expanded(child: SizedBox()),
+                        Align(
+                          alignment: Alignment
+                              .bottomRight, // Alinha o botão no canto inferior direito
+                          child: FilledButton.tonal(
+                            onPressed: bookId.isNotEmpty
+                                ? () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              BookDetailsPage(bookId: bookId)),
+                                    );
+                                  }
+                                : null,
+                            child: const Text('Ver Livro'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

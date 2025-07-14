@@ -3,13 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:septima_biblia/components/loadingauthorspage.dart'; // Reutilizando um placeholder de loading
+import 'package:septima_biblia/components/loadingauthorspage.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:redux/redux.dart';
+import 'package:redux/redux.dart'; // Mantido para o tipo Store
 
-// ViewModel para conectar a UI aos dados do livro no Redux
+// ViewModel (sem alterações)
 class _ViewModel {
   final Map<String, dynamic>? bookDetails;
   final bool isLoading;
@@ -17,11 +17,9 @@ class _ViewModel {
   _ViewModel({this.bookDetails, required this.isLoading});
 
   static _ViewModel fromStore(Store<AppState> store, String bookId) {
-    // Verifica se os detalhes deste livro específico já estão no estado
     final details = store.state.booksState.bookDetails?[bookId];
     return _ViewModel(
       bookDetails: details,
-      // O loading pode ser um estado global ou derivado (se os detalhes são nulos, está carregando)
       isLoading: details == null,
     );
   }
@@ -43,7 +41,8 @@ class _BookDetailsPageState extends State<BookDetailsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    // ✅ 1. AUMENTA O NÚMERO DE ABAS PARA 4
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -52,13 +51,14 @@ class _BookDetailsPageState extends State<BookDetailsPage>
     super.dispose();
   }
 
-  // Função para abrir links da Amazon
   Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível abrir o link: $url')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Não foi possível abrir o link: $url')),
+        );
+      }
     }
   }
 
@@ -66,7 +66,6 @@ class _BookDetailsPageState extends State<BookDetailsPage>
   Widget build(BuildContext context) {
     return StoreConnector<AppState, _ViewModel>(
       onInit: (store) {
-        // Dispara a ação para carregar os detalhes do livro se ainda não estiverem no estado
         if (store.state.booksState.bookDetails?[widget.bookId] == null) {
           store.dispatch(LoadBookDetailsAction(widget.bookId));
         }
@@ -74,7 +73,6 @@ class _BookDetailsPageState extends State<BookDetailsPage>
       converter: (store) => _ViewModel.fromStore(store, widget.bookId),
       builder: (context, viewModel) {
         if (viewModel.isLoading) {
-          // Reutilizando um placeholder existente para uma boa experiência de loading
           return const Scaffold(body: AuthorPageLoadingPlaceholder());
         }
 
@@ -89,78 +87,108 @@ class _BookDetailsPageState extends State<BookDetailsPage>
         final details = viewModel.bookDetails!;
         final String coverUrl = details['cover'] ?? '';
         final String title = details['titulo'] ?? 'Sem Título';
-        final String author = details['authorId'] ??
-            'Autor Desconhecido'; // Note que aqui vem o ID do autor
+        final String authorId = details['authorId'] ?? 'Autor Desconhecido';
 
         return Scaffold(
           body: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverAppBar(
-                  expandedHeight: 250.0,
+                  expandedHeight: 280.0,
                   floating: false,
                   pinned: true,
                   stretch: true,
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: true,
+                    titlePadding: const EdgeInsets.symmetric(
+                        horizontal: 48, vertical: 12),
                     title: Text(
                       title,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 16.0,
-                        shadows: [Shadow(blurRadius: 4, color: Colors.black87)],
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(blurRadius: 6, color: Colors.black)],
                       ),
                     ),
-                    background: coverUrl.isNotEmpty
-                        ? Image.network(
-                            coverUrl,
-                            fit: BoxFit.cover,
-                            color: Colors.black.withOpacity(0.4),
-                            colorBlendMode: BlendMode.darken,
-                          )
-                        : Container(color: Colors.grey),
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        coverUrl.isNotEmpty
+                            ? Image.network(coverUrl, fit: BoxFit.cover)
+                            : Container(color: Colors.grey.shade800),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.8)
+                              ],
+                              stops: const [0.5, 1.0],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ];
             },
             body: Column(
               children: [
-                // Informações básicas abaixo da AppBar
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
                   child: Row(
                     children: [
                       Icon(Icons.person_outline,
                           color: Theme.of(context).colorScheme.secondary),
                       const SizedBox(width: 8),
-                      // TODO: No futuro, você pode querer buscar o nome do autor a partir do 'authorId'
-                      Text(author,
+                      Text(authorId,
                           style: Theme.of(context).textTheme.titleMedium),
                     ],
                   ),
                 ),
 
-                // Abas para organizar o conteúdo
+                // ✅ 2. ATUALIZA A TABBAR COM A NOVA ABA "TEMAS"
                 TabBar(
                   controller: _tabController,
+                  // ✅ CORREÇÃO: Removido isScrollable, pois não é mais necessário
                   tabs: const [
-                    Tab(text: 'Sobre'),
-                    Tab(text: 'Aplicações'),
-                    Tab(text: 'Versões'),
+                    // ✅ CORREÇÃO: Abas agora contêm apenas o ícone
+                    Tab(icon: Icon(Icons.info_outline), text: "Resumo"),
+                    Tab(icon: Icon(Icons.class_outlined), text: "Temas"),
+                    Tab(
+                        icon: Icon(Icons.lightbulb_outline),
+                        text: "Aplicações"),
+                    Tab(
+                        icon: Icon(Icons.shopping_cart_outlined),
+                        text: "Versões"),
                   ],
                 ),
 
-                // Conteúdo das abas
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // Aba "Sobre"
-                      _buildMarkdownContent(
-                          details['resumo'], details['temas']),
+                      // ✅ 3. REORGANIZA O CONTEÚDO DAS ABAS
+                      // Aba "Resumo" - Apenas o resumo
+                      _buildMarkdownContent(context,
+                          title: null, content: details['resumo']),
 
-                      // Aba "Aplicações"
+                      // Aba "Temas" - Apenas os temas
+                      _buildMarkdownContent(context,
+                          title: null, content: details['temas']),
+
+                      // Aba "Aplicações" - Aplicações e Perfil do Leitor
                       _buildMarkdownContent(
-                          details['aplicacoes'], details['perfil_leitor']),
+                        context,
+                        title: "Aplicações Práticas",
+                        content: details['aplicacoes'],
+                        secondaryTitle: "Recomendado Para",
+                        secondaryContent: details['perfil_leitor'],
+                      ),
 
                       // Aba "Versões"
                       _buildVersionsList(
@@ -177,25 +205,60 @@ class _BookDetailsPageState extends State<BookDetailsPage>
   }
 
   // Widget para renderizar conteúdo Markdown
-  Widget _buildMarkdownContent(String? mainContent, String? secondaryContent) {
-    String fullContent =
-        (mainContent ?? '') + '\n\n' + (secondaryContent ?? '');
-    if (fullContent.trim().isEmpty) {
+  Widget _buildMarkdownContent(
+    BuildContext context, {
+    String? title,
+    String? content,
+    String? secondaryTitle,
+    String? secondaryContent,
+  }) {
+    final theme = Theme.of(context);
+    final List<Widget> children = [];
+
+    if (title != null) {
+      children.add(Text(title, style: theme.textTheme.titleLarge));
+      children.add(const SizedBox(height: 8));
+    }
+
+    if (content != null && content.isNotEmpty) {
+      children.add(MarkdownBody(
+        data: content,
+        styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+            p: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+            listBullet: theme.textTheme.bodyLarge),
+      ));
+    }
+
+    if (secondaryTitle != null &&
+        secondaryContent != null &&
+        secondaryContent.isNotEmpty) {
+      children.add(const Divider(height: 32));
+      children.add(Text(secondaryTitle, style: theme.textTheme.titleLarge));
+      children.add(const SizedBox(height: 8));
+      children.add(MarkdownBody(
+        data: secondaryContent,
+        styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+            p: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+            listBullet: theme.textTheme.bodyLarge),
+      ));
+    }
+
+    if (children.isEmpty) {
       return const Center(child: Text("Nenhuma informação disponível."));
     }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
-      child: MarkdownBody(
-        data: fullContent,
-        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-          p: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.5),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
       ),
     );
   }
 
   // Widget para listar as versões disponíveis para compra
   Widget _buildVersionsList(List<dynamic> versions) {
+    // ... (esta função permanece a mesma)
     if (versions.isEmpty) {
       return const Center(child: Text("Nenhuma versão de compra encontrada."));
     }

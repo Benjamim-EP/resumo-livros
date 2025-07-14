@@ -138,6 +138,7 @@ List<Middleware<AppState>> createAppMiddleware() {
     ...createSermonSearchMiddleware(),
     ...createBackendValidationMiddleware(),
     ...createBookSearchMiddleware(),
+    ...createBookMiddleware(),
   ];
 
   // A constante kDebugMode é verdadeira apenas quando você roda em modo debug

@@ -156,8 +156,9 @@ async def get_book_recommendations(user_query: str, top_k: int = 5) -> list[dict
         recommendations = []
         for i, match in enumerate(search_results):
             metadata = match.get('metadata', {})
+            pinecone_id = match.get('id')
             recommendations.append({
-                "book_id": metadata.get("id"),
+                "book_id": pinecone_id,
                 "titulo": metadata.get("titulo"),
                 "autor": metadata.get("autor"),
                 "cover": metadata.get("cover_principal"),
