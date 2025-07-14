@@ -351,14 +351,17 @@ class UserState {
     String? initialBibleSectionIdToScrollTo, // NOVO
     List<String>? allUserTags, // <<< NOVO PARÂMETRO
     bool? isLoadingLogin,
+    bool clearUserId = false,
+    bool clearEmail = false,
+    bool clearUserDetails = false,
   }) {
     return UserState(
-      userId: userId ?? this.userId,
-      email: email ?? this.email,
+      userId: clearUserId ? null : (userId ?? this.userId),
+      email: clearEmail ? null : (email ?? this.email),
       nome: nome ?? this.nome,
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
       // tags: tags ?? this.tags,
-      userDetails: userDetails ?? this.userDetails,
+      userDetails: clearUserDetails ? null : (userDetails ?? this.userDetails),
       // userBooks: userBooks ?? this.userBooks,
       topicSaves: topicSaves ?? this.topicSaves,
       // booksInProgress: booksInProgress ?? this.booksInProgress,
@@ -461,18 +464,30 @@ UserState userReducer(UserState state, dynamic action) {
     // <<< INÍCIO DA MUDANÇA: Usa os dados da ação se disponíveis >>>
     return state.copyWith(
       isLoggedIn: false,
-      userId: null,
-      email: null,
-      nome: "Convidado",
       isGuestUser: true,
-      userCoins: action.initialCoins ?? 10, // Usa moedas salvas ou o padrão 10
+
+      // ✅ AGORA ESTA LÓGICA FUNCIONARÁ CORRETAMENTE
+      clearUserId: true,
+      clearEmail: true,
+      clearUserDetails: true,
+
+      nome: "Convidado",
+
+      // Limpa dados específicos que não devem persistir entre sessões de login/convidado
+      userHighlights: {},
+      userNotes: [],
+      userCommentHighlights: [],
+      allBooksProgress: {},
+      readSectionsByBook: {},
+      topicSaves: {},
+
+      // Mantém a lógica de moedas e anúncios
+      userCoins: action.initialCoins ?? 10,
       rewardedAdsWatchedToday: action.initialAdsToday ?? 0,
-      lastRewardedAdWatchTime: action.initialLastAdTime, // Pode ser nulo
-      // Resetar a janela de 6h ao entrar como convidado
+      lastRewardedAdWatchTime: action.initialLastAdTime,
       adsWatchedIn6HourWindow: 0,
       clearFirstAdIn6HourWindowTimestamp: true,
     );
-    // <<< FIM DA MUDANÇA >>>
   } else if (action is UpdateUserUidAction) {
     // Usado pelo AuthCheck se o UID inicial for nulo
     return state.copyWith(userId: action.uid);

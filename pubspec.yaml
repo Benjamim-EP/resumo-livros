@@ -71,6 +71,7 @@ dependencies:
   another_flushbar: ^1.12.30
   flutter_animate: ^4.5.2
   google_mlkit_translation: ^0.13.0
+  mocktail: ^1.0.4
   
 flutter_localizations:
     sdk: flutter

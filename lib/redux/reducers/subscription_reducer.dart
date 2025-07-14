@@ -112,34 +112,40 @@ SubscriptionState subscriptionReducer(SubscriptionState state, dynamic action) {
     // Esta ação é crucial e será despachada pelo middleware que ouve o Firestore
     // ou após a validação do backend.
     SubscriptionStatus newStatus;
+    bool shouldClearData = false;
+
     switch (action.status.toLowerCase()) {
       case 'active':
-      case 'trialing': // Google Play pode ter 'trialing'
+      case 'trialing':
         newStatus = SubscriptionStatus.premiumActive;
         break;
       case 'past_due':
-      case 'canceled': // Cancelada, mas pode estar ativa até o fim do período
+      case 'canceled':
         newStatus =
             action.endDate != null && action.endDate!.isAfter(DateTime.now())
-                ? SubscriptionStatus.premiumActive // Ainda ativa até expirar
-                : SubscriptionStatus
-                    .premiumExpired; // Ou um status específico para cancelada
+                ? SubscriptionStatus.premiumActive
+                : SubscriptionStatus.premiumExpired;
+        // Se cancelado e já expirado, também limpa os dados
+        if (newStatus == SubscriptionStatus.premiumExpired) {
+          shouldClearData = true;
+        }
         break;
       case 'expired':
-        newStatus = SubscriptionStatus.premiumExpired;
-        break;
-      case 'pending': // Google Play pode ter 'pending'
-        newStatus = SubscriptionStatus.premiumPendingValidation;
-        break;
-      default: // 'inactive', 'paused', etc.
+      case 'inactive': // ✅ Casos que devem limpar os dados
+      case 'paused':
+      default:
         newStatus = SubscriptionStatus.free;
+        shouldClearData = true; // Marca para limpar os dados da assinatura
     }
     return state.copyWith(
       isLoading: false,
       status: newStatus,
-      activeProductId: action.priceId, // Ou productId do Google Play
-      expirationDate: action.endDate,
-      // Não limpamos o lastPurchaseToken aqui, pode ser útil para restauração
+      // Se for para limpar, passa null explicitamente, senão usa o da ação ou o antigo
+      activeProductId: shouldClearData ? null : action.priceId,
+      expirationDate: shouldClearData ? null : action.endDate,
+      // Usa as flags de limpeza que já existem no copyWith
+      clearActiveProduct: shouldClearData,
+      clearExpirationDate: shouldClearData,
       clearError: true,
     );
   }
