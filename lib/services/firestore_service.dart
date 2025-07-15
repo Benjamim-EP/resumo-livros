@@ -5,8 +5,11 @@ import 'package:intl/intl.dart';
 import 'package:septima_biblia/redux/reducers.dart'; // Para formatar datas
 
 class FirestoreService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
   static const int READING_HISTORY_LIMIT = 20;
+
+  FirestoreService({FirebaseFirestore? firestoreInstance})
+      : _db = firestoreInstance ?? FirebaseFirestore.instance;
 
   Future<Map<String, List<Map<String, dynamic>>>>
       fetchAllCommentariesForChapter(String bookAbbrev, int chapterNumber,
@@ -55,6 +58,36 @@ class FirestoreService {
     }
 
     return results;
+  }
+
+  // ✅ CORREÇÃO: IMPLEMENTAÇÃO COMPLETA DO MÉTODO QUE FALTAVA
+  Future<Map<String, dynamic>?> fetchBookDetails(String bookId) async {
+    try {
+      final bookSnapshot = await _db.collection('livros').doc(bookId).get();
+
+      if (bookSnapshot.exists) {
+        final data = bookSnapshot.data()!;
+
+        // Mapeia os dados do Firestore para um formato consistente
+        return {
+          'bookId': bookId,
+          'titulo': data['titulo'] ?? 'Título Desconhecido',
+          'authorId': data['autor'] ?? 'Autor Desconhecido',
+          'cover': data['cover_principal'] ?? '',
+          'resumo': data['resumo'] ?? '',
+          'temas': data['temas'] ?? '',
+          'aplicacoes': data['aplicacoes'] ?? '',
+          'perfil_leitor': data['perfil_leitor'] ?? '',
+          'versoes': data['versoes'] as List<dynamic>? ?? [],
+        };
+      } else {
+        print('Livro com ID $bookId não encontrado na coleção "livros".');
+        return null;
+      }
+    } catch (e) {
+      print("Erro ao buscar detalhes do livro $bookId: $e");
+      rethrow; // Relança o erro para o middleware tratar
+    }
   }
 
   // --- User Methods ---

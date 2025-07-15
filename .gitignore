@@ -45,4 +45,7 @@ app.*.map.json
 /android/app/release
 
 lib/codigo_concatenado.txt
-lib/codigo_concatenado.txt
+
+codigo_concatenado.txt
+codigo_txt.py 
+lib/codigo_txt.py
