@@ -12,8 +12,9 @@ import './app_initialization.dart';
 
 // Chave global para navegação a partir de locais sem acesso direto ao BuildContext,
 // como middlewares do Redux. Essencial para sua arquitetura.
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+const bool kIsIntegrationTest = bool.fromEnvironment('integration_test');
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   // Garante que todos os bindings do Flutter estejam inicializados antes de
   // qualquer código assíncrono ou de inicialização de plugins.

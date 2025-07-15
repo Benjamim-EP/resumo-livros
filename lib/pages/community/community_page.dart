@@ -56,8 +56,8 @@ class _CommunityPageState extends State<CommunityPage>
         children: const [
           // Cada aba terá seu próprio widget
           RankingTabView(),
-          // RoomsTabView(),
-          // QnaTabView(),
+          Placeholder(), // ✅ Adiciona um placeholder para a aba "Salas"
+          Placeholder(), // ✅ Adiciona um placeholder para a aba "Perguntas"
         ],
       ),
     );

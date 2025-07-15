@@ -11,6 +11,7 @@ import 'package:septima_biblia/components/buttons/animated_infinity_icon.dart';
 import 'package:septima_biblia/components/buttons/animated_premium_button.dart';
 import 'package:septima_biblia/components/buttons/reward_cooldown_timer.dart';
 import 'package:septima_biblia/components/login_required.dart';
+import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/community/community_page.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
@@ -303,7 +304,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
         final isLoggedIn = storeInstance.state.userState.isLoggedIn;
 
         // Se for a primeira vez que este build é executado E o usuário está logado (não é convidado)
-        if (!_tutorialHasBeenChecked && isLoggedIn && !isGuest) {
+        if (!_tutorialHasBeenChecked &&
+            isLoggedIn &&
+            !isGuest &&
+            !kIsIntegrationTest) {
           // Marca como verificado para não rodar de novo
           _tutorialHasBeenChecked = true;
 

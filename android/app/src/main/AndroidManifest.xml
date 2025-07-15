@@ -19,7 +19,8 @@
     
     <application
         android:label="Septima Bíblia"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:networkSecurityConfig="@xml/network_security_config"> <!-- remover depois  -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

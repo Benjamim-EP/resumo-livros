@@ -98,6 +98,8 @@ dev_dependencies:
   google_sign_in: ^6.1.0
   http: ^1.4.0
   network_image_mock: ^2.1.1
+  integration_test:
+    sdk: flutter
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

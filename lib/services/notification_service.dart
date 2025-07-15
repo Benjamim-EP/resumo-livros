@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:septima_biblia/main.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -119,6 +120,11 @@ class NotificationService {
   /// Agenda as notificações diárias para os devocionais.
   Future<void> scheduleDailyDevotionals() async {
     // A verificação de permissões permanece a mesma
+    if (kIsIntegrationTest) {
+      print(
+          "NotificationService: Modo de teste de integração detectado. Pedido de permissão ignorado.");
+      return;
+    }
     if (Platform.isAndroid) {
       bool notificationsGranted = await _requestBasicNotificationPermission();
       if (!notificationsGranted) return;
