@@ -1,3 +1,5 @@
+// lib/components/buttons/reward_cooldown_timer.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -32,7 +34,6 @@ class _CooldownViewModel {
     );
   }
 
-  // Otimização para reconstruir o widget apenas quando os dados relevantes mudam
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -57,21 +58,33 @@ class _CooldownViewModel {
 class RewardCooldownTimer extends StatefulWidget {
   const RewardCooldownTimer({super.key});
 
+  /// Função de utilidade estática para formatar a duração de forma compacta.
+  /// Pode ser chamada de qualquer lugar com `RewardCooldownTimer.formatDuration(...)`.
+  static String formatDuration(Duration duration) {
+    if (duration.inHours > 0) {
+      return "${duration.inHours}h ${duration.inMinutes.remainder(60)}m";
+    }
+    if (duration.inMinutes > 0) {
+      return "${duration.inMinutes}m ${duration.inSeconds.remainder(60)}s";
+    }
+    // Adiciona +1 para não mostrar "0s" e ser mais amigável ao usuário.
+    return "${duration.inSeconds + 1}s";
+  }
+
   @override
   State<RewardCooldownTimer> createState() => _RewardCooldownTimerState();
 }
 
 class _RewardCooldownTimerState extends State<RewardCooldownTimer> {
   Timer? _timer;
-  Duration? _timeRemaining;
 
   @override
   void initState() {
     super.initState();
+    // Inicia um timer que força a reconstrução do widget a cada segundo.
+    // Isso garante que a contagem regressiva seja atualizada na tela.
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
-        // Força uma reconstrução a cada segundo se houver tempo restante
-        // A lógica de cálculo real estará no método build
         setState(() {});
       }
     });
@@ -83,20 +96,19 @@ class _RewardCooldownTimerState extends State<RewardCooldownTimer> {
     super.dispose();
   }
 
-  // Função para calcular o tempo restante e a razão do bloqueio
+  // Função para calcular o estado atual do cooldown.
   Map<String, dynamic> _calculateCooldownState(_CooldownViewModel vm) {
     final now = DateTime.now();
 
-    // 1. Limite diário atingido
+    // 1. Verifica se o limite diário de anúncios foi atingido.
     if (vm.lastAdTime != null &&
         now.day == vm.lastAdTime!.day &&
         vm.adsToday >= MAX_ADS_PER_DAY) {
-      // Calcula o tempo até a meia-noite
       final nextDay = DateTime(now.year, now.month, now.day + 1);
       return {'isBlocked': true, 'timeRemaining': nextDay.difference(now)};
     }
 
-    // 2. Cooldown de 60 segundos
+    // 2. Verifica o cooldown rápido de 60 segundos entre anúncios.
     if (vm.lastAdTime != null &&
         now.difference(vm.lastAdTime!) < ADS_COOLDOWN_DURATION) {
       return {
@@ -105,7 +117,7 @@ class _RewardCooldownTimerState extends State<RewardCooldownTimer> {
       };
     }
 
-    // 3. Limite da janela de 6 horas
+    // 3. Verifica o limite da janela de 6 horas.
     if (vm.firstAdInWindow != null &&
         now.difference(vm.firstAdInWindow!) <= SIX_HOUR_WINDOW_DURATION) {
       if (vm.adsInWindow >= MAX_ADS_PER_SIX_HOUR_WINDOW) {
@@ -117,20 +129,8 @@ class _RewardCooldownTimerState extends State<RewardCooldownTimer> {
       }
     }
 
-    // 4. Sem bloqueio
+    // 4. Se nenhuma condição de bloqueio foi atendida, o usuário pode assistir a um anúncio.
     return {'isBlocked': false, 'timeRemaining': Duration.zero};
-  }
-
-  // Função para formatar a duração de forma compacta
-  String _formatDuration(Duration duration) {
-    if (duration.inHours > 0) {
-      return "${duration.inHours}h ${duration.inMinutes.remainder(60)}m";
-    }
-    if (duration.inMinutes > 0) {
-      return "${duration.inMinutes}m ${duration.inSeconds.remainder(60)}s";
-    }
-    // Adiciona +1 para não mostrar "0s"
-    return "${duration.inSeconds + 1}s";
   }
 
   @override
@@ -140,7 +140,7 @@ class _RewardCooldownTimerState extends State<RewardCooldownTimer> {
       converter: (store) => _CooldownViewModel.fromStore(store),
       distinct: true,
       builder: (context, vm) {
-        // Se já atingiu o limite de moedas, não mostra nada
+        // Se o usuário já atingiu o limite máximo de moedas, mostra um ícone de "check".
         if (vm.userCoins >= MAX_COINS_LIMIT) {
           return Padding(
             padding: const EdgeInsets.only(left: 8.0),
@@ -153,12 +153,14 @@ class _RewardCooldownTimerState extends State<RewardCooldownTimer> {
         final bool isBlocked = cooldownState['isBlocked'];
         final Duration timeRemaining = cooldownState['timeRemaining'];
 
-        // Se estiver bloqueado e o tempo restante for positivo
+        // Se estiver bloqueado e houver tempo restante, mostra o timer.
         if (isBlocked && timeRemaining.inSeconds > 0) {
           return Container(
+            alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Text(
-              _formatDuration(timeRemaining),
+              // Usa a função estática para formatar o tempo.
+              RewardCooldownTimer.formatDuration(timeRemaining),
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withOpacity(0.7),
                 fontWeight: FontWeight.bold,
@@ -168,7 +170,7 @@ class _RewardCooldownTimerState extends State<RewardCooldownTimer> {
           );
         }
 
-        // Se não estiver bloqueado, mostra o botão de adicionar
+        // Caso contrário, mostra o botão para ganhar moedas.
         return IconButton(
           icon: Icon(Icons.add_circle_outline,
               color: theme.colorScheme.primary, size: 24),

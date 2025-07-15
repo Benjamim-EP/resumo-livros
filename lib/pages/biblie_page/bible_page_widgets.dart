@@ -43,15 +43,19 @@ class BiblePageWidgets {
   }
 
   /// Limpa prefixos de numeração e letras como "1)", "2a.", "(b)", etc., do início de uma string.
-  static String _cleanLexiconEntry(String rawText) {
-    // Esta regex remove padrões comuns de numeração no início da linha.
-    final RegExp prefixRegex =
-        RegExp(r'^\s*(\(?\d+[a-z]?\)?\.?\s*|\([a-z]\)\s*)+');
+  static String cleanLexiconEntry(String rawText) {
+    // Regex final, focada nos casos de teste
+    // (\s* ... \s*)+ -> Captura um ou mais prefixos com espaços ao redor
+    // \(\S+?\)      -> Captura qualquer coisa dentro de parênteses: (c), (1d), (3)
+    // \.?           -> Captura um ponto opcional DEPOIS dos parênteses: (3).
+    // |             -> OU
+    // \w+[\).]      -> Captura uma palavra ou número seguido por ')' ou '.': 1), 1a), b.
+    final RegExp prefixRegex = RegExp(r'^(\s*(\(\S+?\)\.?|\w+[\).])\s*)+');
     return rawText.replaceFirst(prefixRegex, '').trim();
   }
 
   /// Limpa o prefixo "• - " das notas.
-  static String _cleanLexiconNote(String rawText) {
+  static String cleanLexiconNote(String rawText) {
     final RegExp prefixRegex = RegExp(r'^\s*•\s*-\s*');
     return rawText.replaceFirst(prefixRegex, '').trim();
   }
@@ -1097,10 +1101,10 @@ class BiblePageWidgets {
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500)),
                           ...definitionsToShow.map((def) {
-                            final String cleanedDef = _cleanLexiconEntry(def);
+                            final String cleanedDef =
+                                cleanLexiconEntry(def); // ✅ CORREÇÃO
                             if (cleanedDef.isEmpty)
-                              return const SizedBox
-                                  .shrink(); // Não mostra linhas vazias
+                              return const SizedBox.shrink();
 
                             return Padding(
                               padding: const EdgeInsets.only(top: 4.0),
@@ -1150,7 +1154,7 @@ class BiblePageWidgets {
                                   ),
                                   ...entry.value.map((noteLine) {
                                     final String cleanedNote =
-                                        _cleanLexiconNote(noteLine);
+                                        cleanLexiconNote(noteLine);
                                     if (cleanedNote.isEmpty)
                                       return const SizedBox.shrink();
 
@@ -1329,7 +1333,8 @@ class BiblePageWidgets {
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500)),
                           ...definitionsToShow.map((def) {
-                            final String cleanedDef = _cleanLexiconEntry(def);
+                            final String cleanedDef =
+                                cleanLexiconEntry(def); // ✅ CORREÇÃO
                             if (cleanedDef.isEmpty)
                               return const SizedBox.shrink();
 
@@ -1377,8 +1382,8 @@ class BiblePageWidgets {
                                             fontWeight: FontWeight.w600)),
                                   ),
                                   ...entry.value.map((noteLine) {
-                                    final String cleanedNote =
-                                        _cleanLexiconNote(noteLine);
+                                    final String cleanedNote = cleanLexiconNote(
+                                        noteLine); // ✅ CORREÇÃO
                                     if (cleanedNote.isEmpty)
                                       return const SizedBox.shrink();
 
