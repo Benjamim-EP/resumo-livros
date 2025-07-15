@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/models/highlight_item_model.dart';
 import 'package:septima_biblia/pages/user_page/denomination_card.dart';
 import 'package:septima_biblia/pages/user_page/highlight_item_card.dart';
@@ -411,25 +412,20 @@ class _UserPageState extends State<UserPage> {
 
     switch (_selectedTab) {
       case 'Progresso':
-        // O StoreConnector continua sendo a fonte para o progresso detalhado por livro
-        // e para obter o userId para o StreamBuilder.
         return StoreConnector<AppState, _UserProgressViewModel>(
           converter: (store) => _UserProgressViewModel.fromStore(store),
           distinct: true,
-          onInit: (store) {
-            if (!_initialProgressLoadDispatched) {
-              _dispatchInitialLoadActions(store);
-            }
-          },
+          // A lógica de onInit foi movida para o initState da página para evitar chamadas repetidas
           builder: (context, vm) {
             final theme = Theme.of(context);
 
-            // Lógica de loading e erro permanece a mesma
+            // --- LÓGICA DE RENDERIZAÇÃO CONDICIONAL ---
+
+            // 1. Estado de Loading: Mostra um indicador enquanto os metadados da Bíblia (essenciais para o cálculo)
+            // ou o progresso inicial do usuário estão sendo carregados.
             final bool isStillLoading = vm.isLoadingCounts ||
                 vm.isLoadingUserProgress ||
-                (!vm.isLoadingCounts &&
-                    vm.bibleSectionCounts.isEmpty &&
-                    vm.userId != null);
+                (vm.bibleSectionCounts.isEmpty && vm.userId != null);
 
             if (isStillLoading) {
               return Center(
@@ -438,20 +434,70 @@ class _UserPageState extends State<UserPage> {
                       key: const ValueKey("progress_tab_loader_userpage")));
             }
 
-            if (vm.countsError != null) {
-              return Center(/* ... seu widget de erro ... */);
+            // 2. Estado de Erro: Se houve falha ao carregar os dados.
+            if (vm.countsError != null || vm.userProgressError != null) {
+              return Center(
+                  child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 48, color: theme.colorScheme.error),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Erro ao Carregar Progresso",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Não foi possível carregar seus dados de leitura. Verifique sua conexão e tente novamente.",
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ));
             }
-            if (vm.userProgressError != null) {
-              return Center(/* ... seu widget de erro ... */);
-            }
+
+            // 3. Estado Vazio: Para um usuário novo que ainda não leu nada.
             if (vm.allBooksProgress.isEmpty && vm.userId != null) {
-              return Center(/* ... seu widget de "comece a ler" ... */);
+              // Envolve o conteúdo com SingleChildScrollView para evitar overflow em telas menores.
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  // Usamos um padding vertical maior para centralizar melhor visualmente,
+                  // já que o SingleChildScrollView pode não preencher a tela toda.
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 64.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.auto_stories_outlined,
+                          size: 60,
+                          color: theme.colorScheme.primary.withOpacity(0.8)),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Seu Progresso de Leitura aparecerá aqui!",
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Vá para a aba 'Bíblia' e comece a marcar seções como lidas para ver suas estatísticas.",
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
-
-            // --- UI PRINCIPAL CONSTRUÍDA COM STREAMBUILDER E STORECONNECTOR ---
-
+            // 4. Estado com Dados: Renderiza a UI de progresso normal.
             return StreamBuilder<DocumentSnapshot>(
-              // O StreamBuilder escuta em tempo real as mudanças no documento de progresso
               stream: FirebaseFirestore.instance
                   .collection('userBibleProgress')
                   .doc(vm.userId)
@@ -459,7 +505,6 @@ class _UserPageState extends State<UserPage> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting &&
                     !snapshot.hasData) {
-                  // Mostra um loader enquanto o primeiro dado do stream não chega
                   return Center(
                       child: CircularProgressIndicator(
                           color: theme.colorScheme.primary));
@@ -470,7 +515,6 @@ class _UserPageState extends State<UserPage> {
                           style: TextStyle(color: theme.colorScheme.error)));
                 }
 
-                // Extrai os dados do ranking do snapshot do Firestore
                 final progressData =
                     snapshot.data?.data() as Map<String, dynamic>? ?? {};
                 final overallProgress =
@@ -480,8 +524,7 @@ class _UserPageState extends State<UserPage> {
                 final completionCount =
                     progressData['bibleCompletionCount'] as int? ?? 0;
 
-                // --- CÁLCULOS DETALHADOS (USANDO DADOS DO REDUX/VM) ---
-                // Esta parte continua a mesma, pois usa os dados detalhados que já estão no Redux
+                // --- CÁLCULOS DETALHADOS (usando dados do Redux/VM) ---
                 int totalSectionsInBible =
                     (vm.bibleSectionCounts['total_secoes_biblia'] as int? ?? 1)
                         .clamp(1, 1000000);
@@ -515,18 +558,18 @@ class _UserPageState extends State<UserPage> {
                   }
                 });
 
-                double atProgress =
-                    (totalReadSectionsAT / totalSectionsInAT).clamp(0.0, 1.0);
-                double ntProgress =
-                    (totalReadSectionsNT / totalSectionsInNT).clamp(0.0, 1.0);
+                double atProgress = (totalSectionsInAT > 0)
+                    ? (totalReadSectionsAT / totalSectionsInAT).clamp(0.0, 1.0)
+                    : 0.0;
+                double ntProgress = (totalSectionsInNT > 0)
+                    ? (totalReadSectionsNT / totalSectionsInNT).clamp(0.0, 1.0)
+                    : 0.0;
 
                 List<Widget> bookProgressWidgets = [];
                 if (_localBooksMap != null &&
                     vm.bibleSectionCounts.isNotEmpty) {
                   int index = 0;
-
                   for (String bookAbbrev in CANONICAL_BOOK_ORDER) {
-                    // ... (lógica para criar bookProgressWidgets permanece idêntica) ...
                     final bookMetaForName =
                         _localBooksMap![bookAbbrev] as Map<String, dynamic>?;
                     final bookMetaFromCounts =
@@ -541,9 +584,10 @@ class _UserPageState extends State<UserPage> {
                             .clamp(1, 1000000);
                     int readSectionsInThisBook =
                         bookProgressData?.readSections.length ?? 0;
-                    double bookProgressPercent =
-                        (readSectionsInThisBook / totalSectionsInThisBook)
-                            .clamp(0.0, 1.0);
+                    double bookProgressPercent = (totalSectionsInThisBook > 0)
+                        ? (readSectionsInThisBook / totalSectionsInThisBook)
+                            .clamp(0.0, 1.0)
+                        : 0.0;
                     String bookFullName =
                         bookMetaForName['nome'] ?? bookAbbrev.toUpperCase();
 
@@ -556,12 +600,12 @@ class _UserPageState extends State<UserPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: Text(bookFullName,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.9))),
-                              ),
+                                  child: Text(bookFullName,
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.9)))),
                               Text(
                                   "${(bookProgressPercent * 100).toStringAsFixed(0)}% ($readSectionsInThisBook/$totalSectionsInThisBook)",
                                   style: theme.textTheme.bodySmall?.copyWith(
@@ -577,22 +621,19 @@ class _UserPageState extends State<UserPage> {
                             backgroundColor: theme.colorScheme.surfaceVariant
                                 .withOpacity(0.4),
                             progressColor: theme.colorScheme.primary,
-                            animation: true,
+                            animation: !kIsIntegrationTest,
                             animationDuration: 600,
                           ),
                         ],
                       ),
                     )
-                        .animate(
-                            delay:
-                                (50 * (index % 10)).ms) // Delay para cada item
+                        .animate(delay: (50 * (index % 10)).ms)
                         .fadeIn(duration: 300.ms)
                         .slideY(begin: 0.2, curve: Curves.easeOut));
                     index++;
                   }
                 }
 
-                // --- RENDERIZAÇÃO DA UI DE PROGRESSO ---
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -607,24 +648,20 @@ class _UserPageState extends State<UserPage> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
-                              Text(
-                                "Progresso Geral da Bíblia",
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w600),
-                                textAlign: TextAlign.center,
-                              ),
+                              Text("Progresso Geral da Bíblia",
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600),
+                                  textAlign: TextAlign.center),
                               const SizedBox(height: 16),
-                              // <<< WIDGET DE LEITURAS COMPLETAS >>>
                               if (completionCount > 0) ...[
                                 Chip(
                                   avatar: Icon(Icons.workspace_premium_rounded,
                                       color: Colors.amber.shade800, size: 20),
                                   label: Text(
-                                    '$completionCount ${completionCount > 1 ? "Leituras Completas" : "Leitura Completa"}',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
-                                  ),
+                                      '$completionCount ${completionCount > 1 ? "Leituras Completas" : "Leitura Completa"}',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
                                   backgroundColor:
                                       Colors.amber.withOpacity(0.2),
                                 ),
@@ -633,31 +670,29 @@ class _UserPageState extends State<UserPage> {
                               CircularPercentIndicator(
                                 radius: 80.0,
                                 lineWidth: 12.0,
-                                percent: overallProgress /
-                                    100, // <<< USA DADO DO STREAM
+                                percent: overallProgress / 100,
                                 center: Text(
-                                  "${overallProgress.toStringAsFixed(1)}%", // <<< USA DADO DO STREAM
-                                  style: theme.textTheme.headlineSmall
-                                      ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: theme.colorScheme.primary),
-                                ),
+                                    "${overallProgress.toStringAsFixed(1)}%",
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.colorScheme.primary)),
                                 footer: Padding(
                                   padding: const EdgeInsets.only(top: 12.0),
                                   child: Text(
-                                    "Você leu $totalReadSectionsBible de $totalSectionsInBible seções!",
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.8)),
-                                    textAlign: TextAlign.center,
-                                  ),
+                                      "Você leu $totalReadSectionsBible de $totalSectionsInBible seções!",
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.8)),
+                                      textAlign: TextAlign.center),
                                 ),
                                 circularStrokeCap: CircularStrokeCap.round,
                                 progressColor: theme.colorScheme.primary,
                                 backgroundColor: theme
                                     .colorScheme.surfaceVariant
                                     .withOpacity(0.5),
-                                animation: true,
+                                animation: !kIsIntegrationTest,
                                 animationDuration: 1000,
                               ),
                             ],
@@ -668,24 +703,22 @@ class _UserPageState extends State<UserPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildTestamentProgressCard(
-                                "Antigo Testamento", // Correção para o nome em português
-                                atProgress,
-                                totalReadSectionsAT,
-                                totalSectionsInAT,
-                                theme,
-                                Colors.orange.shade700),
-                          ),
+                              child: _buildTestamentProgressCard(
+                                  "Antigo Testamento",
+                                  atProgress,
+                                  totalReadSectionsAT,
+                                  totalSectionsInAT,
+                                  theme,
+                                  Colors.orange.shade700)),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildTestamentProgressCard(
-                                "Novo Testamento",
-                                ntProgress,
-                                totalReadSectionsNT,
-                                totalSectionsInNT,
-                                theme,
-                                Colors.teal.shade600),
-                          ),
+                              child: _buildTestamentProgressCard(
+                                  "Novo Testamento",
+                                  ntProgress,
+                                  totalReadSectionsNT,
+                                  totalSectionsInNT,
+                                  theme,
+                                  Colors.teal.shade600)),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -703,25 +736,22 @@ class _UserPageState extends State<UserPage> {
                               borderRadius: BorderRadius.circular(10)),
                           collapsedShape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
-                          title: Text(
-                            "Progresso Detalhado por Livro",
-                            style: theme.textTheme.titleLarge?.copyWith(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSurface),
-                          ),
+                          title: Text("Progresso Detalhado por Livro",
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface)),
                           subtitle: Text(
                               "Toque para ver o progresso em cada livro",
                               style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface
                                       .withOpacity(0.6))),
                           trailing: Icon(
-                            _showAllBookProgress
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
-                            color: theme.colorScheme.primary,
-                            size: 28,
-                          ),
+                              _showAllBookProgress
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: theme.colorScheme.primary,
+                              size: 28),
                           onExpansionChanged: (bool expanded) {
                             if (mounted) {
                               setState(() => _showAllBookProgress = expanded);

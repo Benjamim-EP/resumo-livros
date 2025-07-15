@@ -76,24 +76,35 @@ List<Middleware<AppState>> createUserMiddleware() {
   void _handleUpdateReadingTime(Store<AppState> store,
       UpdateReadingTimeAction action, NextDispatcher next) {
     next(action);
+
+    // Se estivermos em um teste de integração, não faça a chamada de rede.
+    if (kIsIntegrationTest) {
+      print(
+          "UpdateReadingTimeMiddleware: Modo de teste. Chamada à Cloud Function ignorada.");
+      return;
+    }
+
     if (action.accumulatedSeconds <= 0) return;
+
     final userId = store.state.userState.userId;
     if (userId == null) {
       print(
           "UpdateReadingTimeMiddleware: Usuário não logado, tempo não será salvo.");
       return;
     }
+
     print(
         "UpdateReadingTimeMiddleware: Chamando a Cloud Function 'updateReadingTime'...");
+
     try {
       final functions =
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
       final callable = functions.httpsCallable('updateReadingTime');
+
       callable.call({
         'secondsToAdd': action.accumulatedSeconds,
       });
     } on FirebaseFunctionsException catch (e) {
-      // É uma tarefa de background, então apenas logamos o erro.
       print(
           "UpdateReadingTimeMiddleware: Erro de Firebase Functions ao atualizar tempo: ${e.code} - ${e.message}");
     } catch (e) {
