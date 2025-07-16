@@ -861,12 +861,12 @@ Future<void> _logEngagementMilestoneIfNeeded(
   }
 
   final userDetails = store.state.userState.userDetails;
-  final installTimestamp = userDetails?['dataCadastro'] as Timestamp?;
+  final DateTime? installDate =
+      _dynamicToDateTime(userDetails?['dataCadastro']);
   int daysSinceInstall = 0;
 
-  if (installTimestamp != null) {
-    daysSinceInstall =
-        DateTime.now().difference(installTimestamp.toDate()).inDays;
+  if (installDate != null) {
+    daysSinceInstall = DateTime.now().difference(installDate).inDays;
   }
 
   // Registra o evento no Firebase Analytics
@@ -880,4 +880,17 @@ Future<void> _logEngagementMilestoneIfNeeded(
 
   await prefs.setBool(milestoneKey, true);
   print("Analytics: Marco de engajamento '$milestoneName' registrado.");
+}
+
+DateTime? _dynamicToDateTime(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is Timestamp) {
+    return value.toDate(); // Converte Timestamp para DateTime
+  }
+  if (value is String) {
+    return DateTime.tryParse(value); // Tenta converter String para DateTime
+  }
+  return null; // Retorna nulo se o tipo for desconhecido
 }

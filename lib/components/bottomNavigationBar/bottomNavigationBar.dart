@@ -227,13 +227,19 @@ class _MainAppScreenState extends State<MainAppScreen> {
             print(
                 "MainAppScreen Listener: Detectada a primeira conclusão da Bíblia!");
 
-            // Dispara o evento de analytics
-            final installTimestamp = store
-                .state.userState.userDetails?['dataCadastro'] as Timestamp?;
+            // >>> INÍCIO DA CORREÇÃO <<<
+            // DE: final installTimestamp = store.state.userState.userDetails?['dataCadastro'] as Timestamp?;
+            // PARA:
+            final dynamic installTimestampRaw =
+                store.state.userState.userDetails?['dataCadastro'];
+            final DateTime? installDate = (installTimestampRaw is Timestamp)
+                ? installTimestampRaw.toDate()
+                : null;
+            // >>> FIM DA CORREÇÃO <<<
+
             int daysSinceInstall = 0;
-            if (installTimestamp != null) {
-              daysSinceInstall =
-                  DateTime.now().difference(installTimestamp.toDate()).inDays;
+            if (installDate != null) {
+              daysSinceInstall = DateTime.now().difference(installDate).inDays;
             }
 
             AnalyticsService.instance.logEvent(

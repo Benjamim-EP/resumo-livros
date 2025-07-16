@@ -497,17 +497,24 @@ UserState userReducer(UserState state, dynamic action) {
     // Esses virão de ações específicas que leem as novas coleções.
     return state.copyWith(
       userDetails: action.userDetails,
-      // lastReadBookAbbrev e lastReadChapter NÃO são mais definidos aqui.
-      // Eles serão definidos quando os dados de userBibleProgress forem carregados (ex: AllBibleProgressLoadedAction).
-      userCoins: action.userDetails['userCoins'] as int? ??
-          state.userCoins, // Pega do doc ou mantém o do estado
-      lastRewardedAdWatchTime:
-          (action.userDetails['lastRewardedAdWatchTime'] as Timestamp?)
-              ?.toDate(),
+      userCoins: action.userDetails['userCoins'] as int? ?? state.userCoins,
+
+      // >>> INÍCIO DA CORREÇÃO <<<
+      // DE:
+      // lastRewardedAdWatchTime:
+      //     (action.userDetails['lastRewardedAdWatchTime'] as Timestamp?)
+      //         ?.toDate(),
+      // PARA (precisamos da função helper aqui também ou de uma lógica similar):
+      lastRewardedAdWatchTime: (dynamic value) {
+        if (value == null) return null;
+        if (value is Timestamp) return value.toDate();
+        if (value is String) return DateTime.tryParse(value);
+        return null;
+      }(action.userDetails['lastRewardedAdWatchTime']),
+      // >>> FIM DA CORREÇÃO <<<
+
       rewardedAdsWatchedToday:
           action.userDetails['rewardedAdsWatchedToday'] as int? ?? 0,
-      // Outros campos do documento /users/{userId} podem ser atualizados aqui se necessário
-      // como nome, email (se puderem mudar e forem refletidos no doc principal), etc.
       nome: action.userDetails['nome'] as String? ?? state.nome,
       email: action.userDetails['email'] as String? ?? state.email,
       isLoadingLogin: false,
