@@ -19,6 +19,7 @@ import 'package:septima_biblia/pages/library_page.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/user_page.dart';
+import 'package:septima_biblia/pages/user_page/profile_action_button.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/middleware/ad_middleware.dart';
@@ -359,7 +360,29 @@ class _MainAppScreenState extends State<MainAppScreen> {
             appBar: mainScreenViewModel.isFocusMode
                 ? null
                 : AppBar(
-                    title: Text(_getAppBarTitle(_selectedIndex)),
+                    // ✅ 1. REMOVIDO o `title` original.
+                    // title: Text(_getAppBarTitle(_selectedIndex)),
+
+                    // ✅ 2. O NOVO TÍTULO agora é um widget dinâmico.
+                    title: StoreConnector<AppState, bool>(
+                      converter: (store) => store.state.userState.isGuestUser,
+                      builder: (context, isGuest) {
+                        // Se for um convidado, mostra um chip simples.
+                        if (isGuest) {
+                          return const Chip(
+                            avatar: Icon(Icons.person_outline),
+                            label: Text("Visitante"),
+                          );
+                        }
+                        // Se for um usuário logado, mostra o botão de perfil.
+                        return ProfileActionButton(
+                          // Passamos um novo parâmetro para controlar o tamanho.
+                          avatarRadius: 20,
+                        );
+                      },
+                    ),
+
+                    // As actions (botões da direita) permanecem as mesmas.
                     actions: [
                       _tutorialService.buildShowcase(
                         key: _tutorialService.keyMudarTema,
@@ -436,7 +459,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
                             if (isPremium) {
                               return const Padding(
                                 padding: EdgeInsets.only(right: 12.0),
-                                // Usa o novo widget animado
                                 child: AnimatedInfinityIcon(),
                               );
                             }

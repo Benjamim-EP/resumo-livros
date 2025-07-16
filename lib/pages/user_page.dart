@@ -8,6 +8,7 @@ import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/models/highlight_item_model.dart';
 import 'package:septima_biblia/pages/user_page/denomination_card.dart';
 import 'package:septima_biblia/pages/user_page/highlight_item_card.dart';
+import 'package:septima_biblia/pages/user_page/profile_action_button.dart';
 import 'package:septima_biblia/pages/user_page/user_diary_page.dart';
 import '../components/avatar/profile_picture.dart';
 import '../components/user/user_info.dart';
@@ -1258,144 +1259,92 @@ class _UserPageState extends State<UserPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (mesmo build principal como na sua última versão, apenas o _buildTabContent foi modificado acima)
     final theme = Theme.of(context);
+
     return StoreConnector<AppState, _UserPageViewModel>(
       converter: (store) => _UserPageViewModel.fromStore(store),
       onInit: (store) {
         if (store.state.metadataState.bibleSectionCounts.isEmpty &&
             !store.state.metadataState.isLoadingSectionCounts) {
-          // store.dispatch(LoadBibleSectionCountsAction());
+          store.dispatch(LoadBibleSectionCountsAction());
         }
       },
       builder: (context, vm) {
+        // A lógica de loading permanece aqui para mostrar o spinner na tela toda.
         bool shouldShowPageLoader = _isLoadingBooksMap &&
             (_selectedTab == 'Destaques' ||
                 _selectedTab == 'Notas' ||
                 _selectedTab == 'Progresso');
 
-        if (shouldShowPageLoader) {
-          return Scaffold(
-              backgroundColor: theme.scaffoldBackgroundColor,
-              body: Center(
-                  child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary,
-                      key: const ValueKey("user_page_book_map_loader"))));
-        }
-        if (vm.isLoadingAllBibleProgress && _selectedTab == 'Progresso') {
-          return Scaffold(
-              backgroundColor: theme.scaffoldBackgroundColor,
-              body: Center(
-                  child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary,
-                      key:
-                          const ValueKey("userpage_general_progress_loader"))));
-        }
-        if (vm.bibleProgressError != null && _selectedTab == 'Progresso') {
-          return Scaffold(
-              backgroundColor: theme.scaffoldBackgroundColor,
-              body: Center(
-                  child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                    "Erro ao carregar progresso: ${vm.bibleProgressError}",
-                    style: TextStyle(color: theme.colorScheme.error),
-                    textAlign: TextAlign.center),
-              )));
-        }
-
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          body: RefreshIndicator(
+        if (shouldShowPageLoader ||
+            (vm.isLoadingAllBibleProgress && _selectedTab == 'Progresso')) {
+          return Center(
+              child: CircularProgressIndicator(
             color: theme.colorScheme.primary,
-            backgroundColor: theme.scaffoldBackgroundColor,
-            // <<< INÍCIO DA MUDANÇA >>>
-            onRefresh: () {
-              final completer = Completer<void>();
-              final storeInstance =
-                  StoreProvider.of<AppState>(context, listen: false);
+          ));
+        }
 
-              if (vm.userId != null) {
-                // Despacha todas as ações de atualização que você precisa
-                storeInstance.dispatch(LoadUserStatsAction());
-                // storeInstance.dispatch(LoadUserDiariesAction());
-                storeInstance.dispatch(LoadUserHighlightsAction());
-                storeInstance.dispatch(LoadUserCommentHighlightsAction());
-                storeInstance.dispatch(LoadUserNotesAction());
-                // storeInstance.dispatch(LoadReadingHistoryAction());
-                storeInstance.dispatch(LoadBibleSectionCountsAction());
+        if (vm.bibleProgressError != null && _selectedTab == 'Progresso') {
+          return Center(
+              child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text("Erro ao carregar progresso: ${vm.bibleProgressError}",
+                style: TextStyle(color: theme.colorScheme.error),
+                textAlign: TextAlign.center),
+          ));
+        }
 
-                // Despacha a ação de progresso com o completer
-                storeInstance
-                    .dispatch(LoadAllBibleProgressAction(completer: completer));
-              } else {
-                // Se não houver usuário, completa imediatamente.
-                completer.complete();
-              }
-              // Retorna o Future do completer, que o RefreshIndicator vai esperar.
-              return completer.future;
-            },
-            child: SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        16.0, 16.0, 16.0, 0), // Reduzido padding superior
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Flexible(
-                              // Usar Flexible para permitir que a Row interna encolha/expanda
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                      width: 70,
-                                      height: 70,
-                                      child: ProfilePicture()), // Tamanho menor
-                                  SizedBox(width: 12), // Espaçamento menor
-                                  Expanded(child: UserInfo()),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.settings_outlined,
-                                  color: theme.colorScheme.primary,
-                                  size: 26), // Tamanho um pouco menor
-                              tooltip: 'Configurações',
-                              onPressed: () {
-                                if (context.mounted) {
-                                  Navigator.of(context, rootNavigator: true)
-                                      .pushNamed('/userSettings');
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                        const DenominationCard(),
-                        const SizedBox(height: 20), // Espaçamento ajustado
-                        Tabs(
-                          tabs: _availableTabs,
-                          onTabSelected: _onTabSelected,
-                          selectedTab: _selectedTab,
-                        ),
-                        Divider(
-                            color: theme.dividerColor.withOpacity(0.5),
-                            height: 1,
-                            thickness: 0.5),
-                      ],
+        // ✅ REFINAMENTO PRINCIPAL:
+        // O `Scaffold` e a `AppBar` foram removidos. O widget agora retorna
+        // diretamente o conteúdo que deve aparecer DENTRO da aba.
+        return RefreshIndicator(
+          color: theme.colorScheme.primary,
+          backgroundColor: theme.scaffoldBackgroundColor,
+          onRefresh: () {
+            // ... (sua lógica de onRefresh permanece a mesma)
+            final completer = Completer<void>();
+            final storeInstance =
+                StoreProvider.of<AppState>(context, listen: false);
+
+            if (vm.userId != null) {
+              storeInstance.dispatch(LoadUserStatsAction());
+              storeInstance.dispatch(LoadUserHighlightsAction());
+              storeInstance.dispatch(LoadUserCommentHighlightsAction());
+              storeInstance.dispatch(LoadUserNotesAction());
+              storeInstance.dispatch(LoadBibleSectionCountsAction());
+              storeInstance
+                  .dispatch(LoadAllBibleProgressAction(completer: completer));
+            } else {
+              completer.complete();
+            }
+            return completer.future;
+          },
+          // O SafeArea não é mais necessário aqui, pois a MainAppScreen já tem um.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // A UI agora começa diretamente com os TABS de controle.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    16.0, 16.0, 16.0, 0), // Padding no topo para dar espaço
+                child: Column(
+                  children: [
+                    Tabs(
+                      tabs: _availableTabs,
+                      onTabSelected: _onTabSelected,
+                      selectedTab: _selectedTab,
                     ),
-                  ),
-                  Expanded(
-                    child: _buildTabContent(),
-                  ),
-                ],
+                    Divider(
+                        color: theme.dividerColor.withOpacity(0.5),
+                        height: 1,
+                        thickness: 0.5),
+                  ],
+                ),
               ),
-            ),
+              Expanded(
+                child: _buildTabContent(),
+              ),
+            ],
           ),
         );
       },
@@ -1404,7 +1353,6 @@ class _UserPageState extends State<UserPage> {
 }
 
 // ViewModels _UserPageViewModel, _HighlightsViewModel, _UserProgressViewModel permanecem os mesmos.
-// ... (Cole aqui as definições de _UserPageViewModel, _HighlightsViewModel, _UserProgressViewModel da sua última versão) ...
 class _UserPageViewModel {
   final String? userId;
   final Map<String, dynamic> userDetails;
