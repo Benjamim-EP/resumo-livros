@@ -403,8 +403,9 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
             foregroundColor: theme.appBarTheme.foregroundColor,
             // A TabBar é colocada na propriedade 'bottom' da AppBar
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(
-                  kToolbarHeight + 20), // Altura para a barra de busca e abas
+              // ✅ CORREÇÃO AQUI: Aumente este valor.
+              // Um valor entre 110.0 e 120.0 deve ser suficiente para a barra de busca e as abas.
+              preferredSize: const Size.fromHeight(112.0),
               child: Column(
                 children: [
                   // --- Barra de Busca (lógica movida para cá) ---

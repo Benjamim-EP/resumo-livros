@@ -604,6 +604,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
             sermonData.mainScripturePassageAbbreviated!.isNotEmpty) {
           await _loadMainScripture(sermonData.mainScripturePassageAbbreviated!);
         }
+        _scrollToSavedPosition();
       } else if (mounted) {
         // ✅ Mensagem de erro mais específica se o sermão não for encontrado
         setState(() => _error = "Sermão não foi encontrado.");
@@ -618,6 +619,35 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _scrollToSavedPosition() {
+    // Garante que a função só execute após a UI estar completamente construída.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return; // Verifica se o widget ainda está na tela
+
+      // Pega o progresso salvo do estado Redux
+      final SermonProgressData? progress =
+          StoreProvider.of<AppState>(context, listen: false)
+              .state
+              .sermonState
+              .sermonProgress[widget.sermonGeneratedId];
+
+      // Verifica se existe progresso salvo e se o ScrollController está pronto para ser usado
+      if (progress != null &&
+          progress.progressPercent > 0 &&
+          _scrollController.hasClients) {
+        // Calcula a posição em pixels para onde devemos rolar
+        final scrollPosition = _scrollController.position.maxScrollExtent *
+            progress.progressPercent;
+
+        // Pula para a posição salva sem animação
+        _scrollController.jumpTo(scrollPosition);
+
+        print(
+            "SermonDetail: Pulando para a posição de leitura salva: ${(progress.progressPercent * 100).toStringAsFixed(1)}%");
+      }
+    });
   }
 
   Future<void> _loadMainScripture(String reference) async {
