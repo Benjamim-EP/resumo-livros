@@ -9,6 +9,7 @@ import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
@@ -115,6 +116,16 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   Future<void> _showCommentary(BuildContext context) async {
     if (!mounted) return;
+    AnalyticsService.instance.logEvent(
+      name: 'commentary_opened',
+      parameters: {
+        'book_abbrev': widget.bookAbbrev,
+        'chapter_number': widget.chapterNumber,
+        'verses_range': widget.versesRangeStr,
+      },
+    );
+    print(
+        "Analytics: Evento 'commentary_opened' para ${widget.bookAbbrev} ${widget.chapterNumber}:${widget.versesRangeStr} registrado.");
     TtsManager().stop();
     setState(() => _isLoadingCommentary = true);
     final commentaryData =

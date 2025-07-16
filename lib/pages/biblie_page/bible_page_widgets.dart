@@ -10,6 +10,7 @@ import 'package:septima_biblia/pages/biblie_page/saveVerseDialog.dart';
 import 'package:septima_biblia/pages/biblie_page/note_editor_modal.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 
 class BiblePageWidgets {
   // >>> INÍCIO DA CORREÇÃO 2/4: Adicionando os parâmetros que faltavam <<<
@@ -377,6 +378,14 @@ class BiblePageWidgets {
 
     return GestureDetector(
       onTap: () {
+        AnalyticsService.instance.logEvent(
+          name: 'lexicon_word_lookup',
+          parameters: {
+            'language': 'hebrew',
+            'strong_number': strongNumberWithPrefix,
+            'word_translit': transliteration,
+          },
+        );
         if (strongNumberOnly.isNotEmpty && strongNumberOnly != "N/A") {
           _showVerseLexiconModalHebrew(context, selectedBook!, selectedChapter!,
               verseNumber, strongNumberWithPrefix, hebrewLexicon);
@@ -477,6 +486,14 @@ class BiblePageWidgets {
 
     return GestureDetector(
       onTap: () {
+        AnalyticsService.instance.logEvent(
+          name: 'lexicon_word_lookup',
+          parameters: {
+            'language': 'greek',
+            'strong_number': strongNumber,
+            'word_translit': transliteration,
+          },
+        );
         if (strongNumber.isNotEmpty && strongNumber != "N/A") {
           _showVerseLexiconModalGreek(context, selectedBook!, selectedChapter!,
               verseNumber, strongNumber, greekLexicon);

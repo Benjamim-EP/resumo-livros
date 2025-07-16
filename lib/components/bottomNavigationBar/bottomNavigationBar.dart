@@ -121,6 +121,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
   bool _tutorialHasBeenChecked = false; // Flag de controle de execução
   final UpdateService _updateService = UpdateService();
 
+  StreamSubscription? _userProgressSubscription; // <<< ADICIONE ESTA LINHA
+  int _previousCompletionCount = 0; // <<< ADICIONE ESTA LINHA
+
   @override
   void initState() {
     super.initState();
@@ -185,6 +188,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   @override
   void dispose() {
     _userDocSubscription?.cancel();
+    _userProgressSubscription?.cancel();
     super.dispose();
   }
 
@@ -204,6 +208,47 @@ class _MainAppScreenState extends State<MainAppScreen> {
           storeInstance.dispatch(UserDetailsLoadedAction(userData));
           final currentViewModel = _UserCoinsViewModel.fromStore(storeInstance);
           _updatePremiumUI(currentViewModel.isPremium);
+        }
+      });
+      _userProgressSubscription?.cancel();
+      _userProgressSubscription = FirebaseFirestore.instance
+          .collection('userBibleProgress')
+          .doc(userId)
+          .snapshots()
+          .listen((snapshot) {
+        if (snapshot.exists && snapshot.data() != null && mounted) {
+          final progressData = snapshot.data() as Map<String, dynamic>;
+          final newCompletionCount =
+              progressData['bibleCompletionCount'] as int? ?? 0;
+
+          // Se o contador aumentou E era zero antes, significa que foi a primeira conclusão!
+          if (newCompletionCount > _previousCompletionCount &&
+              _previousCompletionCount == 0) {
+            print(
+                "MainAppScreen Listener: Detectada a primeira conclusão da Bíblia!");
+
+            // Dispara o evento de analytics
+            final installTimestamp = store
+                .state.userState.userDetails?['dataCadastro'] as Timestamp?;
+            int daysSinceInstall = 0;
+            if (installTimestamp != null) {
+              daysSinceInstall =
+                  DateTime.now().difference(installTimestamp.toDate()).inDays;
+            }
+
+            AnalyticsService.instance.logEvent(
+              name: 'user_engagement_milestone',
+              parameters: {
+                'milestone_name': 'completed_first_book',
+                'days_since_install': daysSinceInstall,
+              },
+            );
+            print(
+                "Analytics: Marco 'completed_first_book' registrado pelo cliente.");
+          }
+
+          // Atualiza a contagem anterior para a próxima verificação
+          _previousCompletionCount = newCompletionCount;
         }
       });
     }

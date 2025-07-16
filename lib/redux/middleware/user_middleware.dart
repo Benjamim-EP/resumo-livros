@@ -6,9 +6,11 @@ import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart'; // ✅ Importado para uso
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 List<Middleware<AppState>> createUserMiddleware() {
   final firestoreService = FirestoreService();
@@ -243,33 +245,81 @@ void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
 void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
     _toggleHighlight(FirestoreService firestoreService) {
   return (store, action, next) async {
+    // 1. Passa a ação para os reducers primeiro. Isso é útil se você quiser
+    //    mostrar um estado de loading otimista na UI, embora não seja o caso aqui.
     next(action);
+
+    // 2. Validação inicial: Garante que há um usuário logado.
     final userId = store.state.userState.userId;
-    if (userId == null) return;
+    if (userId == null) {
+      print(
+          "UserMiddleware (_toggleHighlight): Usuário não logado. Ação ignorada.");
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Você precisa estar logado para salvar destaques.');
+      }
+      return;
+    }
+
     try {
+      // 3. Decide se a ação é para ADICIONAR/ATUALIZAR ou REMOVER o destaque.
       if (action.colorHex == null) {
+        // --- LÓGICA DE REMOÇÃO ---
+        print(
+            "UserMiddleware: Removendo destaque para o versículo ${action.verseId}");
         await firestoreService.removeHighlight(userId, action.verseId);
       } else {
+        // --- LÓGICA DE ADIÇÃO/ATUALIZAÇÃO ---
+        print(
+            "UserMiddleware: Salvando/Atualizando destaque para ${action.verseId} com cor ${action.colorHex} e tags ${action.tags}");
+
+        // 3a. Busca o texto completo do versículo, necessário para salvar o contexto.
+        //     Usamos 'nvi' como padrão, pois é uma versão comum e completa nos seus assets.
         final String verseText =
             await BiblePageHelper.loadSingleVerseText(action.verseId, 'nvi');
+
+        // 3b. Chama o serviço do Firestore para salvar os dados.
         await firestoreService.saveHighlight(
-            userId, action.verseId, action.colorHex!,
-            tags: action.tags, fullVerseText: verseText);
+          userId,
+          action.verseId,
+          action
+              .colorHex!, // Usamos '!' pois sabemos que não é nulo neste bloco.
+          tags: action.tags,
+          fullVerseText: verseText,
+        );
+
+        // 3c. Registra o marco de engajamento (a função helper interna garante que só será registrado uma vez).
+        await _logEngagementMilestoneIfNeeded(store, 'first_highlight');
+
+        // 3d. Se houver novas tags, garante que elas sejam salvas na lista global de tags do usuário.
         if (action.tags != null && action.tags!.isNotEmpty) {
+          print(
+              "UserMiddleware: Garantindo que as tags ${action.tags} existam para o usuário.");
           for (var tag in action.tags!) {
+            // Esta ação será interceptada pelo seu middleware para salvar a tag no Firestore se for nova.
             store.dispatch(EnsureUserTagExistsAction(tag));
           }
         }
       }
+
+      // 4. Sincronização Final: Após a operação no Firestore ter sucesso,
+      //    despacha ações para recarregar os dados na UI, garantindo que ela
+      //    reflita o estado mais recente do banco de dados.
+      print(
+          "UserMiddleware: Operação de destaque concluída. Recarregando dados de destaques e tags.");
       store.dispatch(LoadUserHighlightsAction());
-      store.dispatch(LoadUserTagsAction());
+      store.dispatch(
+          LoadUserTagsAction()); // Recarrega para incluir novas tags na lista de sugestões.
     } catch (e) {
-      print("Erro no middleware ToggleHighlightAction: $e");
-      // ✅ ALTERAÇÃO AQUI
+      // 5. Tratamento de Erro: Se qualquer passo falhar (busca do texto, escrita no Firestore),
+      //    captura o erro, loga e mostra uma notificação para o usuário.
+      print(
+          "ERRO no middleware _toggleHighlight para a ação no versículo ${action.verseId}: $e");
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         CustomNotificationService.showError(
-            context, 'Falha ao salvar o destaque.');
+            context, 'Falha ao salvar o destaque. Tente novamente.');
       }
     }
   };
@@ -701,6 +751,7 @@ void Function(Store<AppState>, SaveNoteAction, NextDispatcher) _saveNote(
     try {
       await firestoreService.saveNote(userId, action.verseId, action.text);
       store.dispatch(LoadUserNotesAction());
+      await _logEngagementMilestoneIfNeeded(store, 'first_note');
     } catch (e) {
       print("UserMiddleware: Erro ao salvar nota: $e");
       // ✅ ALTERAÇÃO AQUI
@@ -798,4 +849,35 @@ void Function(Store<AppState>, UpdateUserDenominationAction, NextDispatcher)
       }
     }
   };
+}
+
+Future<void> _logEngagementMilestoneIfNeeded(
+    Store<AppState> store, String milestoneName) async {
+  final prefs = await SharedPreferences.getInstance();
+  final milestoneKey = 'milestone_${milestoneName}_logged';
+
+  if (prefs.getBool(milestoneKey) ?? false) {
+    return;
+  }
+
+  final userDetails = store.state.userState.userDetails;
+  final installTimestamp = userDetails?['dataCadastro'] as Timestamp?;
+  int daysSinceInstall = 0;
+
+  if (installTimestamp != null) {
+    daysSinceInstall =
+        DateTime.now().difference(installTimestamp.toDate()).inDays;
+  }
+
+  // Registra o evento no Firebase Analytics
+  AnalyticsService.instance.logEvent(
+    name: 'user_engagement_milestone',
+    parameters: {
+      'milestone_name': milestoneName,
+      'days_since_install': daysSinceInstall,
+    },
+  );
+
+  await prefs.setBool(milestoneKey, true);
+  print("Analytics: Marco de engajamento '$milestoneName' registrado.");
 }

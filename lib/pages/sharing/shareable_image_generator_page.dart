@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:share_plus/share_plus.dart';
 
 // O Enum não é mais necessário, então foi removido.
@@ -59,10 +60,30 @@ class _ShareableImageGeneratorPageState
       final file = File(filePath);
       await file.writeAsBytes(imageBytes);
 
-      await Share.shareXFiles(
+      // >>> INÍCIO DA MODIFICAÇÃO <<<
+
+      // Captura o resultado do compartilhamento
+      final result = await Share.shareXFiles(
         [XFile(filePath)],
         text: 'Confira este versículo: ${widget.verseReference} #SeptimaApp',
       );
+
+      // Registra o evento de analytics com o resultado
+      // Nota: Não conseguimos saber QUAL app foi escolhido (WhatsApp, etc.) por limitações de privacidade das plataformas.
+      // Mas podemos saber se foi um sucesso ou se o usuário cancelou.
+      await AnalyticsService.instance.logEvent(
+        name: 'app_shared',
+        parameters: {
+          'content_type': 'verse_image',
+          'share_result_status':
+              result.status.name, // Ex: 'success', 'dismissed'
+          'verse_reference': widget.verseReference, // Parâmetro bônus útil
+        },
+      );
+      print(
+          "Analytics: Evento 'app_shared' registrado com status: ${result.status.name}");
+
+      // >>> FIM DA MODIFICAÇÃO <<<
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -833,23 +833,32 @@ _load_bible_metadata()
     memory=options.MemoryOption.MB_256 # Aumentar a memória aqui também é uma boa prática
 )
 def calculateUserScore(event: Event[Change]) -> None:
+    """
+    Acionado sempre que um documento em 'userBibleProgress' é atualizado.
+    Calcula e atualiza o 'rankingScore' do usuário com base no tempo de leitura
+    e no progresso geral da leitura da Bíblia.
+    """
     if event.data is None:
+        print("calculateUserScore: Evento sem dados. Encerrando.")
         return
 
+    # Pega os dados do documento antes e depois da atualização
     data_before = event.data.before.to_dict() if event.data.before and event.data.before.exists else {}
     data_after = event.data.after.to_dict() if event.data.after and event.data.after.exists else {}
     
+    # Se não houver dados após a atualização, não há o que fazer
     if not data_after:
+        print("calculateUserScore: Documento deletado ou vazio. Encerrando.")
         return
 
-    # Leitura segura com valores padrão
+    # Otimização: Se os campos relevantes não mudaram, não recalcula.
     raw_time_before = data_before.get('rawReadingTime', 0)
     raw_time_after = data_after.get('rawReadingTime', 0)
     books_before = data_before.get('books', {})
     books_after = data_after.get('books', {})
     
     if raw_time_after == raw_time_before and books_after == books_before:
-        print("calculateUserScore: Nenhuma mudança relevante em 'rawReadingTime' ou 'books'. Encerrando.")
+        print(f"calculateUserScore: Nenhuma mudança relevante para User ID {event.params['userId']}. Encerrando.")
         return
 
     print(f"calculateUserScore: Mudança detectada para o usuário {event.params['userId']}. Iniciando cálculo.")
@@ -861,32 +870,46 @@ def calculateUserScore(event: Event[Change]) -> None:
 
     total_bible_sections = metadata.get('total_secoes_biblia', 1)
     if total_bible_sections <= 0:
+        print(f"ERRO em calculateUserScore: total_secoes_biblia é {total_bible_sections}, o que é inválido.")
         return
 
+    # Calcula o total de seções lidas a partir do mapa 'books'
     total_read_sections = sum(len(progress.get('readSections', [])) for progress in books_after.values() if isinstance(progress, dict))
     
+    # Calcula a porcentagem de progresso atual
     current_progress_percent = (total_read_sections / total_bible_sections) * 100
     
     bible_completion_count = data_after.get('bibleCompletionCount', 0)
     update_payload = {}
     
+    # Verifica se o usuário completou a leitura
     if current_progress_percent >= 100.0:
-        print(f"calculateUserScore: Usuário {event.params['userId']} completou a Bíblia!")
+        print(f"calculateUserScore: Usuário {event.params['userId']} completou a Bíblia! (Leitura #{bible_completion_count + 1})")
+        
+        # Incrementa o contador de conclusões
         bible_completion_count += 1
+        
+        # Reseta o progresso para a próxima leitura
         update_payload['books'] = {} 
         update_payload['currentProgressPercent'] = 0.0
     else:
+        # Se não completou, apenas atualiza a porcentagem
         update_payload['currentProgressPercent'] = round(current_progress_percent, 2)
 
     update_payload['bibleCompletionCount'] = bible_completion_count
 
+    # Calcula o score final
+    # Multiplicador que valoriza o progresso e as conclusões anteriores
     progress_for_multiplier = update_payload['currentProgressPercent']
     progress_multiplier = (1 + (progress_for_multiplier / 100)) * (1 + (bible_completion_count * 0.5))
+    
+    # Score = tempo total lido * multiplicador de progresso
     ranking_score = raw_time_after * progress_multiplier
     update_payload['rankingScore'] = round(ranking_score, 2)
     
     print(f"calculateUserScore: Atualizando documento para {event.params['userId']} com payload: {update_payload}")
     try:
+        # Pega a referência do documento que foi atualizado e aplica as novas mudanças
         doc_ref = event.data.after.reference
         doc_ref.update(update_payload)
         print(f"calculateUserScore: Documento de {event.params['userId']} atualizado com sucesso no Firestore.")

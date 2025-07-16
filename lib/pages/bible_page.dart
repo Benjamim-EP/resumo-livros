@@ -1377,7 +1377,6 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   }
 
   List<Widget> _buildAppBarActions() {
-    // <<< OBTEMOS O TEMA E isPremium AQUI DENTRO >>>
     final theme = Theme.of(context);
     final isPremium = store.state.subscriptionState.status ==
         SubscriptionStatus.premiumActive;
@@ -1390,10 +1389,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
     if (isFocusModeActive) {
       return [
         IconButton(
-          icon: Icon(Icons.fullscreen_exit,
-              color: theme.colorScheme.primary), // Cor de destaque para sair
+          icon: Icon(Icons.fullscreen_exit, color: theme.colorScheme.primary),
           tooltip: "Sair do Modo Foco",
-          // <<< MUDANÇA: Despacha a ação de sair >>>
           onPressed: () => store.dispatch(ExitFocusModeAction()),
         ),
       ];
@@ -1433,13 +1430,23 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
           tooltip: _currentPlayerState == TtsPlayerState.playing
               ? "Pausar Leitura"
               : "Continuar Leitura",
-          onPressed: _handleGlobalAudioControl,
+          onPressed: () {
+            AnalyticsService.instance.logEvent(
+                name: 'bible_feature_used',
+                parameters: {'feature_name': 'audio_control_toggled'});
+            _handleGlobalAudioControl();
+          },
         )
       else
         IconButton(
           icon: Icon(Icons.record_voice_over_outlined, color: defaultIconColor),
           tooltip: "Ouvir Capítulo / Alterar Voz",
-          onPressed: _showVoiceSelectionDialog,
+          onPressed: () {
+            AnalyticsService.instance.logEvent(
+                name: 'bible_feature_used',
+                parameters: {'feature_name': 'audio_voice_selection'});
+            _showVoiceSelectionDialog();
+          },
         ),
 
       // --- BOTÃO DE PDF ---
@@ -1462,6 +1469,9 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
             if (value == 'view') {
               OpenFile.open(_existingPdfPath!);
             } else if (value == 'regenerate') {
+              AnalyticsService.instance.logEvent(
+                  name: 'bible_feature_used',
+                  parameters: {'feature_name': 'generate_pdf'});
               _handleGeneratePdf();
             }
           },
@@ -1484,7 +1494,12 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
           icon: Icon(Icons.picture_as_pdf_outlined,
               color: defaultIconColor, size: 26),
           tooltip: "Gerar PDF do Capítulo",
-          onPressed: _handleGeneratePdf,
+          onPressed: () {
+            AnalyticsService.instance.logEvent(
+                name: 'bible_feature_used',
+                parameters: {'feature_name': 'generate_pdf'});
+            _handleGeneratePdf();
+          },
         ),
 
       // --- MENU AGRUPADO DE BUSCA ---
@@ -1493,8 +1508,14 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         tooltip: "Opções de Busca",
         onSelected: (value) {
           if (value == 'reference') {
+            AnalyticsService.instance.logEvent(
+                name: 'bible_feature_used',
+                parameters: {'feature_name': 'search_by_reference'});
             _showGoToDialog();
           } else if (value == 'semantic') {
+            AnalyticsService.instance.logEvent(
+                name: 'bible_feature_used',
+                parameters: {'feature_name': 'search_semantic'});
             setState(() => _isSemanticSearchActive = true);
           }
         },
@@ -1527,8 +1548,10 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         icon: Icon(Icons.add, color: defaultIconColor, size: 30),
         tooltip: "Mais Opções",
         onSelected: (value) {
+          String? featureName;
           switch (value) {
             case 'version':
+              featureName = 'change_translation';
               BiblePageWidgets.showTranslationSelection(
                 context: context,
                 selectedTranslation: selectedTranslation1,
@@ -1540,16 +1563,19 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               );
               break;
             case 'focus':
-              // <<< MUDANÇA: Despacha a ação de entrar >>>
+              featureName = 'toggle_focus_mode';
               store.dispatch(EnterFocusModeAction());
               break;
             case 'compare':
+              featureName = 'toggle_compare_mode';
               setState(() => _isCompareModeActive = !_isCompareModeActive);
               break;
             case 'fontSize':
+              featureName = 'adjust_font_size';
               _showFontSizeDialog(context);
               break;
             case 'hebrew':
+              featureName = 'use_interlinear_hebrew';
               if (isPremium) {
                 setState(() {
                   _showHebrewInterlinear = !_showHebrewInterlinear;
@@ -1565,6 +1591,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               }
               break;
             case 'greek':
+              featureName = 'use_interlinear_greek';
               if (isPremium) {
                 setState(() {
                   _showGreekInterlinear = !_showGreekInterlinear;
@@ -1579,6 +1606,11 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                 _showPremiumDialog(context);
               }
               break;
+          }
+          if (featureName != null) {
+            AnalyticsService.instance.logEvent(
+                name: 'bible_feature_used',
+                parameters: {'feature_name': featureName});
           }
         },
         itemBuilder: (BuildContext context) {
@@ -1609,8 +1641,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
             PopupMenuItem<String>(
               value: 'focus',
               child: ListTile(
-                leading: const Icon(Icons
-                    .lightbulb_outline), // Ícone agora é sempre para "entrar"
+                leading: const Icon(Icons.lightbulb_outline),
                 title: const Text("Modo Foco"),
               ),
             ),
@@ -1631,7 +1662,6 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                 value: 'hebrew',
                 child: ListTile(
                   leading: SvgPicture.asset(
-                    // <<< MUDANÇA AQUI
                     'assets/icons/interlinear_icon.svg',
                     width: 24,
                     height: 24,
@@ -1639,9 +1669,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                       isPremium
                           ? (_showHebrewInterlinear
                               ? premiumIconColor
-                              : theme.iconTheme
-                                  .color!) // Cor normal se não selecionado
-                          : premiumIconColor, // Cor de destaque se não for premium
+                              : theme.iconTheme.color!)
+                          : premiumIconColor,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -1655,7 +1684,6 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                 value: 'greek',
                 child: ListTile(
                   leading: SvgPicture.asset(
-                    // <<< MUDANÇA AQUI
                     'assets/icons/interlinear_icon.svg',
                     width: 24,
                     height: 24,
@@ -1663,9 +1691,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                       isPremium
                           ? (_showGreekInterlinear
                               ? premiumIconColor
-                              : theme.iconTheme
-                                  .color!) // Cor normal se não selecionado
-                          : premiumIconColor, // Cor de destaque se não for premium
+                              : theme.iconTheme.color!)
+                          : premiumIconColor,
                       BlendMode.srcIn,
                     ),
                   ),
