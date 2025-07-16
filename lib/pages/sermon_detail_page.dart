@@ -1,6 +1,8 @@
 // lib/pages/sermon_detail_page.dart
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart'; // Importar para listEquals e setEquals
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -12,6 +14,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers.dart'; // Importar SermonState
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
@@ -23,7 +26,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:redux/redux.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Modelo de dados para o sermão
+// Modelo de dados para o sermão (sem alterações)
 class Sermon {
   final String? generatedSermonId;
   final String? idOriginalProblematico;
@@ -114,25 +117,50 @@ class SermonDetailPage extends StatefulWidget {
   State<SermonDetailPage> createState() => _SermonDetailPageState();
 }
 
-class _SermonViewModel {
+// NOVO/CORRIGIDO: ViewModel para a SermonDetailPage
+class _SermonDetailViewModel {
   final List<Map<String, dynamic>> highlights;
-  // >>> MUDANÇA: Adicionado isPremium ao ViewModel <<<
   final bool isPremium;
+  final Set<String> favoritedSermonIds; // Adicionado para os favoritos
 
-  _SermonViewModel({required this.highlights, required this.isPremium});
+  _SermonDetailViewModel({
+    required this.highlights,
+    required this.isPremium,
+    required this.favoritedSermonIds,
+  });
 
-  static _SermonViewModel fromStore(Store<AppState> store, String sermonId) {
+  static _SermonDetailViewModel fromStore(
+      Store<AppState> store, String sermonId) {
     final sermonHighlights = store.state.userState.userCommentHighlights
         .where((h) => h['sourceId'] == sermonId)
         .toList();
 
-    // >>> MUDANÇA: Lógica para verificar status premium <<<
     bool premiumStatus = store.state.subscriptionState.status ==
         SubscriptionStatus.premiumActive;
 
-    return _SermonViewModel(
-        highlights: sermonHighlights, isPremium: premiumStatus);
+    final favoritedSermonIds =
+        store.state.sermonState.favoritedSermonIds; // Pega do SermonState
+
+    return _SermonDetailViewModel(
+      highlights: sermonHighlights,
+      isPremium: premiumStatus,
+      favoritedSermonIds: favoritedSermonIds, // Passa para o ViewModel
+    );
   }
+
+  // Métodos de igualdade para otimização do StoreConnector (distinct: true)
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _SermonDetailViewModel &&
+          runtimeType == other.runtimeType &&
+          listEquals(highlights, other.highlights) &&
+          isPremium == other.isPremium &&
+          setEquals(favoritedSermonIds, other.favoritedSermonIds);
+
+  @override
+  int get hashCode =>
+      highlights.hashCode ^ isPremium.hashCode ^ favoritedSermonIds.hashCode;
 }
 
 class _SermonDetailPageState extends State<SermonDetailPage> {
@@ -156,6 +184,8 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   final PdfGenerationService _pdfService = PdfGenerationService();
   bool _isGeneratingPdf = false;
   String? _existingPdfPath;
+  final ScrollController _scrollController = ScrollController();
+  Timer? _debounce;
 
   // >>> MUDANÇA: Diálogo de acesso premium <<<
   void _showPremiumRequiredDialog(BuildContext context) {
@@ -372,6 +402,21 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       }
     });
     _ttsManager.playerState.addListener(_onTtsStateChanged);
+    _scrollController.addListener(() {
+      if (_debounce?.isActive ?? false) _debounce!.cancel();
+      _debounce = Timer(const Duration(milliseconds: 500), () {
+        if (!_scrollController.hasClients) return;
+        double progress = _scrollController.position.pixels /
+            _scrollController.position.maxScrollExtent;
+        if (progress.isNaN || progress.isInfinite) progress = 0.0;
+
+        StoreProvider.of<AppState>(context, listen: false)
+            .dispatch(UpdateSermonProgressAction(
+          sermonId: widget.sermonGeneratedId,
+          progressPercentage: progress.clamp(0.0, 1.0),
+        ));
+      });
+    });
   }
 
   @override
@@ -380,6 +425,8 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     _ttsManager.stop();
     interstitialManager.tryShowInterstitial(
         fromScreen: "SermonDetailPage_Dispose");
+    _scrollController.dispose(); // <<< NOVO
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -617,92 +664,133 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-            _sermonDataFromFirestore?.translatedTitle ?? widget.sermonTitle,
-            overflow: TextOverflow.ellipsis),
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        foregroundColor: theme.appBarTheme.foregroundColor,
-        actions: [
-          if (_sermonDataFromFirestore != null) ...[
-            // Só mostra botões se os dados do sermão estiverem carregados
-            if (_isGeneratingPdf)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.5)),
-              )
-            else if (_existingPdfPath != null)
-              PopupMenuButton<String>(
-                icon: Icon(Icons.picture_as_pdf,
-                    color: theme.colorScheme.primary),
-                tooltip: "Opções do PDF do Sermão",
-                onSelected: (value) {
-                  if (value == 'view') {
-                    OpenFile.open(_existingPdfPath!);
-                  } else if (value == 'regenerate') {
-                    _handleGenerateSermonPdf();
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                      value: 'view', child: Text('Ver PDF Salvo')),
-                  const PopupMenuItem(
-                      value: 'regenerate', child: Text('Gerar Novamente')),
-                ],
-              )
-            else
+
+    // O StoreConnector agora envolve todo o Scaffold para que a AppBar também possa reagir às mudanças de estado (ex: favoritos)
+    return StoreConnector<AppState, _SermonDetailViewModel>(
+      converter: (store) =>
+          _SermonDetailViewModel.fromStore(store, widget.sermonGeneratedId),
+      distinct: true, // Importante para otimização
+      builder: (context, viewModel) {
+        // Determina se este sermão específico está favoritado
+        final isFavorited =
+            viewModel.favoritedSermonIds.contains(widget.sermonGeneratedId);
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              _sermonDataFromFirestore?.translatedTitle ?? widget.sermonTitle,
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: theme.appBarTheme.backgroundColor,
+            foregroundColor: theme.appBarTheme.foregroundColor,
+            actions: [
+              // Botão de Favorito
               IconButton(
-                icon: const Icon(Icons.picture_as_pdf_outlined),
-                tooltip: "Gerar PDF do Sermão",
-                onPressed: _handleGenerateSermonPdf,
+                icon: Icon(
+                  isFavorited ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: isFavorited
+                      ? Colors.amber.shade600
+                      : theme.appBarTheme.actionsIconTheme?.color,
+                  size: 26,
+                ),
+                tooltip: isFavorited
+                    ? "Remover dos Favoritos"
+                    : "Adicionar aos Favoritos",
+                onPressed: () {
+                  StoreProvider.of<AppState>(context, listen: false).dispatch(
+                    ToggleSermonFavoriteAction(
+                      sermonId: widget.sermonGeneratedId,
+                      isFavorite: !isFavorited, // Ação de alternância
+                    ),
+                  );
+                },
               ),
-          ],
-          if (!_isLoading && _error == null)
-            IconButton(
-                icon: Icon(_getAudioIcon(),
-                    size: 26,
-                    color: _sermonPlayerState == TtsPlayerState.playing
-                        ? theme.colorScheme.primary
-                        : theme.appBarTheme.actionsIconTheme?.color),
-                tooltip: _getAudioTooltip(),
-                onPressed: _handleAudioControl),
-          if (_sermonDataFromFirestore != null)
-            IconButton(
-                icon: const Icon(Icons.share_outlined),
-                tooltip: "Compartilhar Sermão",
-                onPressed: _shareSermon),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.format_size_outlined),
-            tooltip: "Tamanho da Fonte",
-            onSelected: (value) {
-              if (value == 'increase')
-                _increaseFontSize();
-              else if (value == 'decrease') _decreaseFontSize();
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                  value: 'increase',
-                  child: ListTile(
-                      leading: Icon(Icons.text_increase),
-                      title: Text('Aumentar Fonte'))),
-              const PopupMenuItem<String>(
-                  value: 'decrease',
-                  child: ListTile(
-                      leading: Icon(Icons.text_decrease),
-                      title: Text('Diminuir Fonte'))),
+
+              // Seção de Ações do Sermão (só aparece se os dados estiverem carregados)
+              if (_sermonDataFromFirestore != null) ...[
+                // Botão de PDF
+                if (_isGeneratingPdf)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.5)),
+                  )
+                else if (_existingPdfPath != null)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.picture_as_pdf,
+                        color: theme.colorScheme.primary),
+                    tooltip: "Opções do PDF do Sermão",
+                    onSelected: (value) {
+                      if (value == 'view')
+                        OpenFile.open(_existingPdfPath!);
+                      else if (value == 'regenerate')
+                        _handleGenerateSermonPdf();
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                          value: 'view', child: Text('Ver PDF Salvo')),
+                      const PopupMenuItem(
+                          value: 'regenerate', child: Text('Gerar Novamente')),
+                    ],
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    tooltip: "Gerar PDF do Sermão",
+                    onPressed: _handleGenerateSermonPdf,
+                  ),
+
+                // Botão de Áudio
+                IconButton(
+                    icon: Icon(_getAudioIcon(),
+                        size: 28,
+                        color: _sermonPlayerState == TtsPlayerState.playing
+                            ? theme.colorScheme.primary
+                            : theme.appBarTheme.actionsIconTheme?.color),
+                    tooltip: _getAudioTooltip(),
+                    onPressed: _handleAudioControl),
+
+                // Botão de Compartilhar
+                IconButton(
+                    icon: const Icon(Icons.share_outlined),
+                    tooltip: "Compartilhar Sermão",
+                    onPressed: _shareSermon),
+
+                // Botão de Fonte
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.format_size_outlined),
+                  tooltip: "Tamanho da Fonte",
+                  onSelected: (value) {
+                    if (value == 'increase')
+                      _increaseFontSize();
+                    else if (value == 'decrease') _decreaseFontSize();
+                  },
+                  itemBuilder: (context) => <PopupMenuEntry<String>>[
+                    const PopupMenuItem(
+                        value: 'increase',
+                        child: ListTile(
+                            leading: Icon(Icons.text_increase),
+                            title: Text('Aumentar Fonte'))),
+                    const PopupMenuItem(
+                        value: 'decrease',
+                        child: ListTile(
+                            leading: Icon(Icons.text_decrease),
+                            title: Text('Diminuir Fonte'))),
+                  ],
+                ),
+              ],
             ],
           ),
-        ],
-      ),
-      body: _buildBody(theme),
+          body: _buildBody(theme, viewModel),
+        );
+      },
     );
   }
 
-  Widget _buildBody(ThemeData theme) {
+  // O método _buildBody agora recebe o ViewModel para passar os dados necessários
+  Widget _buildBody(ThemeData theme, _SermonDetailViewModel viewModel) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -710,9 +798,11 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text(_error ?? "Sermão não pôde ser carregado.",
-              style: TextStyle(color: theme.colorScheme.error, fontSize: 16),
-              textAlign: TextAlign.center),
+          child: Text(
+            _error ?? "Sermão não pôde ser carregado.",
+            style: TextStyle(color: theme.colorScheme.error, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -722,202 +812,193 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     final preacherName =
         sermon.preacher ?? details?['preacher'] as String? ?? 'C.H. Spurgeon';
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSnippet());
-    return StoreConnector<AppState, _SermonViewModel>(
-      converter: (store) =>
-          _SermonViewModel.fromStore(store, widget.sermonGeneratedId),
-      builder: (context, viewModel) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (details != null) ...[
-                if (details['number_text'] != null &&
-                    (details['number_text'] as String).isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Text(details['number_text'],
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            fontStyle: FontStyle.italic,
-                            fontSize: _currentFontSize * 0.8)),
-                  ),
-                if (preacherName.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2.0),
-                    child: Text("Pregador: $preacherName",
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            fontSize: _currentFontSize * 0.9)),
-                  ),
-                if (details['delivery_info'] != null &&
-                    (details['delivery_info'] as String).isNotEmpty)
-                  Text(details['delivery_info'],
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(fontSize: _currentFontSize * 0.8)),
-                const SizedBox(height: 12),
-              ],
-              if (sermon.mainScripturePassageAbbreviated != null &&
-                  sermon.mainScripturePassageAbbreviated!.isNotEmpty) ...[
-                Text(
-                    "Passagem Principal: ${sermon.mainScripturePassageAbbreviated}",
-                    style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: _currentFontSize * 0.9)),
-                const SizedBox(height: 4),
-              ],
-              if (_isLoadingMainScripture)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  child: Center(
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: theme.colorScheme.secondary)),
-                )
-              else if (_loadedMainScriptureVerses != null &&
-                  _loadedMainScriptureVerses!.isNotEmpty)
-                Card(
-                  elevation: 0,
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withOpacity(0.7),
-                  margin: const EdgeInsets.symmetric(vertical: 8.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _loadedMainScriptureVerses!.map((verseText) {
-                        final parts = verseText.split(RegExp(r'\s+'));
-                        String verseNumDisplay = "";
-                        String textDisplay = verseText;
-                        if (parts.isNotEmpty &&
-                            int.tryParse(parts.first) != null) {
-                          verseNumDisplay = "${parts.first} ";
-                          textDisplay = parts.sublist(1).join(" ");
-                        }
-                        return Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: RichText(
-                              text: TextSpan(
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    height: 1.45,
-                                    fontSize: _currentFontSize * 0.95),
-                                children: <TextSpan>[
-                                  TextSpan(
-                                      text: verseNumDisplay,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  TextSpan(text: textDisplay),
-                                ],
-                              ),
-                            ));
-                      }).toList(),
-                    ),
-                  ),
-                )
-              else if (sermon.mainVerseQuoted != null &&
-                  sermon.mainVerseQuoted!.isNotEmpty)
-                Card(
-                  elevation: 0,
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withOpacity(0.7),
-                  margin: const EdgeInsets.symmetric(vertical: 8.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Text(sermon.mainVerseQuoted!,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            fontStyle: FontStyle.italic,
-                            height: 1.4,
-                            fontSize: _currentFontSize * 0.95)),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Text("Sermão:",
-                  style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.underline,
-                      fontSize: _currentFontSize * 1.1)),
-              const SizedBox(height: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: sermon.paragraphsToDisplay.map((paragraph) {
-                  final key = GlobalKey();
-                  _paragraphKeys[paragraph] = key;
-                  return Padding(
-                    key: key,
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: SelectableText.rich(
-                      TextSpan(
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontSize: _currentFontSize,
-                          height: 1.6,
-                        ),
-                        children: _buildHighlightedParagraph(
-                            paragraph, viewModel.highlights, theme),
-                      ),
-                      // >>> MUDANÇA: Passando o viewModel.isPremium para o handler <<<
-                      contextMenuBuilder: (context, editableTextState) {
-                        final List<ContextMenuButtonItem> buttonItems =
-                            editableTextState.contextMenuButtonItems;
 
-                        // Adiciona o botão de destacar no início
-                        buttonItems.insert(
-                          0,
-                          ContextMenuButtonItem(
-                            label: 'Destacar',
-                            onPressed: () {
-                              _handleHighlight(context, paragraph,
-                                  editableTextState, viewModel.isPremium);
-                            },
-                          ),
-                        );
-
-                        return AdaptiveTextSelectionToolbar.buttonItems(
-                          anchors: editableTextState.contextMenuAnchors,
-                          buttonItems: buttonItems,
-                        );
-                      },
-                      textAlign: TextAlign.justify,
-                    ),
-                  );
-                }).toList(),
+    return SingleChildScrollView(
+      controller: _scrollController, // Added controller here
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (details != null) ...[
+            if (details['number_text'] != null &&
+                (details['number_text'] as String).isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: Text(details['number_text'],
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontSize: _currentFontSize * 0.8)),
               ),
-              if (sermon.embeddedScripturesAbbreviated != null &&
-                  sermon.embeddedScripturesAbbreviated!.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                Divider(color: theme.dividerColor.withOpacity(0.5)),
-                const SizedBox(height: 12),
-                Text("Outras Referências Citadas:",
-                    style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+            if (preacherName.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text("Pregador: $preacherName",
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
                         fontSize: _currentFontSize * 0.9)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8.0,
-                  runSpacing: 4.0,
-                  children: sermon.embeddedScripturesAbbreviated!.map((ref) {
-                    return Chip(
-                      label: Text(ref,
-                          style: TextStyle(fontSize: _currentFontSize * 0.75)),
-                      backgroundColor:
-                          theme.colorScheme.secondaryContainer.withOpacity(0.7),
-                      labelStyle: TextStyle(
-                          color: theme.colorScheme.onSecondaryContainer),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                    );
+              ),
+            if (details['delivery_info'] != null &&
+                (details['delivery_info'] as String).isNotEmpty)
+              Text(details['delivery_info'],
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(fontSize: _currentFontSize * 0.8)),
+            const SizedBox(height: 12),
+          ],
+          if (sermon.mainScripturePassageAbbreviated != null &&
+              sermon.mainScripturePassageAbbreviated!.isNotEmpty) ...[
+            Text(
+                "Passagem Principal: ${sermon.mainScripturePassageAbbreviated}",
+                style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: _currentFontSize * 0.9)),
+            const SizedBox(height: 4),
+          ],
+          if (_isLoadingMainScripture)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Center(
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: theme.colorScheme.secondary)),
+            )
+          else if (_loadedMainScriptureVerses != null &&
+              _loadedMainScriptureVerses!.isNotEmpty)
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _loadedMainScriptureVerses!.map((verseText) {
+                    final parts = verseText.split(RegExp(r'\s+'));
+                    String verseNumDisplay = "";
+                    String textDisplay = verseText;
+                    if (parts.isNotEmpty && int.tryParse(parts.first) != null) {
+                      verseNumDisplay = "${parts.first} ";
+                      textDisplay = parts.sublist(1).join(" ");
+                    }
+                    return Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: RichText(
+                          text: TextSpan(
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                height: 1.45,
+                                fontSize: _currentFontSize * 0.95),
+                            children: <TextSpan>[
+                              TextSpan(
+                                  text: verseNumDisplay,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              TextSpan(text: textDisplay),
+                            ],
+                          ),
+                        ));
                   }).toList(),
                 ),
-              ],
-              const SizedBox(height: 30),
-            ],
+              ),
+            )
+          else if (sermon.mainVerseQuoted != null &&
+              sermon.mainVerseQuoted!.isNotEmpty)
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(sermon.mainVerseQuoted!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        height: 1.4,
+                        fontSize: _currentFontSize * 0.95)),
+              ),
+            ),
+          const SizedBox(height: 16),
+          Text("Sermão:",
+              style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
+                  fontSize: _currentFontSize * 1.1)),
+          const SizedBox(height: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: sermon.paragraphsToDisplay.map((paragraph) {
+              final key = GlobalKey();
+              _paragraphKeys[paragraph] = key;
+              return Padding(
+                key: key,
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: SelectableText.rich(
+                  TextSpan(
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontSize: _currentFontSize,
+                      height: 1.6,
+                    ),
+                    children: _buildHighlightedParagraph(
+                        paragraph, viewModel.highlights, theme),
+                  ),
+                  contextMenuBuilder: (context, editableTextState) {
+                    final List<ContextMenuButtonItem> buttonItems =
+                        editableTextState.contextMenuButtonItems;
+
+                    // Adiciona o botão de destacar no início
+                    buttonItems.insert(
+                      0,
+                      ContextMenuButtonItem(
+                        label: 'Destacar',
+                        onPressed: () {
+                          _handleHighlight(context, paragraph,
+                              editableTextState, viewModel.isPremium);
+                        },
+                      ),
+                    );
+
+                    return AdaptiveTextSelectionToolbar.buttonItems(
+                      anchors: editableTextState.contextMenuAnchors,
+                      buttonItems: buttonItems,
+                    );
+                  },
+                  textAlign: TextAlign.justify,
+                ),
+              );
+            }).toList(),
           ),
-        );
-      },
+          if (sermon.embeddedScripturesAbbreviated != null &&
+              sermon.embeddedScripturesAbbreviated!.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Divider(color: theme.dividerColor.withOpacity(0.5)),
+            const SizedBox(height: 12),
+            Text("Outras Referências Citadas:",
+                style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: _currentFontSize * 0.9)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: sermon.embeddedScripturesAbbreviated!.map((ref) {
+                return Chip(
+                  label: Text(ref,
+                      style: TextStyle(fontSize: _currentFontSize * 0.75)),
+                  backgroundColor:
+                      theme.colorScheme.secondaryContainer.withOpacity(0.7),
+                  labelStyle:
+                      TextStyle(color: theme.colorScheme.onSecondaryContainer),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                );
+              }).toList(),
+            ),
+          ],
+          const SizedBox(height: 30),
+        ],
+      ),
     );
   }
 }

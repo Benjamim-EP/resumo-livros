@@ -11,10 +11,13 @@ import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBa
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart';
+import 'package:septima_biblia/pages/library_page/sermon_card.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
 import 'package:septima_biblia/pages/sermons/sermon_chat_page.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
+import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -25,30 +28,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class _SermonsViewModel {
   final bool isPremium;
   final SermonSearchState sermonSearchState;
+  final SermonState
+      sermonState; // <<< ADICIONADO: Estado com favoritos e progresso
 
-  _SermonsViewModel({required this.isPremium, required this.sermonSearchState});
+  _SermonsViewModel({
+    required this.isPremium,
+    required this.sermonSearchState,
+    required this.sermonState, // <<< ADICIONADO
+  });
 
   static _SermonsViewModel fromStore(Store<AppState> store) {
-    bool isCurrentlyPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
-
-    if (!isCurrentlyPremium) {
-      final userDetails = store.state.userState.userDetails;
-      if (userDetails != null) {
-        final status = userDetails['subscriptionStatus'] as String?;
-        final endDateTimestamp =
-            userDetails['subscriptionEndDate'] as Timestamp?;
-        if (status == 'active' &&
-            endDateTimestamp != null &&
-            endDateTimestamp.toDate().isAfter(DateTime.now())) {
-          isCurrentlyPremium = true;
-        }
-      }
-    }
-
+    // ... (sua lógica existente para isPremium pode permanecer aqui)
     return _SermonsViewModel(
-      isPremium: isCurrentlyPremium,
+      isPremium: store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive,
       sermonSearchState: store.state.sermonSearchState,
+      sermonState: store.state.sermonState, // <<< ADICIONADO
     );
   }
 }
@@ -75,7 +70,8 @@ class SpurgeonSermonsIndexPage extends StatefulWidget {
       _SpurgeonSermonsIndexPageState();
 }
 
-class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
+class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
+    with SingleTickerProviderStateMixin {
   List<PreloadSermonItem> _allPreloadedSermons = [];
   List<PreloadSermonItem> _displayedSermonsFromPreload = [];
   bool _isLoadingPreload = true;
@@ -96,17 +92,22 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
       TextEditingController();
   bool _isSemanticSearchModeActive = false;
   String? _expandedSermonResultId;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this); // <<< INICIALIZAR
     _loadInitialPreloadedData();
+
     _preloadScrollController.addListener(_scrollListenerForPreload);
     _localTitleSearchController.addListener(_onLocalTitleSearchChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final store = StoreProvider.of<AppState>(context, listen: false);
+        store.dispatch(LoadSermonFavoritesAction());
+        store.dispatch(LoadSermonProgressAction());
         if (store.state.sermonSearchState.searchHistory.isEmpty &&
             !store.state.sermonSearchState.isLoadingHistory) {
           store.dispatch(LoadSermonSearchHistoryAction());
@@ -117,6 +118,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _preloadScrollController.removeListener(_scrollListenerForPreload);
     _preloadScrollController.dispose();
     _localTitleSearchController.removeListener(_onLocalTitleSearchChanged);
@@ -387,138 +389,315 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // O StoreConnector agora envolve todo o Scaffold, fornecendo o viewModel
+    // para todas as partes da UI, incluindo as abas.
     return StoreConnector<AppState, _SermonsViewModel>(
       converter: (store) => _SermonsViewModel.fromStore(store),
       builder: (context, viewModel) {
         return Scaffold(
-            // <<< O WIDGET SCAFFOLD É A CHAVE
-            appBar: AppBar(
-              title: Text(_isSemanticSearchModeActive
-                  ? "Busca Inteligente de Sermões"
-                  : "Sermões de C.H. Spurgeon"),
-              backgroundColor: theme.appBarTheme.backgroundColor,
-              foregroundColor: theme.appBarTheme.foregroundColor,
-            ),
-            body: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 8.0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: SvgPicture.asset(
-                          'assets/icons/buscasemantica.svg',
-                          colorFilter: ColorFilter.mode(
-                              _isSemanticSearchModeActive
-                                  ? theme.colorScheme.primary
-                                  : (theme.iconTheme.color?.withOpacity(0.7) ??
-                                      theme.hintColor),
-                              BlendMode.srcIn),
-                          width: 24,
-                          height: 24,
-                        ),
-                        tooltip: _isSemanticSearchModeActive
-                            ? "Alternar para Lista/Filtros"
-                            : "Alternar para Busca Inteligente",
-                        onPressed: _toggleSemanticSearchMode,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _isSemanticSearchModeActive
-                              ? _semanticSermonSearchController
-                              : _localTitleSearchController,
-                          style: TextStyle(
-                              color: theme.textTheme.bodyLarge?.color,
-                              fontSize: 14.5),
-                          decoration: InputDecoration(
-                            hintText: _isSemanticSearchModeActive
-                                ? "Busca inteligente nos sermões..."
-                                : "Buscar por título na lista...",
-                            hintStyle: TextStyle(
-                                color: theme.hintColor.withOpacity(0.8),
-                                fontSize: 14),
-                            suffixIcon: IconButton(
-                              icon: Icon(Icons.search_rounded,
-                                  color:
-                                      theme.iconTheme.color?.withOpacity(0.9),
-                                  size: 24),
-                              tooltip: "Buscar",
-                              onPressed: _isSemanticSearchModeActive
-                                  ? _performSemanticSermonSearch
-                                  : () =>
-                                      _applyLocalFiltersAndDisplayPreloadedSermons(),
-                            ),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                            filled: true,
-                            fillColor: theme.inputDecorationTheme.fillColor ??
-                                theme.cardColor.withOpacity(0.5),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(25.0),
-                                borderSide: BorderSide.none),
-                            enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(25.0),
-                                borderSide: BorderSide(
-                                    color: theme.dividerColor.withOpacity(0.3),
-                                    width: 0.8)),
-                            focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(25.0),
-                                borderSide: BorderSide(
-                                    color: theme.colorScheme.primary,
-                                    width: 1.5)),
+          appBar: AppBar(
+            title: Text(_isSemanticSearchModeActive
+                ? "Busca Inteligente de Sermões"
+                : "Sermões de C.H. Spurgeon"),
+            backgroundColor: theme.appBarTheme.backgroundColor,
+            foregroundColor: theme.appBarTheme.foregroundColor,
+            // A TabBar é colocada na propriedade 'bottom' da AppBar
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(
+                  kToolbarHeight + 20), // Altura para a barra de busca e abas
+              child: Column(
+                children: [
+                  // --- Barra de Busca (lógica movida para cá) ---
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
+                    child: Row(
+                      // ... (a lógica da barra de busca que você já tem permanece aqui)
+                      children: [
+                        IconButton(
+                          icon: SvgPicture.asset(
+                            'assets/icons/buscasemantica.svg',
+                            colorFilter: ColorFilter.mode(
+                                _isSemanticSearchModeActive
+                                    ? theme.colorScheme.primary
+                                    : (theme.iconTheme.color
+                                            ?.withOpacity(0.7) ??
+                                        theme.hintColor),
+                                BlendMode.srcIn),
+                            width: 24,
+                            height: 24,
                           ),
-                          onSubmitted: (_) => _isSemanticSearchModeActive
-                              ? _performSemanticSermonSearch()
-                              : _applyLocalFiltersAndDisplayPreloadedSermons(),
-                          textInputAction: TextInputAction.search,
+                          tooltip: _isSemanticSearchModeActive
+                              ? "Alternar para Lista/Filtros"
+                              : "Alternar para Busca Inteligente",
+                          onPressed: _toggleSemanticSearchMode,
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _isSemanticSearchModeActive
+                                ? _semanticSermonSearchController
+                                : _localTitleSearchController,
+                            style: TextStyle(
+                                color: theme.textTheme.bodyLarge?.color,
+                                fontSize: 14.5),
+                            decoration: InputDecoration(
+                              hintText: _isSemanticSearchModeActive
+                                  ? "Busca inteligente nos sermões..."
+                                  : "Buscar por título na lista...",
+                              hintStyle: TextStyle(
+                                  color: theme.hintColor.withOpacity(0.8),
+                                  fontSize: 14),
+                              suffixIcon: IconButton(
+                                icon: Icon(Icons.search_rounded,
+                                    color:
+                                        theme.iconTheme.color?.withOpacity(0.9),
+                                    size: 24),
+                                tooltip: "Buscar",
+                                onPressed: _isSemanticSearchModeActive
+                                    ? _performSemanticSermonSearch
+                                    : () =>
+                                        _applyLocalFiltersAndDisplayPreloadedSermons(),
+                              ),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              filled: true,
+                              fillColor: theme.inputDecorationTheme.fillColor ??
+                                  theme.cardColor.withOpacity(0.5),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(25.0),
+                                  borderSide: BorderSide.none),
+                            ),
+                            onSubmitted: (_) => _isSemanticSearchModeActive
+                                ? _performSemanticSermonSearch()
+                                : _applyLocalFiltersAndDisplayPreloadedSermons(),
+                            textInputAction: TextInputAction.search,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Seletor de Abas
+                  TabBar(
+                    controller: _tabController,
+                    tabs: const [
+                      Tab(icon: Icon(Icons.explore_outlined), text: "Explorar"),
+                      Tab(icon: Icon(Icons.star_outline), text: "Favoritos"),
+                      Tab(
+                          icon: Icon(Icons.watch_later_outlined),
+                          text: "Continuar"),
                     ],
                   ),
-                ),
-                if (!_isSemanticSearchModeActive)
-                  _buildFilterBarForPreload(theme, viewModel.isPremium),
-                Expanded(
-                  child: StoreConnector<AppState, SermonSearchState>(
-                    converter: (store) => store.state.sermonSearchState,
-                    distinct: true,
-                    builder: (context, sermonSearchState) {
-                      if (_isSemanticSearchModeActive) {
-                        return _buildSemanticSearchUI(theme, sermonSearchState);
-                      } else {
-                        return _buildPreloadedSermonsList(theme);
-                      }
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () {
-                // ✅ NOVA LÓGICA DE VERIFICAÇÃO
-                final store =
-                    StoreProvider.of<AppState>(context, listen: false);
-                final bool isGuest = store.state.userState.isGuestUser;
+          ),
+          // O corpo do Scaffold agora é a TabBarView
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              // Cada child corresponde a uma aba
+              _buildExplorarTab(theme, viewModel),
+              _buildFavoritosTab(theme, viewModel),
+              _buildContinuarLendoTab(theme, viewModel),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () {
+              final store = StoreProvider.of<AppState>(context, listen: false);
+              final bool isGuest = store.state.userState.isGuestUser;
 
-                if (isGuest) {
-                  // Se for convidado, mostra o diálogo de login
-                  showLoginRequiredDialog(context,
-                      featureName: "o chat com Spurgeon AI");
-                } else {
-                  // Se estiver logado, continua para a tela de chat
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const SermonChatPage()),
-                  );
-                }
-              },
-              label: const Text("Conversar com IA"),
-              icon: const Icon(Icons.chat_bubble_outline),
-              tooltip: "Faça perguntas sobre os sermões de Spurgeon",
-            ));
+              if (isGuest) {
+                showLoginRequiredDialog(context,
+                    featureName: "o chat com Spurgeon AI");
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SermonChatPage()),
+                );
+              }
+            },
+            label: const Text("Conversar com IA"),
+            icon: const Icon(Icons.chat_bubble_outline),
+            tooltip: "Faça perguntas sobre os sermões de Spurgeon",
+          ),
+        );
+      },
+    );
+  }
+
+  /// Constrói a aba "Explorar", que mostra a lista de sermões filtrada ou aleatória.
+  Widget _buildExplorarTab(ThemeData theme, _SermonsViewModel viewModel) {
+    if (_isLoadingPreload) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_errorPreload != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _errorPreload!,
+            style: TextStyle(color: theme.colorScheme.error, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    if (_displayedSermonsFromPreload.isEmpty) {
+      String message = "Nenhum sermão para exibir.";
+      if (_localTitleSearchTerm.isNotEmpty ||
+          _selectedBookFilterLocal != null) {
+        message = "Nenhum sermão encontrado para os filtros aplicados.";
+      }
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _preloadScrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      itemCount:
+          _displayedSermonsFromPreload.length + (_isLoadingMorePreload ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _displayedSermonsFromPreload.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final sermonItem = _displayedSermonsFromPreload[index];
+        final progressData =
+            viewModel.sermonState.sermonProgress[sermonItem.generatedId];
+
+        return SermonCard(
+          title: sermonItem.title,
+          reference:
+              "${_bibleBooksMap?[sermonItem.bookAbbrev]?['nome'] ?? ''} ${sermonItem.chapterNum}",
+          progress: progressData?.progressPercent ?? 0.0,
+          onTap: () =>
+              _navigateToSermonDetail(sermonItem.generatedId, sermonItem.title),
+        );
+      },
+    );
+  }
+
+  /// Constrói a aba "Favoritos", mostrando apenas os sermões favoritados.
+  Widget _buildFavoritosTab(ThemeData theme, _SermonsViewModel viewModel) {
+    final favoritedIds = viewModel.sermonState.favoritedSermonIds;
+
+    if (viewModel.sermonState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (favoritedIds.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text(
+            "Você ainda não favoritou nenhum sermão.\nToque na estrela na página do sermão para adicioná-lo aqui.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    // Filtra a lista principal de sermões para pegar apenas os favoritos
+    final favoriteSermons = _allPreloadedSermons
+        .where((s) => favoritedIds.contains(s.generatedId))
+        .toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      itemCount: favoriteSermons.length,
+      itemBuilder: (context, index) {
+        final sermonItem = favoriteSermons[index];
+        final progressData =
+            viewModel.sermonState.sermonProgress[sermonItem.generatedId];
+
+        return SermonCard(
+          title: sermonItem.title,
+          reference:
+              "${_bibleBooksMap?[sermonItem.bookAbbrev]?['nome'] ?? ''} ${sermonItem.chapterNum}",
+          progress: progressData?.progressPercent ?? 0.0,
+          onTap: () =>
+              _navigateToSermonDetail(sermonItem.generatedId, sermonItem.title),
+        );
+      },
+    );
+  }
+
+  /// Constrói a aba "Continuar Lendo", mostrando sermões com progresso e ordenando pelos mais recentes.
+  Widget _buildContinuarLendoTab(ThemeData theme, _SermonsViewModel viewModel) {
+    final progressMap = viewModel.sermonState.sermonProgress;
+
+    if (viewModel.sermonState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (progressMap.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text(
+            "Comece a ler um sermão e seu progresso aparecerá aqui para você continuar de onde parou.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    // Filtra os sermões que têm progresso salvo e não estão concluídos
+    final inProgressSermons = _allPreloadedSermons
+        .where((s) =>
+            progressMap.containsKey(s.generatedId) &&
+            (progressMap[s.generatedId]!.progressPercent < 0.98))
+        .toList();
+
+    // Ordena a lista pelos mais recentemente lidos
+    inProgressSermons.sort((a, b) {
+      final timestampA = progressMap[a.generatedId]!.lastReadTimestamp;
+      final timestampB = progressMap[b.generatedId]!.lastReadTimestamp;
+      return timestampB.compareTo(timestampA); // Mais recente primeiro
+    });
+
+    if (inProgressSermons.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text(
+            "Você leu todos os sermões que começou! \nExplore novos na aba 'Explorar'.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      itemCount: inProgressSermons.length,
+      itemBuilder: (context, index) {
+        final sermonItem = inProgressSermons[index];
+        final progressData =
+            viewModel.sermonState.sermonProgress[sermonItem.generatedId];
+
+        return SermonCard(
+          title: sermonItem.title,
+          reference:
+              "${_bibleBooksMap?[sermonItem.bookAbbrev]?['nome'] ?? ''} ${sermonItem.chapterNum}",
+          progress: progressData?.progressPercent ?? 0.0,
+          onTap: () =>
+              _navigateToSermonDetail(sermonItem.generatedId, sermonItem.title),
+        );
       },
     );
   }

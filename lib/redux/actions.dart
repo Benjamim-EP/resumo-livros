@@ -659,3 +659,37 @@ class BookRecommendationsFailedAction {
 
 /// Disparada pela UI para limpar os resultados da busca (ex: ao fechar a tela de busca).
 class ClearBookRecommendationsAction {}
+
+// Disparada pela UI para favoritar/desfavoritar
+class ToggleSermonFavoriteAction {
+  final String sermonId;
+  final bool isFavorite; // true para adicionar, false para remover
+  ToggleSermonFavoriteAction(
+      {required this.sermonId, required this.isFavorite});
+}
+
+// Disparada pelo middleware para carregar os favoritos do Firestore
+class LoadSermonFavoritesAction {}
+
+// Despachada pelo middleware após carregar os favoritos
+class SermonFavoritesLoadedAction {
+  final Set<String> favoritedSermonIds;
+  SermonFavoritesLoadedAction(this.favoritedSermonIds);
+}
+
+// Disparada pela UI para atualizar o progresso de leitura
+class UpdateSermonProgressAction {
+  final String sermonId;
+  final double progressPercentage; // Valor entre 0.0 e 1.0
+  UpdateSermonProgressAction(
+      {required this.sermonId, required this.progressPercentage});
+}
+
+// Disparada pelo middleware para carregar o progresso salvo localmente
+class LoadSermonProgressAction {}
+
+// Despachada pelo middleware após carregar o progresso
+class SermonProgressLoadedAction {
+  final Map<String, SermonProgressData> progressData;
+  SermonProgressLoadedAction(this.progressData);
+}

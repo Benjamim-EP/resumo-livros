@@ -1216,6 +1216,86 @@ class BookSearchState {
   }
 }
 
+SermonState sermonReducer(SermonState state, dynamic action) {
+  if (action is LoadSermonFavoritesAction) {
+    return state.copyWith(isLoading: true);
+  }
+  if (action is SermonFavoritesLoadedAction) {
+    return state.copyWith(
+        isLoading: false, favoritedSermonIds: action.favoritedSermonIds);
+  }
+  if (action is ToggleSermonFavoriteAction) {
+    final newFavorites = Set<String>.from(state.favoritedSermonIds);
+    if (action.isFavorite) {
+      newFavorites.add(action.sermonId);
+    } else {
+      newFavorites.remove(action.sermonId);
+    }
+    return state.copyWith(favoritedSermonIds: newFavorites);
+  }
+  if (action is SermonProgressLoadedAction) {
+    return state.copyWith(sermonProgress: action.progressData);
+  }
+  if (action is UpdateSermonProgressAction) {
+    final newProgress =
+        Map<String, SermonProgressData>.from(state.sermonProgress);
+    newProgress[action.sermonId] = SermonProgressData(
+      progressPercent: action.progressPercentage,
+      lastReadTimestamp: DateTime.now(),
+    );
+    return state.copyWith(sermonProgress: newProgress);
+  }
+  return state;
+}
+
+// NOVO: Modelo de dados para o progresso de um sermão
+class SermonProgressData {
+  final double progressPercent; // 0.0 a 1.0
+  final DateTime lastReadTimestamp;
+
+  SermonProgressData(
+      {required this.progressPercent, required this.lastReadTimestamp});
+
+  // Métodos para serialização (para salvar no SharedPreferences)
+  Map<String, dynamic> toJson() => {
+        'progressPercent': progressPercent,
+        'lastReadTimestamp': lastReadTimestamp.toIso8601String(),
+      };
+
+  factory SermonProgressData.fromJson(Map<String, dynamic> json) =>
+      SermonProgressData(
+        progressPercent: (json['progressPercent'] as num?)?.toDouble() ?? 0.0,
+        lastReadTimestamp:
+            DateTime.tryParse(json['lastReadTimestamp'] as String? ?? '') ??
+                DateTime.now(),
+      );
+}
+
+class SermonState {
+  final bool isLoading;
+  final Set<String> favoritedSermonIds;
+  final Map<String, SermonProgressData>
+      sermonProgress; // <sermonId, progressData>
+
+  SermonState({
+    this.isLoading = false,
+    this.favoritedSermonIds = const {},
+    this.sermonProgress = const {},
+  });
+
+  SermonState copyWith({
+    bool? isLoading,
+    Set<String>? favoritedSermonIds,
+    Map<String, SermonProgressData>? sermonProgress,
+  }) {
+    return SermonState(
+      isLoading: isLoading ?? this.isLoading,
+      favoritedSermonIds: favoritedSermonIds ?? this.favoritedSermonIds,
+      sermonProgress: sermonProgress ?? this.sermonProgress,
+    );
+  }
+}
+
 // ✅ 2. NOVO REDUCER PARA O ESTADO DE BUSCA DE LIVROS
 BookSearchState bookSearchReducer(BookSearchState state, dynamic action) {
   if (action is SearchBookRecommendationsAction) {
