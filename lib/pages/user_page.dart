@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart'; // Import for listEquals and mapEquals
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/models/highlight_item_model.dart';
+import 'package:septima_biblia/pages/biblie_page/note_editor_modal.dart';
 import 'package:septima_biblia/pages/user_page/denomination_card.dart';
 import 'package:septima_biblia/pages/user_page/highlight_item_card.dart';
 import 'package:septima_biblia/pages/user_page/profile_action_button.dart';
@@ -953,30 +954,30 @@ class _UserPageState extends State<UserPage> {
           },
           builder: (context, notes) {
             if (notes.isEmpty) {
+              // Um "empty state" mais informativo e visualmente agradável.
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.speaker_notes_off_outlined,
+                      Icon(Icons.edit_note_outlined,
                           size: 60,
                           color: theme.iconTheme.color?.withOpacity(0.5)),
                       const SizedBox(height: 16),
                       Text(
-                        "Nenhuma nota adicionada ainda.",
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color
-                              ?.withOpacity(0.7),
+                        "Suas anotações aparecerão aqui",
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Você pode adicionar notas aos versículos na tela da Bíblia.",
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color
-                              ?.withOpacity(0.6),
+                        "Para adicionar uma nota, pressione e segure um versículo na tela da Bíblia e escolha a opção.",
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.7),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -986,14 +987,14 @@ class _UserPageState extends State<UserPage> {
               );
             }
 
-            // Ordena a lista de notas pelo timestamp, do mais recente para o mais antigo.
+            // Ordena as notas pela data, da mais recente para a mais antiga.
             notes.sort((a, b) {
               final Timestamp? tsA = a['timestamp'];
               final Timestamp? tsB = b['timestamp'];
               if (tsA == null && tsB == null) return 0;
-              if (tsA == null) return 1; // Itens sem data vão para o final
+              if (tsA == null) return 1;
               if (tsB == null) return -1;
-              return tsB.compareTo(tsA); // Compara Timestamps
+              return tsB.compareTo(tsA);
             });
 
             return ListView.builder(
@@ -1019,17 +1020,16 @@ class _UserPageState extends State<UserPage> {
 
                 return Card(
                   elevation: 2,
-                  margin: const EdgeInsets.symmetric(vertical: 6.0),
+                  margin: const EdgeInsets.symmetric(vertical: 8.0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                        color: theme.dividerColor.withOpacity(0.5), width: 0.5),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // --- CABEÇALHO DO CARD ---
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1042,24 +1042,27 @@ class _UserPageState extends State<UserPage> {
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(Icons.delete_outline,
-                                  color:
-                                      theme.colorScheme.error.withOpacity(0.7),
-                                  size: 22),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              tooltip: "Remover Nota",
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext dialogContext) {
-                                    return AlertDialog(
+                            // --- BOTÃO DE AÇÕES (EDITAR/EXCLUIR) ---
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => NoteEditorModal(
+                                      verseId: verseId,
+                                      initialText: noteText,
+                                      bookReference: referenceText,
+                                      verseTextSample: verseContent,
+                                    ),
+                                  );
+                                } else if (value == 'delete') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (dialogContext) => AlertDialog(
                                       title: const Text("Confirmar Remoção"),
                                       content: Text(
                                           "Tem certeza que deseja remover esta nota para $referenceText?"),
-                                      actions: <Widget>[
+                                      actions: [
                                         TextButton(
                                           child: const Text("Cancelar"),
                                           onPressed: () =>
@@ -1079,31 +1082,38 @@ class _UserPageState extends State<UserPage> {
                                           },
                                         ),
                                       ],
-                                    );
-                                  },
-                                );
+                                    ),
+                                  );
+                                }
                               },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: ListTile(
+                                    leading: Icon(Icons.edit_outlined),
+                                    title: Text('Editar'),
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: ListTile(
+                                    leading: Icon(Icons.delete_outline,
+                                        color: theme.colorScheme.error),
+                                    title: Text('Excluir',
+                                        style: TextStyle(
+                                            color: theme.colorScheme.error)),
+                                  ),
+                                ),
+                              ],
+                              icon: Icon(Icons.more_vert,
+                                  color:
+                                      theme.iconTheme.color?.withOpacity(0.6)),
                             ),
                           ],
                         ),
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.symmetric(vertical: 12.0),
-                          padding: const EdgeInsets.all(12.0),
-                          decoration: BoxDecoration(
-                              color: theme.colorScheme.surface.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: theme.dividerColor.withOpacity(0.2))),
-                          child: Text(
-                            verseContent,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                                fontStyle: FontStyle.italic,
-                                color: theme.textTheme.bodyMedium?.color
-                                    ?.withOpacity(0.8),
-                                height: 1.4),
-                          ),
-                        ),
+                        const Divider(height: 16),
+
+                        // --- O TEXTO DA NOTA DO USUÁRIO ---
                         Text(
                           noteText,
                           style: theme.textTheme.bodyLarge?.copyWith(
@@ -1111,83 +1121,44 @@ class _UserPageState extends State<UserPage> {
                             fontSize: 15,
                           ),
                         ),
+                        const SizedBox(height: 16),
+
+                        // --- BLOCO DE CITAÇÃO PARA O VERSÍCULO ---
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border(
+                              left: BorderSide(
+                                color:
+                                    theme.colorScheme.primary.withOpacity(0.5),
+                                width: 4,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            verseContent,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontStyle: FontStyle.italic,
+                              color: theme.textTheme.bodyMedium?.color
+                                  ?.withOpacity(0.8),
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 )
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: (100 * index).ms)
-                    .moveX(begin: -20, curve: Curves.easeOutCubic);
+                    .fadeIn(duration: 500.ms)
+                    .slideY(begin: 0.1, curve: Curves.easeOutCubic);
               },
             );
           },
-        ); // case 'Histórico':
-      //   return StoreConnector<AppState, List<Map<String, dynamic>>>(
-      //     converter: (store) => store.state.userState.readingHistory,
-      //     onInit: (store) {
-      //       if (store.state.userState.readingHistory.isEmpty &&
-      //           store.state.userState.userId != null) {
-      //         store.dispatch(LoadReadingHistoryAction());
-      //       }
-      //     },
-      //     builder: (context, history) {
-      //       if (history.isEmpty) {
-      //         return Center(
-      //             child: Text("Nenhum histórico de leitura encontrado.",
-      //                 style: TextStyle(
-      //                     color: theme.textTheme.bodyMedium?.color
-      //                         ?.withOpacity(0.7),
-      //                     fontSize: 16)));
-      //       }
-      //       final DateFormat formatter = DateFormat('dd/MM/yy \'às\' HH:mm');
-      //       return ListView.builder(
-      //         padding:
-      //             const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      //         itemCount: history.length,
-      //         itemBuilder: (context, index) {
-      //           final entry = history[index];
-      //           final bookAbbrev = entry['bookAbbrev'] ?? '?';
-      //           final chapter = entry['chapter'] ?? '?';
-      //           final bookName = _localBooksMap?[bookAbbrev]?['nome'] ??
-      //               bookAbbrev.toUpperCase();
-      //           final timestamp = entry['timestamp'] as DateTime?;
-      //           final verseIdForNav = "${bookAbbrev}_${chapter}_1";
-      //           return Card(
-      //             margin: const EdgeInsets.symmetric(vertical: 4.0),
-      //             shape: RoundedRectangleBorder(
-      //                 borderRadius: BorderRadius.circular(10)),
-      //             child: ListTile(
-      //               contentPadding: const EdgeInsets.symmetric(
-      //                   horizontal: 16.0, vertical: 10.0),
-      //               leading: Icon(Icons.history_edu_outlined,
-      //                   color: theme.iconTheme.color?.withOpacity(0.7),
-      //                   size: 28),
-      //               title: Text("$bookName $chapter",
-      //                   style: const TextStyle(
-      //                       fontWeight: FontWeight.bold, fontSize: 15)),
-      //               subtitle: Padding(
-      //                 padding: const EdgeInsets.only(top: 4.0),
-      //                 child: Text(
-      //                     timestamp != null
-      //                         ? formatter.format(timestamp.toLocal())
-      //                         : "Data indisponível",
-      //                     style: TextStyle(
-      //                         color: theme.textTheme.bodySmall?.color,
-      //                         fontSize: 13)),
-      //               ),
-      //               trailing: Icon(Icons.arrow_forward_ios,
-      //                   size: 18,
-      //                   color: theme.iconTheme.color?.withOpacity(0.7)),
-      //               onTap: () => _navigateToBibleVerseAndTab(verseIdForNav),
-      //             ),
-      //           );
-      //         },
-      //       );
-      //     },
-      //   );
-
-      // case 'Diário':
-      //   return const UserDiaryPage();
+        );
       default:
         return Center(
             child: Text('Aba não implementada: $_selectedTab',
