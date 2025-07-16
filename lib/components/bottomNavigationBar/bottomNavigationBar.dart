@@ -25,6 +25,7 @@ import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/middleware/ad_middleware.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/notification_service.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -498,6 +499,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
                       }
                       int previousIndex = _selectedIndex;
                       if (previousIndex != index) {
+                        final String tabName = _getAppBarTitle(index);
+                        AnalyticsService.instance.logTabSelected(tabName);
+                        print(
+                            "Analytics: Evento 'main_tab_selected' registrado para a aba: '$tabName'");
                         final bool isPremium =
                             _UserCoinsViewModel.fromStore(storeInstance)
                                 .isPremium;

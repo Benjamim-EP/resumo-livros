@@ -14,6 +14,7 @@ import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/navigation_service.dart';
 import 'package:septima_biblia/main.dart'; // Para o navigatorKey
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -118,14 +119,18 @@ class AuthCheck extends StatelessWidget {
   Future<void> _processUserLogin(Store<AppState> store, User user) async {
     print("AuthCheck: Iniciando processamento de login para ${user.uid}");
 
-    // 1. Despacha a ação de login para atualizar o estado básico da UI
+    final loginMethod = user.providerData.isNotEmpty
+        ? user.providerData.first.providerId
+        : 'unknown';
+    AnalyticsService.instance.logLogin(loginMethod);
+    print("Analytics: Evento 'login' registrado com método: $loginMethod");
+
     store.dispatch(UserLoggedInAction(
       userId: user.uid,
       email: user.email ?? '',
       nome: user.displayName ?? 'Usuário',
     ));
 
-    // 2. Referência ao documento do usuário no Firestore
     final userDocRef =
         FirebaseFirestore.instance.collection('users').doc(user.uid);
 
@@ -133,19 +138,21 @@ class AuthCheck extends StatelessWidget {
       final docSnapshot = await userDocRef.get();
       Map<String, dynamic> userData;
 
-      // 3. Verifica se é um novo usuário ou um usuário existente
       if (!docSnapshot.exists) {
-        // --- LÓGICA PARA NOVOS USUÁRIOS ---
         print(
             "AuthCheck: Novo usuário detectado. Criando documentos no Firestore...");
+
+        // ✅ ESTA É A LINHA CORRIGIDA
+        // Usando o novo método `logSignUp` que criamos no AnalyticsService.
+        AnalyticsService.instance.logSignUp(loginMethod);
+        print("Analytics: Evento 'sign_up' registrado.");
+
         final initialName =
             user.displayName ?? user.email?.split('@')[0] ?? 'Novo Usuário';
-        // Garante que o nome no Firebase Auth esteja sincronizado
         if (user.displayName == null || user.displayName!.isEmpty) {
           await user.updateDisplayName(initialName);
         }
 
-        // Prepara os dados iniciais para o documento 'users'
         final newUserFirestoreData = {
           'userId': user.uid,
           'nome': initialName,
@@ -163,13 +170,10 @@ class AuthCheck extends StatelessWidget {
           'subscriptionEndDate': null,
           'stripeSubscriptionId': null,
           'activePriceId': null,
-          // Os campos de Septima ID (username, discriminator) serão adicionados pela Cloud Function
         };
         await userDocRef.set(newUserFirestoreData);
-        userData =
-            newUserFirestoreData; // Usa os dados recém-criados para a próxima verificação
+        userData = newUserFirestoreData;
 
-        // Cria o documento de progresso da Bíblia
         await FirebaseFirestore.instance
             .collection('userBibleProgress')
             .doc(user.uid)
@@ -185,14 +189,11 @@ class AuthCheck extends StatelessWidget {
 
         print("AuthCheck: Documentos iniciais criados com sucesso.");
       } else {
-        // --- LÓGICA PARA USUÁRIOS EXISTENTES ---
         print(
             "AuthCheck: Usuário existente. Carregando detalhes do Firestore.");
         userData = docSnapshot.data()!;
       }
 
-      // 4. VERIFICA E GERA O SEPTIMA ID (PARA NOVOS E ANTIGOS QUE NÃO TÊM)
-      // Esta verificação acontece para todos os usuários que fazem login.
       if (userData['username'] == null || userData['discriminator'] == null) {
         print(
             "AuthCheck: Usuário ${user.uid} não tem Septima ID. Tentando gerar agora...");
@@ -200,24 +201,34 @@ class AuthCheck extends StatelessWidget {
           final functions =
               FirebaseFunctions.instanceFor(region: "southamerica-east1");
           final callable = functions.httpsCallable('assignSeptimaId');
-          await callable.call(); // Chama a função que criamos no backend
+          await callable.call();
           print("AuthCheck: Chamada para assignSeptimaId enviada com sucesso.");
-          // Após a chamada, o ideal é recarregar os dados do usuário para pegar o novo ID
           store.dispatch(LoadUserDetailsAction());
         } catch (e) {
           print(
               "AuthCheck: ERRO ao chamar a função para gerar o Septima ID: $e");
-          // Não é um erro crítico, o app pode continuar.
-          // A próxima vez que o usuário logar, o sistema tentará novamente.
         }
       }
 
-      // 5. Despacha os detalhes do usuário para o estado Redux
-      // Se for um usuário novo, despacha os dados iniciais.
-      // Se for um usuário existente, despacha os dados lidos do Firestore.
+      try {
+        final statusString = userData['subscriptionStatus'] as String?;
+        final endDate =
+            (userData['subscriptionEndDate'] as Timestamp?)?.toDate();
+        bool isPremium = false;
+        if (statusString == 'active' &&
+            endDate != null &&
+            endDate.isAfter(DateTime.now())) {
+          isPremium = true;
+        }
+        await AnalyticsService.instance.setPremiumStatus(isPremium);
+        print(
+            "Analytics: Propriedade de usuário 'is_premium' definida como '$isPremium'.");
+      } catch (e) {
+        print("Analytics: Erro ao definir propriedades do usuário: $e");
+      }
+
       store.dispatch(UserDetailsLoadedAction(userData));
 
-      // 6. Despacha ações para carregar todos os outros dados associados ao usuário
       print(
           "AuthCheck: Despachando ações para carregar dados de suporte (progresso, notas, etc.).");
       store.dispatch(LoadAllBibleProgressAction());
@@ -231,7 +242,6 @@ class AuthCheck extends StatelessWidget {
     } catch (e) {
       print(
           "AuthCheck: ERRO GERAL no processamento do login para ${user.uid}: $e");
-      // Em caso de erro, podemos deslogar o usuário para evitar um estado inconsistente
       store.dispatch(UserLoggedOutAction());
     } finally {
       print("AuthCheck: Processamento de login concluído para ${user.uid}.");

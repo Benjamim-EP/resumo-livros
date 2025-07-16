@@ -25,6 +25,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
@@ -171,6 +172,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   }
 
   void _showPremiumDialog(BuildContext context) {
+    AnalyticsService.instance.logPremiumFeatureImpression('interlinear_study');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

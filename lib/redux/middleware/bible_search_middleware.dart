@@ -10,6 +10,7 @@ import 'package:septima_biblia/redux/actions/bible_search_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,12 +42,16 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     return;
   }
 
+  // >>> PASSO DE ANALYTICS <<<
+  // Registra que uma busca foi iniciada.
+  AnalyticsService.instance.logSearch(action.query, 'bible_semantic');
+
   // Despacha a ação para o reducer, que setará isLoading = true
+  // e isProcessingPayment = true
   next(action);
 
   final BuildContext? currentContext = navigatorKey.currentContext;
   final UserState currentUserState = store.state.userState;
-
   final String? userId = currentUserState.userId;
   final bool isGuest = currentUserState.isGuestUser;
   final int originalUserCoins = currentUserState.userCoins;
@@ -55,7 +60,7 @@ void _handleSearchBibleSemantic(Store<AppState> store,
 
   bool coinsWereDeducted = false;
 
-  // --- LÓGICA DE CUSTO ---
+  // --- 1. LÓGICA DE CUSTO E VALIDAÇÃO ---
   if (!isPremium) {
     if (originalUserCoins < BIBLE_SEARCH_COST) {
       print(
@@ -71,16 +76,15 @@ void _handleSearchBibleSemantic(Store<AppState> store,
           onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
         );
       }
-      return;
+      return; // Interrompe a execução
     }
 
-    // Deduz as moedas otimisticamente
+    // Deduz as moedas otimisticamente para a UI e persiste no backend
     print("BibleSearchMiddleware: Deduzindo $BIBLE_SEARCH_COST moedas.");
     int newCoinTotal = originalUserCoins - BIBLE_SEARCH_COST;
     store.dispatch(UpdateUserCoinsAction(newCoinTotal));
     coinsWereDeducted = true;
 
-    // Persiste a dedução no backend
     final firestoreService = FirestoreService();
     try {
       if (userId != null) {
@@ -94,13 +98,13 @@ void _handleSearchBibleSemantic(Store<AppState> store,
       print("BibleSearchMiddleware: Erro ao persistir dedução de moedas: $e");
       store.dispatch(SearchBibleSemanticFailureAction(
           'Erro ao processar custo da busca.'));
-      // Reembolsa imediatamente se a persistência falhar
+      // Se a persistência falhar, reembolsa as moedas imediatamente
       _reimburseCoins(store, userId, isGuest, originalUserCoins);
-      return;
+      return; // Interrompe a execução
     }
   }
 
-  // --- CHAMADA DA CLOUD FUNCTION ---
+  // --- 2. CHAMADA DA CLOUD FUNCTION ---
   try {
     print(
         'BibleSearchMiddleware: Iniciando chamada da Cloud Function para query="${action.query}"...');
@@ -112,12 +116,13 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     final requestData = {
       'query': action.query,
       'filters': store.state.bibleSearchState.activeFilters,
-      'topK': 30,
+      'topK': 30, // Você pode ajustar este valor conforme necessário
     };
 
     final HttpsCallableResult<dynamic> response =
         await callable.call<Map<String, dynamic>>(requestData);
 
+    // --- 3. PROCESSAMENTO DO SUCESSO ---
     List<Map<String, dynamic>> resultsList = [];
     final dynamic rawResults = response.data?['results'];
 
@@ -128,6 +133,7 @@ void _handleSearchBibleSemantic(Store<AppState> store,
           .toList();
     }
 
+    // Salva a busca no histórico antes de despachar o sucesso
     if (resultsList.isNotEmpty) {
       await _saveSearchHistory(store, action.query, resultsList);
     }
@@ -135,18 +141,22 @@ void _handleSearchBibleSemantic(Store<AppState> store,
     store.dispatch(SearchBibleSemanticSuccessAction(resultsList));
     print('BibleSearchMiddleware: Busca semântica bem-sucedida.');
   } on FirebaseFunctionsException catch (e) {
+    // --- 4. TRATAMENTO DE ERROS DA CLOUD FUNCTION ---
     print(
         "BibleSearchMiddleware: Erro FirebaseFunctionsException (CF): code=${e.code}, message=${e.message}");
+    final userFriendlyMessage =
+        e.message ?? 'Falha na comunicação com o servidor. Tente novamente.';
     store.dispatch(SearchBibleSemanticFailureAction(
-        "Erro na busca (${e.code}): ${e.message ?? 'Falha no servidor.'}"));
+        "Erro na busca (${e.code}): $userFriendlyMessage"));
 
     if (coinsWereDeducted) {
       _reimburseCoins(store, userId, isGuest, originalUserCoins);
     }
   } catch (e) {
+    // --- 5. TRATAMENTO DE ERROS GENÉRICOS (REDE, ETC.) ---
     print("BibleSearchMiddleware: Erro inesperado na chamada da CF: $e");
     store.dispatch(SearchBibleSemanticFailureAction(
-        "Ocorreu um erro desconhecido durante a busca."));
+        "Ocorreu um erro de conexão. Verifique sua internet e tente novamente."));
 
     if (coinsWereDeducted) {
       _reimburseCoins(store, userId, isGuest, originalUserCoins);
