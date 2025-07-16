@@ -1,16 +1,33 @@
 // lib/pages/biblie_page/bible_page_helper.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
+/// Classe utilitária com métodos estáticos para carregar e processar dados da Bíblia a partir dos assets.
+///
+/// Esta classe foi refatorada para usar injeção de dependência do AssetBundle,
+/// permitindo que seja facilmente testada com um bundle falso (mock) sem afetar
+/// o funcionamento normal do aplicativo, que continuará usando o `rootBundle` padrão.
 class BiblePageHelper {
+  // Caches estáticos para evitar recarregar arquivos repetidamente.
   static Map<String, dynamic>? _hebrewStrongsLexicon;
   static Map<String, dynamic>? _greekStrongsLexicon;
+  static Map<String, dynamic>? _booksMapCache;
 
-  // >>> INÍCIO DA CORREÇÃO <<<
-  static Future<Map<String, String>> loadBookVariationsMapForGoTo() async {
+  /// Limpa os caches estáticos. Usado principalmente para garantir o isolamento em testes de unidade.
+  @visibleForTesting
+  static void clearCache() {
+    _booksMapCache = null;
+    _hebrewStrongsLexicon = null;
+    _greekStrongsLexicon = null;
+  }
+
+  static Future<Map<String, String>> loadBookVariationsMapForGoTo(
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     try {
-      final String jsonString = await rootBundle
+      final String jsonString = await assetBundle
           .loadString('assets/Biblia/book_variations_map_search.json');
       final Map<String, dynamic> decodedJson = json.decode(jsonString);
       final Map<String, String> normalizedMap = {};
@@ -31,15 +48,16 @@ class BiblePageHelper {
     }
   }
 
-  // >>> FIM DA CORREÇÃO <<<
   static Future<List<String>> getAllSectionIdsForChapter(
-      String bookAbbrev, int chapter) async {
+      String bookAbbrev, int chapter,
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     final List<String> sectionIds = [];
     try {
       final String sectionStructurePath =
           'assets/Biblia/blocos/$bookAbbrev/$chapter.json';
       final String sectionDataString =
-          await rootBundle.loadString(sectionStructurePath);
+          await assetBundle.loadString(sectionStructurePath);
       final List<dynamic> sections = json.decode(sectionDataString);
 
       for (var section in sections) {
@@ -61,46 +79,75 @@ class BiblePageHelper {
     }
   }
 
-  static Future<Map<String, dynamic>> loadBooksMap() async {
-    final String data = await rootBundle
+  static Future<Map<String, dynamic>> loadBooksMap(
+      {AssetBundle? bundle}) async {
+    if (_booksMapCache != null) {
+      return _booksMapCache!;
+    }
+    final assetBundle = bundle ?? rootBundle;
+    final String data = await assetBundle
         .loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
-    return json.decode(data);
+    _booksMapCache = json.decode(data);
+    return _booksMapCache!;
   }
 
   static final Map<String, String> _bookNameToAbbrevMap = {
-    'gênesis': 'gn', 'genesis': 'gn',
-    'êxodo': 'ex', 'exodo': 'ex',
-    'levítico': 'lv', 'levitico': 'lv',
-    'números': 'nm', 'numeros': 'nm',
-    'deuteronômio': 'dt', 'deuteronomio': 'dt',
-    'josué': 'js', 'josue': 'js',
-    'juízes': 'jz', 'juizes': 'jz',
+    // (o seu mapa de abreviações permanece aqui, sem alterações)
+    'gênesis': 'gn',
+    'genesis': 'gn',
+    'êxodo': 'ex',
+    'exodo': 'ex',
+    'levítico': 'lv',
+    'levitico': 'lv',
+    'números': 'nm',
+    'numeros': 'nm',
+    'deuteronômio': 'dt',
+    'deuteronomio': 'dt',
+    'josué': 'js',
+    'josue': 'js',
+    'juízes': 'jz',
+    'juizes': 'jz',
     'rute': 'rt',
-    '1 samuel': '1sm', '1º samuel': '1sm',
-    '2 samuel': '2sm', '2º samuel': '2sm',
-    '1 reis': '1rs', '1º reis': '1rs',
-    '2 reis': '2rs', '2º reis': '2rs',
-    '1 crônicas': '1cr', '1 cronicas': '1cr', '1º crônicas': '1cr',
-    '2 crônicas': '2cr', '2 cronicas': '2cr', '2º crônicas': '2cr',
+    '1 samuel': '1sm',
+    '1º samuel': '1sm',
+    '2 samuel': '2sm',
+    '2º samuel': '2sm',
+    '1 reis': '1rs',
+    '1º reis': '1rs',
+    '2 reis': '2rs',
+    '2º reis': '2rs',
+    '1 crônicas': '1cr',
+    '1 cronicas': '1cr',
+    '1º crônicas': '1cr',
+    '2 crônicas': '2cr',
+    '2 cronicas': '2cr',
+    '2º crônicas': '2cr',
     'esdras': 'ed',
     'neemias': 'ne',
     'ester': 'et',
-    'jó': 'job', 'jo': 'jo', // Cuidado com "jo" para João
+    'jó': 'job',
     'salmos': 'sl',
-    'provérbios': 'pv', 'proverbios': 'pv',
+    'provérbios': 'pv',
+    'proverbios': 'pv',
     'eclesiastes': 'ec',
-    'cantares': 'ct', 'cânticos': 'ct',
-    'isaías': 'is', 'isaias': 'is',
+    'cantares': 'ct',
+    'cânticos': 'ct',
+    'isaías': 'is',
+    'isaias': 'is',
     'jeremias': 'jr',
-    'lamentações': 'lm', 'lamentacoes': 'lm',
+    'lamentações': 'lm',
+    'lamentacoes': 'lm',
     'ezequiel': 'ez',
     'daniel': 'dn',
-    'oseias': 'os', 'oséias': 'os',
+    'oseias': 'os',
+    'oséias': 'os',
     'joel': 'jl',
-    'amós': 'am', 'amos': 'am',
+    'amós': 'am',
+    'amos': 'am',
     'obadias': 'ob',
     'jonas': 'jn',
-    'miqueias': 'mq', 'miquéias': 'mq',
+    'miqueias': 'mq',
+    'miquéias': 'mq',
     'naum': 'na',
     'habacuque': 'hc',
     'sofonias': 'sf',
@@ -110,28 +157,46 @@ class BiblePageHelper {
     'mateus': 'mt',
     'marcos': 'mc',
     'lucas': 'lc',
-    'joão': 'jo', // Distinto de Jó
+    'joão': 'jo',
+    'joao': 'jo',
     'atos': 'at',
     'romanos': 'rm',
-    '1 coríntios': '1co', '1 corintios': '1co', '1º coríntios': '1co',
-    '2 coríntios': '2co', '2 corintios': '2co', '2º coríntios': '2co',
-    'gálatas': 'gl', 'galatas': 'gl',
-    'efésios': 'ef', 'efesios': 'ef',
+    '1 coríntios': '1co',
+    '1 corintios': '1co',
+    '1º coríntios': '1co',
+    '2 coríntios': '2co',
+    '2 corintios': '2co',
+    '2º coríntios': '2co',
+    'gálatas': 'gl',
+    'galatas': 'gl',
+    'efésios': 'ef',
+    'efesios': 'ef',
     'filipenses': 'fp',
     'colossenses': 'cl',
-    '1 tessalonicenses': '1ts', '1º tessalonicenses': '1ts',
-    '2 tessalonicenses': '2ts', '2º tessalonicenses': '2ts',
-    '1 timóteo': '1tm', '1 timoteo': '1tm', '1º timóteo': '1tm',
-    '2 timóteo': '2tm', '2 timoteo': '2tm', '2º timóteo': '2tm',
+    '1 tessalonicenses': '1ts',
+    '1º tessalonicenses': '1ts',
+    '2 tessalonicenses': '2ts',
+    '2º tessalonicenses': '2ts',
+    '1 timóteo': '1tm',
+    '1 timoteo': '1tm',
+    '1º timóteo': '1tm',
+    '2 timóteo': '2tm',
+    '2 timoteo': '2tm',
+    '2º timóteo': '2tm',
     'tito': 'tt',
     'filemom': 'fm',
     'hebreus': 'hb',
     'tiago': 'tg',
-    '1 pedro': '1pe', '1º pedro': '1pe',
-    '2 pedro': '2pe', '2º pedro': '2pe',
-    '1 joão': '1jo', '1º joão': '1jo',
-    '2 joão': '2jo', '2º joão': '2jo',
-    '3 joão': '3jo', '3º joão': '3jo',
+    '1 pedro': '1pe',
+    '1º pedro': '1pe',
+    '2 pedro': '2pe',
+    '2º pedro': '2pe',
+    '1 joão': '1jo',
+    '1º joão': '1jo',
+    '2 joão': '2jo',
+    '2º joão': '2jo',
+    '3 joão': '3jo',
+    '3º joão': '3jo',
     'judas': 'jd',
     'apocalipse': 'ap'
   };
@@ -141,10 +206,11 @@ class BiblePageHelper {
         (match) => '${match.group(1)} versiculo ${match.group(2)}');
   }
 
-  static Future<String> getFullReferenceName(
-      String abbreviatedReference) async {
+  static Future<String> getFullReferenceName(String abbreviatedReference,
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     try {
-      final booksMap = await loadBooksMap();
+      final booksMap = await loadBooksMap(bundle: assetBundle);
       final regex = RegExp(r'^(\S+)\s*(.*)$');
       final match = regex.firstMatch(abbreviatedReference.trim());
       if (match != null) {
@@ -161,11 +227,12 @@ class BiblePageHelper {
     }
   }
 
-  static Future<Map<String, dynamic>?>
-      loadAndCacheHebrewStrongsLexicon() async {
+  static Future<Map<String, dynamic>?> loadAndCacheHebrewStrongsLexicon(
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     if (_hebrewStrongsLexicon == null) {
       try {
-        final String data = await rootBundle.loadString(
+        final String data = await assetBundle.loadString(
             'assets/Biblia/completa_traducoes/hebrew_strong_lexicon_traduzido.json');
         _hebrewStrongsLexicon = json.decode(data);
       } catch (e) {
@@ -178,10 +245,12 @@ class BiblePageHelper {
   static Map<String, dynamic>? get cachedHebrewStrongsLexicon =>
       _hebrewStrongsLexicon;
 
-  static Future<Map<String, dynamic>?> loadAndCacheGreekStrongsLexicon() async {
+  static Future<Map<String, dynamic>?> loadAndCacheGreekStrongsLexicon(
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     if (_greekStrongsLexicon == null) {
       try {
-        final String data = await rootBundle.loadString(
+        final String data = await assetBundle.loadString(
             'assets/Biblia/completa_traducoes/greek_strong_lexicon_traduzido.json');
         _greekStrongsLexicon = json.decode(data);
       } catch (e) {
@@ -199,7 +268,9 @@ class BiblePageHelper {
   }
 
   static Future<List<String>> loadVersesFromReference(
-      String reference, String translation) async {
+      String reference, String translation,
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     if (reference.isEmpty) return ["Referência inválida."];
 
     final RegExp regex = RegExp(
@@ -214,19 +285,16 @@ class BiblePageHelper {
     String startVerseStr = match.group(3)!;
     String? endVerseStr = match.group(4);
 
-    // <<< INÍCIO DA CORREÇÃO >>>
     String? bookAbbrev;
-    final Map<String, dynamic> booksMap = await loadBooksMap();
+    final Map<String, dynamic> booksMap =
+        await loadBooksMap(bundle: assetBundle);
 
-    // 1. Tenta tratar a 'bookNamePart' como se já fosse uma abreviação
     final String potentialAbbrev = bookNamePart.toLowerCase();
     if (booksMap.containsKey(potentialAbbrev)) {
       bookAbbrev = potentialAbbrev;
     } else {
-      // 2. Se não for uma abreviação, tenta converter do nome por extenso
       bookAbbrev = _getAbbrevFromPortugueseName(bookNamePart);
     }
-    // <<< FIM DA CORREÇÃO >>>
 
     if (bookAbbrev == null) {
       return ["Livro não reconhecido: $bookNamePart"];
@@ -247,7 +315,8 @@ class BiblePageHelper {
     try {
       final String verseDataPath =
           'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
-      final String verseDataString = await rootBundle.loadString(verseDataPath);
+      final String verseDataString =
+          await assetBundle.loadString(verseDataPath);
       final List<dynamic> allVersesInChapter = json.decode(verseDataString);
       List<String> resultVerses = [];
 
@@ -262,7 +331,6 @@ class BiblePageHelper {
           ? resultVerses
           : ["Versículos não encontrados para: $reference"];
     } catch (e) {
-      // Este erro geralmente significa que o arquivo JSON não foi encontrado.
       print(
           "Erro ao carregar o arquivo de versículos para '$reference' (Abbrev: '$bookAbbrev', Cap: '$chapter'): $e");
       return ["Erro ao carregar versículos para: $reference"];
@@ -273,17 +341,20 @@ class BiblePageHelper {
       _greekStrongsLexicon;
 
   static Future<Map<String, dynamic>> loadChapterDataComparison(
-      String bookAbbrev,
-      int chapter,
-      String translation1,
-      String? translation2) async {
+    String bookAbbrev,
+    int chapter,
+    String translation1,
+    String? translation2, {
+    AssetBundle? bundle,
+  }) async {
+    final assetBundle = bundle ?? rootBundle;
     List<Map<String, dynamic>> sections = [];
     Map<String, dynamic> verseData = {};
     try {
       final String sectionStructurePath =
           'assets/Biblia/blocos/$bookAbbrev/$chapter.json';
       final String sectionData =
-          await rootBundle.loadString(sectionStructurePath);
+          await assetBundle.loadString(sectionStructurePath);
       final decodedSectionData = json.decode(sectionData);
       if (decodedSectionData is List) {
         sections = List<Map<String, dynamic>>.from(decodedSectionData
@@ -304,8 +375,9 @@ class BiblePageHelper {
     }
 
     try {
-      verseData[translation1] =
-          await _loadVerseDataForTranslation(bookAbbrev, chapter, translation1);
+      verseData[translation1] = await _loadVerseDataForTranslation(
+          bookAbbrev, chapter, translation1,
+          bundle: assetBundle);
     } catch (e) {
       return {'sectionStructure': [], 'verseData': {}};
     }
@@ -313,7 +385,8 @@ class BiblePageHelper {
     if (translation2 != null) {
       try {
         verseData[translation2] = await _loadVerseDataForTranslation(
-            bookAbbrev, chapter, translation2);
+            bookAbbrev, chapter, translation2,
+            bundle: assetBundle);
       } catch (e) {
         verseData[translation2] = [];
       }
@@ -322,7 +395,9 @@ class BiblePageHelper {
   }
 
   static Future<dynamic> _loadVerseDataForTranslation(
-      String bookAbbrev, int chapter, String translation) async {
+      String bookAbbrev, int chapter, String translation,
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     String verseDataPath;
     if (translation == 'hebrew_original') {
       verseDataPath =
@@ -334,7 +409,7 @@ class BiblePageHelper {
       verseDataPath =
           'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
     }
-    final String verseDataString = await rootBundle.loadString(verseDataPath);
+    final String verseDataString = await assetBundle.loadString(verseDataPath);
     final decodedVerseData = json.decode(verseDataString);
     if (translation == 'hebrew_original' ||
         translation == 'greek_interlinear') {
@@ -357,8 +432,9 @@ class BiblePageHelper {
     return [];
   }
 
-  static Future<String> loadSingleVerseText(
-      String verseId, String translation) async {
+  static Future<String> loadSingleVerseText(String verseId, String translation,
+      {AssetBundle? bundle}) async {
+    final assetBundle = bundle ?? rootBundle;
     if (translation == 'hebrew_original' ||
         translation == 'greek_interlinear') {
       return "[Visualização interlinear]";
@@ -372,7 +448,8 @@ class BiblePageHelper {
     try {
       final String verseDataPath =
           'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapterForPath.json';
-      final String verseDataString = await rootBundle.loadString(verseDataPath);
+      final String verseDataString =
+          await assetBundle.loadString(verseDataPath);
       final decodedVerseData = json.decode(verseDataString);
       if (decodedVerseData is List &&
           verseIndex > 0 &&
