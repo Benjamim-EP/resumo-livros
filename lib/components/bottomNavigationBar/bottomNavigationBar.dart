@@ -29,6 +29,7 @@ import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/notification_service.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:septima_biblia/services/tutorial_service.dart'; // <<< ARQUIVO REFATORADO
+import 'package:septima_biblia/services/update_service.dart'; // <<< ARQUIVO REFATORADO
 
 // ViewModels (sem alterações)
 class _UserCoinsViewModel {
@@ -117,11 +118,13 @@ class _MainAppScreenState extends State<MainAppScreen> {
   // --- LÓGICA DO TUTORIAL AGORA É GERENCIADA PELO SERVIÇO ---
   final TutorialService _tutorialService = TutorialService();
   bool _tutorialHasBeenChecked = false; // Flag de controle de execução
+  final UpdateService _updateService = UpdateService();
 
   @override
   void initState() {
     super.initState();
     _setupUserListener();
+    _updateService.checkForUpdate();
 
     if (!_notificationsInitialized) {
       _scheduleNotifications();

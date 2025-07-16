@@ -1,5 +1,6 @@
 // Em: lib/main.dart
 
+import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -28,6 +29,8 @@ void main() async {
   // Inicializa serviços essenciais como o Firebase.
   // AdMob foi removido daqui e a inicialização do Start.io é feita nativamente.
   await AppInitialization.init();
+
+  FirebaseInAppMessaging.instance.setMessagesSuppressed(false);
 
   // Despacha as ações iniciais para carregar dados persistidos no estado do Redux.
   // Isso carrega o tema salvo e qualquer progresso de leitura da Bíblia que

@@ -73,6 +73,8 @@ dependencies:
   google_mlkit_translation: ^0.13.0
   mocktail: ^1.0.4
   http: ^1.4.0
+  in_app_update: ^4.2.3
+  firebase_in_app_messaging: ^0.8.1+9
   
 flutter_localizations:
     sdk: flutter
