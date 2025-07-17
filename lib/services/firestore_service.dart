@@ -90,6 +90,40 @@ class FirestoreService {
     }
   }
 
+  Future<Map<String, Map<String, dynamic>>> fetchUsersByIds(
+      List<String> userIds) async {
+    if (userIds.isEmpty) {
+      return {};
+    }
+
+    final Map<String, Map<String, dynamic>> usersMap = {};
+    const chunkSize = 30; // Limite do 'whereIn' no Firestore
+
+    // Processa os IDs em lotes de 30 para respeitar o limite do Firestore
+    for (var i = 0; i < userIds.length; i += chunkSize) {
+      final chunk = userIds.sublist(
+          i, i + chunkSize > userIds.length ? userIds.length : i + chunkSize);
+
+      try {
+        final querySnapshot = await _db
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (var doc in querySnapshot.docs) {
+          if (doc.exists) {
+            // Guarda os dados usando o ID do usuário como chave para fácil acesso
+            usersMap[doc.id] = doc.data();
+          }
+        }
+      } catch (e) {
+        print("FirestoreService: Erro ao buscar lote de usuários por IDs: $e");
+        // Continua para o próximo lote em vez de falhar completamente
+      }
+    }
+    return usersMap;
+  }
+
   // --- User Methods ---
   Future<List<Map<String, dynamic>>> getUserRoutes(String userId) async {
     try {

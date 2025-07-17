@@ -217,6 +217,9 @@ List<Middleware<AppState>> createUserMiddleware() {
     TypedMiddleware<AppState, LoadFriendRequestsDetailsAction>(
             _loadFriendRequestsDetails(firestoreService))
         .call,
+    TypedMiddleware<AppState, LoadFriendsDataAction>(
+            _loadFriendsData(firestoreService))
+        .call,
   ];
 }
 
@@ -248,6 +251,91 @@ void Function(Store<AppState>, LoadFriendRequestsDetailsAction, NextDispatcher)
       store.dispatch(FriendRequestsDetailsLoadedAction(details));
     } catch (e) {
       print("Erro ao carregar detalhes dos pedidos de amizade: $e");
+    }
+  };
+}
+
+void Function(Store<AppState>, LoadFriendsDataAction, NextDispatcher)
+    _loadFriendsData(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      store.dispatch(FriendsDataLoadErrorAction("Usuário não está logado."));
+      return;
+    }
+
+    try {
+      final userDetails = await firestoreService.getUserDetails(userId);
+      if (userDetails == null) {
+        throw Exception("Documento do usuário não encontrado.");
+      }
+
+      final List<String> friendIds =
+          List<String>.from(userDetails['friends'] ?? []);
+      final List<String> receivedIds =
+          List<String>.from(userDetails['friendRequestsReceived'] ?? []);
+      final List<String> sentIds =
+          List<String>.from(userDetails['friendRequestsSent'] ?? []);
+
+      final allUniqueIds = {...friendIds, ...receivedIds, ...sentIds}.toList();
+
+      if (allUniqueIds.isEmpty) {
+        store.dispatch(FriendsDataLoadedAction(
+          friendsDetails: [],
+          requestsReceivedDetails: [],
+          requestsSentDetails: [],
+        ));
+        return;
+      }
+
+      final Map<String, Map<String, dynamic>> usersDetailsMap =
+          await firestoreService.fetchUsersByIds(allUniqueIds);
+
+      // ✅ INÍCIO DA CORREÇÃO
+
+      // Helper para processar cada lista de IDs de forma segura
+      List<Map<String, dynamic>> processIdList(List<String> ids) {
+        return ids
+            .map((id) {
+              // 1. Pega o mapa de detalhes do usuário. Pode ser nulo.
+              final Map<String, dynamic>? userData = usersDetailsMap[id];
+
+              // 2. Se não encontrou os dados do usuário, retorna nulo para este item.
+              if (userData == null) {
+                print(
+                    "AVISO: Detalhes para o usuário com ID '$id' não foram encontrados no mapa.");
+                return null;
+              }
+
+              // 3. Se encontrou, cria uma cópia e garante que o 'userId' está presente.
+              return Map<String, dynamic>.from(userData)..['userId'] = id;
+            })
+            // 4. Filtra todos os resultados nulos (usuários não encontrados).
+            .where((data) => data != null)
+            // 5. Converte a lista de `Map?` para uma lista de `Map` (agora seguro).
+            .cast<Map<String, dynamic>>()
+            .toList();
+      }
+
+      final List<Map<String, dynamic>> friendsDetails =
+          processIdList(friendIds);
+      final List<Map<String, dynamic>> receivedDetails =
+          processIdList(receivedIds);
+      final List<Map<String, dynamic>> sentDetails = processIdList(sentIds);
+
+      // ✅ FIM DA CORREÇÃO
+
+      store.dispatch(FriendsDataLoadedAction(
+        friendsDetails: friendsDetails,
+        requestsReceivedDetails: receivedDetails,
+        requestsSentDetails: sentDetails,
+      ));
+    } catch (e) {
+      print("Erro no middleware _loadFriendsData: $e");
+      store.dispatch(
+          FriendsDataLoadErrorAction("Falha ao carregar dados de amigos: $e"));
     }
   };
 }

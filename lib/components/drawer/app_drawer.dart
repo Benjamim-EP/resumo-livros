@@ -53,11 +53,12 @@ class AppDrawer extends StatelessWidget {
             children: <Widget>[
               _buildDrawerHeader(context, viewModel),
               _buildDrawerItem(
-                icon: Icons.group_add_outlined,
-                text: 'Encontrar Amigos',
+                icon: Icons.people_alt_outlined, // Ícone de grupo de pessoas
+                text: 'Amigos', // Texto alterado
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushNamed(context, '/findFriends');
+                  Navigator.pushNamed(context,
+                      '/friends'); // Rota alterada para o hub de amigos
                 },
               ),
               _buildDrawerItem(

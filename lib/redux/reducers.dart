@@ -249,6 +249,12 @@ class UserState {
   final bool isFocusMode;
   final List<Map<String, dynamic>> friendRequestDetails;
 
+  final List<Map<String, dynamic>> friendsDetails;
+  final List<Map<String, dynamic>> friendRequestsReceivedDetails;
+  final List<Map<String, dynamic>> friendRequestsSentDetails;
+  final bool isLoadingFriendsData;
+  final String? friendsDataError;
+
   UserState({
     this.userId,
     this.email,
@@ -297,6 +303,11 @@ class UserState {
     this.isFocusMode = false,
     this.userNotes = const [],
     this.friendRequestDetails = const [],
+    this.friendsDetails = const [],
+    this.friendRequestsReceivedDetails = const [],
+    this.friendRequestsSentDetails = const [],
+    this.isLoadingFriendsData = false,
+    this.friendsDataError,
   });
 
   UserState copyWith({
@@ -357,6 +368,12 @@ class UserState {
     bool clearEmail = false,
     bool clearUserDetails = false,
     List<Map<String, dynamic>>? friendRequestDetails,
+    List<Map<String, dynamic>>? friendsDetails,
+    List<Map<String, dynamic>>? friendRequestsReceivedDetails,
+    List<Map<String, dynamic>>? friendRequestsSentDetails,
+    bool? isLoadingFriendsData,
+    String? friendsDataError,
+    bool clearFriendsDataError = false,
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -441,12 +458,37 @@ class UserState {
       isLoadingLogin: isLoadingLogin ?? this.isLoadingLogin,
       isFocusMode: isFocusMode ?? this.isFocusMode,
       friendRequestDetails: friendRequestDetails ?? this.friendRequestDetails,
+
+      friendsDetails: friendsDetails ?? this.friendsDetails,
+      friendRequestsReceivedDetails:
+          friendRequestsReceivedDetails ?? this.friendRequestsReceivedDetails,
+      friendRequestsSentDetails:
+          friendRequestsSentDetails ?? this.friendRequestsSentDetails,
+      isLoadingFriendsData: isLoadingFriendsData ?? this.isLoadingFriendsData,
+      friendsDataError: clearFriendsDataError
+          ? null
+          : friendsDataError ?? this.friendsDataError,
     );
   }
 }
 
 UserState userReducer(UserState state, dynamic action) {
-  if (action is FriendRequestsDetailsLoadedAction) {
+  if (action is LoadFriendsDataAction) {
+    return state.copyWith(
+        isLoadingFriendsData: true, clearFriendsDataError: true);
+  } else if (action is FriendsDataLoadedAction) {
+    return state.copyWith(
+      isLoadingFriendsData: false,
+      friendsDetails: action.friendsDetails,
+      friendRequestsReceivedDetails: action.requestsReceivedDetails,
+      friendRequestsSentDetails: action.requestsSentDetails,
+    );
+  } else if (action is FriendsDataLoadErrorAction) {
+    return state.copyWith(
+      isLoadingFriendsData: false,
+      friendsDataError: action.error,
+    );
+  } else if (action is FriendRequestsDetailsLoadedAction) {
     return state.copyWith(friendRequestDetails: action.requestsDetails);
   } else if (action is UserLoggedInAction) {
     return state.copyWith(

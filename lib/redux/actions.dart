@@ -700,3 +700,26 @@ class FriendRequestsDetailsLoadedAction {
   final List<Map<String, dynamic>> requestsDetails;
   FriendRequestsDetailsLoadedAction(this.requestsDetails);
 }
+
+class LoadFriendsDataAction {
+  LoadFriendsDataAction();
+}
+
+/// Despachada pelo middleware após buscar os detalhes com sucesso.
+class FriendsDataLoadedAction {
+  final List<Map<String, dynamic>> friendsDetails;
+  final List<Map<String, dynamic>> requestsReceivedDetails;
+  final List<Map<String, dynamic>> requestsSentDetails;
+
+  FriendsDataLoadedAction({
+    required this.friendsDetails,
+    required this.requestsReceivedDetails,
+    required this.requestsSentDetails,
+  });
+}
+
+/// Despachada pelo middleware em caso de falha.
+class FriendsDataLoadErrorAction {
+  final String error;
+  FriendsDataLoadErrorAction(this.error);
+}
