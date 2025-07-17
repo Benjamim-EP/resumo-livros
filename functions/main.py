@@ -1321,91 +1321,71 @@ def sendFriendRequest(req: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro ao enviar o pedido: {e}"
         )
-    
+
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_256
 )
 def acceptFriendRequest(req: https_fn.CallableRequest) -> dict:
-    """
-    Permite que o usuário atual aceite um pedido de amizade de outro usuário.
-    É transacional para remover os pedidos e adicionar à lista de amigos de ambos.
-    """
     db = get_db()
     
-    # 1. Validação
     if not req.auth or not req.auth.uid:
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
-            message='A função deve ser chamada por um usuário autenticado.'
-        )
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
 
     current_user_id = req.auth.uid
     requester_user_id = req.data.get("requesterUserId")
 
     if not requester_user_id or not isinstance(requester_user_id, str):
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
-            message="O parâmetro 'requesterUserId' (string) é obrigatório."
-        )
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="'requesterUserId' é obrigatório.")
 
-    # 2. Referências aos documentos
     current_user_ref = db.collection('users').document(current_user_id)
     requester_user_ref = db.collection('users').document(requester_user_id)
+    notifications_ref = current_user_ref.collection('notifications')
 
-    # 3. Transação
-    @transactional
-    def _accept_request_transaction(transaction):
-        # Lê os documentos
-        current_user_doc = current_user_ref.get(transaction=transaction)
-        requester_user_doc = requester_user_ref.get(transaction=transaction)
-
-        if not current_user_doc.exists or not requester_user_doc.exists:
-            raise https_fn.HttpsError(
-                code=https_fn.FunctionsErrorCode.NOT_FOUND,
-                message="Usuário não encontrado."
-            )
-        
-        # Verifica se o pedido realmente existe
-        current_user_data = current_user_doc.to_dict() or {}
-        received_requests = current_user_data.get('friendRequestsReceived', [])
-
-        if requester_user_id not in received_requests:
-             raise https_fn.HttpsError(
-                code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
-                message="Nenhum pedido de amizade deste usuário para aceitar."
-            )
-        
-        # 4. Atualiza os documentos de ambos os usuários
-        # Remove o pedido das listas de "pendentes"
-        transaction.update(current_user_ref, {
-            'friendRequestsReceived': firestore.ArrayRemove([requester_user_id])
-        })
-        transaction.update(requester_user_ref, {
-            'friendRequestsSent': firestore.ArrayRemove([current_user_id])
-        })
-        
-        # Adiciona um ao outro na lista de amigos de ambos
-        transaction.update(current_user_ref, {
-            'friends': firestore.ArrayUnion([requester_user_id])
-        })
-        transaction.update(requester_user_ref, {
-            'friends': firestore.ArrayUnion([current_user_id])
-        })
-
-        return {"status": "success", "message": "Amizade aceita!"}
-
-    # Inicia a transação
     try:
+        @transactional
+        def _accept_request_transaction(transaction):
+            # --- FASE 1: LEITURA DE TODOS OS DOCUMENTOS ---
+            current_user_doc = current_user_ref.get(transaction=transaction)
+            requester_user_doc = requester_user_ref.get(transaction=transaction)
+            
+            notif_query = notifications_ref.where('fromUserId', '==', requester_user_id).where('type', '==', 'friend_request').where('isRead', '==', False).limit(1)
+            notif_docs = list(notif_query.stream(transaction=transaction))
+            
+            # --- FASE 2: VERIFICAÇÃO E LÓGICA DE NEGÓCIOS ---
+            if not current_user_doc.exists or not requester_user_doc.exists:
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Usuário não encontrado.")
+            
+            current_user_data = current_user_doc.to_dict() or {}
+            received_requests = current_user_data.get('friendRequestsReceived', [])
+
+            if requester_user_id not in received_requests:
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION, message="Nenhum pedido de amizade deste usuário para aceitar.")
+            
+            # --- FASE 3: ESCRITA DE TODOS OS DOCUMENTOS ---
+            # Atualiza amizades e pedidos
+            transaction.update(current_user_ref, {'friendRequestsReceived': firestore.ArrayRemove([requester_user_id])})
+            transaction.update(requester_user_ref, {'friendRequestsSent': firestore.ArrayRemove([current_user_id])})
+            transaction.update(current_user_ref, {'friends': firestore.ArrayUnion([requester_user_id])})
+            transaction.update(requester_user_ref, {'friends': firestore.ArrayUnion([current_user_id])})
+            
+            # Atualiza a notificação
+            if notif_docs:
+                notif_to_update_ref = notif_docs[0].reference
+                print(f"Encontrada notificação {notif_to_update_ref.id} para marcar como lida.")
+                transaction.update(notif_to_update_ref, {"isRead": True})
+            else:
+                print(f"AVISO: Nenhuma notificação não lida encontrada para o pedido de {requester_user_id}.")
+
+            return {"status": "success", "message": "Amizade aceita!"}
+
         result = _accept_request_transaction(db.transaction())
         return result
+        
     except Exception as e:
         print(f"ERRO em acceptFriendRequest: {e}")
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INTERNAL,
-            message=f"Ocorreu um erro ao aceitar a amizade: {e}"
-        )
-
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao aceitar a amizade: {e}")
+    
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_256
@@ -1470,9 +1450,6 @@ def findUserBySeptimaId(req: https_fn.CallableRequest) -> dict:
     memory=options.MemoryOption.MB_256
 )
 def declineFriendRequest(req: https_fn.CallableRequest) -> dict:
-    """
-    Permite que o usuário atual recuse um pedido de amizade.
-    """
     db = get_db()
     
     if not req.auth or not req.auth.uid:
@@ -1486,22 +1463,31 @@ def declineFriendRequest(req: https_fn.CallableRequest) -> dict:
 
     current_user_ref = db.collection('users').document(current_user_id)
     requester_user_ref = db.collection('users').document(requester_user_id)
-
-    @transactional
-    def _decline_request_transaction(transaction):
-        # Remove o pedido da lista de recebidos do usuário atual
-        transaction.update(current_user_ref, {
-            'friendRequestsReceived': firestore.ArrayRemove([requester_user_id])
-        })
-        # Remove o pedido da lista de enviados do outro usuário
-        transaction.update(requester_user_ref, {
-            'friendRequestsSent': firestore.ArrayRemove([current_user_id])
-        })
-        return {"status": "success", "message": "Pedido de amizade recusado."}
+    notifications_ref = current_user_ref.collection('notifications')
 
     try:
+        @transactional
+        def _decline_request_transaction(transaction):
+            # --- FASE 1: LEITURA ---
+            notif_query = notifications_ref.where('fromUserId', '==', requester_user_id).where('type', '==', 'friend_request').where('isRead', '==', False).limit(1)
+            notif_docs = list(notif_query.stream(transaction=transaction))
+
+            # --- FASE 2: LÓGICA E ESCRITA ---
+            # Remove o pedido das listas
+            transaction.update(current_user_ref, {'friendRequestsReceived': firestore.ArrayRemove([requester_user_id])})
+            transaction.update(requester_user_ref, {'friendRequestsSent': firestore.ArrayRemove([current_user_id])})
+            
+            # Marca a notificação como lida
+            if notif_docs:
+                notif_to_update_ref = notif_docs[0].reference
+                print(f"Encontrada notificação {notif_to_update_ref.id} para marcar como lida (recusa).")
+                transaction.update(notif_to_update_ref, {"isRead": True})
+            
+            return {"status": "success", "message": "Pedido de amizade recusado."}
+
         result = _decline_request_transaction(db.transaction())
         return result
+
     except Exception as e:
         print(f"ERRO em declineFriendRequest: {e}")
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao recusar o pedido: {e}")
