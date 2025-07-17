@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -11,9 +13,21 @@ import 'package:septima_biblia/main.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:septima_biblia/redux/actions.dart'; // ✅ NOVO IMPORT
+import 'package:septima_biblia/redux/store.dart'; // ✅ NOVO IMPORT
+import 'package:septima_biblia/services/firestore_service.dart'; // ✅ NOVO IMPORT
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print("FCM Background: Recebida mensagem com ID: ${message.messageId}");
+  // Aqui você pode fazer processamento em background se necessário no futuro.
+}
+
 class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  final FirebaseMessaging _fcm =
+      FirebaseMessaging.instance; // ✅ Adiciona instância do FCM
 
   Future<void> init() async {
     if (kIsWeb) return;
@@ -46,6 +60,108 @@ class NotificationService {
       initializationSettings,
       onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
     );
+
+    await _initFcm();
+  }
+
+  Future<void> _initFcm() async {
+    // Solicita permissão no iOS e Android 13+
+    await _fcm.requestPermission();
+
+    // Configura os listeners de mensagens
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('FCM Foreground: Mensagem recebida!');
+      print('Dados da Mensagem: ${message.data}');
+
+      if (message.notification != null) {
+        print('A mensagem contém uma notificação: ${message.notification}');
+        // Mostra a notificação local para o usuário ver (quando o app está aberto)
+        _showLocalNotification(message);
+      }
+    });
+
+    // Listener para quando o usuário toca na notificação e abre o app
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('FCM onMessageOpenedApp: O app foi aberto pela notificação.');
+      _handleNotificationClick(message.data);
+    });
+
+    // Configura o handler para mensagens em background
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
+  // ✅ NOVA FUNÇÃO PARA EXIBIR A NOTIFICAÇÃO LOCAL
+  void _showLocalNotification(RemoteMessage message) {
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+
+    if (notification != null && android != null) {
+      flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'community_channel', // Um novo canal para notificações da comunidade
+            'Comunidade',
+            channelDescription: 'Notificações de amigos e interações.',
+            icon: 'icon', // Seu ícone de notificação
+          ),
+        ),
+        payload: jsonEncode(message.data), // Passa os dados para o clique
+      );
+    }
+  }
+
+  // ✅ NOVA FUNÇÃO PARA SALVAR O TOKEN
+  Future<void> saveFcmTokenToFirestore(String userId) async {
+    try {
+      String? token = await _fcm.getToken();
+      if (token == null) {
+        print("FCM: Não foi possível obter o token do dispositivo.");
+        return;
+      }
+      print("FCM Token do Dispositivo: $token");
+
+      final firestoreService = FirestoreService();
+      // Usando arrayUnion para adicionar o token sem duplicatas
+      await firestoreService.updateUserField(
+          userId, 'fcmTokens', FieldValue.arrayUnion([token]));
+      print("FCM: Token salvo no Firestore para o usuário $userId.");
+    } catch (e) {
+      print("FCM: Erro ao salvar token no Firestore: $e");
+    }
+  }
+
+  void onDidReceiveNotificationResponse(
+      NotificationResponse notificationResponse) {
+    final String? payloadString = notificationResponse.payload;
+    if (payloadString != null) {
+      try {
+        final Map<String, dynamic> payloadData = jsonDecode(payloadString);
+        _handleNotificationClick(payloadData);
+      } catch (e) {
+        print("Erro ao decodificar payload da notificação local: $e");
+      }
+    }
+  }
+
+  // ✅ NOVA FUNÇÃO PARA LIDAR COM O CLIQUE NA NOTIFICAÇÃO
+  void _handleNotificationClick(Map<String, dynamic> data) {
+    final String? screen = data['screen'];
+    if (screen != null) {
+      print("Navegando para a tela: $screen");
+      // Usa a chave global de navegação para navegar de qualquer lugar do app
+      navigatorKey.currentState?.pushNamed(screen);
+
+      // Se for um pedido de amizade, também pode ser útil recarregar os dados
+      if (data['type'] == 'friend_request') {
+        // Pequeno delay para dar tempo da tela carregar antes de despachar a ação
+        Future.delayed(const Duration(milliseconds: 500), () {
+          store.dispatch(LoadFriendsDataAction());
+        });
+      }
+    }
   }
 
   Future<Map<String, String>?> _getRandomVerse() async {
@@ -91,14 +207,6 @@ class NotificationService {
     } catch (e) {
       print("Erro ao obter versículo aleatório: $e");
       return null;
-    }
-  }
-
-  void onDidReceiveNotificationResponse(
-      NotificationResponse notificationResponse) async {
-    final String? payload = notificationResponse.payload;
-    if (payload != null) {
-      debugPrint('Payload da notificação: $payload');
     }
   }
 

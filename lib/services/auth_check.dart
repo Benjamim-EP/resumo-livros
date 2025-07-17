@@ -18,6 +18,7 @@ import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/navigation_service.dart';
 import 'package:septima_biblia/main.dart'; // Para o navigatorKey
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:septima_biblia/services/notification_service.dart';
 
 class AuthCheck extends StatelessWidget {
   const AuthCheck({super.key});
@@ -245,6 +246,13 @@ class AuthCheck extends StatelessWidget {
       store.dispatch(UserLoggedOutAction());
     } finally {
       print("AuthCheck: Processamento de login concluído para ${user.uid}.");
+    }
+
+    try {
+      final notificationService = NotificationService();
+      await notificationService.saveFcmTokenToFirestore(user.uid);
+    } catch (e) {
+      print("AuthCheck: Erro ao tentar salvar o token FCM durante o login: $e");
     }
   }
 }

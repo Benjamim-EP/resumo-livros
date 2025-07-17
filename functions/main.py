@@ -3,7 +3,7 @@ import os
 import sys
 import firebase_admin
 import google.auth
-from firebase_admin import initialize_app, firestore, credentials, auth
+from firebase_admin import initialize_app, firestore, credentials, auth, messaging
 from firebase_functions import https_fn, options,pubsub_fn, firestore_fn, scheduler_fn
 from firebase_functions.firestore_fn import on_document_updated, Change, Event
 from firebase_admin.firestore import transactional
@@ -16,7 +16,9 @@ import base64
 import json
 from unidecode import unidecode # <<< ADICIONE ESTE IMPORT NO TOPO DO ARQUIVO
 import random
-
+import requests
+import google.auth
+import google.auth.transport.requests
 
 # >>> INÍCIO DOS NOVOS IMPORTS PARA GOOGLE PLAY <<<
 from google.oauth2 import service_account
@@ -1162,90 +1164,118 @@ def semanticBookSearch(request: https_fn.CallableRequest) -> dict:
     memory=options.MemoryOption.MB_256
 )
 def sendFriendRequest(req: https_fn.CallableRequest) -> dict:
-    """
-    Permite que um usuário autenticado envie um pedido de amizade para outro usuário.
-    É transacional para garantir consistência.
-    """
-    db = get_db()  # Usa sua função helper para pegar o cliente do Firestore
-
-    # 1. Validação de Autenticação e Parâmetros
+    db = get_db()
+    
     if not req.auth or not req.auth.uid:
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
-            message='A função deve ser chamada por um usuário autenticado.'
-        )
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='A função deve ser chamada por um usuário autenticado.')
 
     current_user_id = req.auth.uid
     target_user_id = req.data.get("targetUserId")
 
     if not target_user_id or not isinstance(target_user_id, str):
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
-            message="O parâmetro 'targetUserId' (string) é obrigatório."
-        )
-
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'targetUserId' (string) é obrigatório.")
     if current_user_id == target_user_id:
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
-            message="Você não pode enviar um pedido de amizade para si mesmo."
-        )
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Você não pode enviar um pedido de amizade para si mesmo.")
 
-    # 2. Referências aos documentos
     current_user_ref = db.collection('users').document(current_user_id)
     target_user_ref = db.collection('users').document(target_user_id)
 
-    # 3. Execução da Lógica dentro de uma Transação
-    # Uma transação garante que todas as operações (leitura e escrita)
-    # aconteçam como um bloco único e indivisível, evitando inconsistências.
     @transactional
     def _send_request_transaction(transaction):
-        # Lê os documentos dentro da transação
         current_user_doc = current_user_ref.get(transaction=transaction)
         target_user_doc = target_user_ref.get(transaction=transaction)
 
         if not target_user_doc.exists:
-            raise https_fn.HttpsError(
-                code=https_fn.FunctionsErrorCode.NOT_FOUND,
-                message="O usuário alvo não foi encontrado."
-            )
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="O usuário alvo não foi encontrado.")
         
-        # Pega os dados atuais ou listas vazias se os campos não existirem
         current_user_data = current_user_doc.to_dict() or {}
         target_user_data = target_user_doc.to_dict() or {}
         
         friends_list = current_user_data.get('friends', [])
         sent_requests = current_user_data.get('friendRequestsSent', [])
-        received_requests = target_user_data.get('friendRequestsReceived', [])
 
-        # 4. Verificações de Estado
         if target_user_id in friends_list:
-            return {"status": "already_friends", "message": "Você já é amigo deste usuário."}
-        
+            return {"status": "already_friends"}
         if target_user_id in sent_requests:
-            return {"status": "request_already_sent", "message": "Pedido de amizade já enviado."}
+            return {"status": "request_already_sent"}
 
-        # 5. Atualiza os documentos
-        # Adiciona o ID do alvo à lista de enviados do usuário atual
-        transaction.update(current_user_ref, {
-            'friendRequestsSent': firestore.ArrayUnion([target_user_id])
-        })
-        # Adiciona o ID do usuário atual à lista de recebidos do usuário alvo
-        transaction.update(target_user_ref, {
-            'friendRequestsReceived': firestore.ArrayUnion([current_user_id])
-        })
+        transaction.update(current_user_ref, {'friendRequestsSent': firestore.ArrayUnion([target_user_id])})
+        transaction.update(target_user_ref, {'friendRequestsReceived': firestore.ArrayUnion([current_user_id])})
 
-        return {"status": "success", "message": "Pedido de amizade enviado com sucesso."}
+        return {
+            "requester_name": current_user_data.get("nome", "Alguém"),
+            "target_tokens": target_user_data.get("fcmTokens", [])
+        }
 
-    # Inicia a transação
     try:
-        result = _send_request_transaction(db.transaction())
-        return result
+        transaction_result = _send_request_transaction(db.transaction())
+
+        if transaction_result.get("status") in ["already_friends", "request_already_sent"]:
+             return {"status": "success", "message": "Operação concluída (nenhuma notificação necessária)."}
+
+
+        # ✅ INÍCIO DA LÓGICA DE NOTIFICAÇÃO HTTP DIRETA
+        requester_name = transaction_result["requester_name"]
+        target_tokens = transaction_result["target_tokens"]
+        
+        if target_tokens:
+            try:
+                # 1. Obter credenciais de acesso
+                creds, project_id = google.auth.default(scopes=['https://www.googleapis.com/auth/firebase.messaging'])
+                auth_req = google.auth.transport.requests.Request()
+                creds.refresh(auth_req)
+                access_token = creds.token
+                
+                print(f"Token de acesso para FCM obtido com sucesso. Projeto: {project_id}")
+
+                # 2. Montar o corpo da requisição
+                headers = {
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/json',
+                }
+
+                # Endpoint da API V1
+                url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
+                
+                # Envia uma notificação para cada token
+                for token in target_tokens:
+                    body = {
+                        "message": {
+                            "token": token,
+                            "notification": {
+                                "title": "Novo Pedido de Amizade!",
+                                "body": f"{requester_name} quer ser seu amigo no Septima."
+                            },
+                            "data": {
+                                "type": "friend_request",
+                                "screen": "/friends"
+                            }
+                        }
+                    }
+                    
+                    # 3. Fazer a chamada HTTP
+                    print(f"Enviando notificação para o token: {token[:20]}...")
+                    response = requests.post(url, headers=headers, json=body)
+                    
+                    # 4. Verificar o resultado
+                    if response.status_code == 200:
+                        print(f"Notificação enviada com sucesso para o token {token[:20]}. Resposta: {response.text}")
+                    else:
+                        print(f"ERRO ao enviar notificação para o token {token[:20]}. Status: {response.status_code}, Resposta: {response.text}")
+                        # Não lança um erro, apenas loga, para não quebrar a função principal
+            
+            except Exception as notification_error:
+                print(f"AVISO: A lógica do pedido de amizade funcionou, mas o envio da notificação (HTTP) falhou: {notification_error}")
+        
+        else:
+            print("Usuário alvo não possui tokens FCM registrados. Nenhuma notificação enviada.")
+        # ✅ FIM DA LÓGICA DE NOTIFICAÇÃO HTTP DIRETA
+
+        return {"status": "success", "message": "Pedido de amizade enviado."}
+
     except Exception as e:
         print(f"ERRO em sendFriendRequest: {e}")
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INTERNAL,
-            message=f"Ocorreu um erro ao enviar o pedido: {e}"
-        )
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao enviar o pedido: {e}")
     
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
