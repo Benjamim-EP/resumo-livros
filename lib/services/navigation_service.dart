@@ -1,12 +1,11 @@
 // lib/services/navigation_service.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart';
+import 'package:septima_biblia/pages/community/find_friends_page.dart';
 import 'package:septima_biblia/pages/login_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/start_screen_page.dart';
 import 'package:septima_biblia/pages/signup_page.dart';
-// REMOVIDO: import 'package:septima_biblia/pages/splashViews/finalform_view.dart';
-// REMOVIDO: import 'package:septima_biblia/pages/tribe_selection_page.dart';
 import 'package:septima_biblia/pages/user_settings_page.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
 
@@ -26,6 +25,8 @@ class NavigationService {
         return FadeScalePageRoute(page: const QueryResultsPage());
       case '/userSettings':
         return FadeScalePageRoute(page: const UserSettingsPage());
+      case '/findFriends':
+        return FadeScalePageRoute(page: const FindFriendsPage());
       default:
         // A rota padrão também usa a nova transição
         return FadeScalePageRoute(page: const StartScreenPage());

@@ -10,6 +10,7 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/buttons/animated_infinity_icon.dart';
 import 'package:septima_biblia/components/buttons/animated_premium_button.dart';
 import 'package:septima_biblia/components/buttons/reward_cooldown_timer.dart';
+import 'package:septima_biblia/components/drawer/app_drawer.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
@@ -412,6 +413,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return WillPopScope(
           onWillPop: _onWillPop,
           child: Scaffold(
+            drawer: const AppDrawer(),
             appBar: mainScreenViewModel.isFocusMode
                 ? null
                 : AppBar(
@@ -419,24 +421,20 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     // title: Text(_getAppBarTitle(_selectedIndex)),
 
                     // ✅ 2. O NOVO TÍTULO agora é um widget dinâmico.
-                    title: StoreConnector<AppState, bool>(
-                      converter: (store) => store.state.userState.isGuestUser,
-                      builder: (context, isGuest) {
-                        // Se for um convidado, mostra um chip simples.
-                        if (isGuest) {
-                          return const Chip(
-                            avatar: Icon(Icons.person_outline),
-                            label: Text("Visitante"),
-                          );
-                        }
-                        // Se for um usuário logado, mostra o botão de perfil.
-                        return ProfileActionButton(
-                          // Passamos um novo parâmetro para controlar o tamanho.
-                          avatarRadius: 20,
+                    leading: Builder(
+                      builder: (BuildContext context) {
+                        return IconButton(
+                          icon: const ProfileActionButton(
+                              avatarRadius:
+                                  20), // Seu botão de perfil existente
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                          tooltip: 'Abrir Menu',
                         );
                       },
                     ),
 
+                    // Agora o título pode ser apenas um texto simples.
+                    title: Text(_getAppBarTitle(_selectedIndex)),
                     // As actions (botões da direita) permanecem as mesmas.
                     actions: [
                       _tutorialService.buildShowcase(

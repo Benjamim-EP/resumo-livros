@@ -6,6 +6,7 @@ import google.auth
 from firebase_admin import initialize_app, firestore, credentials, auth
 from firebase_functions import https_fn, options,pubsub_fn, firestore_fn, scheduler_fn
 from firebase_functions.firestore_fn import on_document_updated, Change, Event
+from firebase_admin.firestore import transactional
 from datetime import datetime, time, timezone, timedelta
 import asyncio
 import traceback
@@ -1155,3 +1156,277 @@ def semanticBookSearch(request: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Erro ao buscar recomendações de livros: {str(e)}"
         )
+
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def sendFriendRequest(req: https_fn.CallableRequest) -> dict:
+    """
+    Permite que um usuário autenticado envie um pedido de amizade para outro usuário.
+    É transacional para garantir consistência.
+    """
+    db = get_db()  # Usa sua função helper para pegar o cliente do Firestore
+
+    # 1. Validação de Autenticação e Parâmetros
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='A função deve ser chamada por um usuário autenticado.'
+        )
+
+    current_user_id = req.auth.uid
+    target_user_id = req.data.get("targetUserId")
+
+    if not target_user_id or not isinstance(target_user_id, str):
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'targetUserId' (string) é obrigatório."
+        )
+
+    if current_user_id == target_user_id:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="Você não pode enviar um pedido de amizade para si mesmo."
+        )
+
+    # 2. Referências aos documentos
+    current_user_ref = db.collection('users').document(current_user_id)
+    target_user_ref = db.collection('users').document(target_user_id)
+
+    # 3. Execução da Lógica dentro de uma Transação
+    # Uma transação garante que todas as operações (leitura e escrita)
+    # aconteçam como um bloco único e indivisível, evitando inconsistências.
+    @transactional
+    def _send_request_transaction(transaction):
+        # Lê os documentos dentro da transação
+        current_user_doc = current_user_ref.get(transaction=transaction)
+        target_user_doc = target_user_ref.get(transaction=transaction)
+
+        if not target_user_doc.exists:
+            raise https_fn.HttpsError(
+                code=https_fn.FunctionsErrorCode.NOT_FOUND,
+                message="O usuário alvo não foi encontrado."
+            )
+        
+        # Pega os dados atuais ou listas vazias se os campos não existirem
+        current_user_data = current_user_doc.to_dict() or {}
+        target_user_data = target_user_doc.to_dict() or {}
+        
+        friends_list = current_user_data.get('friends', [])
+        sent_requests = current_user_data.get('friendRequestsSent', [])
+        received_requests = target_user_data.get('friendRequestsReceived', [])
+
+        # 4. Verificações de Estado
+        if target_user_id in friends_list:
+            return {"status": "already_friends", "message": "Você já é amigo deste usuário."}
+        
+        if target_user_id in sent_requests:
+            return {"status": "request_already_sent", "message": "Pedido de amizade já enviado."}
+
+        # 5. Atualiza os documentos
+        # Adiciona o ID do alvo à lista de enviados do usuário atual
+        transaction.update(current_user_ref, {
+            'friendRequestsSent': firestore.ArrayUnion([target_user_id])
+        })
+        # Adiciona o ID do usuário atual à lista de recebidos do usuário alvo
+        transaction.update(target_user_ref, {
+            'friendRequestsReceived': firestore.ArrayUnion([current_user_id])
+        })
+
+        return {"status": "success", "message": "Pedido de amizade enviado com sucesso."}
+
+    # Inicia a transação
+    try:
+        result = _send_request_transaction(db.transaction())
+        return result
+    except Exception as e:
+        print(f"ERRO em sendFriendRequest: {e}")
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao enviar o pedido: {e}"
+        )
+    
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def acceptFriendRequest(req: https_fn.CallableRequest) -> dict:
+    """
+    Permite que o usuário atual aceite um pedido de amizade de outro usuário.
+    É transacional para remover os pedidos e adicionar à lista de amigos de ambos.
+    """
+    db = get_db()
+    
+    # 1. Validação
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='A função deve ser chamada por um usuário autenticado.'
+        )
+
+    current_user_id = req.auth.uid
+    requester_user_id = req.data.get("requesterUserId")
+
+    if not requester_user_id or not isinstance(requester_user_id, str):
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'requesterUserId' (string) é obrigatório."
+        )
+
+    # 2. Referências aos documentos
+    current_user_ref = db.collection('users').document(current_user_id)
+    requester_user_ref = db.collection('users').document(requester_user_id)
+
+    # 3. Transação
+    @transactional
+    def _accept_request_transaction(transaction):
+        # Lê os documentos
+        current_user_doc = current_user_ref.get(transaction=transaction)
+        requester_user_doc = requester_user_ref.get(transaction=transaction)
+
+        if not current_user_doc.exists or not requester_user_doc.exists:
+            raise https_fn.HttpsError(
+                code=https_fn.FunctionsErrorCode.NOT_FOUND,
+                message="Usuário não encontrado."
+            )
+        
+        # Verifica se o pedido realmente existe
+        current_user_data = current_user_doc.to_dict() or {}
+        received_requests = current_user_data.get('friendRequestsReceived', [])
+
+        if requester_user_id not in received_requests:
+             raise https_fn.HttpsError(
+                code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+                message="Nenhum pedido de amizade deste usuário para aceitar."
+            )
+        
+        # 4. Atualiza os documentos de ambos os usuários
+        # Remove o pedido das listas de "pendentes"
+        transaction.update(current_user_ref, {
+            'friendRequestsReceived': firestore.ArrayRemove([requester_user_id])
+        })
+        transaction.update(requester_user_ref, {
+            'friendRequestsSent': firestore.ArrayRemove([current_user_id])
+        })
+        
+        # Adiciona um ao outro na lista de amigos de ambos
+        transaction.update(current_user_ref, {
+            'friends': firestore.ArrayUnion([requester_user_id])
+        })
+        transaction.update(requester_user_ref, {
+            'friends': firestore.ArrayUnion([current_user_id])
+        })
+
+        return {"status": "success", "message": "Amizade aceita!"}
+
+    # Inicia a transação
+    try:
+        result = _accept_request_transaction(db.transaction())
+        return result
+    except Exception as e:
+        print(f"ERRO em acceptFriendRequest: {e}")
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao aceitar a amizade: {e}"
+        )
+
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def findUserBySeptimaId(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    septima_id = req.data.get("septimaId")
+    print(f"Buscando pelo Septima ID: {septima_id}")  # <-- LOG ADICIONADO
+
+    if not septima_id or "#" not in septima_id:
+        print("Erro: Formato de ID inválido.") # <-- LOG ADICIONADO
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O formato do Septima ID é inválido. Use 'username#1234'."
+        )
+    
+    username, discriminator = septima_id.split('#', 1)
+    print(f"Username extraído: '{username}', Discriminator: '{discriminator}'") # <-- LOG ADICIONADO
+
+    try:
+        query = db.collection('users').where('username', '==', username).where('discriminator', '==', discriminator).limit(1)
+        docs = list(query.stream())
+        
+        if not docs:
+            print("Resultado da busca: Nenhum documento encontrado.") # <-- LOG ADICIONADO
+            raise https_fn.HttpsError(
+                code=https_fn.FunctionsErrorCode.NOT_FOUND,
+                message="Nenhum usuário encontrado com este ID."
+            )
+        
+        user_data = docs[0].to_dict()
+        user_id = docs[0].id
+        print(f"Usuário encontrado! ID: {user_id}, Nome: {user_data.get('nome')}") # <-- LOG ADICIONADO
+
+        response_payload = {
+            "status": "success",
+            "user": {
+                "userId": user_id,
+                "nome": user_data.get("nome"),
+                "photoURL": user_data.get("photoURL"),
+                "descrição": user_data.get("descrição")
+            }
+        }
+        
+        print(f"Retornando payload de sucesso: {response_payload}") # <-- LOG ADICIONADO
+        return response_payload
+
+    except https_fn.HttpsError as e:
+        # Se for um erro que nós mesmos geramos (como NOT_FOUND), apenas relance.
+        raise e
+    except Exception as e:
+        print(f"ERRO INTERNO em findUserBySeptimaId: {e}")
+        traceback.print_exc() # Imprime o stack trace completo nos logs para depuração
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao buscar o usuário: {e}"
+        )
+
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def declineFriendRequest(req: https_fn.CallableRequest) -> dict:
+    """
+    Permite que o usuário atual recuse um pedido de amizade.
+    """
+    db = get_db()
+    
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+
+    current_user_id = req.auth.uid
+    requester_user_id = req.data.get("requesterUserId")
+
+    if not requester_user_id or not isinstance(requester_user_id, str):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="'requesterUserId' é obrigatório.")
+
+    current_user_ref = db.collection('users').document(current_user_id)
+    requester_user_ref = db.collection('users').document(requester_user_id)
+
+    @transactional
+    def _decline_request_transaction(transaction):
+        # Remove o pedido da lista de recebidos do usuário atual
+        transaction.update(current_user_ref, {
+            'friendRequestsReceived': firestore.ArrayRemove([requester_user_id])
+        })
+        # Remove o pedido da lista de enviados do outro usuário
+        transaction.update(requester_user_ref, {
+            'friendRequestsSent': firestore.ArrayRemove([current_user_id])
+        })
+        return {"status": "success", "message": "Pedido de amizade recusado."}
+
+    try:
+        result = _decline_request_transaction(db.transaction())
+        return result
+    except Exception as e:
+        print(f"ERRO em declineFriendRequest: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao recusar o pedido: {e}")

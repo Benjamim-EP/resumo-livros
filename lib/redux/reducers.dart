@@ -247,6 +247,7 @@ class UserState {
   final bool isLoadingLogin;
 
   final bool isFocusMode;
+  final List<Map<String, dynamic>> friendRequestDetails;
 
   UserState({
     this.userId,
@@ -295,6 +296,7 @@ class UserState {
     this.isLoadingLogin = false,
     this.isFocusMode = false,
     this.userNotes = const [],
+    this.friendRequestDetails = const [],
   });
 
   UserState copyWith({
@@ -354,6 +356,7 @@ class UserState {
     bool clearUserId = false,
     bool clearEmail = false,
     bool clearUserDetails = false,
+    List<Map<String, dynamic>>? friendRequestDetails,
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -437,12 +440,15 @@ class UserState {
       allUserTags: allUserTags ?? this.allUserTags,
       isLoadingLogin: isLoadingLogin ?? this.isLoadingLogin,
       isFocusMode: isFocusMode ?? this.isFocusMode,
+      friendRequestDetails: friendRequestDetails ?? this.friendRequestDetails,
     );
   }
 }
 
 UserState userReducer(UserState state, dynamic action) {
-  if (action is UserLoggedInAction) {
+  if (action is FriendRequestsDetailsLoadedAction) {
+    return state.copyWith(friendRequestDetails: action.requestsDetails);
+  } else if (action is UserLoggedInAction) {
     return state.copyWith(
       userId: action.userId,
       email: action.email,

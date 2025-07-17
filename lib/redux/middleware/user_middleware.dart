@@ -214,7 +214,42 @@ List<Middleware<AppState>> createUserMiddleware() {
         .call,
     TypedMiddleware<AppState, UpdateReadingTimeAction>(_handleUpdateReadingTime)
         .call,
+    TypedMiddleware<AppState, LoadFriendRequestsDetailsAction>(
+            _loadFriendRequestsDetails(firestoreService))
+        .call,
   ];
+}
+
+void Function(Store<AppState>, LoadFriendRequestsDetailsAction, NextDispatcher)
+    _loadFriendRequestsDetails(FirestoreService firestoreService) {
+  return (store, action, next) async {
+    next(action);
+    final receivedIds = List<String>.from(
+        store.state.userState.userDetails?['friendRequestsReceived'] ?? []);
+
+    if (receivedIds.isEmpty) {
+      store.dispatch(FriendRequestsDetailsLoadedAction([]));
+      return;
+    }
+
+    try {
+      // Aqui, idealmente, você buscaria os detalhes de cada usuário em 'receivedIds'
+      // Por simplicidade inicial, vamos assumir que o FirestoreService pode fazer isso em lote.
+      // Esta parte é mais complexa e pode ser implementada depois, por enquanto vamos mockar.
+
+      // Simulação:
+      final List<Map<String, dynamic>> details = [];
+      for (var id in receivedIds) {
+        final userDetails = await firestoreService.getUserDetails(id);
+        if (userDetails != null) {
+          details.add(userDetails);
+        }
+      }
+      store.dispatch(FriendRequestsDetailsLoadedAction(details));
+    } catch (e) {
+      print("Erro ao carregar detalhes dos pedidos de amizade: $e");
+    }
+  };
 }
 
 void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)

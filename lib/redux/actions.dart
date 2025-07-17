@@ -693,3 +693,10 @@ class SermonProgressLoadedAction {
   final Map<String, SermonProgressData> progressData;
   SermonProgressLoadedAction(this.progressData);
 }
+
+class LoadFriendRequestsDetailsAction {}
+
+class FriendRequestsDetailsLoadedAction {
+  final List<Map<String, dynamic>> requestsDetails;
+  FriendRequestsDetailsLoadedAction(this.requestsDetails);
+}

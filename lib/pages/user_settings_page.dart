@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:septima_biblia/models/denomination_model.dart'; // <<< 1. IMPORTAR MODELO
-import 'package:septima_biblia/pages/user_settings/denomination_selection_modal.dart'; // <<< 2. IMPORTAR MODAL
-import 'package:septima_biblia/services/denomination_service.dart'; // <<< 4. IMPORTAR SERVIÇO
+import 'package:septima_biblia/models/denomination_model.dart';
+import 'package:septima_biblia/pages/user_settings/denomination_selection_modal.dart';
+import 'package:septima_biblia/services/denomination_service.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -36,13 +36,9 @@ class _SettingsViewModel {
     final userDetails = store.state.userState.userDetails ?? {};
     bool isConsideredPremium = false;
 
-    // Cenário 1: O estado Redux da assinatura já diz que é premium.
     if (subState.status == SubscriptionStatus.premiumActive) {
       isConsideredPremium = true;
-    }
-    // Cenário 2: Fallback - O estado Redux não foi atualizado, mas os detalhes do usuário no Firestore sim.
-    // Isso é útil durante o carregamento inicial do app.
-    else {
+    } else {
       final statusString = userDetails['subscriptionStatus'] as String?;
       final endDate =
           (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
@@ -79,8 +75,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   late TextEditingController _descriptionController;
   bool _isLoading = false;
   AppThemeOption? _selectedThemeOption;
-  final DenominationService _denominationService =
-      DenominationService(); // Instancia o serviço
+  final DenominationService _denominationService = DenominationService();
 
   @override
   void initState() {
@@ -100,8 +95,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     super.dispose();
   }
 
-  // --- Funções de Lógica e Diálogos ---
-
   void _saveChanges() {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -113,7 +106,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       storeInstance
           .dispatch(UpdateUserFieldAction('descrição', newDescription));
 
-      // A UI será atualizada reativamente, mas podemos dar um feedback.
       Future.delayed(const Duration(milliseconds: 700), () {
         if (mounted) {
           setState(() => _isLoading = false);
@@ -177,7 +169,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 Navigator.of(dialogContext).pop();
                 await FirebaseAuth.instance.signOut();
                 store.dispatch(UserLoggedOutAction());
-                // O AuthCheck cuidará da navegação para a tela de login
               },
             ),
           ],
@@ -267,7 +258,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  // --- SEÇÃO PERFIL ---
                   _buildSectionTitle('Editar Perfil', theme),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -306,21 +296,15 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                     onPressed: _isLoading ? null : _saveChanges,
                   ),
                   _buildDivider(),
-
-                  // --- SEÇÃO TEMA ---
                   _buildSectionTitle('Aparência', theme),
                   const SizedBox(height: 12),
                   _buildThemeDropdown(theme),
                   _buildDivider(),
-
-                  // --- SEÇÃO ASSINATURA ---
                   _buildSectionTitle('Minha Assinatura', theme),
                   const SizedBox(height: 16),
                   _buildSubscriptionSection(
                       context, theme, isPremium, viewModel),
                   _buildDivider(),
-
-                  // --- SEÇÃO OUTRAS AÇÕES ---
                   _buildSectionTitle('Outras Ações', theme, isSubtle: true),
                   const SizedBox(height: 16),
                   ListTile(
@@ -361,8 +345,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       ),
     );
   }
-
-  // --- Widgets Auxiliares ---
 
   Widget _buildSectionTitle(String title, ThemeData theme,
       {bool isSubtle = false}) {
@@ -523,28 +505,3 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     );
   }
 }
-
-
-/*
-// Em lib/redux/actions/user_actions.dart
-class UpdateUserDenominationAction {
-  final String denominationName;
-  UpdateUserDenominationAction(this.denominationName);
-}
-
-// Em lib/redux/middleware/user_middleware.dart
-void Function(Store<AppState>, UpdateUserDenominationAction, NextDispatcher)
-    _updateUserDenomination(FirestoreService firestoreService) {
-  return (store, action, next) async {
-    next(action);
-    final userId = store.state.userState.userId;
-    if (userId == null) return;
-    try {
-      await firestoreService.updateUserField(userId, 'denomination', action.denominationName);
-      store.dispatch(LoadUserDetailsAction()); 
-    } catch (e) {
-      print("Erro ao atualizar denominação: $e");
-    }
-  };
-}
-*/
