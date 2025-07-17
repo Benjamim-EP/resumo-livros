@@ -17,6 +17,23 @@ List<Middleware<AppState>> createUserMiddleware() {
   final FirebaseFunctions functions =
       FirebaseFunctions.instanceFor(region: "southamerica-east1");
 
+  void Function(Store<AppState>, LoadNotificationsAction, NextDispatcher)
+      _loadNotifications(FirestoreService firestoreService) {
+    return (store, action, next) async {
+      next(action);
+      final userId = store.state.userState.userId;
+      if (userId == null) return;
+
+      try {
+        final notifications =
+            await firestoreService.fetchUserNotifications(userId);
+        store.dispatch(NotificationsLoadedAction(notifications));
+      } catch (e) {
+        print("Erro ao carregar notificações no middleware: $e");
+      }
+    };
+  }
+
   void _handleDeleteUserAccount(Store<AppState> store,
       DeleteUserAccountAction action, NextDispatcher next) async {
     next(action);
@@ -219,6 +236,9 @@ List<Middleware<AppState>> createUserMiddleware() {
         .call,
     TypedMiddleware<AppState, LoadFriendsDataAction>(
             _loadFriendsData(firestoreService))
+        .call,
+    TypedMiddleware<AppState, LoadNotificationsAction>(
+            _loadNotifications(firestoreService))
         .call,
   ];
 }

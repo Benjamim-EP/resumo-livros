@@ -60,6 +60,28 @@ class FirestoreService {
     return results;
   }
 
+  Future<List<Map<String, dynamic>>> fetchUserNotifications(
+      String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .orderBy('timestamp', descending: true) // Mais recentes primeiro
+          .limit(50) // Limita a 50 notificações para performance
+          .get();
+
+      return snapshot.docs.map((doc) {
+        // Inclui o ID do documento da notificação para uso futuro (ex: marcar como lida)
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+    } catch (e) {
+      print("FirestoreService: Erro ao buscar notificações para $userId: $e");
+      // Retorna uma lista vazia em caso de erro para não quebrar a UI
+      return [];
+    }
+  }
+
   // ✅ CORREÇÃO: IMPLEMENTAÇÃO COMPLETA DO MÉTODO QUE FALTAVA
   Future<Map<String, dynamic>?> fetchBookDetails(String bookId) async {
     try {

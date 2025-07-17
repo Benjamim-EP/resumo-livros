@@ -254,6 +254,9 @@ class UserState {
   final List<Map<String, dynamic>> friendRequestsSentDetails;
   final bool isLoadingFriendsData;
   final String? friendsDataError;
+  final int unreadNotificationsCount;
+  final List<Map<String, dynamic>> userNotifications; // ✅ CAMPO QUE FALTAVA
+  final bool isLoadingNotifications; // ✅ CAMPO QUE FALTAVA
 
   UserState({
     this.userId,
@@ -308,6 +311,9 @@ class UserState {
     this.friendRequestsSentDetails = const [],
     this.isLoadingFriendsData = false,
     this.friendsDataError,
+    this.unreadNotificationsCount = 0,
+    this.userNotifications = const [], // ✅ NOVO VALOR PADRÃO
+    this.isLoadingNotifications = false, // ✅ NOVO VALOR PADRÃO
   });
 
   UserState copyWith({
@@ -374,6 +380,9 @@ class UserState {
     bool? isLoadingFriendsData,
     String? friendsDataError,
     bool clearFriendsDataError = false,
+    int? unreadNotificationsCount,
+    List<Map<String, dynamic>>? userNotifications, // ✅ NOVO PARÂMETRO
+    bool? isLoadingNotifications, // ✅ NOVO PARÂMETRO
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -468,12 +477,29 @@ class UserState {
       friendsDataError: clearFriendsDataError
           ? null
           : friendsDataError ?? this.friendsDataError,
+      unreadNotificationsCount:
+          unreadNotificationsCount ?? this.unreadNotificationsCount,
+      userNotifications:
+          userNotifications ?? this.userNotifications, // ✅ MAPEAMENTO
+      isLoadingNotifications:
+          isLoadingNotifications ?? this.isLoadingNotifications, // ✅ MAPEAMENTO
     );
   }
 }
 
 UserState userReducer(UserState state, dynamic action) {
-  if (action is LoadFriendsDataAction) {
+  if (action is UnreadNotificationsCountUpdatedAction) {
+    return state.copyWith(unreadNotificationsCount: action.count);
+  }
+  // ✅ ADICIONE ESTE NOVO BLOCO DE LÓGICA
+  else if (action is LoadNotificationsAction) {
+    return state.copyWith(isLoadingNotifications: true);
+  } else if (action is NotificationsLoadedAction) {
+    return state.copyWith(
+      isLoadingNotifications: false,
+      userNotifications: action.notifications,
+    );
+  } else if (action is LoadFriendsDataAction) {
     return state.copyWith(
         isLoadingFriendsData: true, clearFriendsDataError: true);
   } else if (action is FriendsDataLoadedAction) {

@@ -723,3 +723,15 @@ class FriendsDataLoadErrorAction {
   final String error;
   FriendsDataLoadErrorAction(this.error);
 }
+
+class UnreadNotificationsCountUpdatedAction {
+  final int count;
+  UnreadNotificationsCountUpdatedAction(this.count);
+}
+
+class LoadNotificationsAction {}
+
+class NotificationsLoadedAction {
+  final List<Map<String, dynamic>> notifications;
+  NotificationsLoadedAction(this.notifications);
+}

@@ -124,6 +124,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
   StreamSubscription? _userProgressSubscription; // <<< ADICIONE ESTA LINHA
   int _previousCompletionCount = 0; // <<< ADICIONE ESTA LINHA
+  StreamSubscription? _notificationsSubscription;
 
   @override
   void initState() {
@@ -190,6 +191,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   void dispose() {
     _userDocSubscription?.cancel();
     _userProgressSubscription?.cancel();
+    _notificationsSubscription?.cancel();
     super.dispose();
   }
 
@@ -256,6 +258,20 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
           // Atualiza a contagem anterior para a próxima verificação
           _previousCompletionCount = newCompletionCount;
+        }
+      });
+      _notificationsSubscription?.cancel();
+      _notificationsSubscription = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('isRead', isEqualTo: false) // Ouve apenas as não lidas
+          .snapshots()
+          .listen((snapshot) {
+        if (mounted) {
+          final count = snapshot.docs.length;
+          print("Listener de Notificações: $count não lidas.");
+          storeInstance.dispatch(UnreadNotificationsCountUpdatedAction(count));
         }
       });
     }

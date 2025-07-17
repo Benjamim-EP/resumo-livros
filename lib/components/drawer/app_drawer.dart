@@ -13,12 +13,14 @@ class _DrawerViewModel {
   final String name;
   final String? septimaId;
   final String? denomination;
+  final int unreadCount;
 
   _DrawerViewModel({
     this.photoUrl,
     required this.name,
     this.septimaId,
     this.denomination,
+    required this.unreadCount,
   });
 
   static _DrawerViewModel fromStore(Store<AppState> store) {
@@ -35,6 +37,7 @@ class _DrawerViewModel {
       name: details['nome'] as String? ?? 'Usuário',
       septimaId: generatedId,
       denomination: details['denomination'] as String?,
+      unreadCount: store.state.userState.unreadNotificationsCount,
     );
   }
 }
@@ -64,8 +67,10 @@ class AppDrawer extends StatelessWidget {
               _buildDrawerItem(
                 icon: Icons.notifications_outlined,
                 text: 'Notificações',
+                badgeCount: viewModel.unreadCount,
                 onTap: () {
-                  // TODO: Navegar para a tela de notificações
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/notifications');
                 },
               ),
               const Divider(),
@@ -167,12 +172,20 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDrawerItem(
-      {required IconData icon,
-      required String text,
-      required GestureTapCallback onTap}) {
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String text,
+    required GestureTapCallback onTap,
+    int badgeCount = 0, // ✅ NOVO PARÂMETRO OPCIONAL
+  }) {
     return ListTile(
-      leading: Icon(icon),
+      leading: badgeCount > 0
+          ? Badge(
+              // Widget nativo do Flutter para contadores
+              label: Text('$badgeCount'),
+              child: Icon(icon),
+            )
+          : Icon(icon),
       title: Text(text),
       onTap: onTap,
     );
