@@ -1,6 +1,7 @@
 // lib/services/navigation_service.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart';
+import 'package:septima_biblia/pages/community/create_post_page.dart';
 import 'package:septima_biblia/pages/community/find_friends_page.dart';
 import 'package:septima_biblia/pages/community/friends_page.dart';
 import 'package:septima_biblia/pages/community/notifications_page.dart';
@@ -33,6 +34,8 @@ class NavigationService {
         return FadeScalePageRoute(page: const FriendsPage());
       case '/notifications':
         return FadeScalePageRoute(page: const NotificationsPage());
+      case '/createPost':
+        return FadeScalePageRoute(page: const CreatePostPage());
       default:
         // A rota padrão também usa a nova transição
         return FadeScalePageRoute(page: const StartScreenPage());

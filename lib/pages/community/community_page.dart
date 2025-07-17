@@ -1,6 +1,6 @@
 // lib/pages/community/community_page.dart
 import 'package:flutter/material.dart';
-// Vamos criar esses arquivos nos próximos passos
+import 'package:septima_biblia/pages/community/forum_home_page.dart'; // Importa a nova página do fórum
 import 'package:septima_biblia/pages/community/ranking_tab_view.dart';
 
 class CommunityPage extends StatefulWidget {
@@ -32,7 +32,7 @@ class _CommunityPageState extends State<CommunityPage>
     final theme = Theme.of(context);
 
     return Scaffold(
-      // A AppBar já é fornecida pela MainAppScreen, mas precisamos da TabBar
+      // A AppBar já é fornecida pela MainAppScreen. Esta PreferredSize age como a parte de baixo da AppBar.
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
@@ -42,7 +42,7 @@ class _CommunityPageState extends State<CommunityPage>
             controller: _tabController,
             indicatorColor: theme.colorScheme.primary,
             labelColor: theme.colorScheme.primary,
-            unselectedLabelColor: Colors.grey,
+            unselectedLabelColor: Colors.grey[600],
             tabs: const [
               Tab(text: "Ranking"),
               Tab(text: "Salas"),
@@ -54,10 +54,18 @@ class _CommunityPageState extends State<CommunityPage>
       body: TabBarView(
         controller: _tabController,
         children: const [
-          // Cada aba terá seu próprio widget
+          // Aba 1: Ranking de usuários
           RankingTabView(),
-          Placeholder(), // ✅ Adiciona um placeholder para a aba "Salas"
-          Placeholder(), // ✅ Adiciona um placeholder para a aba "Perguntas"
+
+          // Aba 2: Placeholder para futuras salas de estudo em tempo real
+          Placeholder(
+            child: Center(
+              child: Text("Salas de Estudo (Em Breve!)"),
+            ),
+          ),
+
+          // Aba 3: O nosso novo Fórum de Perguntas & Respostas
+          ForumHomePage(),
         ],
       ),
     );
