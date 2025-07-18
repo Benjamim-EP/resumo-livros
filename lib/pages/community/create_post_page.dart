@@ -1,6 +1,7 @@
 // lib/pages/community/create_post_page.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -40,6 +41,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
   String? _selectedBookAbbrev;
   int? _selectedChapter;
   List<int> _availableChapters = [];
+  bool _isPasswordProtected = false;
+  final _passwordController = TextEditingController();
 
   final List<Map<String, String>> _categories = [
     {'value': 'apologetica', 'label': 'Apologética (Defesa da Fé)'},
@@ -69,7 +72,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
           }
         }
         // Força um rebuild para garantir que os dropdowns sejam atualizados
-        setState(() {});
+        setState(() {
+          _isPasswordProtected =
+              widget.initialData!['isPasswordProtected'] ?? false;
+        });
       }
       // ✅ FIM DA MUDANÇA
     });
@@ -101,6 +107,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     _titleController.dispose();
     _contentController.dispose();
     _versesController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -109,15 +116,22 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
+    // Validação extra para a senha
+    if (_isPasswordProtected && _passwordController.text.trim().length < 4) {
+      CustomNotificationService.showError(
+          context, "A senha deve ter pelo menos 4 caracteres.");
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     final user = FirebaseAuth.instance.currentUser;
-    final userDetails = StoreProvider.of<AppState>(context, listen: false)
-        .state
-        .userState
-        .userDetails;
+    // final userDetails = StoreProvider.of<AppState>(context, listen: false)
+    //     .state
+    //     .userState
+    //     .userDetails;
 
-    if (user == null || userDetails == null) {
+    if (user == null) {
       if (mounted) {
         CustomNotificationService.showError(
             context, "Você precisa estar logado para postar.");
@@ -148,36 +162,36 @@ class _CreatePostPageState extends State<CreatePostPage> {
       "refBook": _selectedBookAbbrev,
       "refChapter": _selectedChapter,
       "refVerses": _versesController.text.trim(),
-      "lastUpdated": FieldValue.serverTimestamp(),
+      //"lastUpdated": FieldValue.serverTimestamp(),
+      "isPasswordProtected": _isPasswordProtected,
+      // Se estiver editando e não mudar a senha, não envia o campo 'password'
+      "password": _isPasswordProtected && _passwordController.text.isNotEmpty
+          ? _passwordController.text.trim()
+          : null,
     };
 
     try {
       String successMessage;
+      // Usaremos uma única função para criar e editar
+      //final callable = FirebaseFirestore.instance.collection('posts');
+      final callable =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1")
+              .httpsCallable('createOrUpdatePost');
+
+      // Enviamos apenas os dados do formulário. A Cloud Function adiciona o resto.
+      final Map<String, dynamic> payload = Map.from(postData);
 
       if (widget.postId != null) {
         // --- MODO DE EDIÇÃO ---
-        await FirebaseFirestore.instance
-            .collection('posts')
-            .doc(widget.postId)
-            .update(postData);
+        payload['postId'] = widget.postId; // Adiciona o ID do post para edição
+        await callable.call(payload);
         successMessage = "Sua pergunta foi atualizada!";
       } else {
         // --- MODO DE CRIAÇÃO ---
-        final newPostData = {
-          ...postData,
-          "authorId": user.uid,
-          "authorName": userDetails['nome'] ?? 'Anônimo',
-          "authorPhotoUrl": userDetails['photoURL'] ?? '',
-          "tags": [],
-          "timestamp": FieldValue.serverTimestamp(),
-          "answerCount": 0,
-          "upvoteCount": 0,
-          "bestAnswerId": null,
-        };
-        await FirebaseFirestore.instance.collection('posts').add(newPostData);
+        // Não precisa adicionar mais nada. A função de backend pega o authorId do contexto.
+        await callable.call(payload);
         successMessage = "Sua pergunta foi postada!";
       }
-
       // ✅ INÍCIO DA CORREÇÃO PRINCIPAL
       // Se a escrita no Firestore foi bem-sucedida, agora lidamos com a UI.
 
@@ -362,6 +376,48 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     });
                   }
                 },
+              ),
+              const SizedBox(height: 24),
+
+              // --- SEÇÃO DE PROTEÇÃO POR SENHA ---
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: const Text("Proteger com Senha"),
+                      subtitle: const Text(
+                          "Apenas usuários com a senha poderão ver o conteúdo."),
+                      value: _isPasswordProtected,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _isPasswordProtected = value;
+                        });
+                      },
+                    ),
+                    // O campo de senha só aparece se o switch estiver ativo
+                    if (_isPasswordProtected)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            labelText: widget.postId != null
+                                ? "Nova Senha (opcional)"
+                                : "Senha",
+                            hintText: "Mínimo 4 caracteres",
+                            border: const OutlineInputBorder(),
+                          ),
+                          // Validação não é necessária aqui, já fazemos no _submitPost
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

@@ -11,6 +11,7 @@ from datetime import datetime, time, timezone, timedelta
 import asyncio
 import traceback
 from math import pow
+from werkzeug.security import generate_password_hash, check_password_hash
 
 import base64
 import json
@@ -1665,3 +1666,109 @@ def onNewComment(event: firestore_fn.Event[firestore_fn.Change]) -> None:
     except Exception as e:
         print(f"ERRO em onNewComment para post {post_id}: {e}")
         traceback.print_exc()
+
+
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256 
+)
+def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+    
+    user_id = req.auth.uid
+    post_id = req.data.get("postId") # O ID será enviado se for uma edição
+    data = req.data
+    
+    # Prepara os dados base
+    post_data = {
+        "title": data.get("title"),
+        "content": data.get("content"),
+        "category": data.get("category"),
+        "bibleReference": data.get("bibleReference"),
+        "refBook": data.get("refBook"),
+        "refChapter": data.get("refChapter"),
+        "refVerses": data.get("refVerses"),
+        "isPasswordProtected": data.get("isPasswordProtected", False),
+        "lastUpdated": firestore.SERVER_TIMESTAMP,
+    }
+    
+    # Lida com a senha
+    password = data.get("password")
+    if post_data["isPasswordProtected"] and password:
+        # Gera o hash da senha
+        post_data["passwordHash"] = generate_password_hash(password)
+
+    try:
+        if post_id:
+            # --- MODO DE EDIÇÃO ---
+            post_ref = db.collection('posts').document(post_id)
+            # Verifica se o autor é o mesmo que está tentando editar
+            post_doc = post_ref.get()
+            if not post_doc.exists or post_doc.to_dict().get("authorId") != user_id:
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.PERMISSION_DENIED, message="Você не tem permissão para editar este post.")
+            
+            # Remove o campo 'password' se ele for nulo (para não salvar null no DB)
+            if "password" in post_data and post_data["password"] is None:
+                del post_data["password"]
+
+            post_ref.update(post_data)
+            return {"status": "success", "message": "Post atualizado!", "postId": post_id}
+        else:
+            # --- MODO DE CRIAÇÃO ---
+            user_doc = db.collection('users').document(user_id).get()
+            user_data = user_doc.to_dict() or {}
+            
+            # Adiciona os campos que só existem na criação
+            post_data.update({
+                "authorId": user_id,
+                "authorName": user_data.get('nome', 'Anônimo'),
+                "authorPhotoUrl": user_data.get('photoURL', ''),
+                "timestamp": firestore.SERVER_TIMESTAMP,
+                "answerCount": 0,
+                "upvoteCount": 0,
+            })
+            
+            new_post_ref = db.collection('posts').add(post_data)
+            return {"status": "success", "message": "Post criado!", "postId": new_post_ref[1].id}
+
+    except Exception as e:
+        print(f"ERRO em createOrUpdatePost: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao salvar o post: {e}")
+
+# 2. FUNÇÃO PARA VERIFICAR A SENHA
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256 
+)
+def verifyPostPassword(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+
+    post_id = req.data.get("postId")
+    password = req.data.get("password")
+    
+    if not post_id or not password:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="postId e password são obrigatórios.")
+        
+    try:
+        post_doc = db.collection('posts').document(post_id).get()
+        if not post_doc.exists:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Post não encontrado.")
+            
+        post_data = post_doc.to_dict()
+        password_hash = post_data.get("passwordHash")
+        
+        if not password_hash:
+            # Se o post não tem hash, consideramos sucesso (talvez a proteção foi removida)
+            return {"success": True}
+
+        # Compara a senha enviada com o hash armazenado
+        is_correct = check_password_hash(password_hash, password)
+        
+        return {"success": is_correct}
+        
+    except Exception as e:
+        print(f"ERRO em verifyPostPassword: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro: {e}")
