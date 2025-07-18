@@ -7,6 +7,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/pages/community/create_post_page.dart';
 import 'package:septima_biblia/pages/community/public_profile_page.dart';
+import 'package:septima_biblia/pages/community/reply_card.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 
 class PostDetailPage extends StatefulWidget {
@@ -26,10 +27,108 @@ class _PostDetailPageState extends State<PostDetailPage> {
   bool _isPostAuthor = false;
   bool _isLoadingPost = true;
 
+  String? _replyingToId; // ID da resposta pai à qual estamos respondendo
+  String? _replyingToName; // Nome do autor da resposta pai
+  String? _replyingToUserId;
+
   @override
   void initState() {
     super.initState();
     _loadPostData(); // Carrega os dados do post apenas uma vez
+  }
+
+  Future<void> _addReply() async {
+    final replyText = _replyController.text.trim();
+    if (replyText.isEmpty) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted)
+        CustomNotificationService.showError(
+            context, "Você precisa estar logado para responder.");
+      return;
+    }
+
+    setState(() => _isReplying = true);
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final userData = userDoc.data();
+
+      // Verifica se é uma resposta aninhada (Nível 2) ou uma resposta principal (Nível 1)
+      if (_replyingToId != null) {
+        // --- CENÁRIO 2: ADICIONANDO UM COMENTÁRIO ANINHADO (NÍVEL 2) ---
+
+        // Monta os dados para o novo documento na subcoleção "comments"
+        final commentData = {
+          'authorId': user.uid,
+          'authorName': userData?['nome'] ?? 'Anônimo',
+          'authorPhotoUrl': userData?['photoURL'] ?? '',
+          'content': replyText,
+          'timestamp': FieldValue.serverTimestamp(),
+
+          'replyingToUserId':
+              _replyingToUserId, // ✅ Salva o ID do usuário mencionado
+          'replyingToUserName': _replyingToName,
+        };
+
+        // Referência para a resposta "pai" (Nível 1)
+        final replyRef = FirebaseFirestore.instance
+            .collection('posts')
+            .doc(widget.postId)
+            .collection('replies')
+            .doc(_replyingToId!);
+
+        // Escreve o novo comentário na sub-subcoleção e incrementa o contador
+        await replyRef.collection('comments').add(commentData);
+        await replyRef.update({'commentCount': FieldValue.increment(1)});
+      } else {
+        // --- CENÁRIO 1: ADICIONANDO UMA RESPOSTA PRINCIPAL (NÍVEL 1) ---
+
+        // Monta os dados para o novo documento na subcoleção "replies"
+        final replyData = {
+          'authorId': user.uid,
+          'authorName': userData?['nome'] ?? 'Anônimo',
+          'authorPhotoUrl': userData?['photoURL'] ?? '',
+          'content': replyText,
+          'timestamp': FieldValue.serverTimestamp(),
+          'upvoteCount': 0,
+          'upvotedBy': [],
+          'commentCount':
+              0, // Inicia o contador de comentários aninhados como 0
+        };
+
+        final postRef =
+            FirebaseFirestore.instance.collection('posts').doc(widget.postId);
+
+        // Adiciona a nova resposta e incrementa o contador de respostas no post principal
+        await postRef.collection('replies').add(replyData);
+        await postRef.update({'answerCount': FieldValue.increment(1)});
+      }
+
+      // Limpa o estado e a UI após o envio bem-sucedido
+      _replyController.clear();
+      FocusScope.of(context).unfocus(); // Esconde o teclado
+      if (mounted) {
+        setState(() {
+          _replyingToId = null;
+          _replyingToName = null;
+          _isReplying = false;
+        });
+      }
+    } catch (e) {
+      print("Erro ao enviar resposta/comentário: $e");
+      if (mounted) {
+        CustomNotificationService.showError(
+            context, "Erro ao enviar resposta.");
+        setState(() =>
+            _isReplying = false); // Garante que o loading para em caso de erro
+      }
+    }
+    // O 'finally' não é mais necessário aqui, pois o setState é chamado no sucesso e no erro.
   }
 
   // Carrega os dados do post principal no início
@@ -52,55 +151,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     } catch (e) {
       if (mounted) setState(() => _isLoadingPost = false);
       print("Erro ao carregar dados do post: $e");
-    }
-  }
-
-  // Função para adicionar uma nova resposta
-  Future<void> _addReply() async {
-    final replyText = _replyController.text.trim();
-    if (replyText.isEmpty) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      if (mounted)
-        CustomNotificationService.showError(
-            context, "Você precisa estar logado para responder.");
-      return;
-    }
-
-    setState(() => _isReplying = true);
-
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      final userData = userDoc.data();
-
-      final replyData = {
-        'authorId': user.uid,
-        'authorName': userData?['nome'] ?? 'Anônimo',
-        'authorPhotoUrl': userData?['photoURL'] ?? '',
-        'content': replyText,
-        'timestamp': FieldValue.serverTimestamp(),
-        'upvoteCount': 0,
-        'upvotedBy': [],
-      };
-
-      final postRef =
-          FirebaseFirestore.instance.collection('posts').doc(widget.postId);
-
-      await postRef.collection('replies').add(replyData);
-      await postRef.update({'answerCount': FieldValue.increment(1)});
-
-      _replyController.clear();
-      FocusScope.of(context).unfocus();
-    } catch (e) {
-      if (mounted)
-        CustomNotificationService.showError(
-            context, "Erro ao enviar resposta.");
-    } finally {
-      if (mounted) setState(() => _isReplying = false);
     }
   }
 
@@ -383,117 +433,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildRepliesList(List<QueryDocumentSnapshot> replies,
       Map<String, dynamic> postData, bool isPostAuthor) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final bestAnswerId = postData['bestAnswerId'] as String?;
-
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          final replyDoc = replies[index];
-          final replyData = replyDoc.data() as Map<String, dynamic>;
-          final isBestAnswer = replyDoc.id == bestAnswerId;
-          final upvoters = List<String>.from(replyData['upvotedBy'] ?? []);
-          final userHasUpvoted =
-              currentUserId != null && upvoters.contains(currentUserId);
-          final replyAuthorId = replyData['authorId'] as String?;
-          return Card(
-            elevation: isBestAnswer ? 4 : 0.5,
-            shape: RoundedRectangleBorder(
-              side: BorderSide(
-                color:
-                    isBestAnswer ? Colors.green.shade300 : Colors.transparent,
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            color: Theme.of(context).colorScheme.surface,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      radius: 18,
-                      backgroundImage: (replyData['authorPhotoUrl'] != null &&
-                              replyData['authorPhotoUrl']!.isNotEmpty)
-                          ? NetworkImage(replyData['authorPhotoUrl']!)
-                          : null,
-                    ),
-                    title: Text(replyData['authorName'] ?? 'Anônimo',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: isBestAnswer
-                        ? const Text("Melhor Resposta",
-                            style: TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold))
-                        : null,
-                    onTap: () {
-                      if (replyAuthorId != null &&
-                          replyAuthorId != currentUserId) {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PublicProfilePage(
-                                  userId: replyAuthorId,
-                                  initialUserData: {
-                                    'userId': replyAuthorId,
-                                    'nome': replyData['authorName'],
-                                    'photoURL': replyData['authorPhotoUrl'],
-                                    'descrição':
-                                        null // Não temos a descrição aqui, a PublicProfilePage buscará
-                                  }),
-                            ));
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  MarkdownBody(
-                    data: replyData['content'] ?? '',
-                    styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
-                        .copyWith(
-                      p: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(height: 1.5),
-                    ),
-                  ),
-                  const Divider(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => upvoteReply(replyDoc.id, upvoters),
-                        icon: Icon(
-                          userHasUpvoted
-                              ? Icons.thumb_up_alt_rounded
-                              : Icons.thumb_up_alt_outlined,
-                          size: 18,
-                          color: userHasUpvoted
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
-                        ),
-                        label: Text(
-                          upvoters.length.toString(),
-                          style: TextStyle(
-                              color: userHasUpvoted
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.grey),
-                        ),
-                      ),
-                      if (isPostAuthor && !isBestAnswer)
-                        TextButton(
-                          onPressed: () => markAsBestAnswer(replyDoc.id),
-                          child: const Text("Melhor Resposta",
-                              style: TextStyle(fontSize: 12)),
-                        ),
-                    ],
-                  )
-                ],
-              ),
-            ),
+          return ReplyCard(
+            replyDoc: replies[index],
+            postData: postData,
+            isPostAuthor: isPostAuthor,
+            postId: widget.postId,
+            onUpvote: upvoteReply,
+            onMarkAsBest: markAsBestAnswer,
+            // ✅ CORREÇÃO AQUI: Passa os 3 parâmetros para onReply
+            onReply: (replyId, authorId, authorName) {
+              FocusScope.of(context).requestFocus();
+              setState(() {
+                _replyingToId = replyId;
+                _replyingToUserId = authorId;
+                _replyingToName = authorName;
+              });
+            },
           );
         },
         childCount: replies.length,
@@ -503,51 +461,98 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildReplyComposer() {
     final theme = Theme.of(context);
+    final isReplyingToComment = _replyingToId != null;
 
     return Material(
       elevation: 8,
       color: theme.scaffoldBackgroundColor,
       child: Container(
-        // O padding agora só se preocupa com o teclado, o SafeArea cuida do resto.
         padding:
             EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Padding(
-          // Adicionamos um Padding extra para a estética
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.cardColor.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(24.0),
-                  ),
-                  child: TextField(
-                    controller: _replyController,
-                    decoration: const InputDecoration(
-                      hintText: "Adicionar uma resposta...",
-                      border: InputBorder.none,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          border:
+              Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+        ),
+        child: Column(
+          mainAxisSize:
+              MainAxisSize.min, // Faz a coluna encolher ao seu conteúdo
+          children: [
+            // Barra que indica a quem você está respondendo
+            if (isReplyingToComment)
+              Container(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Respondendo a @${_replyingToName ?? 'Anônimo'}",
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: theme.colorScheme.primary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    maxLines: null,
-                  ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: "Cancelar resposta",
+                      onPressed: () {
+                        setState(() {
+                          _replyingToId = null;
+                          _replyingToName = null;
+                          _replyingToUserId = null; // Limpa também o ID
+                        });
+                      },
+                    )
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: _isReplying
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.send),
-                onPressed: _isReplying ? null : _addReply,
-                color: theme.colorScheme.primary,
+
+            // Campo de texto e botão de enviar
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.cardColor.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(24.0),
+                      ),
+                      child: TextField(
+                        controller: _replyController,
+                        autofocus:
+                            isReplyingToComment, // Dá o foco automaticamente ao clicar em "Responder"
+                        decoration: const InputDecoration(
+                          hintText: "Adicionar uma resposta...",
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                        ),
+                        maxLines: null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: _isReplying
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.send),
+                    onPressed: _isReplying ? null : _addReply,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
