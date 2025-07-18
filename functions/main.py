@@ -1611,13 +1611,13 @@ def onBestAnswerMarked(event: firestore_fn.Event[firestore_fn.Change]) -> None:
 def onNewComment(event: firestore_fn.Event[firestore_fn.Change]) -> None:
     """
     Acionado quando um novo comentário é adicionado a uma resposta.
-    Envia uma notificação para o autor da resposta "pai".
+    - Incrementa o contador de respostas no post principal.
+    - Envia uma notificação para o autor da resposta "pai".
     """
     db = get_db()
     
-    params = event.params
-    post_id = params.get("postId")
-    reply_id = params.get("replyId")
+    post_id = event.params.get("postId")
+    reply_id = event.params.get("replyId")
     comment_data = event.data.to_dict() if event.data else {}
     
     comment_author_id = comment_data.get("authorId")
@@ -1628,55 +1628,39 @@ def onNewComment(event: firestore_fn.Event[firestore_fn.Change]) -> None:
         return
 
     try:
-        # 1. Obter os dados da resposta "pai" para encontrar seu autor
         reply_ref = db.collection("posts").document(post_id).collection("replies").document(reply_id)
         reply_doc = reply_ref.get()
-        if not reply_doc.exists:
-            print(f"onNewComment: Resposta pai {reply_id} não encontrada.")
-            return
+        if not reply_doc.exists: return
 
         reply_data = reply_doc.to_dict()
         original_reply_author_id = reply_data.get("authorId")
-        
-        # Opcional: Pegar um trecho da resposta pai para dar contexto na notificação
         reply_content_snippet = reply_data.get("content", "sua resposta")[:50]
 
-        # 2. Não enviar notificação se o usuário está comentando na própria resposta
-        if original_reply_author_id == comment_author_id:
-            print(f"onNewComment: Usuário {comment_author_id} comentou na própria resposta. Nenhuma notificação será enviada.")
-            return
+        if original_reply_author_id != comment_author_id:
+            reply_author_doc = db.collection("users").document(original_reply_author_id).get()
+            if reply_author_doc.exists:
+                target_tokens = reply_author_doc.to_dict().get("fcmTokens", [])
+                if target_tokens:
+                    # ✅ USANDO A ABORDAGEM CORRETA COM send_each
+                    messages = [
+                        messaging.Message(
+                            notification=messaging.Notification(
+                                title=f"{comment_author_name} respondeu ao seu comentário",
+                                body=f"Em resposta a '{reply_content_snippet}...'",
+                            ),
+                            data={"type": "reply_comment", "screen": f"/post/{post_id}"},
+                            token=token,
+                        )
+                        for token in target_tokens
+                    ]
+                    if messages:
+                        messaging.send_each(messages)
+                        print(f"Notificação de novo comentário enviada para {original_reply_author_id}.")
 
-        # 3. Obter os tokens de notificação do autor da resposta pai
-        reply_author_doc = db.collection("users").document(original_reply_author_id).get()
-        if not reply_author_doc.exists:
-            print(f"onNewComment: Documento do autor da resposta {original_reply_author_id} não encontrado.")
-            return
-
-        target_tokens = reply_author_doc.to_dict().get("fcmTokens", [])
-
-        if not target_tokens:
-            print(f"onNewComment: Autor da resposta {original_reply_author_id} não tem tokens FCM.")
-            return
-
-        # 4. Construir e enviar a notificação push
-        messages = [
-            messaging.Message(
-                notification=messaging.Notification(
-                    title=f"{comment_author_name} respondeu ao seu comentário",
-                    body=f"Em resposta a '{reply_content_snippet}...'",
-                ),
-                data={
-                    "type": "reply_comment",
-                    "screen": f"/post/{post_id}" # Leva para o mesmo post
-                },
-                token=token,
-            )
-            for token in target_tokens
-        ]
-
-        if messages:
-            messaging.send_each(messages)
-            print(f"Notificação de novo comentário enviada com sucesso para {original_reply_author_id}.")
+        # Lógica para incrementar o contador do post principal
+        post_ref = db.collection("posts").document(post_id)
+        post_ref.update({"answerCount": firestore.FieldValue.increment(1)})
+        print(f"Contador de respostas do post {post_id} incrementado com sucesso.")
 
     except Exception as e:
         print(f"ERRO em onNewComment para post {post_id}: {e}")
