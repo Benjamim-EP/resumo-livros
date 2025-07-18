@@ -27,8 +27,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      CustomNotificationService.showError(
-          context, "Você precisa estar logado para responder.");
+      if (mounted)
+        CustomNotificationService.showError(
+            context, "Você precisa estar logado para responder.");
       return;
     }
 
@@ -48,19 +49,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
         'content': replyText,
         'timestamp': FieldValue.serverTimestamp(),
         'upvoteCount': 0,
+        'upvotedBy': [], // Inicia o campo para evitar erros
       };
 
       final postRef =
           FirebaseFirestore.instance.collection('posts').doc(widget.postId);
 
-      // Adiciona a resposta na subcoleção
       await postRef.collection('replies').add(replyData);
-
-      // Incrementa o contador de respostas no documento principal do post
       await postRef.update({'answerCount': FieldValue.increment(1)});
 
       _replyController.clear();
-      FocusScope.of(context).unfocus(); // Esconde o teclado
+      FocusScope.of(context).unfocus();
     } catch (e) {
       if (mounted) {
         CustomNotificationService.showError(
@@ -144,18 +143,73 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  // Função placeholder para editar um post
+  // Função para navegar para a tela de edição
   void _editPost(Map<String, dynamic> currentData) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CreatePostPage(
-          // Passa o ID e os dados do post a ser editado
           postId: widget.postId,
           initialData: currentData,
         ),
       ),
     );
+  }
+
+  // Função para dar ou remover upvote em uma resposta
+  Future<void> upvoteReply(String replyId, List<String> currentUpvoters) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      CustomNotificationService.showError(
+          context, "Você precisa estar logado para votar.");
+      return;
+    }
+
+    final replyRef = FirebaseFirestore.instance
+        .collection('posts')
+        .doc(widget.postId)
+        .collection('replies')
+        .doc(replyId);
+
+    final bool hasUpvoted = currentUpvoters.contains(user.uid);
+
+    try {
+      if (hasUpvoted) {
+        await replyRef.update({
+          'upvotedBy': FieldValue.arrayRemove([user.uid]),
+          'upvoteCount': FieldValue.increment(-1),
+        });
+      } else {
+        await replyRef.update({
+          'upvotedBy': FieldValue.arrayUnion([user.uid]),
+          'upvoteCount': FieldValue.increment(1),
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomNotificationService.showError(
+            context, "Erro ao registrar o voto.");
+      }
+    }
+  }
+
+  // Função para marcar uma resposta como a melhor
+  Future<void> markAsBestAnswer(String replyId) async {
+    final postRef =
+        FirebaseFirestore.instance.collection('posts').doc(widget.postId);
+
+    try {
+      await postRef.update({'bestAnswerId': replyId});
+      if (mounted) {
+        CustomNotificationService.showSuccess(
+            context, "Resposta marcada como a melhor!");
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomNotificationService.showError(
+            context, "Erro ao marcar a resposta.");
+      }
+    }
   }
 
   @override
@@ -167,18 +221,18 @@ class _PostDetailPageState extends State<PostDetailPage> {
             .collection('posts')
             .doc(widget.postId)
             .get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+        builder: (context, postSnapshot) {
+          if (postSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
+          if (!postSnapshot.hasData || !postSnapshot.data!.exists) {
             return const Center(
                 child: Text(
                     "Esta pergunta não foi encontrada. Pode ter sido excluída."));
           }
 
-          final postData = snapshot.data!.data() as Map<String, dynamic>;
-          final bool isAuthor =
+          final postData = postSnapshot.data!.data() as Map<String, dynamic>;
+          final bool isPostAuthor =
               FirebaseAuth.instance.currentUser?.uid == postData['authorId'];
 
           return Column(
@@ -187,9 +241,38 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 child: CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(
-                      child: _buildPostHeader(postData, isAuthor),
+                      child: _buildPostHeader(postData, isPostAuthor),
                     ),
-                    _buildRepliesList(),
+                    // O StreamBuilder para as respostas é aninhado aqui
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('posts')
+                          .doc(widget.postId)
+                          .collection('replies')
+                          .orderBy('timestamp')
+                          .snapshots(),
+                      builder: (context, repliesSnapshot) {
+                        if (!repliesSnapshot.hasData) {
+                          return const SliverToBoxAdapter(
+                              child: Center(
+                                  child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
+                          )));
+                        }
+                        if (repliesSnapshot.data!.docs.isEmpty) {
+                          return const SliverToBoxAdapter(
+                              child: Center(
+                                  child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Text(
+                                "Ninguém respondeu ainda. Seja o primeiro!"),
+                          )));
+                        }
+                        return _buildRepliesList(
+                            repliesSnapshot.data!.docs, postData, isPostAuthor);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -227,11 +310,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
             trailing: isAuthor
                 ? PopupMenuButton<String>(
                     onSelected: (value) {
-                      if (value == 'edit') {
+                      if (value == 'edit')
                         _editPost(data);
-                      } else if (value == 'delete') {
-                        _deletePost();
-                      }
+                      else if (value == 'delete') _deletePost();
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
@@ -257,11 +338,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           if (bibleReference != null && bibleReference.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: Chip(
-                avatar: Icon(Icons.menu_book,
-                    size: 14, color: theme.colorScheme.primary),
-                label: Text(bibleReference),
-              ),
+              child: Chip(label: Text(bibleReference)),
             ),
           if (data['content'] != null && data['content'].isNotEmpty) ...[
             const Divider(height: 24),
@@ -274,86 +351,105 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  Widget _buildRepliesList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('replies')
-          .orderBy('timestamp', descending: false)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SliverToBoxAdapter(
-              child: Center(
-                  child: Padding(
-            padding: EdgeInsets.all(24.0),
-            child: CircularProgressIndicator(),
-          )));
-        }
-        if (snapshot.hasError) {
-          return const SliverToBoxAdapter(
-              child: Center(child: Text("Erro ao carregar respostas.")));
-        }
-        if (snapshot.data!.docs.isEmpty) {
-          return const SliverToBoxAdapter(
-              child: Center(
-                  child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text("Ninguém respondeu ainda. Seja o primeiro!"),
-          )));
-        }
+  Widget _buildRepliesList(List<QueryDocumentSnapshot> replies,
+      Map<String, dynamic> postData, bool isPostAuthor) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final bestAnswerId = postData['bestAnswerId'] as String?;
 
-        final replies = snapshot.data!.docs;
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final replyDoc = replies[index];
+          final replyData = replyDoc.data() as Map<String, dynamic>;
+          final isBestAnswer = replyDoc.id == bestAnswerId;
+          final upvoters = List<String>.from(replyData['upvotedBy'] ?? []);
+          final userHasUpvoted =
+              currentUserId != null && upvoters.contains(currentUserId);
 
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final replyData = replies[index].data() as Map<String, dynamic>;
-              return Card(
-                elevation: 0,
-                color: Theme.of(context).colorScheme.surface,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          radius: 18,
-                          backgroundImage:
-                              (replyData['authorPhotoUrl'] != null &&
-                                      replyData['authorPhotoUrl']!.isNotEmpty)
-                                  ? NetworkImage(replyData['authorPhotoUrl']!)
-                                  : null,
-                        ),
-                        title: Text(replyData['authorName'] ?? 'Anônimo',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(height: 8),
-                      MarkdownBody(
-                        data: replyData['content'] ?? '',
-                        styleSheet:
-                            MarkdownStyleSheet.fromTheme(Theme.of(context))
-                                .copyWith(
-                          p: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(height: 1.5),
-                        ),
-                      ),
-                    ],
+          return Card(
+            elevation: isBestAnswer ? 4 : 0.5,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
+                color:
+                    isBestAnswer ? Colors.green.shade300 : Colors.transparent,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            color: Theme.of(context).colorScheme.surface,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      radius: 18,
+                      backgroundImage: (replyData['authorPhotoUrl'] != null &&
+                              replyData['authorPhotoUrl']!.isNotEmpty)
+                          ? NetworkImage(replyData['authorPhotoUrl']!)
+                          : null,
+                    ),
+                    title: Text(replyData['authorName'] ?? 'Anônimo',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: isBestAnswer
+                        ? const Text("Melhor Resposta",
+                            style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold))
+                        : null,
                   ),
-                ),
-              );
-            },
-            childCount: replies.length,
-          ),
-        );
-      },
+                  const SizedBox(height: 8),
+                  MarkdownBody(
+                    data: replyData['content'] ?? '',
+                    styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                        .copyWith(
+                      p: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.copyWith(height: 1.5),
+                    ),
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => upvoteReply(replyDoc.id, upvoters),
+                        icon: Icon(
+                          userHasUpvoted
+                              ? Icons.thumb_up_alt_rounded
+                              : Icons.thumb_up_alt_outlined,
+                          size: 18,
+                          color: userHasUpvoted
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey,
+                        ),
+                        label: Text(
+                          upvoters.length.toString(),
+                          style: TextStyle(
+                              color: userHasUpvoted
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey),
+                        ),
+                      ),
+                      if (isPostAuthor && !isBestAnswer)
+                        TextButton(
+                          onPressed: () => markAsBestAnswer(replyDoc.id),
+                          child: const Text("Melhor Resposta",
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          );
+        },
+        childCount: replies.length,
+      ),
     );
   }
 
@@ -361,7 +457,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return Material(
       elevation: 8,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: EdgeInsets.fromLTRB(
+            8.0, 8.0, 8.0, 8.0 + MediaQuery.of(context).viewInsets.bottom),
         child: Row(
           children: [
             Expanded(
