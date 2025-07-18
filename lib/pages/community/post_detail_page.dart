@@ -20,6 +20,40 @@ class _PostDetailPageState extends State<PostDetailPage> {
   final _replyController = TextEditingController();
   bool _isReplying = false;
 
+  // Estados para armazenar os dados do post e do autor
+  Map<String, dynamic>? _postData;
+  bool _isPostAuthor = false;
+  bool _isLoadingPost = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPostData(); // Carrega os dados do post apenas uma vez
+  }
+
+  // Carrega os dados do post principal no início
+  Future<void> _loadPostData() async {
+    try {
+      final postDoc = await FirebaseFirestore.instance
+          .collection('posts')
+          .doc(widget.postId)
+          .get();
+      if (mounted && postDoc.exists) {
+        setState(() {
+          _postData = postDoc.data();
+          _isPostAuthor =
+              FirebaseAuth.instance.currentUser?.uid == _postData?['authorId'];
+          _isLoadingPost = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoadingPost = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingPost = false);
+      print("Erro ao carregar dados do post: $e");
+    }
+  }
+
   // Função para adicionar uma nova resposta
   Future<void> _addReply() async {
     final replyText = _replyController.text.trim();
@@ -49,7 +83,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         'content': replyText,
         'timestamp': FieldValue.serverTimestamp(),
         'upvoteCount': 0,
-        'upvotedBy': [], // Inicia o campo para evitar erros
+        'upvotedBy': [],
       };
 
       final postRef =
@@ -61,14 +95,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
       _replyController.clear();
       FocusScope.of(context).unfocus();
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showError(
             context, "Erro ao enviar resposta.");
-      }
     } finally {
-      if (mounted) {
-        setState(() => _isReplying = false);
-      }
+      if (mounted) setState(() => _isReplying = false);
     }
   }
 
@@ -160,8 +191,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> upvoteReply(String replyId, List<String> currentUpvoters) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      CustomNotificationService.showError(
-          context, "Você precisa estar logado para votar.");
+      if (mounted)
+        CustomNotificationService.showError(
+            context, "Você precisa estar logado para votar.");
       return;
     }
 
@@ -170,26 +202,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
         .doc(widget.postId)
         .collection('replies')
         .doc(replyId);
-
     final bool hasUpvoted = currentUpvoters.contains(user.uid);
 
     try {
-      if (hasUpvoted) {
-        await replyRef.update({
-          'upvotedBy': FieldValue.arrayRemove([user.uid]),
-          'upvoteCount': FieldValue.increment(-1),
-        });
-      } else {
-        await replyRef.update({
-          'upvotedBy': FieldValue.arrayUnion([user.uid]),
-          'upvoteCount': FieldValue.increment(1),
-        });
-      }
+      await replyRef.update({
+        'upvotedBy': hasUpvoted
+            ? FieldValue.arrayRemove([user.uid])
+            : FieldValue.arrayUnion([user.uid]),
+        'upvoteCount':
+            hasUpvoted ? FieldValue.increment(-1) : FieldValue.increment(1),
+      });
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showError(
             context, "Erro ao registrar o voto.");
-      }
     }
   }
 
@@ -197,18 +223,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> markAsBestAnswer(String replyId) async {
     final postRef =
         FirebaseFirestore.instance.collection('posts').doc(widget.postId);
-
     try {
       await postRef.update({'bestAnswerId': replyId});
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showSuccess(
             context, "Resposta marcada como a melhor!");
-      }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showError(
             context, "Erro ao marcar a resposta.");
-      }
     }
   }
 
@@ -216,34 +239,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Pergunta da Comunidade")),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('posts')
-            .doc(widget.postId)
-            .get(),
-        builder: (context, postSnapshot) {
-          if (postSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!postSnapshot.hasData || !postSnapshot.data!.exists) {
-            return const Center(
-                child: Text(
-                    "Esta pergunta não foi encontrada. Pode ter sido excluída."));
-          }
 
-          final postData = postSnapshot.data!.data() as Map<String, dynamic>;
-          final bool isPostAuthor =
-              FirebaseAuth.instance.currentUser?.uid == postData['authorId'];
-
-          return Column(
-            children: [
-              Expanded(
-                child: CustomScrollView(
+      // ✅ O CORPO DO SCAFFOLD AGORA É APENAS O FUTUREBUILDER
+      body: _isLoadingPost
+          ? const Center(child: CircularProgressIndicator())
+          : _postData == null
+              ? const Center(
+                  child: Text(
+                      "Esta pergunta não foi encontrada. Pode ter sido excluída."))
+              : CustomScrollView(
                   slivers: [
+                    // O cabeçalho e a lista de respostas continuam aqui
                     SliverToBoxAdapter(
-                      child: _buildPostHeader(postData, isPostAuthor),
+                      child: _buildPostHeader(_postData!, _isPostAuthor),
                     ),
-                    // O StreamBuilder para as respostas é aninhado aqui
                     StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('posts')
@@ -269,17 +278,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                 "Ninguém respondeu ainda. Seja o primeiro!"),
                           )));
                         }
-                        return _buildRepliesList(
-                            repliesSnapshot.data!.docs, postData, isPostAuthor);
+                        return _buildRepliesList(repliesSnapshot.data!.docs,
+                            _postData!, _isPostAuthor);
                       },
                     ),
                   ],
                 ),
-              ),
-              _buildReplyComposer(),
-            ],
-          );
-        },
+
+      // ✅ O COMPOSITOR DE RESPOSTA AGORA VAI PARA O bottomNavigationBar
+      // O SafeArea garante que ele não fique embaixo dos botões de sistema do Android/iOS
+      bottomNavigationBar: SafeArea(
+        child: _buildReplyComposer(),
       ),
     );
   }
@@ -454,34 +463,52 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildReplyComposer() {
+    final theme = Theme.of(context);
+
     return Material(
       elevation: 8,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-            8.0, 8.0, 8.0, 8.0 + MediaQuery.of(context).viewInsets.bottom),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _replyController,
-                decoration: const InputDecoration(
-                  hintText: "Adicionar uma resposta...",
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12),
+      color: theme.scaffoldBackgroundColor,
+      child: Container(
+        // O padding agora só se preocupa com o teclado, o SafeArea cuida do resto.
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Padding(
+          // Adicionamos um Padding extra para a estética
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: theme.cardColor.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(24.0),
+                  ),
+                  child: TextField(
+                    controller: _replyController,
+                    decoration: const InputDecoration(
+                      hintText: "Adicionar uma resposta...",
+                      border: InputBorder.none,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    ),
+                    maxLines: null,
+                  ),
                 ),
-                maxLines: null,
               ),
-            ),
-            IconButton(
-              icon: _isReplying
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.send),
-              onPressed: _isReplying ? null : _addReply,
-            ),
-          ],
+              const SizedBox(width: 8),
+              IconButton(
+                icon: _isReplying
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.send),
+                onPressed: _isReplying ? null : _addReply,
+                color: theme.colorScheme.primary,
+              ),
+            ],
+          ),
         ),
       ),
     );
