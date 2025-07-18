@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/pages/community/create_post_page.dart';
+import 'package:septima_biblia/pages/community/public_profile_page.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 
 class PostDetailPage extends StatefulWidget {
@@ -300,6 +301,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         ? DateFormat('dd/MM/yy \'às\' HH:mm').format(timestamp.toDate())
         : '';
     final bibleReference = data['bibleReference'] as String?;
+    final authorId = data['authorId'] as String?;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -316,6 +318,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
             ),
             title: Text(data['authorName'] ?? 'Anônimo'),
             subtitle: Text("Postado em $date"),
+            // A ação de clique será no ListTile inteiro
+            onTap: () {
+              // Navega apenas se o ID do autor existir e não for o perfil do próprio usuário logado
+              if (authorId != null &&
+                  authorId != FirebaseAuth.instance.currentUser?.uid) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PublicProfilePage(userId: authorId, initialUserData: {
+                        'userId': authorId,
+                        'nome': data['authorName'],
+                        'photoURL': data['authorPhotoUrl'],
+                        'descrição': data[
+                            'descrição'] // Pode ser nulo, a PublicProfilePage deve lidar com isso
+                      }),
+                    ));
+              }
+            },
             trailing: isAuthor
                 ? PopupMenuButton<String>(
                     onSelected: (value) {
@@ -374,7 +395,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           final upvoters = List<String>.from(replyData['upvotedBy'] ?? []);
           final userHasUpvoted =
               currentUserId != null && upvoters.contains(currentUserId);
-
+          final replyAuthorId = replyData['authorId'] as String?;
           return Card(
             elevation: isBestAnswer ? 4 : 0.5,
             shape: RoundedRectangleBorder(
@@ -409,6 +430,24 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold))
                         : null,
+                    onTap: () {
+                      if (replyAuthorId != null &&
+                          replyAuthorId != currentUserId) {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PublicProfilePage(
+                                  userId: replyAuthorId,
+                                  initialUserData: {
+                                    'userId': replyAuthorId,
+                                    'nome': replyData['authorName'],
+                                    'photoURL': replyData['authorPhotoUrl'],
+                                    'descrição':
+                                        null // Não temos a descrição aqui, a PublicProfilePage buscará
+                                  }),
+                            ));
+                      }
+                    },
                   ),
                   const SizedBox(height: 8),
                   MarkdownBody(
