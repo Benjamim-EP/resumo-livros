@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 
 class ReplyCard extends StatefulWidget {
   final QueryDocumentSnapshot replyDoc;
@@ -34,8 +35,6 @@ class ReplyCard extends StatefulWidget {
 class _ReplyCardState extends State<ReplyCard>
     with SingleTickerProviderStateMixin {
   bool _showComments = false;
-
-  // --- Controladores para a Animação ---
   late final AnimationController _animationController;
 
   @override
@@ -44,7 +43,7 @@ class _ReplyCardState extends State<ReplyCard>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true); // Faz a animação ir e voltar
+    )..repeat(reverse: true);
   }
 
   @override
@@ -52,6 +51,95 @@ class _ReplyCardState extends State<ReplyCard>
     _animationController.dispose();
     super.dispose();
   }
+
+  // --- FUNÇÕES DE EXCLUSÃO ---
+
+  /// Exibe um diálogo de confirmação genérico.
+  Future<bool> _showDeleteConfirmationDialog(
+      BuildContext context, String itemType) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text("Excluir $itemType"),
+        content: Text(
+            "Tem certeza que deseja excluir permanentemente este $itemType? Esta ação não pode ser desfeita."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text("Excluir",
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  /// Lógica para excluir a resposta principal (Nível 1).
+  Future<void> _deleteReply() async {
+    if (!await _showDeleteConfirmationDialog(context, "resposta")) return;
+
+    try {
+      final postRef =
+          FirebaseFirestore.instance.collection('posts').doc(widget.postId);
+      final replyRef = postRef.collection('replies').doc(widget.replyDoc.id);
+
+      // Usamos um batch para garantir que as duas operações ocorram juntas
+      final batch = FirebaseFirestore.instance.batch();
+
+      batch.delete(replyRef);
+      batch.update(postRef, {'answerCount': FieldValue.increment(-1)});
+
+      await batch.commit();
+
+      if (mounted) {
+        CustomNotificationService.showSuccess(context, "Resposta excluída.");
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomNotificationService.showError(
+            context, "Erro ao excluir a resposta.");
+      }
+      print("Erro ao excluir resposta: $e");
+    }
+  }
+
+  /// Lógica para excluir um comentário aninhado (Nível 2).
+  Future<void> _deleteComment(QueryDocumentSnapshot commentDoc) async {
+    if (!await _showDeleteConfirmationDialog(context, "comentário")) return;
+
+    try {
+      final replyRef = FirebaseFirestore.instance
+          .collection('posts')
+          .doc(widget.postId)
+          .collection('replies')
+          .doc(widget.replyDoc.id);
+      final commentRef = replyRef.collection('comments').doc(commentDoc.id);
+
+      final batch = FirebaseFirestore.instance.batch();
+
+      batch.delete(commentRef);
+      batch.update(replyRef, {'commentCount': FieldValue.increment(-1)});
+
+      await batch.commit();
+
+      if (mounted) {
+        CustomNotificationService.showSuccess(context, "Comentário excluído.");
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomNotificationService.showError(
+            context, "Erro ao excluir o comentário.");
+      }
+      print("Erro ao excluir comentário: $e");
+    }
+  }
+
+  // --- FIM DAS FUNÇÕES DE EXCLUSÃO ---
 
   @override
   Widget build(BuildContext context) {
@@ -65,26 +153,29 @@ class _ReplyCardState extends State<ReplyCard>
         currentUserId != null && upvoters.contains(currentUserId);
     final commentCount = replyData['commentCount'] ?? 0;
 
-    // O widget do Card em si
+    // --- LÓGICA DE PERMISSÃO PARA EXCLUIR A RESPOSTA PRINCIPAL ---
+    final replyAuthorId = replyData['authorId'] as String?;
+    final bool canDeleteReply = widget.isPostAuthor ||
+        (currentUserId != null && currentUserId == replyAuthorId);
+
     final cardContent = Card(
-      elevation: 0, // A sombra será controlada pelo container animado
+      // ... (código do Card, Container e BoxDecoration permanecem os mesmos) ...
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        // Borda estática para a melhor resposta
         side: BorderSide(
           color:
               isBestAnswer ? Colors.green.withOpacity(0.5) : Colors.transparent,
           width: 1.5,
         ),
       ),
-      margin: EdgeInsets.zero, // A margem será controlada pelo container
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        // Gradiente sutil para dar profundidade
         decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(-1.0, -1.0),
+            center: const Alignment(-1.0, -1.0),
             radius: 1.5,
             colors: [
               theme.colorScheme.primary.withOpacity(isBestAnswer ? 0.08 : 0.03),
@@ -107,10 +198,16 @@ class _ReplyCardState extends State<ReplyCard>
                       : null,
                 ),
                 const SizedBox(width: 10),
-                Text(replyData['authorName'] ?? 'Anônimo',
+                Expanded(
+                  child: Text(
+                    replyData['authorName'] ?? 'Anônimo',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
-                const Spacer(),
+                        fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                    // Garante que nomes muito longos não quebrem a linha e mostrem "..."
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 if (isBestAnswer)
                   Chip(
                     avatar:
@@ -123,7 +220,32 @@ class _ReplyCardState extends State<ReplyCard>
                     backgroundColor: Colors.green.withOpacity(0.15),
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                  )
+                  ),
+
+                // --- BOTÃO DE OPÇÕES (EXCLUIR) PARA A RESPOSTA PRINCIPAL ---
+                if (canDeleteReply)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert,
+                        size: 20,
+                        color: theme.iconTheme.color?.withOpacity(0.6)),
+                    onSelected: (value) {
+                      if (value == 'delete') {
+                        _deleteReply();
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete_outline,
+                              color: Colors.redAccent),
+                          title: Text('Excluir Resposta',
+                              style: TextStyle(color: Colors.redAccent)),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -201,14 +323,12 @@ class _ReplyCardState extends State<ReplyCard>
       ),
     );
 
-    // --- LÓGICA DA ANIMAÇÃO ---
+    // --- LÓGICA DA ANIMAÇÃO (permanece a mesma) ---
     if (isBestAnswer) {
       return AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          // Anima o brilho da sombra (boxShadow)
-          final glowOpacity =
-              (_animationController.value * 0.4) + 0.2; // Varia entre 0.2 e 0.6
+          final glowOpacity = (_animationController.value * 0.4) + 0.2;
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -227,7 +347,6 @@ class _ReplyCardState extends State<ReplyCard>
         child: cardContent,
       );
     } else {
-      // Retorna o card normal sem a animação
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: cardContent,
@@ -235,8 +354,10 @@ class _ReplyCardState extends State<ReplyCard>
     }
   }
 
-  // Widget para construir a seção de comentários aninhados (Nível 2)
+  /// Constrói a seção de comentários aninhados (Nível 2)
   Widget _buildCommentsSection() {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
     return Padding(
       padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
       child: StreamBuilder<QuerySnapshot>(
@@ -256,7 +377,6 @@ class _ReplyCardState extends State<ReplyCard>
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
             return const SizedBox.shrink();
 
-          // ✅ INÍCIO DA CORREÇÃO VISUAL
           return Container(
             decoration: BoxDecoration(
               border: Border(
@@ -270,15 +390,15 @@ class _ReplyCardState extends State<ReplyCard>
                 final date = timestamp != null
                     ? DateFormat('dd/MM/yy').format(timestamp.toDate())
                     : '';
+                final authorName = commentData['authorName'] ?? 'Anônimo';
+                final replyingToName = commentData['replyingToUserName'] ?? '';
+                final content = commentData['content'] ?? '';
 
-                // Constrói o texto da resposta, incluindo a menção se houver
-                final String authorName =
-                    commentData['authorName'] ?? 'Anônimo';
-                final String replyingToName =
-                    commentData['replyingToUserName'] ?? '';
-                final String content = commentData['content'] ?? '';
+                // --- LÓGICA DE PERMISSÃO PARA EXCLUIR O COMENTÁRIO ---
+                final commentAuthorId = commentData['authorId'] as String?;
+                final bool canDeleteComment = widget.isPostAuthor ||
+                    (currentUserId != null && currentUserId == commentAuthorId);
 
-                // Cria um TextSpan para poder estilizar a menção
                 final contentSpan = TextSpan(
                   style: Theme.of(context).textTheme.bodyMedium,
                   children: [
@@ -313,21 +433,32 @@ class _ReplyCardState extends State<ReplyCard>
                   ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4.0),
-                    child: RichText(
-                        text: contentSpan), // Usa RichText para a menção
+                    child: RichText(text: contentSpan),
                   ),
-                  // ✅ LÓGICA PARA RESPONDER A UM COMENTÁRIO
-                  trailing: IconButton(
-                    icon: const Icon(Icons.reply, size: 16),
-                    tooltip: "Responder a este comentário",
-                    onPressed: () => widget.onReply(widget.replyDoc.id,
-                        commentData['authorId'], authorName),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // --- BOTÃO DE RESPOSTA ---
+                      IconButton(
+                        icon: const Icon(Icons.reply, size: 16),
+                        tooltip: "Responder a este comentário",
+                        onPressed: () => widget.onReply(widget.replyDoc.id,
+                            commentData['authorId'], authorName),
+                      ),
+                      // --- BOTÃO DE EXCLUSÃO (CONDICIONAL) ---
+                      if (canDeleteComment)
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              size: 16, color: Colors.redAccent),
+                          tooltip: "Excluir comentário",
+                          onPressed: () => _deleteComment(doc),
+                        ),
+                    ],
                   ),
                 );
               }).toList(),
             ),
           );
-          // ✅ FIM DA CORREÇÃO VISUAL
         },
       ),
     );
