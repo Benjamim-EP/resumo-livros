@@ -6,6 +6,7 @@ import 'package:septima_biblia/pages/community/find_friends_page.dart';
 import 'package:septima_biblia/pages/community/friends_page.dart';
 import 'package:septima_biblia/pages/community/notifications_page.dart';
 import 'package:septima_biblia/pages/community/post_detail_page.dart';
+import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/login_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/start_screen_page.dart';
@@ -41,6 +42,8 @@ class NavigationService {
         return FadeScalePageRoute(page: const FriendsPage());
       case '/notifications':
         return FadeScalePageRoute(page: const NotificationsPage());
+      case '/diary':
+        return FadeScalePageRoute(page: const DevotionalDiaryPage());
       case '/createPost':
         return FadeScalePageRoute(page: const CreatePostPage());
       default:

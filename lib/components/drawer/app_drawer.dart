@@ -73,6 +73,15 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pushNamed(context, '/notifications');
                 },
               ),
+              _buildDrawerItem(
+                icon: Icons.edit_note_outlined, // Ícone do diário
+                text: 'Diário Devocional', // Nome no menu
+                onTap: () {
+                  Navigator.pop(context); // Fecha o drawer primeiro
+                  Navigator.pushNamed(
+                      context, '/diary'); // Navega para a nova rota
+                },
+              ),
               const Divider(),
               _buildDrawerItem(
                 icon: Icons.settings_outlined,

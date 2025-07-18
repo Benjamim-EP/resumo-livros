@@ -142,7 +142,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
       const CommunityPage(),
       const LibraryPage(),
-      const DevotionalDiaryPage(),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -331,8 +330,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
         return "Comunidade";
       case 3:
         return "Biblioteca";
-      case 4:
-        return "Diário";
+
       default:
         return "Septima";
     }
@@ -624,12 +622,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
                           label: 'Biblioteca',
                           description:
                               'Explore uma vasta coleção de sermões, livros e outros recursos.'),
-                      _tutorialService.buildShowcasedBottomNavItem(
-                          key: _tutorialService.keyAbaDiario,
-                          icon: Icons.edit_note_outlined,
-                          label: 'Diário',
-                          description:
-                              'Registre suas reflexões diárias, orações e promessas.'),
                     ],
                   ),
           ),
