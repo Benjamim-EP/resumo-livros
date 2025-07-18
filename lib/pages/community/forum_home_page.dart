@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/pages/community/post_detail_page.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
@@ -143,9 +144,19 @@ class _ForumHomePageState extends State<ForumHomePage> {
     }
   }
 
+  /// Converte o valor da categoria (ex: 'apologetica') para o seu rótulo de exibição (ex: 'Apologética').
+  String _getCategoryLabel(String categoryValue) {
+    const categories = {
+      'apologetica': 'Apologética',
+      'teologia_sistematica': 'Teologia',
+      'vida_crista': 'Vida Cristã',
+      'duvidas_gerais': 'Dúvidas Gerais',
+    };
+    return categories[categoryValue] ?? 'Geral';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // A query busca todos os posts, ordenados pelos mais recentes.
     final Query query = FirebaseFirestore.instance
         .collection('posts')
         .orderBy('timestamp', descending: true);
@@ -154,7 +165,6 @@ class _ForumHomePageState extends State<ForumHomePage> {
       body: StreamBuilder<QuerySnapshot>(
         stream: query.snapshots(),
         builder: (context, snapshot) {
-          // --- Tratamento de Estados da Stream ---
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -173,95 +183,180 @@ class _ForumHomePageState extends State<ForumHomePage> {
               ),
             );
           }
-          // --- Fim do Tratamento de Estados ---
 
           final posts = snapshot.data!.docs;
 
           return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(12.0),
             itemCount: posts.length,
             itemBuilder: (context, index) {
               final post = posts[index];
               final data = post.data() as Map<String, dynamic>;
+              final theme = Theme.of(context);
 
+              // Coleta de dados do post
               final timestamp = data['timestamp'] as Timestamp?;
               final date = timestamp != null
                   ? DateFormat('dd/MM/yy').format(timestamp.toDate())
                   : '';
-
               final bibleReference = data['bibleReference'] as String?;
               final isProtected = data['isPasswordProtected'] ?? false;
+              final authorPhotoUrl = data['authorPhotoUrl'] as String?;
+              final authorName = data['authorName'] ?? 'Anônimo';
+              final title = data['title'] ?? 'Pergunta sem título';
+              final content = data['content'] as String?;
+              final category =
+                  _getCategoryLabel(data['category'] ?? 'duvidas_gerais');
+              final answerCount = (data['answerCount'] ?? 0).toString();
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  title: Text(data['title'] ?? 'Pergunta sem título'),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _handlePostTap(context, post.id, isProtected),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      // O RadialGradient cria um efeito de luz a partir de um ponto
+                      gradient: RadialGradient(
+                        // O centro do gradiente fica no canto superior esquerdo
+                        center: Alignment(-1.0, -1.0),
+                        // O raio de 1.5 faz a luz se espalhar suavemente por todo o card
+                        radius: 2,
+                        colors: [
+                          // A cor primária com opacidade MUITO baixa para um brilho sutil
+                          theme.colorScheme.primary.withOpacity(0.1),
+                          // A cor normal do card
+                          theme.cardColor,
+                        ],
+                        // O stop em 0.0 garante que o brilho comece exatamente no canto
+                        stops: const [0.0, 1.0],
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Por ${data['authorName'] ?? 'Anônimo'} • $date"),
-                        if (bibleReference != null && bibleReference.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
-                            child: Chip(
-                              avatar: Icon(Icons.menu_book,
-                                  size: 14,
-                                  color: Theme.of(context).colorScheme.primary),
-                              label: Text(bibleReference),
-                              labelStyle: const TextStyle(fontSize: 11),
-                              visualDensity: VisualDensity.compact,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer
-                                  .withOpacity(0.4),
-                            ),
+                        // --- 1. TAGS / REFERÊNCIA ---
+                        Row(
+                          children: [
+                            if (bibleReference != null &&
+                                bibleReference.isNotEmpty)
+                              _buildTagChip(theme, bibleReference,
+                                  isReference: true),
+                            if (bibleReference != null &&
+                                bibleReference.isNotEmpty)
+                              const SizedBox(width: 8),
+                            _buildTagChip(theme, category),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // --- 2. TÍTULO DA PERGUNTA ---
+                        Text(
+                          title,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.bold,
+                            height: 1.3,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+
+                        // --- 3. INFORMAÇÕES DO AUTOR ---
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundImage: (authorPhotoUrl != null &&
+                                      authorPhotoUrl.isNotEmpty)
+                                  ? NetworkImage(authorPhotoUrl)
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$authorName • $date',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- 4. SNIPPET DO CONTEÚDO ---
+                        if (content != null && content.isNotEmpty)
+                          Text(
+                            content,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.textTheme.bodyMedium?.color
+                                  ?.withOpacity(0.7),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        if (content != null && content.isNotEmpty)
+                          const SizedBox(height: 16),
+
+                        // --- 5. RODAPÉ ---
+                        Row(
+                          children: [
+                            Icon(Icons.comment_outlined,
+                                size: 16,
+                                color: theme.textTheme.bodySmall?.color),
+                            const SizedBox(width: 6),
+                            Text(answerCount,
+                                style: theme.textTheme.bodyMedium),
+                            const Spacer(),
+                            if (isProtected)
+                              Icon(Icons.lock_outline,
+                                  size: 18,
+                                  color: theme.textTheme.bodySmall?.color),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Ícone de cadeado para posts protegidos
-                      if (isProtected)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Icon(Icons.lock_outline,
-                              size: 20,
-                              color:
-                                  Theme.of(context).textTheme.bodySmall?.color),
-                        ),
-                      // Contador de respostas
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text((data['answerCount'] ?? 0).toString(),
-                              style: Theme.of(context).textTheme.titleMedium),
-                          const Text("Resp.", style: TextStyle(fontSize: 10)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  onTap: () => _handlePostTap(context, post.id, isProtected),
                 ),
-              );
+              )
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: (100 * index).ms)
+                  .slideY(begin: 0.2, curve: Curves.easeOut);
             },
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navega para a tela de criação de post
           Navigator.pushNamed(context, '/createPost');
         },
         tooltip: "Fazer uma pergunta",
         child: const Icon(Icons.add_comment_outlined),
+      ),
+    );
+  }
+
+  /// Widget auxiliar para criar as "tags" do topo do card.
+  Widget _buildTagChip(ThemeData theme, String label,
+      {bool isReference = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isReference
+            ? theme.colorScheme.primaryContainer.withOpacity(0.6)
+            : theme.colorScheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: isReference
+              ? theme.colorScheme.onPrimaryContainer
+              : theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

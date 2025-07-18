@@ -3,8 +3,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:intl/intl.dart'; // Import para formatar datas
+import 'package:intl/intl.dart';
 
 class ReplyCard extends StatefulWidget {
   final QueryDocumentSnapshot replyDoc;
@@ -13,8 +14,7 @@ class ReplyCard extends StatefulWidget {
   final String postId;
   final Function(String, List<String>) onUpvote;
   final Function(String) onMarkAsBest;
-  final Function(String, String, String)
-      onReply; // Passa (replyId, authorId, authorName)
+  final Function(String, String, String) onReply;
 
   const ReplyCard({
     super.key,
@@ -31,74 +31,114 @@ class ReplyCard extends StatefulWidget {
   State<ReplyCard> createState() => _ReplyCardState();
 }
 
-class _ReplyCardState extends State<ReplyCard> {
+class _ReplyCardState extends State<ReplyCard>
+    with SingleTickerProviderStateMixin {
   bool _showComments = false;
+
+  // --- Controladores para a Animação ---
+  late final AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true); // Faz a animação ir e voltar
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final replyData = widget.replyDoc.data() as Map<String, dynamic>;
-
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final bestAnswerId = widget.postData['bestAnswerId'] as String?;
     final isBestAnswer = widget.replyDoc.id == bestAnswerId;
-
     final upvoters = List<String>.from(replyData['upvotedBy'] ?? []);
     final userHasUpvoted =
         currentUserId != null && upvoters.contains(currentUserId);
     final commentCount = replyData['commentCount'] ?? 0;
 
-    return Card(
-      elevation: isBestAnswer ? 4 : 0.5,
+    // O widget do Card em si
+    final cardContent = Card(
+      elevation: 0, // A sombra será controlada pelo container animado
       shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: isBestAnswer ? Colors.green.shade300 : Colors.transparent,
-          width: 2,
-        ),
         borderRadius: BorderRadius.circular(12),
+        // Borda estática para a melhor resposta
+        side: BorderSide(
+          color:
+              isBestAnswer ? Colors.green.withOpacity(0.5) : Colors.transparent,
+          width: 1.5,
+        ),
       ),
-      color: theme.cardColor.withOpacity(0.9),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      margin: EdgeInsets.zero, // A margem será controlada pelo container
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        // Gradiente sutil para dar profundidade
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(-1.0, -1.0),
+            radius: 1.5,
+            colors: [
+              theme.colorScheme.primary.withOpacity(isBestAnswer ? 0.08 : 0.03),
+              theme.cardColor,
+            ],
+            stops: const [0.0, 1.0],
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cabeçalho da resposta (ListTile)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                radius: 20,
-                backgroundImage: (replyData['authorPhotoUrl'] != null &&
-                        replyData['authorPhotoUrl']!.isNotEmpty)
-                    ? NetworkImage(replyData['authorPhotoUrl']!)
-                    : null,
-              ),
-              title: Text(replyData['authorName'] ?? 'Anônimo',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: isBestAnswer
-                  ? const Text("Melhor Resposta",
-                      style: TextStyle(
-                          color: Colors.green, fontWeight: FontWeight.bold))
-                  : null,
+            // Cabeçalho da resposta
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: (replyData['authorPhotoUrl'] != null &&
+                          replyData['authorPhotoUrl']!.isNotEmpty)
+                      ? NetworkImage(replyData['authorPhotoUrl']!)
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Text(replyData['authorName'] ?? 'Anônimo',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
+                const Spacer(),
+                if (isBestAnswer)
+                  Chip(
+                    avatar:
+                        const Icon(Icons.star, color: Colors.green, size: 14),
+                    label: const Text("Melhor Resposta"),
+                    labelStyle: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green.shade800,
+                        fontWeight: FontWeight.bold),
+                    backgroundColor: Colors.green.withOpacity(0.15),
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                  )
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
             // Conteúdo da resposta
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: MarkdownBody(
-                data: replyData['content'] ?? '',
-                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                  p: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-                ),
+            MarkdownBody(
+              data: replyData['content'] ?? '',
+              styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                p: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
               ),
             ),
             const SizedBox(height: 8),
 
-            // Linha de ações
+            // Ações (Upvote, Responder, etc.)
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 TextButton.icon(
                   onPressed: () =>
@@ -110,14 +150,14 @@ class _ReplyCardState extends State<ReplyCard> {
                     size: 16,
                     color: userHasUpvoted
                         ? theme.colorScheme.primary
-                        : Colors.grey,
+                        : theme.iconTheme.color?.withOpacity(0.6),
                   ),
                   label: Text(
                     upvoters.length.toString(),
                     style: TextStyle(
                         color: userHasUpvoted
                             ? theme.colorScheme.primary
-                            : Colors.grey),
+                            : theme.iconTheme.color?.withOpacity(0.6)),
                   ),
                 ),
                 TextButton.icon(
@@ -125,21 +165,25 @@ class _ReplyCardState extends State<ReplyCard> {
                       widget.replyDoc.id,
                       replyData['authorId'],
                       replyData['authorName'] ?? 'Anônimo'),
-                  icon: const Icon(Icons.reply, size: 16),
-                  label:
-                      const Text("Responder", style: TextStyle(fontSize: 12)),
+                  icon: Icon(Icons.reply,
+                      size: 16, color: theme.iconTheme.color?.withOpacity(0.6)),
+                  label: Text("Responder",
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: theme.iconTheme.color?.withOpacity(0.6))),
                 ),
                 const Spacer(),
                 if (widget.isPostAuthor && !isBestAnswer)
                   TextButton(
                     onPressed: () => widget.onMarkAsBest(widget.replyDoc.id),
-                    child: const Text("Melhor Resposta",
-                        style: TextStyle(fontSize: 12)),
+                    child: Text("Marcar como melhor",
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.green.shade600)),
                   ),
               ],
             ),
 
-            // Seção de comentários aninhados
+            // Seção de comentários
             if (commentCount > 0)
               TextButton(
                 onPressed: () => setState(() => _showComments = !_showComments),
@@ -151,12 +195,44 @@ class _ReplyCardState extends State<ReplyCard> {
                       ?.copyWith(color: theme.colorScheme.primary),
                 ),
               ),
-
             if (_showComments) _buildCommentsSection(),
           ],
         ),
       ),
     );
+
+    // --- LÓGICA DA ANIMAÇÃO ---
+    if (isBestAnswer) {
+      return AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          // Anima o brilho da sombra (boxShadow)
+          final glowOpacity =
+              (_animationController.value * 0.4) + 0.2; // Varia entre 0.2 e 0.6
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withOpacity(glowOpacity),
+                  blurRadius: 12.0,
+                  spreadRadius: 1.0,
+                ),
+              ],
+            ),
+            child: child!,
+          );
+        },
+        child: cardContent,
+      );
+    } else {
+      // Retorna o card normal sem a animação
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: cardContent,
+      );
+    }
   }
 
   // Widget para construir a seção de comentários aninhados (Nível 2)

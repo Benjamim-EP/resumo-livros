@@ -291,25 +291,26 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return Scaffold(
       appBar: AppBar(title: const Text("Pergunta da Comunidade")),
 
-      // ✅ O CORPO DO SCAFFOLD AGORA É APENAS O FUTUREBUILDER
+      // >>>>> INÍCIO DA SUBSTITUIÇÃO DO BODY <<<<<
       body: _isLoadingPost
           ? const Center(child: CircularProgressIndicator())
           : _postData == null
-              ? const Center(
-                  child: Text(
-                      "Esta pergunta não foi encontrada. Pode ter sido excluída."))
+              ? const Center(child: Text("Esta pergunta não foi encontrada."))
               : CustomScrollView(
                   slivers: [
-                    // O cabeçalho e a lista de respostas continuam aqui
+                    // SliverToBoxAdapter permite colocar um widget normal dentro de uma CustomScrollView
                     SliverToBoxAdapter(
                       child: _buildPostHeader(_postData!, _isPostAuthor),
                     ),
+
+                    // StreamBuilder para as respostas
                     StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('posts')
                           .doc(widget.postId)
                           .collection('replies')
-                          .orderBy('timestamp')
+                          .orderBy(
+                              'timestamp') // Pode ordenar por 'upvoteCount' depois
                           .snapshots(),
                       builder: (context, repliesSnapshot) {
                         if (!repliesSnapshot.hasData) {
@@ -329,15 +330,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                 "Ninguém respondeu ainda. Seja o primeiro!"),
                           )));
                         }
+
+                        // SliverList é mais performático que ListView para listas longas
                         return _buildRepliesList(repliesSnapshot.data!.docs,
                             _postData!, _isPostAuthor);
                       },
                     ),
                   ],
                 ),
+      // >>>>> FIM DA SUBSTITUIÇÃO DO BODY <<<<<
 
-      // ✅ O COMPOSITOR DE RESPOSTA AGORA VAI PARA O bottomNavigationBar
-      // O SafeArea garante que ele não fique embaixo dos botões de sistema do Android/iOS
       bottomNavigationBar: SafeArea(
         child: _buildReplyComposer(),
       ),
@@ -354,10 +356,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final authorId = data['authorId'] as String?;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Informações do Autor
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
@@ -368,23 +371,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
             ),
             title: Text(data['authorName'] ?? 'Anônimo'),
             subtitle: Text("Postado em $date"),
-            // A ação de clique será no ListTile inteiro
             onTap: () {
-              // Navega apenas se o ID do autor existir e não for o perfil do próprio usuário logado
               if (authorId != null &&
                   authorId != FirebaseAuth.instance.currentUser?.uid) {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          PublicProfilePage(userId: authorId, initialUserData: {
-                        'userId': authorId,
-                        'nome': data['authorName'],
-                        'photoURL': data['authorPhotoUrl'],
-                        'descrição': data[
-                            'descrição'] // Pode ser nulo, a PublicProfilePage deve lidar com isso
-                      }),
-                    ));
+                        builder: (context) => PublicProfilePage(
+                                userId: authorId,
+                                initialUserData: {
+                                  'userId': authorId,
+                                  'nome': data['authorName'],
+                                  'photoURL': data['authorPhotoUrl'],
+                                })));
               }
             },
             trailing: isAuthor
@@ -396,46 +395,63 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: ListTile(
-                            leading: Icon(Icons.edit_outlined),
-                            title: Text('Editar')),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: ListTile(
-                            leading: Icon(Icons.delete_outline),
-                            title: Text('Excluir')),
-                      ),
+                      const PopupMenuItem(
+                          value: 'edit',
+                          child: ListTile(
+                              leading: Icon(Icons.edit_outlined),
+                              title: Text('Editar'))),
+                      const PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                              leading: Icon(Icons.delete_outline),
+                              title: Text('Excluir'))),
                     ],
                   )
                 : null,
           ),
           const SizedBox(height: 16),
+
+          // Título da Pergunta
           Text(data['title'] ?? '',
-              style: Theme.of(context).textTheme.headlineSmall),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
+
+          // Referência Bíblica
           if (bibleReference != null && bibleReference.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Chip(label: Text(bibleReference)),
+              padding: const EdgeInsets.only(top: 12.0),
+              child: Chip(
+                label: Text(bibleReference),
+                backgroundColor:
+                    theme.colorScheme.primaryContainer.withOpacity(0.5),
+              ),
             ),
+
+          // Conteúdo do Post
           if (data['content'] != null && data['content'].isNotEmpty) ...[
-            const Divider(height: 24),
-            MarkdownBody(data: data['content']),
+            const SizedBox(height: 16),
+            MarkdownBody(
+              data: data['content'],
+              styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: theme.textTheme.bodyLarge?.copyWith(height: 1.6)),
+            ),
           ],
+
           const Divider(height: 32),
           Text("Respostas", style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
+  // >>>>> ALTERADO PARA RETORNAR UM SliverList <<<<<
   Widget _buildRepliesList(List<QueryDocumentSnapshot> replies,
       Map<String, dynamic> postData, bool isPostAuthor) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
+          // O ReplyCard agora é usado aqui
           return ReplyCard(
             replyDoc: replies[index],
             postData: postData,
@@ -443,7 +459,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
             postId: widget.postId,
             onUpvote: upvoteReply,
             onMarkAsBest: markAsBestAnswer,
-            // ✅ CORREÇÃO AQUI: Passa os 3 parâmetros para onReply
             onReply: (replyId, authorId, authorName) {
               FocusScope.of(context).requestFocus();
               setState(() {
