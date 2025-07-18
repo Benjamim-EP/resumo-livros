@@ -1491,3 +1491,114 @@ def declineFriendRequest(req: https_fn.CallableRequest) -> dict:
     except Exception as e:
         print(f"ERRO em declineFriendRequest: {e}")
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao recusar o pedido: {e}")
+
+@firestore_fn.on_document_created(
+    document="posts/{postId}/replies/{replyId}",
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def onNewReply(event: firestore_fn.Event[firestore_fn.Change]) -> None:
+    db = get_db()
+    
+    post_id = event.params.get("postId")
+    reply_data = event.data.to_dict() if event.data else {}
+    
+    reply_author_id = reply_data.get("authorId")
+    reply_author_name = reply_data.get("authorName", "Alguém")
+
+    if not post_id or not reply_author_id: return
+
+    try:
+        post_ref = db.collection("posts").document(post_id)
+        post_doc = post_ref.get()
+        if not post_doc.exists: return
+
+        post_data = post_doc.to_dict()
+        original_post_author_id = post_data.get("authorId")
+        post_title = post_data.get("title", "sua pergunta")
+
+        if original_post_author_id == reply_author_id: return
+
+        post_author_doc = db.collection("users").document(original_post_author_id).get()
+        if not post_author_doc.exists: return
+
+        target_tokens = post_author_doc.to_dict().get("fcmTokens", [])
+        if not target_tokens: return
+
+        messages = [
+            messaging.Message(
+                notification=messaging.Notification(
+                    title="Sua pergunta foi respondida!",
+                    body=f"{reply_author_name} respondeu à sua pergunta: '{post_title[:50]}...'",
+                ),
+                data={"type": "post_reply", "screen": f"/post/{post_id}"},
+                token=token,
+            )
+            for token in target_tokens
+        ]
+
+        if messages:
+            # ✅ CORREÇÃO AQUI
+            messaging.send_each(messages)
+            print(f"Notificação de nova resposta enviada com sucesso para {original_post_author_id}.")
+
+    except Exception as e:
+        print(f"ERRO em onNewReply para post {post_id}: {e}")
+        traceback.print_exc()
+
+
+@firestore_fn.on_document_updated(
+    document="posts/{postId}",
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def onBestAnswerMarked(event: firestore_fn.Event[firestore_fn.Change]) -> None:
+    db = get_db()
+    
+    post_id = event.params.get("postId")
+    data_before = event.data.before.to_dict() if event.data.before else {}
+    data_after = event.data.after.to_dict() if event.data.after else {}
+
+    best_answer_id_before = data_before.get("bestAnswerId")
+    best_answer_id_after = data_after.get("bestAnswerId")
+
+    if best_answer_id_after is None or best_answer_id_after == best_answer_id_before: return
+
+    try:
+        post_title = data_after.get("title", "sua pergunta")
+
+        reply_ref = db.collection("posts").document(post_id).collection("replies").document(best_answer_id_after)
+        reply_doc = reply_ref.get()
+        if not reply_doc.exists: return
+
+        reply_data = reply_doc.to_dict()
+        reply_author_id = reply_data.get("authorId")
+
+        if not reply_author_id: return
+
+        reply_author_doc = db.collection("users").document(reply_author_id).get()
+        if not reply_author_doc.exists: return
+
+        target_tokens = reply_author_doc.to_dict().get("fcmTokens", [])
+        if not target_tokens: return
+            
+        messages = [
+            messaging.Message(
+                notification=messaging.Notification(
+                    title="Sua resposta foi destaque! ✨",
+                    body=f"Sua resposta para a pergunta '{post_title[:50]}...' foi marcada como a melhor!",
+                ),
+                data={"type": "best_answer", "screen": f"/post/{post_id}"},
+                token=token,
+            )
+            for token in target_tokens
+        ]
+
+        if messages:
+            # ✅ CORREÇÃO AQUI
+            messaging.send_each(messages)
+            print(f"Notificação de 'melhor resposta' enviada com sucesso para {reply_author_id}.")
+
+    except Exception as e:
+        print(f"ERRO em onBestAnswerMarked para post {post_id}: {e}")
+        traceback.print_exc()

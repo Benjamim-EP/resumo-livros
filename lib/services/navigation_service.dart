@@ -5,6 +5,7 @@ import 'package:septima_biblia/pages/community/create_post_page.dart';
 import 'package:septima_biblia/pages/community/find_friends_page.dart';
 import 'package:septima_biblia/pages/community/friends_page.dart';
 import 'package:septima_biblia/pages/community/notifications_page.dart';
+import 'package:septima_biblia/pages/community/post_detail_page.dart';
 import 'package:septima_biblia/pages/login_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
 import 'package:septima_biblia/pages/start_screen_page.dart';
@@ -14,6 +15,12 @@ import 'package:septima_biblia/services/custom_page_route.dart';
 
 class NavigationService {
   static Route<dynamic>? generateRoute(RouteSettings settings) {
+    final uri = Uri.parse(settings.name ?? '/');
+    if (uri.pathSegments.length == 2 && uri.pathSegments.first == 'post') {
+      final postId = uri.pathSegments[1];
+      return FadeScalePageRoute(page: PostDetailPage(postId: postId));
+    }
+
     // <<< 2. SUBSTITUA TUDO AQUI >>>
     switch (settings.name) {
       case '/login':
