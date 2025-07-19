@@ -67,43 +67,72 @@ class BibTokPage extends StatefulWidget {
   State<BibTokPage> createState() => _BibTokPageState();
 }
 
-class _BibTokPageState extends State<BibTokPage> {
+class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   final PageController _pageController = PageController();
 
-  // Estados para gerenciar o feed
   bool _isLoading = true;
   bool _isFetchingMore = false;
   List<Map<String, dynamic>> _feedItems = [];
 
-  // --- NOVOS ESTADOS PARA PERSISTÊNCIA ---
-  Set<String> _persistentSeenIds = {}; // IDs de chunks do Firestore
-  Set<String> _sessionSeenIds = {}; // IDs vistos apenas nesta sessão
+  Set<String> _persistentSeenIds = {};
+  Set<String> _sessionOnlySeenIds = {};
 
-  static const int _chunkSize = 10000; // Limite de IDs por documento
+  static const int _chunkSize = 10000;
+  static const String _seenQuotesPrefsKey = 'bibtok_seen_ids_cache';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance
+        .addObserver(this); // Adiciona o observador de ciclo de vida
     _initializeFeed();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _persistSessionIds(); // <<<< CHAMA A PERSISTÊNCIA AO SAIR
+    WidgetsBinding.instance.removeObserver(this); // Remove o observador
+    _persistSessionIds(); // Garante uma última tentativa de salvar ao sair
     super.dispose();
+  }
+
+  // >>>>> CORREÇÃO 2: Novo método para observar o ciclo de vida do app <<<<<
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Salva os dados sempre que o app for para o background
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      print("BibTok: App pausado. Persistindo IDs da sessão...");
+      _persistSessionIds();
+    }
   }
 
   /// Carrega os dados iniciais e busca a primeira página do feed.
   Future<void> _initializeFeed() async {
-    await _loadPersistentSeenQuotes();
+    await _loadSeenQuotesFromPrefs();
     await _fetchAndBuildFeed(isInitialLoad: true);
+    _syncWithPersistentStorage();
   }
 
-  /// Carrega TODOS os IDs já vistos do Firestore para a memória.
-  Future<void> _loadPersistentSeenQuotes() async {
+  /// Carrega a lista de IDs já vistos do cache local (SharedPreferences).
+  Future<void> _loadSeenQuotesFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seenList = prefs.getStringList(_seenQuotesPrefsKey) ?? [];
+    if (mounted) {
+      setState(() {
+        _persistentSeenIds = seenList.toSet();
+      });
+    }
+  }
+
+  /// Sincroniza o cache local com o armazenamento de longo prazo do Firestore.
+  Future<void> _syncWithPersistentStorage() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
+
+    print(
+        "BibTok: Iniciando sincronização com Firestore..."); // << SEU PRINT ESTÁ AQUI
 
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -112,28 +141,38 @@ class _BibTokPageState extends State<BibTokPage> {
           .collection('viewed_quotes_chunks')
           .get();
 
-      Set<String> allSeenIds = {};
+      Set<String> allSeenIdsFromFirestore = {};
       for (var doc in snapshot.docs) {
         final data = doc.data();
         if (data.containsKey('quotes') && data['quotes'] is List) {
-          allSeenIds.addAll(List<String>.from(data['quotes']));
+          allSeenIdsFromFirestore.addAll(List<String>.from(data['quotes']));
         }
       }
 
       if (mounted) {
         setState(() {
-          _persistentSeenIds = allSeenIds;
+          _persistentSeenIds.addAll(allSeenIdsFromFirestore);
         });
+        await _saveSeenQuotesToPrefs();
+        print(
+            "BibTok: Sincronização com Firestore concluída. Total de IDs vistos: ${_persistentSeenIds.length}");
       }
     } catch (e) {
-      print("Erro ao carregar chunks de frases vistas: $e");
+      print("Erro ao sincronizar com chunks de frases vistas: $e");
     }
+  }
+
+  /// Salva a lista completa de IDs vistos no cache local.
+  Future<void> _saveSeenQuotesToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final limitedList =
+        _persistentSeenIds.toList().reversed.take(1000).toList();
+    await prefs.setStringList(_seenQuotesPrefsKey, limitedList);
   }
 
   /// Orquestra a busca, filtragem e construção do feed.
   Future<void> _fetchAndBuildFeed({bool isInitialLoad = false}) async {
     if (_isFetchingMore) return;
-
     if (mounted) {
       setState(() {
         if (isInitialLoad)
@@ -142,48 +181,45 @@ class _BibTokPageState extends State<BibTokPage> {
           _isFetchingMore = true;
       });
     }
-
     try {
       final store = StoreProvider.of<AppState>(context, listen: false);
       final hasInteractions = store
               .state.userState.userDetails?['recentInteractions']?.isNotEmpty ??
           false;
-
       const batchSize = 10;
       List<Map<String, dynamic>> newQuotes = [];
-      Set<String> allSeenIds = {..._persistentSeenIds, ..._sessionSeenIds};
+      Set<String> allSeenIdsToFilter = {
+        ..._persistentSeenIds,
+        ..._sessionOnlySeenIds
+      };
 
       if (hasInteractions) {
         final personalizedCount = (batchSize * 0.7).round();
         final randomCount = batchSize - personalizedCount;
-
         final results = await Future.wait([
           _fetchQuotesFromBackend(
               type: 'personalized',
               count: personalizedCount,
-              seenIds: allSeenIds),
+              seenIdsToFilter: allSeenIdsToFilter),
           _fetchQuotesFromBackend(
-              type: 'random', count: randomCount, seenIds: allSeenIds),
+              type: 'random',
+              count: randomCount,
+              seenIdsToFilter: allSeenIdsToFilter),
         ]);
-
         newQuotes.addAll(results[0]);
         newQuotes.addAll(results[1]);
       } else {
         newQuotes = await _fetchQuotesFromBackend(
-            type: 'random', count: batchSize, seenIds: allSeenIds);
+            type: 'random',
+            count: batchSize,
+            seenIdsToFilter: allSeenIdsToFilter);
       }
-
-      // Filtra localmente os IDs que já foram vistos nesta sessão (dupla garantia)
-      final unseenQuotes = newQuotes
-          .where((quote) => !_sessionSeenIds.contains(quote['id']))
-          .toList();
 
       if (mounted) {
         setState(() {
-          _feedItems.addAll(unseenQuotes);
-          // Adiciona os novos IDs à lista de vistos da sessão
-          for (var quote in unseenQuotes) {
-            _sessionSeenIds.add(quote['id']);
+          _feedItems.addAll(newQuotes);
+          for (var quote in newQuotes) {
+            _sessionOnlySeenIds.add(quote['id']);
           }
         });
       }
@@ -199,29 +235,23 @@ class _BibTokPageState extends State<BibTokPage> {
     }
   }
 
-  /// Função auxiliar que chama a Cloud Function.
-  /// AGORA ELA NÃO ENVIA MAIS OS IDs VISTOS, POIS A FUNÇÃO FOI SIMPLIFICADA
+  /// Função auxiliar que chama a Cloud Function e filtra localmente.
   Future<List<Map<String, dynamic>>> _fetchQuotesFromBackend(
       {required String type,
       required int count,
-      required Set<String> seenIds}) async {
+      required Set<String> seenIdsToFilter}) async {
     try {
       final callable =
           FirebaseFunctions.instanceFor(region: "southamerica-east1")
               .httpsCallable('getQuotesFromPinecone');
-      final result = await callable.call<Map<String, dynamic>>({
-        'type': type,
-        'count': count,
-        // O backend foi simplificado e não recebe mais os seenIds
-      });
+      final result = await callable
+          .call<Map<String, dynamic>>({'type': type, 'count': count});
       final List<Map<String, dynamic>> fetchedQuotes =
           (result.data['quotes'] as List)
               .map((item) => Map<String, dynamic>.from(item))
               .toList();
-
-      // A filtragem agora acontece AQUI no frontend
       return fetchedQuotes
-          .where((quote) => !seenIds.contains(quote['id']))
+          .where((quote) => !seenIdsToFilter.contains(quote['id']))
           .toList();
     } catch (e) {
       print("Erro ao chamar getQuotesFromPinecone (type: $type): $e");
@@ -232,75 +262,78 @@ class _BibTokPageState extends State<BibTokPage> {
   /// Salva os IDs vistos na sessão para o Firestore.
   Future<void> _persistSessionIds() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null || _sessionSeenIds.isEmpty) return;
+    if (userId == null || _sessionOnlySeenIds.isEmpty) return;
+
+    // Faz uma cópia dos IDs para salvar e limpa a lista da sessão imediatamente
+    final Set<String> idsToSave = Set.from(_sessionOnlySeenIds);
+    if (mounted) {
+      setState(() {
+        _sessionOnlySeenIds.clear();
+      });
+    }
 
     print(
-        "Persistindo ${_sessionSeenIds.length} novos IDs vistos para o Firestore...");
+        "Persistindo ${idsToSave.length} novos IDs vistos para o Firestore...");
 
     try {
       final chunksRef = FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .collection('viewed_quotes_chunks');
-
-      // 1. Encontra o último chunk para ver se há espaço
       final lastChunkQuery =
           chunksRef.orderBy('createdAt', descending: true).limit(1);
       final lastChunkSnapshot = await lastChunkQuery.get();
 
       DocumentReference targetChunkRef;
-      List<dynamic> currentQuotes = [];
+      List<dynamic> currentQuotesInChunk = [];
       int newChunkId = 0;
 
       if (lastChunkSnapshot.docs.isNotEmpty) {
         final lastChunkDoc = lastChunkSnapshot.docs.first;
-        currentQuotes = List.from(lastChunkDoc.data()['quotes'] ?? []);
+        currentQuotesInChunk = List.from(lastChunkDoc.data()['quotes'] ?? []);
+        newChunkId = int.tryParse(lastChunkDoc.id) ?? 0;
 
-        if (currentQuotes.length < _chunkSize) {
+        if (currentQuotesInChunk.length < _chunkSize) {
           targetChunkRef = lastChunkDoc.reference;
-          newChunkId = int.parse(lastChunkDoc.id);
         } else {
-          // Chunk está cheio, prepara para criar um novo
-          newChunkId = int.parse(lastChunkDoc.id) + 1;
+          newChunkId++;
           targetChunkRef = chunksRef.doc(newChunkId.toString());
-          currentQuotes = []; // O novo chunk começa vazio
+          currentQuotesInChunk = [];
         }
       } else {
-        // Nenhum chunk existe, cria o primeiro
         targetChunkRef = chunksRef.doc('0');
       }
 
-      List<String> idsToProcess = _sessionSeenIds.toList();
+      List<String> idsToProcess = idsToSave.toList();
 
       while (idsToProcess.isNotEmpty) {
-        final spaceLeft = _chunkSize - currentQuotes.length;
+        final spaceLeft = _chunkSize - currentQuotesInChunk.length;
         final idsToAdd = idsToProcess.take(spaceLeft).toList();
         idsToProcess = idsToProcess.sublist(idsToAdd.length);
 
-        // Atualiza o chunk atual
-        if (targetChunkRef.path.contains(newChunkId.toString())) {
-          // Verifica se estamos no chunk correto
-          await targetChunkRef.set({
-            'quotes': FieldValue.arrayUnion(idsToAdd),
-            'count': FieldValue.increment(idsToAdd.length),
-            'createdAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        }
+        await targetChunkRef.set({
+          'quotes': FieldValue.arrayUnion(idsToAdd),
+          'count': FieldValue.increment(idsToAdd.length),
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
 
-        // Se ainda houver IDs restantes, cria um novo chunk para eles
         if (idsToProcess.isNotEmpty) {
           newChunkId++;
           targetChunkRef = chunksRef.doc(newChunkId.toString());
-          currentQuotes = []; // Reseta para o próximo loop
+          currentQuotesInChunk = [];
         }
       }
 
-      // Limpa os IDs da sessão após salvar
-      _sessionSeenIds.clear();
       print("Persistência no Firestore concluída.");
+      // Atualiza o cache principal em memória com os novos IDs salvos
+      if (mounted) {
+        setState(() {
+          _persistentSeenIds.addAll(idsToSave);
+        });
+        await _saveSeenQuotesToPrefs(); // Atualiza também o cache do dispositivo
+      }
     } catch (e) {
       print("Erro ao persistir IDs vistos no Firestore: $e");
-      // Opcional: Salvar no SharedPreferences como fallback em caso de erro
     }
   }
 
@@ -310,7 +343,7 @@ class _BibTokPageState extends State<BibTokPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_feedItems.isEmpty) {
+    if (_feedItems.isEmpty && !_isFetchingMore) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -332,9 +365,9 @@ class _BibTokPageState extends State<BibTokPage> {
     return PageView.builder(
       controller: _pageController,
       scrollDirection: Axis.vertical,
-      itemCount: _feedItems.length + 1,
+      itemCount: _feedItems.length + (_isFetchingMore ? 1 : 0),
       onPageChanged: (index) {
-        if (index >= _feedItems.length - 3) {
+        if (index >= _feedItems.length - 3 && !_isFetchingMore) {
           _fetchAndBuildFeed();
         }
       },
