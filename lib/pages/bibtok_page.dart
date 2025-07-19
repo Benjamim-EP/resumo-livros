@@ -8,8 +8,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
-// --- WIDGET DO CARD DA FRASE ---
+// =======================================================================
+// WIDGET DO CARD DA FRASE
+// =======================================================================
 class QuoteCardWidget extends StatefulWidget {
   final Map<String, dynamic> quoteData;
   const QuoteCardWidget({super.key, required this.quoteData});
@@ -19,40 +22,27 @@ class QuoteCardWidget extends StatefulWidget {
 }
 
 class _QuoteCardWidgetState extends State<QuoteCardWidget> {
-  // Estado local para otimismo na UI de curtidas
   late int _likeCount;
   late bool _isLiked;
-
   bool _isLikeProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    // Inicializa o estado local com os dados recebidos.
     _likeCount = widget.quoteData['likeCount'] ?? 0;
-
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final List<dynamic> likedBy = widget.quoteData['likedBy'] ?? [];
     _isLiked = currentUserId != null && likedBy.contains(currentUserId);
   }
 
-  /// Lida com a ação de curtir/descurtir.
   Future<void> _toggleLike() async {
     if (_isLikeProcessing) return;
-
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserId == null) {
-      // Opcional: mostrar um diálogo de login se o usuário for convidado
-      return;
-    }
+    if (currentUserId == null) return;
 
     setState(() {
       _isLikeProcessing = true;
-      if (_isLiked) {
-        _likeCount--;
-      } else {
-        _likeCount++;
-      }
+      _isLiked ? _likeCount-- : _likeCount++;
       _isLiked = !_isLiked;
     });
 
@@ -60,7 +50,6 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
       final quoteRef = FirebaseFirestore.instance
           .collection('quotes')
           .doc(widget.quoteData['id']);
-
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final freshSnap = await transaction.get(quoteRef);
         if (!freshSnap.exists) {
@@ -91,23 +80,15 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
       });
     } catch (e) {
       print("Erro ao curtir a frase: $e");
-      // Reverte a atualização otimista em caso de erro
       setState(() {
-        if (_isLiked) {
-          _likeCount++;
-        } else {
-          _likeCount--;
-        }
+        _isLiked ? _likeCount++ : _likeCount--;
         _isLiked = !_isLiked;
       });
     } finally {
-      if (mounted) {
-        setState(() => _isLikeProcessing = false);
-      }
+      if (mounted) setState(() => _isLikeProcessing = false);
     }
   }
 
-  /// Abre o modal de comentários.
   void _showCommentsModal() {
     showModalBottomSheet(
       context: context,
@@ -159,11 +140,9 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: Icon(
-                  _isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: _isLiked ? Colors.redAccent : Colors.white,
-                  size: 32,
-                ),
+                icon: Icon(_isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: _isLiked ? Colors.redAccent : Colors.white,
+                    size: 32),
                 onPressed: _toggleLike,
               ),
               Text(_likeCount.toString(),
@@ -188,21 +167,24 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
   }
 }
 
-// --- MODAL DE COMENTÁRIOS ---
+// =======================================================================
+// WIDGET DO MODAL DE COMENTÁRIOS
+// =======================================================================
 class CommentsModal extends StatefulWidget {
   final String quoteId;
   final String quoteText;
-
   const CommentsModal(
       {super.key, required this.quoteId, required this.quoteText});
-
   @override
   State<CommentsModal> createState() => _CommentsModalState();
 }
 
 class _CommentsModalState extends State<CommentsModal> {
   final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocusNode = FocusNode();
   bool _isPosting = false;
+  String? _replyingToCommentId;
+  String? _replyingToAuthorName;
 
   Future<void> _postComment() async {
     final text = _commentController.text.trim();
@@ -211,7 +193,6 @@ class _CommentsModalState extends State<CommentsModal> {
     final user = FirebaseAuth.instance.currentUser;
     final store = StoreProvider.of<AppState>(context, listen: false);
     final userDetails = store.state.userState.userDetails;
-
     if (user == null || userDetails == null) return;
 
     setState(() => _isPosting = true);
@@ -221,29 +202,33 @@ class _CommentsModalState extends State<CommentsModal> {
           FirebaseFirestore.instance.collection('quotes').doc(widget.quoteId);
       final commentsRef = quoteRef.collection('comments');
 
-      await commentsRef.add({
+      final commentData = {
         'authorId': user.uid,
         'authorName': userDetails['nome'] ?? 'Anônimo',
         'authorPhotoUrl': userDetails['photoURL'] ?? '',
         'content': text,
         'timestamp': FieldValue.serverTimestamp(),
-      });
+        if (_replyingToCommentId != null) 'parentId': _replyingToCommentId,
+      };
 
+      await commentsRef.add(commentData);
       await quoteRef.set(
           {'commentCount': FieldValue.increment(1)}, SetOptions(merge: true));
+      if (_replyingToCommentId != null) {
+        await commentsRef.doc(_replyingToCommentId).set(
+            {'replyCount': FieldValue.increment(1)}, SetOptions(merge: true));
+      }
 
       _commentController.clear();
       FocusScope.of(context).unfocus();
+      setState(() {
+        _replyingToCommentId = null;
+        _replyingToAuthorName = null;
+      });
     } catch (e) {
       print("Erro ao postar comentário: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Erro ao enviar comentário.")));
-      }
     } finally {
-      if (mounted) {
-        setState(() => _isPosting = false);
-      }
+      if (mounted) setState(() => _isPosting = false);
     }
   }
 
@@ -264,14 +249,8 @@ class _CommentsModalState extends State<CommentsModal> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Comentários sobre: "${widget.quoteText}"',
-                  style: theme.textTheme.titleMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: Text('Comentários', style: theme.textTheme.titleMedium),
               ),
               const Divider(height: 1),
               Expanded(
@@ -280,34 +259,47 @@ class _CommentsModalState extends State<CommentsModal> {
                       .collection('quotes')
                       .doc(widget.quoteId)
                       .collection('comments')
-                      .orderBy('timestamp', descending: true)
+                      .orderBy('timestamp')
                       .snapshots(),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                    if (!snapshot.hasData)
                       return const Center(child: CircularProgressIndicator());
+
+                    final allDocs = snapshot.data!.docs;
+                    final Map<String, List<DocumentSnapshot>> repliesMap = {};
+                    final List<DocumentSnapshot> topLevelComments = [];
+
+                    for (var doc in allDocs) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final parentId = data['parentId'] as String?;
+                      if (parentId == null) {
+                        topLevelComments.add(doc);
+                      } else {
+                        repliesMap.putIfAbsent(parentId, () => []).add(doc);
+                      }
                     }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+
+                    if (topLevelComments.isEmpty) {
                       return const Center(
                           child: Text("Seja o primeiro a comentar!"));
                     }
+
                     return ListView.builder(
                       controller: scrollController,
-                      itemCount: snapshot.data!.docs.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: topLevelComments.length,
                       itemBuilder: (context, index) {
-                        final comment = snapshot.data!.docs[index];
-                        final data = comment.data() as Map<String, dynamic>;
-                        return ListTile(
-                          leading: CircleAvatar(
-                            radius: 18,
-                            backgroundImage: (data['authorPhotoUrl'] != null &&
-                                    data['authorPhotoUrl'].isNotEmpty)
-                                ? NetworkImage(data['authorPhotoUrl'])
-                                : null,
-                          ),
-                          title: Text(data['authorName'] ?? 'Anônimo',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(data['content'] ?? ''),
+                        final commentDoc = topLevelComments[index];
+                        return CommentWidget(
+                          commentDoc: commentDoc,
+                          allReplies: repliesMap,
+                          onReplyTapped: (parentId, authorName) {
+                            setState(() {
+                              _replyingToCommentId = parentId;
+                              _replyingToAuthorName = authorName;
+                            });
+                            _commentFocusNode.requestFocus();
+                          },
                         );
                       },
                     );
@@ -321,26 +313,52 @@ class _CommentsModalState extends State<CommentsModal> {
                     left: 16,
                     right: 16,
                     top: 8),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _commentController,
-                        decoration: const InputDecoration(
-                            hintText: "Adicionar um comentário..."),
-                        textCapitalization: TextCapitalization.sentences,
+                    if (_replyingToCommentId != null)
+                      Row(
+                        children: [
+                          Expanded(
+                              child: Text(
+                                  "Respondendo a @_replyingToAuthorName",
+                                  style: theme.textTheme.bodySmall,
+                                  overflow: TextOverflow.ellipsis)),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            onPressed: () => setState(() {
+                              _replyingToCommentId = null;
+                              _replyingToAuthorName = null;
+                            }),
+                          )
+                        ],
                       ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            focusNode: _commentFocusNode,
+                            decoration: InputDecoration(
+                                hintText: _replyingToAuthorName == null
+                                    ? "Adicionar um comentário..."
+                                    : "Adicionar uma resposta..."),
+                            textCapitalization: TextCapitalization.sentences,
+                          ),
+                        ),
+                        IconButton(
+                          icon: _isPosting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.send),
+                          onPressed: _isPosting ? null : _postComment,
+                          color: theme.colorScheme.primary,
+                        )
+                      ],
                     ),
-                    IconButton(
-                      icon: _isPosting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.send),
-                      onPressed: _isPosting ? null : _postComment,
-                      color: theme.colorScheme.primary,
-                    )
                   ],
                 ),
               )
@@ -352,7 +370,140 @@ class _CommentsModalState extends State<CommentsModal> {
   }
 }
 
-// --- PÁGINA PRINCIPAL DO BIBTOK ---
+// =======================================================================
+// WIDGET DE UM ÚNICO COMENTÁRIO (COM SUPORTE A RESPOSTAS)
+// =======================================================================
+class CommentWidget extends StatefulWidget {
+  final DocumentSnapshot commentDoc;
+  final Map<String, List<DocumentSnapshot>> allReplies;
+  final Function(String parentId, String authorName) onReplyTapped;
+
+  const CommentWidget(
+      {super.key,
+      required this.commentDoc,
+      required this.allReplies,
+      required this.onReplyTapped});
+
+  @override
+  State<CommentWidget> createState() => _CommentWidgetState();
+}
+
+class _CommentWidgetState extends State<CommentWidget> {
+  bool _showReplies = false;
+
+  String _formatTimeAgo(DateTime time) {
+    final difference = DateTime.now().difference(time);
+    if (difference.inDays > 0) return '${difference.inDays}d';
+    if (difference.inHours > 0) return '${difference.inHours}h';
+    if (difference.inMinutes > 0) return '${difference.inMinutes}m';
+    return 'Agora';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final data = widget.commentDoc.data() as Map<String, dynamic>;
+    final authorName = data['authorName'] ?? 'Anônimo';
+    final authorPhotoUrl = data['authorPhotoUrl'] as String?;
+    final content = data['content'] ?? '';
+    final timestamp = data['timestamp'] as Timestamp?;
+    final timeAgo = timestamp != null ? _formatTimeAgo(timestamp.toDate()) : '';
+    final replies = widget.allReplies[widget.commentDoc.id] ?? [];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundImage:
+                    (authorPhotoUrl != null && authorPhotoUrl.isNotEmpty)
+                        ? NetworkImage(authorPhotoUrl)
+                        : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: theme.textTheme.bodyMedium,
+                        children: [
+                          TextSpan(
+                              text: authorName,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          const TextSpan(text: '  '),
+                          TextSpan(text: content),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(timeAgo, style: theme.textTheme.bodySmall),
+                        const SizedBox(width: 16),
+                        GestureDetector(
+                          onTap: () => widget.onReplyTapped(
+                              widget.commentDoc.id, authorName),
+                          child: Text("Responder",
+                              style: theme.textTheme.bodySmall
+                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(Icons.favorite_border,
+                  size: 18, color: theme.iconTheme.color?.withOpacity(0.5)),
+            ],
+          ),
+          if (replies.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 50.0, top: 8.0),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _showReplies = !_showReplies),
+                    child: Text(
+                        _showReplies
+                            ? "Ocultar respostas"
+                            : "Ver ${replies.length} respostas",
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(fontWeight: FontWeight.bold)),
+                  ),
+                  if (_showReplies)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Column(
+                        children: replies
+                            .map((replyDoc) => CommentWidget(
+                                  commentDoc: replyDoc,
+                                  allReplies: widget.allReplies,
+                                  onReplyTapped: widget.onReplyTapped,
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// =======================================================================
+// PÁGINA PRINCIPAL DO BIBTOK
+// =======================================================================
 class BibTokPage extends StatefulWidget {
   const BibTokPage({super.key});
 
@@ -360,6 +511,7 @@ class BibTokPage extends StatefulWidget {
   State<BibTokPage> createState() => _BibTokPageState();
 }
 
+// >>>>> CORREÇÃO 1: Adicionar o `WidgetsBindingObserver` <<<<<
 class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   final PageController _pageController = PageController();
 
@@ -376,24 +528,26 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance
+        .addObserver(this); // Adiciona o observador de ciclo de vida
     _initializeFeed();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    _persistSessionIds();
+    WidgetsBinding.instance.removeObserver(this); // Remove o observador
+    _persistSessionIds(); // Garante uma última tentativa de salvar ao sair
     super.dispose();
   }
 
+  // >>>>> CORREÇÃO 2: Novo método para observar o ciclo de vida do app <<<<<
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    // Salva os dados sempre que o app for para o background
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      print("BibTok: App pausado. Persistindo IDs da sessão...");
       _persistSessionIds();
     }
   }
@@ -401,6 +555,7 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   Future<void> _initializeFeed() async {
     await _loadSeenQuotesFromPrefs();
     await _fetchAndBuildFeed(isInitialLoad: true);
+    // A sincronização acontece em segundo plano para não atrasar a UI
     _syncWithPersistentStorage();
   }
 
@@ -408,22 +563,24 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     final prefs = await SharedPreferences.getInstance();
     final seenList = prefs.getStringList(_seenQuotesPrefsKey) ?? [];
     if (mounted) {
-      setState(() => _persistentSeenIds = seenList.toSet());
-      print(
-          "BibTok: Carregados ${_persistentSeenIds.length} IDs vistos do cache local.");
+      setState(() {
+        _persistentSeenIds = seenList.toSet();
+      });
     }
   }
 
   Future<void> _syncWithPersistentStorage() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
-    print("BibTok: Iniciando sincronização com Firestore...");
+    print("BibTok: Iniciando sincronização em segundo plano com Firestore...");
+
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .collection('viewed_quotes_chunks')
           .get();
+
       Set<String> allSeenIdsFromFirestore = {};
       for (var doc in snapshot.docs) {
         final data = doc.data();
@@ -431,8 +588,11 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
           allSeenIdsFromFirestore.addAll(List<String>.from(data['quotes']));
         }
       }
+
       if (mounted) {
-        setState(() => _persistentSeenIds.addAll(allSeenIdsFromFirestore));
+        setState(() {
+          _persistentSeenIds.addAll(allSeenIdsFromFirestore);
+        });
         await _saveSeenQuotesToPrefs();
         print(
             "BibTok: Sincronização com Firestore concluída. Total de IDs vistos: ${_persistentSeenIds.length}");
@@ -476,20 +636,19 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
         final randomCount = batchSize - personalizedCount;
         final results = await Future.wait([
           _fetchQuotesFromBackend(
-              type: 'personalized',
-              count: personalizedCount,
-              seenIds: allSeenIdsToFilter),
-          _fetchQuotesFromBackend(
-              type: 'random', count: randomCount, seenIds: allSeenIdsToFilter),
+              type: 'personalized', count: personalizedCount),
+          _fetchQuotesFromBackend(type: 'random', count: randomCount),
         ]);
         newQuotes.addAll(results[0]);
         newQuotes.addAll(results[1]);
       } else {
-        newQuotes = await _fetchQuotesFromBackend(
-            type: 'random', count: batchSize, seenIds: allSeenIdsToFilter);
+        newQuotes =
+            await _fetchQuotesFromBackend(type: 'random', count: batchSize);
       }
 
-      final unseenQuotes = newQuotes; // Filtragem agora é no backend via query
+      final unseenQuotes = newQuotes
+          .where((quote) => !allSeenIdsToFilter.contains(quote['id']))
+          .toList();
 
       if (mounted) {
         setState(() {
@@ -511,26 +670,15 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   }
 
   Future<List<Map<String, dynamic>>> _fetchQuotesFromBackend(
-      {required String type,
-      required int count,
-      required Set<String> seenIds}) async {
+      {required String type, required int count}) async {
     try {
       final callable =
           FirebaseFunctions.instanceFor(region: "southamerica-east1")
               .httpsCallable('getQuotesFromPinecone');
-      final result = await callable.call<Map<String, dynamic>>({
-        'type': type,
-        'count': count,
-      });
-
-      final List<Map<String, dynamic>> fetchedQuotes =
-          (result.data['quotes'] as List)
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList();
-
-      // A filtragem acontece no frontend para velocidade
-      return fetchedQuotes
-          .where((quote) => !seenIds.contains(quote['id']))
+      final result = await callable
+          .call<Map<String, dynamic>>({'type': type, 'count': count});
+      return (result.data['quotes'] as List)
+          .map((item) => Map<String, dynamic>.from(item))
           .toList();
     } catch (e) {
       print("Erro ao chamar getQuotesFromPinecone (type: $type): $e");
@@ -542,11 +690,12 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null || _sessionOnlySeenIds.isEmpty) return;
 
+    // Faz uma cópia dos IDs para salvar e limpa a lista da sessão imediatamente
     final Set<String> idsToSave = Set.from(_sessionOnlySeenIds);
     if (mounted) setState(() => _sessionOnlySeenIds.clear());
 
     print(
-        "Persistindo ${idsToSave.length} novos IDs vistos para o Firestore...");
+        "BibTok: Persistindo ${idsToSave.length} novos IDs vistos para o Firestore...");
 
     try {
       final chunksRef = FirebaseFirestore.instance
@@ -593,7 +742,8 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
           currentQuotesInChunk = [];
         }
       }
-      print("Persistência no Firestore concluída.");
+
+      print("BibTok: Persistência no Firestore concluída.");
       if (mounted) {
         setState(() => _persistentSeenIds.addAll(idsToSave));
         await _saveSeenQuotesToPrefs();
@@ -642,19 +792,15 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
         }
 
         final quoteData = _feedItems[index];
-        final quoteId = quoteData['id'] as String; // Pega o ID único da frase
+        final quoteId = quoteData['id'] as String;
         return Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               image: DecorationImage(
-                // --- INÍCIO DA CORREÇÃO ---
-                image: NetworkImage(
-                    // 1. Resolução reduzida para 450x800 (carregamento muito mais rápido)
-                    // 2. Usa o ID da frase como "semente" para a imagem, permitindo o cache
-                    "https://picsum.photos/seed/$quoteId/450/800"),
-                // --- FIM DA CORREÇÃO ---
+                image:
+                    NetworkImage("https://picsum.photos/seed/$quoteId/450/800"),
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
                     Colors.black.withOpacity(0.4), BlendMode.darken),
