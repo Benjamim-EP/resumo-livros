@@ -14,6 +14,7 @@ import 'package:septima_biblia/components/drawer/app_drawer.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
+import 'package:septima_biblia/pages/bibtok_page.dart';
 import 'package:septima_biblia/pages/community/community_page.dart';
 import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
@@ -139,6 +140,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
     _pages = [
       _buildTabNavigator(_userNavigatorKey, const UserPage()),
+      const BibTokPage(),
       _buildTabNavigator(_bibleNavigatorKey, const BiblePage()),
       const CommunityPage(),
       const LibraryPage(),
@@ -325,10 +327,12 @@ class _MainAppScreenState extends State<MainAppScreen> {
       case 0:
         return "Meu Perfil";
       case 1:
+        return "BibTok";
+      case 2:
         return "Bíblia";
-      case 2: // Novo índice para a Comunidade
+      case 3: // Novo índice para a Comunidade
         return "Comunidade";
-      case 3:
+      case 4:
         return "Biblioteca";
 
       default:
@@ -606,13 +610,18 @@ class _MainAppScreenState extends State<MainAppScreen> {
                           label: 'Usuário',
                           description:
                               'Acesse seu perfil, progresso e notas aqui.'),
+                      const BottomNavigationBarItem(
+                        icon: Icon(
+                            Icons.movie_filter_outlined), // Ícone sugestivo
+                        label: 'BibTok',
+                      ),
                       _tutorialService.buildShowcasedBottomNavItem(
                           key: _tutorialService.keyAbaBiblia,
                           icon: Icons.book_outlined,
                           label: 'Bíblia',
                           description:
                               'Navegue pelos livros da Bíblia e faça estudos profundos.'),
-                      BottomNavigationBarItem(
+                      const BottomNavigationBarItem(
                         icon: Icon(Icons.groups_outlined),
                         label: 'Comunidade',
                       ),

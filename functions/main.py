@@ -9,6 +9,7 @@ from firebase_functions.firestore_fn import on_document_updated, Change, Event
 from firebase_admin.firestore import transactional
 from datetime import datetime, time, timezone, timedelta
 import asyncio
+import httpx
 import traceback
 from math import pow
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -33,36 +34,15 @@ CHAT_COST = 5
 
 try:
     import bible_search_service
-    print("Módulo 'bible_search_service' importado com sucesso.")
-except ImportError as e_import:
-    bible_search_service = None
-    print(f"AVISO: Não foi possível importar 'bible_search_service': {e_import}")
-
-try:
     import sermons_service
-    print("Módulo 'sermons_service' importado com sucesso.")
-except ImportError as e_import_sermon:
-    sermons_service = None
-    print(f"AVISO: Não foi possível importar 'sermons_service': {e_import_sermon}")
-try:
     import chat_service
-    print("Módulo 'chat_service' importado com sucesso.")
-except ImportError as e_import_chat:
-    chat_service = None
-    print(f"AVISO: Não foi possível importar 'chat_service': {e_import_chat}")
-try:
     import bible_chat_service
-    print("Módulo 'bible_chat_service' importado com sucesso.")
-except ImportError as e_import_bible_chat:
-    bible_chat_service = None
-    print(f"AVISO: Não foi possível importar 'bible_chat_service': {e_import_bible_chat}")
-
-try:
     import book_search_service
-    print("Módulo 'book_search_service' importado com sucesso.")
-except ImportError as e_import_book:
-    book_search_service = None
-    print(f"AVISO: Não foi possível importar 'book_search_service': {e_import_book}")
+    print("Módulos de serviço importados com sucesso.")
+except ImportError as e_import:
+    print(f"AVISO: Falha na importação de um ou mais módulos de serviço: {e_import}")
+    # Definir como None para verificações de segurança
+    bible_search_service = sermons_service = chat_service = bible_chat_service = book_search_service = None
 
 
 # --- Inicialização do Firebase Admin ---
@@ -1772,3 +1752,111 @@ def verifyPostPassword(req: https_fn.CallableRequest) -> dict:
     except Exception as e:
         print(f"ERRO em verifyPostPassword: {e}")
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro: {e}")
+
+# --- NOVA FUNÇÃO AUXILIAR ESPECÍFICA PARA BUSCAR FRASES NO PINECONE ---
+async def _query_pinecone_quotes_async(vector: list[float], top_k: int) -> list[dict]:
+    """
+    Consulta o índice 'septima-quotes' do Pinecone de forma assíncrona.
+    """
+    # Reutiliza a inicialização de clientes do serviço de sermões (que é genérica)
+    sermons_service._initialize_sermon_clients()
+    
+    # Pega os clientes inicializados
+    httpx_client = sermons_service._httpx_client_sermons
+    pinecone_api_key = sermons_service._pinecone_api_key_sermons_loaded
+
+    if not httpx_client or not pinecone_api_key:
+        raise ConnectionError("Falha na inicialização dos clientes para consulta ao Pinecone.")
+
+    # !!! ESTA É A MUDANÇA MAIS IMPORTANTE !!!
+    # Substitua pelo endpoint EXATO do seu índice de frases 'septima-quotes'
+    PINECONE_ENDPOINT_QUOTES = "https://septima-quotes-hqija7a.svc.aped-4627-b74a.pinecone.io" 
+    
+    request_url = f"{PINECONE_ENDPOINT_QUOTES}/query"
+    headers = {
+        "Api-Key": pinecone_api_key,
+        "Content-Type": "application/json", "Accept": "application/json"
+    }
+    payload = {
+        "vector": vector, "topK": top_k,
+        "includeMetadata": True, "includeValues": False
+    }
+    
+    print(f"Consultando Pinecone (Frases) em {request_url}")
+    try:
+        response = await httpx_client.post(request_url, headers=headers, json=payload)
+        response.raise_for_status()
+        result_data = response.json()
+        return result_data.get("matches", [])
+    except httpx.HTTPStatusError as e_http:
+        print(f"Erro HTTP ao consultar Pinecone (Frases): Status {e_http.response.status_code}, Corpo: {e_http.response.text}")
+        raise ConnectionError(f"Falha na comunicação com Pinecone (Frases).")
+    except Exception as e_generic:
+        print(f"Erro inesperado durante a consulta ao Pinecone (Frases): {e_generic}")
+        raise
+
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=60
+)
+def getQuotesFromPinecone(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+
+    user_id = req.auth.uid
+    search_type = req.data.get("type", "random")
+    try:
+        count = int(req.data.get("count", 10))
+    except (ValueError, TypeError):
+        count = 10 # Se a conversão falhar, usa o padrão
+    fetch_count = count * 4
+
+    print(f"getQuotesFromPinecone chamada para User: {user_id}, Tipo: {search_type}, Contagem: {count}")
+
+    try:
+        query_vector = None
+        if search_type == "personalized":
+            user_doc = db.collection('users').document(user_id).get()
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                recent_interactions = user_data.get("recentInteractions", [])
+                if recent_interactions:
+                    profile_text = " ".join([item.get("text", "") for item in recent_interactions])
+                    if profile_text.strip():
+                        # Reutiliza o gerador de embedding (ele é genérico)
+                        query_vector = _run_async_handler_wrapper(
+                            sermons_service._generate_sermon_embedding_async(profile_text)
+                        )
+        
+        if query_vector is None:
+            print("Gerando vetor aleatório para a busca de frases.")
+            query_vector = [random.uniform(-1, 1) for _ in range(1536)]
+
+        # --- CHAMADA CORRIGIDA ---
+        # Agora chama a função auxiliar específica para o índice de frases
+        pinecone_results = _run_async_handler_wrapper(
+            _query_pinecone_quotes_async(vector=query_vector, top_k=fetch_count)
+        )
+        
+        final_quotes = []
+        for match in pinecone_results:
+            metadata = match.get("metadata", {})
+            if "text" in metadata:
+                final_quotes.append({
+                    "id": match.get("id"),
+                    "text": metadata.get("text"),
+                    "author": metadata.get("author"),
+                    "book": metadata.get("book"),
+                    "score": match.get("score", 0.0),
+                })
+        
+        print(f"Retornando {len(final_quotes)} resultados brutos do Pinecone.")
+        return {"quotes": final_quotes}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em getQuotesFromPinecone para o usuário {user_id}: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao buscar frases: {e}")
