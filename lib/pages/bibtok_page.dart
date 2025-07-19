@@ -642,14 +642,19 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
         }
 
         final quoteData = _feedItems[index];
+        final quoteId = quoteData['id'] as String; // Pega o ID único da frase
         return Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               image: DecorationImage(
+                // --- INÍCIO DA CORREÇÃO ---
                 image: NetworkImage(
-                    "https://picsum.photos/900/1600?random=${Random().nextInt(1000)}"),
+                    // 1. Resolução reduzida para 450x800 (carregamento muito mais rápido)
+                    // 2. Usa o ID da frase como "semente" para a imagem, permitindo o cache
+                    "https://picsum.photos/seed/$quoteId/450/800"),
+                // --- FIM DA CORREÇÃO ---
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
                     Colors.black.withOpacity(0.4), BlendMode.darken),
