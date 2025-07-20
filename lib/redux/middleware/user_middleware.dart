@@ -432,6 +432,11 @@ void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
           fullVerseText: verseText,
         );
 
+        // >>>>> ADIÇÃO AQUI <<<<<
+        // Alimenta o sistema de recomendação com o texto do versículo destacado.
+        await firestoreService.addRecentInteraction(userId, verseText);
+        store.dispatch(LoadUserDetailsAction());
+
         // 3c. Registra o marco de engajamento (a função helper interna garante que só será registrado uma vez).
         await _logEngagementMilestoneIfNeeded(store, 'first_highlight');
 
@@ -454,6 +459,9 @@ void Function(Store<AppState>, ToggleHighlightAction, NextDispatcher)
       store.dispatch(LoadUserHighlightsAction());
       store.dispatch(
           LoadUserTagsAction()); // Recarrega para incluir novas tags na lista de sugestões.
+      store.dispatch(LoadUserDetailsAction());
+      print(
+          'Recent Interactions: ${store.state.userState.userDetails?['recentInteractions']}');
     } catch (e) {
       // 5. Tratamento de Erro: Se qualquer passo falhar (busca do texto, escrita no Firestore),
       //    captura o erro, loga e mostra uma notificação para o usuário.
@@ -477,6 +485,14 @@ void Function(Store<AppState>, AddCommentHighlightAction, NextDispatcher)
     try {
       await firestoreService.addCommentHighlight(
           userId, action.commentHighlightData);
+
+      // >>>>> ADIÇÃO AQUI <<<<<
+      // Pega o trecho destacado e o alimenta no sistema de recomendação.
+      final String snippet =
+          action.commentHighlightData['selectedSnippet'] ?? '';
+      if (snippet.isNotEmpty) {
+        await firestoreService.addRecentInteraction(userId, snippet);
+      }
       final tags = action.commentHighlightData['tags'] as List<dynamic>?;
       if (tags != null && tags.isNotEmpty) {
         final tagList = List<String>.from(tags.map((t) => t.toString()));
@@ -486,6 +502,9 @@ void Function(Store<AppState>, AddCommentHighlightAction, NextDispatcher)
       }
       store.dispatch(LoadUserCommentHighlightsAction());
       store.dispatch(LoadUserTagsAction());
+      store.dispatch(LoadUserDetailsAction());
+      print(
+          'Recent Interactions: ${store.state.userState.userDetails?['recentInteractions']}');
     } catch (e) {
       print("Erro no middleware AddCommentHighlightAction: $e");
       // ✅ ALTERAÇÃO AQUI
@@ -893,7 +912,11 @@ void Function(Store<AppState>, SaveNoteAction, NextDispatcher) _saveNote(
     if (userId == null) return;
     try {
       await firestoreService.saveNote(userId, action.verseId, action.text);
+      // >>>>> ADIÇÃO AQUI <<<<<
+      // Alimenta o sistema de recomendação com o texto da nota do usuário.
+      await firestoreService.addRecentInteraction(userId, action.text);
       store.dispatch(LoadUserNotesAction());
+      store.dispatch(LoadUserDetailsAction());
       await _logEngagementMilestoneIfNeeded(store, 'first_note');
     } catch (e) {
       print("UserMiddleware: Erro ao salvar nota: $e");

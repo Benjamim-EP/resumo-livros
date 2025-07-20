@@ -257,6 +257,7 @@ class UserState {
   final int unreadNotificationsCount;
   final List<Map<String, dynamic>> userNotifications; // ✅ CAMPO QUE FALTAVA
   final bool isLoadingNotifications; // ✅ CAMPO QUE FALTAVA
+  final List<Map<String, dynamic>> recentInteractions;
 
   UserState({
     this.userId,
@@ -314,6 +315,7 @@ class UserState {
     this.unreadNotificationsCount = 0,
     this.userNotifications = const [], // ✅ NOVO VALOR PADRÃO
     this.isLoadingNotifications = false, // ✅ NOVO VALOR PADRÃO
+    this.recentInteractions = const [],
   });
 
   UserState copyWith({
@@ -383,6 +385,7 @@ class UserState {
     int? unreadNotificationsCount,
     List<Map<String, dynamic>>? userNotifications, // ✅ NOVO PARÂMETRO
     bool? isLoadingNotifications, // ✅ NOVO PARÂMETRO
+    List<Map<String, dynamic>>? recentInteractions,
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -483,6 +486,7 @@ class UserState {
           userNotifications ?? this.userNotifications, // ✅ MAPEAMENTO
       isLoadingNotifications:
           isLoadingNotifications ?? this.isLoadingNotifications, // ✅ MAPEAMENTO
+      recentInteractions: recentInteractions ?? this.recentInteractions,
     );
   }
 }
@@ -572,6 +576,9 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(
       userDetails: action.userDetails,
       userCoins: action.userDetails['userCoins'] as int? ?? state.userCoins,
+
+      recentInteractions: List<Map<String, dynamic>>.from(
+          action.userDetails['recentInteractions'] as List? ?? []),
 
       // >>> INÍCIO DA CORREÇÃO <<<
       // DE:

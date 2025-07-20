@@ -82,6 +82,64 @@ class FirestoreService {
     }
   }
 
+  /// Adiciona um novo texto de interação ao perfil do usuário para alimentar as recomendações.
+  /// A lógica de "fila" (adicionar no início, remover do final) é gerenciada
+  /// atomicamente por uma transação no Firestore.
+  Future<void> addRecentInteraction(
+      String userId, String interactionText) async {
+    if (interactionText.trim().isEmpty) return;
+
+    final userDocRef = _db.collection('users').doc(userId);
+    const int maxInteractions = 7; // Limite de interações a serem mantidas
+
+    try {
+      await _db.runTransaction((transaction) async {
+        final docSnapshot = await transaction.get(userDocRef);
+
+        if (!docSnapshot.exists) {
+          // Se o documento do usuário não existir por algum motivo, não faz nada.
+          print(
+              "FirestoreService: Documento do usuário $userId não encontrado para adicionar interação.");
+          return;
+        }
+
+        // Pega a lista atual de interações do documento.
+        final List<dynamic> currentInteractions =
+            docSnapshot.data()?['recentInteractions'] ?? [];
+
+        // Cria a nova entrada de interação.
+        final newInteraction = {
+          'text': interactionText,
+          'timestamp':
+              Timestamp.now(), // Usa o timestamp do cliente para a transação.
+        };
+
+        // Adiciona a nova interação no início da lista.
+        final List<dynamic> updatedInteractions = [
+          newInteraction,
+          ...currentInteractions
+        ];
+
+        // Se a lista exceder o limite, remove os itens mais antigos.
+        final finalInteractions = updatedInteractions.length > maxInteractions
+            ? updatedInteractions.sublist(0, maxInteractions)
+            : updatedInteractions;
+
+        // Atualiza o documento dentro da transação.
+        transaction
+            .update(userDocRef, {'recentInteractions': finalInteractions});
+      });
+
+      print(
+          "FirestoreService: Interação recente adicionada para o usuário $userId.");
+    } catch (e) {
+      print(
+          "FirestoreService: ERRO ao adicionar interação recente para $userId: $e");
+      // Não relançamos o erro para não quebrar a funcionalidade principal (ex: salvar uma nota).
+      // Apenas registramos o erro no log.
+    }
+  }
+
   // ✅ CORREÇÃO: IMPLEMENTAÇÃO COMPLETA DO MÉTODO QUE FALTAVA
   Future<Map<String, dynamic>?> fetchBookDetails(String bookId) async {
     try {

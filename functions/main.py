@@ -1801,8 +1801,24 @@ async def _query_pinecone_quotes_async(vector: list[float], top_k: int) -> list[
     memory=options.MemoryOption.MB_512,
     timeout_sec=60
 )
-def getQuotesFromPinecone(req: https_fn.CallableRequest) -> dict:
+def getBibTokFeed(req: https_fn.CallableRequest) -> dict:
+    """
+    (Wrapper Síncrono)
+    Busca o feed do BibTok chamando a lógica assíncrona interna.
+    """
+    # Esta função agora apenas chama o _run_async_handler_wrapper
+    # com a função async real e seus parâmetros.
+    return _run_async_handler_wrapper(
+        _getBibTokFeed_async(req)
+    )
+
+async def _getBibTokFeed_async(req: https_fn.CallableRequest) -> dict:
+    """
+    (Lógica Assíncrona Real)
+    Gera um feed de frases (BibTok) para um usuário.
+    """
     db = get_db()
+    
     if not req.auth or not req.auth.uid:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
 
@@ -1811,35 +1827,29 @@ def getQuotesFromPinecone(req: https_fn.CallableRequest) -> dict:
     try:
         count = int(req.data.get("count", 10))
     except (ValueError, TypeError):
-        count = 10 # Se a conversão falhar, usa o padrão
+        count = 10
     fetch_count = count * 4
 
-    print(f"getQuotesFromPinecone chamada para User: {user_id}, Tipo: {search_type}, Contagem: {count}")
+    print(f"BibTok Feed (async) chamada para User: {user_id}, Tipo: {search_type}, Contagem: {count}")
 
     try:
         query_vector = None
         if search_type == "personalized":
-            user_doc = db.collection('users').document(user_id).get()
+            user_doc = await asyncio.to_thread(db.collection('users').document(user_id).get)
             if user_doc.exists:
                 user_data = user_doc.to_dict()
                 recent_interactions = user_data.get("recentInteractions", [])
                 if recent_interactions:
                     profile_text = " ".join([item.get("text", "") for item in recent_interactions])
                     if profile_text.strip():
-                        # Reutiliza o gerador de embedding (ele é genérico)
-                        query_vector = _run_async_handler_wrapper(
-                            sermons_service._generate_sermon_embedding_async(profile_text)
-                        )
+                        query_vector = await sermons_service._generate_sermon_embedding_async(profile_text)
+                        print("Vetor de perfil gerado com sucesso.")
         
         if query_vector is None:
             print("Gerando vetor aleatório para a busca de frases.")
             query_vector = [random.uniform(-1, 1) for _ in range(1536)]
 
-        # --- CHAMADA CORRIGIDA ---
-        # Agora chama a função auxiliar específica para o índice de frases
-        pinecone_results = _run_async_handler_wrapper(
-            _query_pinecone_quotes_async(vector=query_vector, top_k=fetch_count)
-        )
+        pinecone_results = await _query_pinecone_quotes_async(vector=query_vector, top_k=fetch_count)
         
         final_quotes = []
         for match in pinecone_results:
@@ -1857,6 +1867,9 @@ def getQuotesFromPinecone(req: https_fn.CallableRequest) -> dict:
         return {"quotes": final_quotes}
 
     except Exception as e:
-        print(f"ERRO CRÍTICO em getQuotesFromPinecone para o usuário {user_id}: {e}")
+        print(f"ERRO CRÍTICO em _getBibTokFeed_async para o usuário {user_id}: {e}")
         traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao buscar frases: {e}")
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao buscar frases: {e}"
+        )

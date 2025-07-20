@@ -7,6 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/bibtok/quote_card_widget.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,7 +35,14 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeFeed();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final store = StoreProvider.of<AppState>(context, listen: false);
+        // Despacha a ação para buscar os detalhes do usuário.
+        // O `_initializeFeed` será chamado pelo `StoreConnector` quando os dados chegarem.
+        store.dispatch(LoadUserDetailsAction());
+      }
+    });
   }
 
   @override
@@ -110,9 +118,16 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
 
     try {
       final store = StoreProvider.of<AppState>(context, listen: false);
-      final hasInteractions = store
-              .state.userState.userDetails?['recentInteractions']?.isNotEmpty ??
-          false;
+      // >>>>> INÍCIO DA CORREÇÃO <<<<<
+      // Lê o estado MAIS ATUALIZADO diretamente da store antes de fazer a chamada.
+      final interactions =
+          store.state.userState.userDetails?['recentInteractions'];
+      final bool hasInteractions =
+          interactions != null && (interactions as List).isNotEmpty;
+
+      print(
+          "BibTokPage: Verificando interações antes de chamar o backend. hasInteractions: $hasInteractions");
+
       const batchSize = 10;
       List<Map<String, dynamic>> newQuotes = [];
       Set<String> allSeenIdsToFilter = {
@@ -121,19 +136,25 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
       };
 
       if (hasInteractions) {
+        print(
+            "BibTokPage: ESTRATÉGIA MISTA. Chamando 'personalized' e 'random'.");
         final personalizedCount = (batchSize * 0.7).round();
         final randomCount = batchSize - personalizedCount;
+
         final results = await Future.wait([
           _fetchQuotesFromBackend(
               type: 'personalized', count: personalizedCount),
           _fetchQuotesFromBackend(type: 'random', count: randomCount),
         ]);
+
         newQuotes.addAll(results[0]);
         newQuotes.addAll(results[1]);
       } else {
+        print("BibTokPage: ESTRATÉGIA ALEATÓRIA. Chamando apenas 'random'.");
         newQuotes =
             await _fetchQuotesFromBackend(type: 'random', count: batchSize);
       }
+      // >>>>> FIM DA CORREÇÃO <<<<<
 
       final unseenQuotes = newQuotes
           .where((quote) => !allSeenIdsToFilter.contains(quote['id']))
@@ -163,14 +184,19 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     try {
       final callable =
           FirebaseFunctions.instanceFor(region: "southamerica-east1")
-              .httpsCallable('getQuotesFromPinecone');
+              .httpsCallable('getBibTokFeed');
+
+      // Adicionando log para ver exatamente o que está sendo enviado
+      print("--> Chamando getBibTokFeed com: type='$type', count=$count");
+
       final result = await callable
           .call<Map<String, dynamic>>({'type': type, 'count': count});
+
       return (result.data['quotes'] as List)
           .map((item) => Map<String, dynamic>.from(item))
           .toList();
     } catch (e) {
-      print("Erro ao chamar getQuotesFromPinecone (type: $type): $e");
+      print("Erro ao chamar getBibTokFeed (type: $type): $e");
       return [];
     }
   }
@@ -243,59 +269,86 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_feedItems.isEmpty && !_isFetchingMore) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text("Não foi possível carregar o feed."),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                  onPressed: _initializeFeed,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Tentar Novamente"))
-            ],
-          ),
-        ),
-      );
-    }
-
-    return PageView.builder(
-      controller: _pageController,
-      scrollDirection: Axis.vertical,
-      itemCount: _feedItems.length + (_isFetchingMore ? 1 : 0),
-      onPageChanged: (index) {
-        if (index >= _feedItems.length - 3 && !_isFetchingMore) {
-          _fetchAndBuildFeed();
+    // >>>>> CORREÇÃO 3: Envolver a página com um StoreConnector <<<<<
+    // Este conector irá ouvir as mudanças em `userDetails`.
+    // Ele garantirá que `_initializeFeed` só seja chamado DEPOIS que os dados do usuário chegarem.
+    return StoreConnector<AppState, Map<String, dynamic>?>(
+      converter: (store) => store.state.userState.userDetails,
+      // `onInit` é chamado uma vez quando o conector é criado.
+      onInit: (store) {
+        // Se por algum motivo os detalhes já estiverem lá (navegação rápida),
+        // podemos iniciar o feed imediatamente.
+        if (store.state.userState.userDetails != null) {
+          _initializeFeed();
         }
       },
-      itemBuilder: (context, index) {
-        if (index == _feedItems.length) {
+      // `onWillChange` é chamado sempre que `userDetails` muda.
+      onWillChange: (previousViewModel, newViewModel) {
+        // Se os detalhes acabaram de chegar (eram nulos e agora não são),
+        // iniciamos o carregamento do feed.
+        if (previousViewModel == null && newViewModel != null) {
+          _initializeFeed();
+        }
+      },
+      builder: (context, userDetails) {
+        // O resto da sua UI de build vai aqui
+        if (_isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final quoteData = _feedItems[index];
-        final quoteId = quoteData['id'] as String;
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
-                image:
-                    NetworkImage("https://picsum.photos/seed/$quoteId/450/800"),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.4), BlendMode.darken),
+        if (_feedItems.isEmpty && !_isFetchingMore) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                      "Não foi possível carregar o feed. Toque para tentar novamente ou interaja com o app para obter recomendações."),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                      onPressed: _initializeFeed,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text("Tentar Novamente"))
+                ],
               ),
             ),
-            child: QuoteCardWidget(quoteData: quoteData),
-          ),
+          );
+        }
+
+        return PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          itemCount: _feedItems.length + (_isFetchingMore ? 1 : 0),
+          onPageChanged: (index) {
+            if (index >= _feedItems.length - 3 && !_isFetchingMore) {
+              _fetchAndBuildFeed();
+            }
+          },
+          itemBuilder: (context, index) {
+            if (index == _feedItems.length) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final quoteData = _feedItems[index];
+            final quoteId = quoteData['id'] as String;
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: NetworkImage(
+                        "https://picsum.photos/seed/$quoteId/450/800"),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                        Colors.black.withOpacity(0.4), BlendMode.darken),
+                  ),
+                ),
+                child: QuoteCardWidget(quoteData: quoteData),
+              ),
+            );
+          },
         );
       },
     );
