@@ -163,8 +163,20 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _feedItems.addAll(unseenQuotes);
-          for (var quote in unseenQuotes) {
-            _sessionOnlySeenIds.add(quote['id']);
+
+          // >>>>> CORREÇÃO 1: REMOVER A LÓGICA DE "VISTO" DAQUI <<<<<
+          // A lógica de adicionar aos `_seenQuotesIds` e `_sessionOnlySeenIds`
+          // será movida para o `onPageChanged` do PageView.
+
+          // Se for o carregamento inicial e tivermos itens, marcamos o PRIMEIRO item como visto.
+          if (isInitialLoad && _feedItems.isNotEmpty) {
+            final firstQuoteId = _feedItems.first['id'] as String?;
+            if (firstQuoteId != null &&
+                !_sessionOnlySeenIds.contains(firstQuoteId)) {
+              print(
+                  "BibTok: Marcando o primeiro item '${firstQuoteId.substring(0, 8)}...' como visto.");
+              _sessionOnlySeenIds.add(firstQuoteId);
+            }
           }
         });
       }
@@ -321,6 +333,30 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
           scrollDirection: Axis.vertical,
           itemCount: _feedItems.length + (_isFetchingMore ? 1 : 0),
           onPageChanged: (index) {
+            if (index < _feedItems.length) {
+              final quoteData = _feedItems[index];
+              final quoteId = quoteData['id'] as String?;
+
+              // Combina os dois conjuntos para ter a lista completa de tudo que já foi visto
+              final allCurrentlySeenIds = {
+                ..._persistentSeenIds,
+                ..._sessionOnlySeenIds
+              };
+
+              // SÓ executa a lógica se o ID for válido e NUNCA tiver sido visto antes
+              if (quoteId != null && !allCurrentlySeenIds.contains(quoteId)) {
+                print(
+                    "BibTok: Nova frase VISUALIZADA no índice $index. Marcando '${quoteId.substring(0, 8)}...' como visto.");
+                // Adiciona aos dois conjuntos para garantir consistência imediata
+                setState(() {
+                  _sessionOnlySeenIds.add(quoteId);
+                  _persistentSeenIds.add(
+                      quoteId); // Adiciona aqui também para evitar re-marcação
+                });
+              }
+            }
+
+            // Lógica de paginação
             if (index >= _feedItems.length - 3 && !_isFetchingMore) {
               _fetchAndBuildFeed();
             }
