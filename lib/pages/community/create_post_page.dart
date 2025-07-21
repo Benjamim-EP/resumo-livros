@@ -185,11 +185,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
           }
         });
       }
+    } on FirebaseFunctionsException catch (e) {
+      // <<< MUDE "catch (e)" PARA ISSO
+      print("Erro da Cloud Function ao salvar post: ${e.code} - ${e.message}");
+      if (mounted) {
+        // Mostra a mensagem de limite específica vinda do backend
+        CustomNotificationService.showError(
+            context, e.message ?? "Ocorreu um erro.");
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
-      print("Erro ao salvar post no cliente: $e");
+      print("Erro GERAL ao salvar post no cliente: $e");
       if (mounted) {
         CustomNotificationService.showError(
-            context, "Ocorreu um erro ao salvar.");
+            context, "Ocorreu um erro inesperado ao salvar.");
         setState(() => _isLoading = false);
       }
     }
