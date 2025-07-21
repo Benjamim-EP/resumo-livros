@@ -1873,3 +1873,73 @@ async def _getBibTokFeed_async(req: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro ao buscar frases: {e}"
         )
+
+@https_fn.on_call(
+    secrets=["openai-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def generateForumQuestion(req: https_fn.CallableRequest) -> dict:
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='A função deve ser chamada por um usuário autenticado.'
+        )
+
+    user_description = req.data.get("user_description")
+    if not user_description or not isinstance(user_description, str):
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'user_description' (string) é obrigatório."
+        )
+
+    try:
+        from book_search_service import _openai_client_books as openai_client
+        if openai_client is None:
+            from book_search_service import _initialize_book_clients
+            _initialize_book_clients()
+            from book_search_service import _openai_client_books as openai_client
+    except ImportError:
+         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de IA indisponível).")
+
+    system_prompt = """
+    Você é um assistente teológico especializado em criar perguntas instigantes para um fórum de discussão cristão.
+    Sua tarefa é, com base na necessidade do usuário, gerar:
+    1. Um 'title': Uma pergunta clara, aberta e convidativa para debate.
+    2. Um 'content': Um texto curto de 1 a 2 parágrafos que fornece um contexto neutro para a pergunta, preparando o terreno para a discussão sem tomar um lado.
+
+    Retorne a resposta estritamente no formato JSON: {"title": "Sua pergunta gerada aqui", "content": "Seu conteúdo de contexto aqui"}
+    """
+    user_prompt = f"Necessidade do usuário: '{user_description}'"
+
+    try:
+        print(f"Gerando pergunta para a descrição: {user_description}")
+        chat_completion = openai_client.chat.completions.create(
+            model="gpt-4.1-nano",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=400,
+            response_format={"type": "json_object"}
+        )
+
+        # ✅✅✅ CORREÇÃO APLICADA AQUI ✅✅✅
+        # A resposta já vem como um dicionário Python, não precisamos mais do json.loads()
+        parsed_response = chat_completion.choices[0].message.content
+        print(f"Resposta da OpenAI já parseada: {parsed_response}")
+        
+        # Como a resposta já é um objeto, precisamos parsear de novo para garantir que é um dict
+        # antes de retornar, pois o OpenAI pode retornar a string de um dict.
+        final_data = json.loads(parsed_response)
+
+        return {"status": "success", "data": final_data}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em generateForumQuestion: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao gerar a pergunta: {e}"
+        )
