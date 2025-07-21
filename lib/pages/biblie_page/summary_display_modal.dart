@@ -28,6 +28,7 @@ class SummaryDisplayModal extends StatelessWidget {
           ),
           child: Column(
             children: [
+              // "Handle" para indicar que o modal é arrastável
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Container(
@@ -39,6 +40,7 @@ class SummaryDisplayModal extends StatelessWidget {
                   ),
                 ),
               ),
+              // Título
               Padding(
                 padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 8.0),
                 child: Text(
@@ -50,6 +52,7 @@ class SummaryDisplayModal extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
+              // Conteúdo Markdown
               Expanded(
                 child: Markdown(
                   controller: scrollController,

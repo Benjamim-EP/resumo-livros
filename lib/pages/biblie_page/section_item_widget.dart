@@ -1,18 +1,23 @@
 // lib/pages/biblie_page/section_item_widget.dart
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_chat/section_chat_page.dart';
+import 'package:septima_biblia/pages/biblie_page/summary_display_modal.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ViewModel para conectar o SectionItemWidget aos dados do Redux
 class _SectionItemViewModel {
@@ -161,6 +166,157 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     }
   }
 
+  // ===================================
+  // <<< INÍCIO DA NOVA LÓGICA DE RESUMO >>>
+  // ===================================
+  static const String _unlockedSummariesPrefsKey = 'unlocked_bible_summaries';
+
+  Future<void> _loadAndShowSummary(
+      String sectionId, String sectionTitle) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final summaryContent = prefs.getString(sectionId);
+
+      if (summaryContent == null) {
+        CustomNotificationService.showError(
+            context, 'Resumo não encontrado no cache. Tente gerar novamente.');
+        return;
+      }
+
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => SummaryDisplayModal(
+            title: sectionTitle,
+            summaryContent: summaryContent,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Erro ao carregar resumo para $sectionId: $e");
+      if (mounted) {
+        CustomNotificationService.showError(
+            context, 'Não foi possível exibir o resumo.');
+      }
+    }
+  }
+
+  Future<void> _handleShowSummary(String sectionId, String sectionTitle) async {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    final prefs = await SharedPreferences.getInstance();
+    final unlockedSummaries =
+        prefs.getStringList(_unlockedSummariesPrefsKey) ?? [];
+
+    bool isUnlocked = isPremium || unlockedSummaries.contains(sectionId);
+
+    if (isUnlocked) {
+      final cachedSummary = prefs.getString(sectionId);
+      if (cachedSummary != null) {
+        print("Resumo encontrado no cache local. Exibindo...");
+        await _loadAndShowSummary(sectionId, sectionTitle);
+        return;
+      }
+    } else {
+      const int summaryCost = 3;
+      final currentUserCoins = store.state.userState.userCoins;
+
+      if (currentUserCoins < summaryCost) {
+        CustomNotificationService.showWarningWithAction(
+          context: context,
+          message: 'Você precisa de $summaryCost moedas para gerar um resumo.',
+          buttonText: 'Ganhar Moedas',
+          onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
+        );
+        return;
+      }
+
+      final bool? shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Gerar Resumo com IA'),
+          content: Text('Isso custará $summaryCost moedas. Deseja continuar?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldProceed != true) return;
+
+      store.dispatch(UpdateUserCoinsAction(currentUserCoins - summaryCost));
+    }
+
+    CustomNotificationService.showSuccess(
+        context, "Gerando resumo, aguarde...");
+
+    try {
+      final commentaryData =
+          await _firestoreService.getSectionCommentary(_commentaryDocId);
+      final commentaryItems = (commentaryData?['commentary'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          [];
+
+      if (commentaryItems.isEmpty) {
+        throw Exception(
+            "Comentário de Matthew Henry não encontrado para esta seção.");
+      }
+
+      final contextText = commentaryItems
+          .map((item) => (item['traducao'] as String? ?? "").trim())
+          .where((text) => text.isNotEmpty)
+          .join("\n\n");
+
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('generateCommentarySummary');
+      final result = await callable
+          .call<Map<String, dynamic>>({'context_text': contextText});
+
+      final summary = result.data['summary'] as String?;
+      if (summary == null || summary.isEmpty) {
+        throw Exception("A IA não retornou um resumo válido.");
+      }
+
+      await prefs.setString(sectionId, summary);
+
+      if (!isPremium) {
+        unlockedSummaries.add(sectionId);
+        await prefs.setStringList(
+            _unlockedSummariesPrefsKey, unlockedSummaries);
+      }
+
+      await _loadAndShowSummary(sectionId, sectionTitle);
+    } catch (e) {
+      print("Erro ao gerar resumo: $e");
+      if (mounted)
+        CustomNotificationService.showError(
+            context, "Falha ao gerar o resumo. Tente novamente.");
+      if (!isPremium) {
+        store.dispatch(
+            UpdateUserCoinsAction(store.state.userState.userCoins + 3));
+        if (mounted)
+          CustomNotificationService.showSuccess(
+              context, "Suas moedas foram devolvidas.");
+      }
+    }
+  }
+  // ===================================
+  // <<< FIM DA NOVA LÓGICA DE RESUMO >>>
+  // ===================================
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -241,33 +397,39 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                               _handlePlayRequest(TtsContentType.versesOnly),
                           splashRadius: 24,
                         ),
-                        // TextButton.icon(
-                        //   onPressed: () => widget.onShowSummaryRequest(
-                        //     _commentaryDocId,
-                        //     widget.sectionTitle,
-                        //   ),
-                        //   icon: const Icon(Icons.bolt_outlined, size: 20),
-                        //   label: const Text(
-                        //     "Resumo",
-                        //     style: TextStyle(
-                        //       fontFamily: 'Poppins',
-                        //       fontWeight: FontWeight.bold,
-                        //       fontSize: 14,
-                        //     ),
-                        //   ),
-                        //   style: TextButton.styleFrom(
-                        //     foregroundColor: theme.colorScheme.primary,
-                        //     backgroundColor:
-                        //         theme.colorScheme.primary.withOpacity(0.1),
-                        //     shape: RoundedRectangleBorder(
-                        //       borderRadius: BorderRadius.circular(20),
-                        //     ),
-                        //     padding: const EdgeInsets.symmetric(
-                        //         horizontal: 12, vertical: 8),
-                        //     visualDensity: VisualDensity.compact,
-                        //   ),
-                        // ),
-                        // const SizedBox(width: 8),
+                        // ===================================
+                        // <<< NOVO BOTÃO DE RESUMO AQUI >>>
+                        // ===================================
+                        TextButton.icon(
+                          onPressed: () => _handleShowSummary(
+                            _commentaryDocId,
+                            widget.sectionTitle,
+                          ),
+                          icon: const Icon(Icons.bolt_outlined, size: 20),
+                          label: const Text(
+                            "Resumo",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.secondary,
+                            backgroundColor:
+                                theme.colorScheme.secondary.withOpacity(0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // ===================================
+                        // <<< FIM DO NOVO BOTÃO >>>
+                        // ===================================
                         if (_isLoadingCommentary)
                           const SizedBox(
                             width: 40,
@@ -383,20 +545,16 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        // ✅ NOVA LÓGICA DE VERIFICAÇÃO
                         onTap: () {
-                          // Pega o estado do usuário do Redux
                           final store = StoreProvider.of<AppState>(context,
                               listen: false);
                           final bool isGuest =
                               store.state.userState.isGuestUser;
 
                           if (isGuest) {
-                            // Se for convidado, mostra o diálogo de login
                             showLoginRequiredDialog(context,
                                 featureName: "o chat com a IA");
                           } else {
-                            // Se estiver logado, continua para a tela de chat
                             final List<String> verseTexts =
                                 widget.verseNumbersInSection.map((vNum) {
                               if (widget.allVerseDataInChapter is List &&
@@ -424,7 +582,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             );
                           }
                         },
-
                         borderRadius: BorderRadius.circular(20),
                         splashColor: theme.colorScheme.primary,
                         highlightColor: theme.primaryColor,

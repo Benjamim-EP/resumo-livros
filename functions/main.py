@@ -30,6 +30,8 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 # >>> FIM DOS NOVOS IMPORTS <<<
 
+from openai import OpenAI
+
 print(">>>> main.py (VERSÃO LAZY INIT - CORRETA) <<<<")
 CHAT_COST = 5
 
@@ -2233,3 +2235,103 @@ def submitReplyOrComment(req: https_fn.CallableRequest) -> dict:
         print(f"ERRO em submitReplyOrComment: {e}")
         traceback.print_exc()
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao enviar: {e}")
+
+@https_fn.on_call(
+    secrets=["openai-api-key"], # Garante que a chave da API OpenAI está disponível
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256 # Memória suficiente para esta tarefa
+)
+def generateCommentarySummary(req: https_fn.CallableRequest) -> dict:
+    """
+    Recebe o texto de um comentário e gera um resumo estruturado usando a IA.
+    """
+    # 1. Validação de Autenticação e Parâmetros
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='Você precisa estar logado para gerar resumos.'
+        )
+
+    context_text = req.data.get("context_text")
+    if not context_text or not isinstance(context_text, str) or len(context_text.strip()) < 50:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'context_text' deve ser um texto com pelo menos 50 caracteres."
+        )
+
+    print(f"Gerando resumo para o usuário {req.auth.uid}...")
+
+    # 2. Montagem do Prompt (exatamente como você pediu)
+    # Colocamos o mapa de abreviações dentro da função para ser auto-contido
+    REFERENCE_ABBREVIATIONS_MAP_STRING = """
+    Genesis: gn, Exodus: ex, Leviticus: lv, Numbers: nm, Deuteronomy: dt,
+    Joshua: js, Judges: jz, Ruth: rt, 1 Samuel: 1sm, 2 Samuel: 2sm,
+    1 Kings: 1rs, 2 Kings: 2rs, 1 Chronicles: 1cr, 2 Chronicles: 2cr,
+    Ezra: ed, Nehemiah: ne, Esther: et, Job: jó, Psalms: sl, Psalm: sl,
+    Proverbs: pv, Ecclesiastes: ec, Song of Solomon: ct, Isaiah: is,
+    Jeremiah: jr, Lamentations: lm, Ezekiel: ez, Daniel: dn, Hosea: os,
+    Joel: jl, Amos: am, Obadiah: ob, Jonah: jn, Micah: mq, Nahum: na,
+    Habakkuk: hc, Zephaniah: sf, Haggai: ag, Zechariah: zc, Malachi: ml,
+    Matthew: mt, Mark: mc, Luke: lc, John: jo, Acts: at, Romans: rm,
+    1 Corinthians: 1co, 2 Corinthians: 2co, Galatians: gl, Ephesians: ef,
+    Philippians: fp, Colossians: cl, 1 Thessalonians: 1ts, 2 Thessalonians: 2ts,
+    1 Timothy: 1tm, 2 Timothy: 2tm, Titus: tt, Philemon: fm, Hebrews: hb,
+    James: tg, 1 Peter: 1pe, 2 Peter: 2pe, 1 John: 1jo, 2 John: 2jo,
+    3 John: 3jo, Jude: jd, Revelation: ap
+    """
+    
+    system_prompt = f"""
+Você é um assistente teológico especialista em sintetizar informações. Sua tarefa é resumir o texto fornecido em tópicos e subtópicos, em português, usando o formato Markdown.
+
+# Instruções de Formato
+- Use títulos de Nível 3 (###) para os tópicos principais.
+- Use negrito (**Texto**) para subtítulos ou conceitos chave.
+- Use itálico (_Referência_) para o rótulo da referência bíblica.
+- Use abreviações para as referências bíblicas conforme o mapa abaixo. NÃO invente abreviações.
+
+# Mapa de Abreviações de Referência
+{REFERENCE_ABBREVIATIONS_MAP_STRING}
+
+# Exemplo de Saída Esperada
+### 1. Desejos desordenados por objetos carnais
+- **Precaução contra desejos indevidos**
+    - _Referência_: 1co 10:6
+- **Exemplo do povo de Israel**
+    - _Referência_: nm 11:4; sl 106:14
+    - Deus lhes deu sustento, porém desejaram carne com indulgência.
+- **Advertência**
+    - Desejos carnais, quando satisfeitos, originam muitos pecados.
+
+Agora, resuma o seguinte texto:
+"""
+
+    # 3. Chamada à API da OpenAI
+    try:
+        # Reutiliza o cliente inicializado em outro serviço se possível, ou inicializa um novo
+        # (A melhor prática é ter um módulo 'ai_services.py' que gerencia o cliente)
+        openai_api_key = os.environ.get("openai-api-key")
+        if not openai_api_key: raise ValueError("Secret 'openai-api-key' não encontrado.")
+        client = OpenAI(api_key=openai_api_key)
+
+        chat_completion = client.chat.completions.create(
+            model="gpt-4.1-nano",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": context_text}
+            ],
+            temperature=0.3, # Baixa temperatura para manter o resumo factual
+            max_tokens=1024,
+        )
+
+        summary = chat_completion.choices[0].message.content.strip()
+        print("Resumo gerado com sucesso.")
+        
+        return {"status": "success", "summary": summary}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em generateCommentarySummary: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao gerar o resumo: {e}"
+        )
