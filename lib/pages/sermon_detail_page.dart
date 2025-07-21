@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart'; // Importar para listEquals e setEquals
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ import 'package:septima_biblia/consts.dart';
 import 'package:septima_biblia/consts/consts.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/pages/biblie_page/summary_display_modal.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers.dart'; // Importar SermonState
@@ -186,6 +188,140 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   String? _existingPdfPath;
   final ScrollController _scrollController = ScrollController();
   Timer? _debounce;
+
+  bool _isGeneratingSummary = false;
+  static const String _unlockedSermonSummariesKey = 'unlocked_sermon_summaries';
+
+  String _getSermonTextForSummary() {
+    if (_sermonDataFromFirestore == null) return "";
+    return _sermonDataFromFirestore!.paragraphsToDisplay.join("\n\n");
+  }
+
+  Future<void> _loadAndShowSummary(String sermonId, String sermonTitle) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final summaryContent = prefs.getString(sermonId);
+
+      if (summaryContent == null) {
+        if (mounted)
+          CustomNotificationService.showError(
+              context, 'Resumo não encontrado no cache.');
+        return;
+      }
+
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => SummaryDisplayModal(
+            title: sermonTitle,
+            summaryContent: summaryContent,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted)
+        CustomNotificationService.showError(
+            context, 'Não foi possível exibir o resumo.');
+    }
+  }
+
+  Future<void> _handleShowSummary(String sermonId, String sermonTitle) async {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    final prefs = await SharedPreferences.getInstance();
+    final unlockedSummaries =
+        prefs.getStringList(_unlockedSermonSummariesKey) ?? [];
+
+    bool isUnlocked = isPremium || unlockedSummaries.contains(sermonId);
+
+    if (isUnlocked) {
+      final cachedSummary = prefs.getString(sermonId);
+      if (cachedSummary != null) {
+        await _loadAndShowSummary(sermonId, sermonTitle);
+        return;
+      }
+    } else {
+      const int summaryCost = 3;
+      final currentUserCoins = store.state.userState.userCoins;
+
+      if (currentUserCoins < summaryCost) {
+        CustomNotificationService.showWarningWithAction(
+          context: context,
+          message: 'Você precisa de $summaryCost moedas para gerar um resumo.',
+          buttonText: 'Ganhar Moedas',
+          onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
+        );
+        return;
+      }
+
+      final bool? shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Gerar Resumo com IA'),
+          content: Text('Isso custará $summaryCost moedas. Deseja continuar?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancelar')),
+            FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Confirmar')),
+          ],
+        ),
+      );
+
+      if (shouldProceed != true) return;
+
+      store.dispatch(UpdateUserCoinsAction(currentUserCoins - summaryCost));
+    }
+
+    setState(() => _isGeneratingSummary = true);
+    CustomNotificationService.showSuccess(
+        context, "Gerando resumo, aguarde...");
+
+    try {
+      final sermonText = _getSermonTextForSummary();
+      if (sermonText.isEmpty) throw Exception("O texto do sermão está vazio.");
+
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('generateSermonSummary');
+      final result = await callable
+          .call<Map<String, dynamic>>({'sermon_text': sermonText});
+
+      final summary = result.data['summary'] as String?;
+      if (summary == null || summary.isEmpty)
+        throw Exception("A IA não retornou um resumo válido.");
+
+      await prefs.setString(sermonId, summary);
+
+      if (!isPremium) {
+        unlockedSummaries.add(sermonId);
+        await prefs.setStringList(
+            _unlockedSermonSummariesKey, unlockedSummaries);
+      }
+
+      await _loadAndShowSummary(sermonId, sermonTitle);
+    } catch (e) {
+      print("Erro ao gerar resumo do sermão: $e");
+      if (mounted)
+        CustomNotificationService.showError(
+            context, "Falha ao gerar o resumo. Tente novamente.");
+      if (!isPremium) {
+        store.dispatch(
+            UpdateUserCoinsAction(store.state.userState.userCoins + 3));
+        if (mounted)
+          CustomNotificationService.showSuccess(
+              context, "Suas moedas foram devolvidas.");
+      }
+    } finally {
+      if (mounted) setState(() => _isGeneratingSummary = false);
+    }
+  }
 
   // >>> MUDANÇA: Diálogo de acesso premium <<<
   void _showPremiumRequiredDialog(BuildContext context) {
@@ -738,6 +874,23 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
 
               // Seção de Ações do Sermão (só aparece se os dados estiverem carregados)
               if (_sermonDataFromFirestore != null) ...[
+                if (_isGeneratingSummary)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.5)),
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.bolt_outlined),
+                    tooltip: "Gerar Resumo com IA",
+                    onPressed: () => _handleShowSummary(
+                      widget.sermonGeneratedId,
+                      _sermonDataFromFirestore!.translatedTitle,
+                    ),
+                  ),
                 // Botão de PDF
                 if (_isGeneratingPdf)
                   const Padding(

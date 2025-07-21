@@ -2335,3 +2335,98 @@ Agora, resuma o seguinte texto:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro ao gerar o resumo: {e}"
         )
+    
+@https_fn.on_call(
+    secrets=["openai-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def generateSermonSummary(req: https_fn.CallableRequest) -> dict:
+    """
+    Recebe o texto de um sermão e gera um resumo estruturado usando a IA.
+    """
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='Você precisa estar logado para gerar resumos.'
+        )
+
+    sermon_text = req.data.get("sermon_text")
+    if not sermon_text or not isinstance(sermon_text, str) or len(sermon_text.strip()) < 100:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'sermon_text' deve ser um texto com pelo menos 100 caracteres."
+        )
+
+    print(f"Gerando resumo de sermão para o usuário {req.auth.uid}...")
+
+    # O prompt é idêntico ao anterior, apenas ajustamos a frase final para ser mais genérica.
+    REFERENCE_ABBREVIATIONS_MAP_STRING = """
+    Genesis: gn, Exodus: ex, Leviticus: lv, Numbers: nm, Deuteronomy: dt,
+    Joshua: js, Judges: jz, Ruth: rt, 1 Samuel: 1sm, 2 Samuel: 2sm,
+    1 Kings: 1rs, 2 Kings: 2rs, 1 Chronicles: 1cr, 2 Chronicles: 2cr,
+    Ezra: ed, Nehemiah: ne, Esther: et, Job: jó, Psalms: sl, Psalm: sl,
+    Proverbs: pv, Ecclesiastes: ec, Song of Solomon: ct, Isaiah: is,
+    Jeremiah: jr, Lamentations: lm, Ezekiel: ez, Daniel: dn, Hosea: os,
+    Joel: jl, Amos: am, Obadiah: ob, Jonah: jn, Micah: mq, Nahum: na,
+    Habakkuk: hc, Zephaniah: sf, Haggai: ag, Zechariah: zc, Malachi: ml,
+    Matthew: mt, Mark: mc, Luke: lc, John: jo, Acts: at, Romans: rm,
+    1 Corinthians: 1co, 2 Corinthians: 2co, Galatians: gl, Ephesians: ef,
+    Philippians: fp, Colossians: cl, 1 Thessalonians: 1ts, 2 Thessalonians: 2ts,
+    1 Timothy: 1tm, 2 Timothy: 2tm, Titus: tt, Philemon: fm, Hebrews: hb,
+    James: tg, 1 Peter: 1pe, 2 Peter: 2pe, 1 John: 1jo, 2 John: 2jo,
+    3 John: 3jo, Jude: jd, Revelation: ap
+    """
+    
+    system_prompt = f"""
+Você é um assistente teológico especialista em sintetizar informações. Sua tarefa é resumir o texto fornecido em tópicos e subtópicos, em português, usando o formato Markdown.
+
+# Instruções de Formato
+- Use títulos de Nível 3 (###) para os tópicos principais.
+- Use negrito (**Texto**) para subtítulos ou conceitos chave.
+- Use itálico (_Referência_) para o rótulo da referência bíblica.
+- Use abreviações para as referências bíblicas conforme o mapa abaixo. NÃO invente abreviações.
+
+# Mapa de Abreviações de Referência
+{REFERENCE_ABBREVIATIONS_MAP_STRING}
+
+# Exemplo de Saída Esperada
+### 1. Desejos desordenados por objetos carnais
+- **Precaução contra desejos indevidos**
+    - _Referência_: 1co 10:6
+- **Exemplo do povo de Israel**
+    - _Referência_: nm 11:4; sl 106:14
+    - Deus lhes deu sustento, porém desejaram carne com indulgência.
+- **Advertência**
+    - Desejos carnais, quando satisfeitos, originam muitos pecados.
+
+Agora, resuma o seguinte sermão:
+"""
+    
+    try:
+        openai_api_key = os.environ.get("openai-api-key")
+        if not openai_api_key: raise ValueError("Secret 'openai-api-key' não encontrado.")
+        client = OpenAI(api_key=openai_api_key)
+
+        chat_completion = client.chat.completions.create(
+            model="gpt-4.1-nano",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": sermon_text}
+            ],
+            temperature=0.3,
+            max_tokens=1024,
+        )
+
+        summary = chat_completion.choices[0].message.content.strip()
+        print("Resumo de sermão gerado com sucesso.")
+        
+        return {"status": "success", "summary": summary}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em generateSermonSummary: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao gerar o resumo do sermão: {e}"
+        )
