@@ -1,9 +1,10 @@
-// lib/pages/community/forum_home_page.dart
+// lib/pages/community/forum_home_page.dart (Versão Corrigida e Refatorada)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/pages/community/post_detail_page.dart';
 import 'package:septima_biblia/redux/actions/community_actions.dart';
@@ -12,7 +13,6 @@ import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_redux/flutter_redux.dart';
 
 class ForumHomePage extends StatefulWidget {
   const ForumHomePage({super.key});
@@ -35,10 +35,8 @@ class _ForumHomePageState extends State<ForumHomePage> {
   DocumentSnapshot? _lastDocument;
   final ScrollController _scrollController = ScrollController();
 
-  bool _isSearchVisible = false;
   final TextEditingController _searchController = TextEditingController();
 
-  // Mapa de categorias para construir os chips de filtro
   final List<Map<String, String>> _categories = [
     {'value': 'apologetica', 'label': 'Apologética'},
     {'value': 'teologia_sistematica', 'label': 'Teologia'},
@@ -57,18 +55,17 @@ class _ForumHomePageState extends State<ForumHomePage> {
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   void _scrollListener() {
-    // Se o usuário rolou até 90% do final da lista, carrega mais
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.9) {
       _fetchMorePosts();
     }
   }
 
-  /// Constrói a query do Firestore dinamicamente com base no filtro selecionado.
   Query _buildQuery() {
     Query query = FirebaseFirestore.instance
         .collection('posts')
@@ -81,8 +78,11 @@ class _ForumHomePageState extends State<ForumHomePage> {
     return query;
   }
 
-  /// Busca a primeira página de posts.
   Future<void> _fetchInitialPosts() async {
+    // Ao buscar os posts iniciais, limpamos qualquer busca semântica anterior.
+    StoreProvider.of<AppState>(context, listen: false)
+        .dispatch(ClearCommunitySearchResultsAction());
+
     try {
       Query query = _buildQuery().limit(_postsPerPage);
       final querySnapshot = await query.get();
@@ -102,17 +102,13 @@ class _ForumHomePageState extends State<ForumHomePage> {
     }
   }
 
-  /// Busca as páginas seguintes de posts.
   Future<void> _fetchMorePosts() async {
     if (_isLoadingMore || !_hasMore) return;
-
     setState(() => _isLoadingMore = true);
-
     try {
       Query query =
           _buildQuery().startAfterDocument(_lastDocument!).limit(_postsPerPage);
       final querySnapshot = await query.get();
-
       if (mounted) {
         setState(() {
           _posts.addAll(querySnapshot.docs);
@@ -129,10 +125,8 @@ class _ForumHomePageState extends State<ForumHomePage> {
     }
   }
 
-  /// Reseta a lista e busca do zero quando um filtro é alterado.
   void _onFilterChanged(String? newCategory) {
     if (_selectedCategory == newCategory) return;
-
     setState(() {
       _selectedCategory = newCategory;
       _posts = [];
@@ -140,11 +134,23 @@ class _ForumHomePageState extends State<ForumHomePage> {
       _hasMore = true;
       _isLoading = true;
     });
-
     _fetchInitialPosts();
   }
 
-  /// Função principal que gerencia o toque em um post.
+  void _triggerSearch() {
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      FocusScope.of(context).unfocus();
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(SearchCommunityPostsAction(query));
+    } else {
+      // Se a busca for vazia, limpa os resultados e volta para a lista normal
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(ClearCommunitySearchResultsAction());
+    }
+  }
+
+  // (O resto das suas funções de helper como _handlePostTap, _getCategoryLabel, etc., permanecem iguais)
   Future<void> _handlePostTap(
       BuildContext context, String postId, bool isProtected) async {
     if (!isProtected) {
@@ -166,7 +172,6 @@ class _ForumHomePageState extends State<ForumHomePage> {
     }
   }
 
-  /// Exibe um AlertDialog para o usuário inserir a senha.
   Future<String?> _showPasswordDialog(BuildContext context) {
     final passwordController = TextEditingController();
     return showDialog<String>(
@@ -195,7 +200,6 @@ class _ForumHomePageState extends State<ForumHomePage> {
     );
   }
 
-  /// Chama a Cloud Function para verificar a senha e lida com o resultado.
   Future<void> _verifyPassword(
       BuildContext context, String postId, String password) async {
     showDialog(
@@ -237,7 +241,6 @@ class _ForumHomePageState extends State<ForumHomePage> {
     }
   }
 
-  /// Converte o valor da categoria para o seu rótulo de exibição.
   String _getCategoryLabel(String categoryValue) {
     final category = _categories.firstWhere(
         (cat) => cat['value'] == categoryValue,
@@ -245,278 +248,98 @@ class _ForumHomePageState extends State<ForumHomePage> {
     return category['label']!;
   }
 
-  void _triggerSearch() {
-    final query = _searchController.text.trim();
-    if (query.isNotEmpty) {
-      FocusScope.of(context).unfocus(); // Esconde o teclado
-      StoreProvider.of<AppState>(context, listen: false)
-          .dispatch(SearchCommunityPostsAction(query));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _posts.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Text(
-                            _selectedCategory == null
-                                ? "Nenhuma pergunta foi feita ainda.\nSeja o primeiro!"
-                                : "Nenhuma pergunta encontrada nesta categoria.",
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(12.0),
-                        itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _posts.length) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24.0),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          final post = _posts[index];
-                          final data = post.data() as Map<String, dynamic>;
-                          final theme = Theme.of(context);
-                          final timestamp = data['timestamp'] as Timestamp?;
-                          final date = timestamp != null
-                              ? DateFormat('dd/MM/yy')
-                                  .format(timestamp.toDate())
-                              : '';
-                          final bibleReference =
-                              data['bibleReference'] as String?;
-                          final isProtected =
-                              data['isPasswordProtected'] ?? false;
-                          final authorPhotoUrl =
-                              data['authorPhotoUrl'] as String?;
-                          final authorName = data['authorName'] ?? 'Anônimo';
-                          final title = data['title'] ?? 'Pergunta sem título';
-                          final content = data['content'] as String?;
-                          final category = _getCategoryLabel(
-                              data['category'] ?? 'duvidas_gerais');
-                          final answerCount =
-                              (data['answerCount'] ?? 0).toString();
+      body: StoreConnector<AppState, CommunitySearchState>(
+        converter: (store) => store.state.communitySearchState,
+        builder: (context, searchState) {
+          final bool isSearchActive =
+              searchState.currentQuery.isNotEmpty || searchState.isLoading;
 
-                          return Card(
-                            elevation: 2,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                              onTap: () =>
-                                  _handlePostTap(context, post.id, isProtected),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: RadialGradient(
-                                    center: const Alignment(-1.0, -1.0),
-                                    radius: 1.5,
-                                    colors: [
-                                      theme.colorScheme.primary
-                                          .withOpacity(0.1),
-                                      theme.cardColor,
-                                    ],
-                                    stops: const [0.0, 1.0],
-                                  ),
-                                ),
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        if (bibleReference != null &&
-                                            bibleReference.isNotEmpty)
-                                          _buildTagChip(theme, bibleReference,
-                                              isReference: true),
-                                        if (bibleReference != null &&
-                                            bibleReference.isNotEmpty)
-                                          const SizedBox(width: 8),
-                                        _buildTagChip(theme, category),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      title,
-                                      style:
-                                          theme.textTheme.titleLarge?.copyWith(
-                                        fontFamily: 'Poppins',
-                                        fontWeight: FontWeight.bold,
-                                        height: 1.3,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 12,
-                                          backgroundImage:
-                                              (authorPhotoUrl != null &&
-                                                      authorPhotoUrl.isNotEmpty)
-                                                  ? NetworkImage(authorPhotoUrl)
-                                                  : null,
-                                          child: (authorPhotoUrl == null ||
-                                                  authorPhotoUrl.isEmpty)
-                                              ? Text(authorName.isNotEmpty
-                                                  ? authorName[0]
-                                                  : '?')
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          '$authorName • $date',
-                                          style: theme.textTheme.bodySmall,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    if (content != null && content.isNotEmpty)
-                                      Text(
-                                        content,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                          color: theme
-                                              .textTheme.bodyMedium?.color
-                                              ?.withOpacity(0.7),
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    if (content != null && content.isNotEmpty)
-                                      const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.comment_outlined,
-                                            size: 16,
-                                            color: theme
-                                                .textTheme.bodySmall?.color),
-                                        const SizedBox(width: 6),
-                                        Text(answerCount,
-                                            style: theme.textTheme.bodyMedium),
-                                        const Spacer(),
-                                        if (isProtected)
-                                          Icon(Icons.lock_outline,
-                                              size: 18,
-                                              color: theme
-                                                  .textTheme.bodySmall?.color),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                              .animate()
-                              .fadeIn(
-                                  duration: 400.ms,
-                                  delay: (100 * (index % _postsPerPage)).ms)
-                              .slideY(begin: 0.2, curve: Curves.easeOut);
-                        },
-                      ),
-          ),
-        ],
+          return Column(
+            children: [
+              // A nova barra de busca e filtros
+              _buildSearchAndFilterBar(),
+
+              // Conteúdo principal que alterna entre busca e lista padrão
+              Expanded(
+                child: isSearchActive
+                    ? _buildSearchResults(searchState)
+                    : _buildInitialPostList(),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/createPost');
-        },
+        onPressed: () => Navigator.pushNamed(context, '/createPost'),
         tooltip: "Fazer uma pergunta",
         child: const Icon(Icons.add_comment_outlined),
       ),
     );
   }
 
-  /// Constrói a barra de filtros rolável com chips de categoria.
-  Widget _buildFilterBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      decoration: BoxDecoration(
-        border: Border(
-            bottom:
-                BorderSide(color: Theme.of(context).dividerColor, width: 0.5)),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.search),
-              tooltip: "Buscar Perguntas",
-              onPressed: () {
-                setState(() {
-                  _isSearchVisible = !_isSearchVisible;
-                  // Se a busca for escondida, limpa os resultados
-                  if (!_isSearchVisible) {
-                    _searchController.clear();
-                    StoreProvider.of<AppState>(context, listen: false)
-                        .dispatch(ClearCommunitySearchResultsAction());
-                  }
-                });
-              },
-            ),
-            const SizedBox(width: 8),
-            FilterChip(
-              label: const Text('Todos'),
-              selected: _selectedCategory == null,
-              onSelected: (isSelected) {
-                _onFilterChanged(null);
-              },
-            ),
-            const SizedBox(width: 8),
-            ..._categories.map((category) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: FilterChip(
-                  label: Text(category['label']!),
-                  selected: _selectedCategory == category['value'],
-                  onSelected: (isSelected) {
-                    final newCategory = isSelected ? category['value'] : null;
-                    _onFilterChanged(newCategory);
-                  },
-                ),
-              );
-            }).toList(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
+  /// Constrói a nova barra de busca e filtros.
+  Widget _buildSearchAndFilterBar() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: TextField(
-        controller: _searchController,
-        autofocus: true,
-        decoration: InputDecoration(
-          hintText: "Buscar por tema ou palavra-chave...",
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: _triggerSearch,
+      child: Row(
+        children: [
+          // Ícone de Lupa
+          Icon(Icons.search, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+
+          // Campo de Texto para Busca
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: "Buscar no fórum...",
+                border: InputBorder.none, // Aparência mais limpa
+                isDense: true,
+              ),
+              onSubmitted: (_) => _triggerSearch(),
+              textInputAction: TextInputAction.search,
+            ),
           ),
-        ),
-        onSubmitted: (_) => _triggerSearch(),
+
+          // Menu Suspenso de Filtros
+          PopupMenuButton<String?>(
+            icon: Icon(Icons.filter_list, color: theme.iconTheme.color),
+            tooltip: "Filtrar por Categoria",
+            onSelected: _onFilterChanged,
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem<String?>(
+                  value: null, // Valor nulo para "Todos"
+                  child: Text("Todas as Categorias"),
+                ),
+                ..._categories.map((category) {
+                  return PopupMenuItem<String?>(
+                    value: category['value'],
+                    child: Text(category['label']!),
+                  );
+                }).toList(),
+              ];
+            },
+          ),
+          // Botão para limpar o filtro de categoria
+          if (_selectedCategory != null)
+            IconButton(
+              icon: Icon(Icons.clear,
+                  size: 20, color: theme.iconTheme.color?.withOpacity(0.7)),
+              tooltip: "Limpar Filtro",
+              onPressed: () => _onFilterChanged(null),
+            ),
+        ],
       ),
     );
   }
 
-  // <<< NOVO WIDGET PARA EXIBIR OS RESULTADOS DA BUSCA >>>
   Widget _buildSearchResults(CommunitySearchState state) {
+    // ... (seu código existente para _buildSearchResults, está perfeito)
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -580,7 +403,154 @@ class _ForumHomePageState extends State<ForumHomePage> {
     );
   }
 
-  /// Widget auxiliar para criar as "tags" no topo do card.
+  Widget _buildInitialPostList() {
+    // ... (seu código existente para _buildInitialPostList, está perfeito)
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_posts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text(
+            _selectedCategory == null
+                ? "Nenhuma pergunta foi feita ainda.\nSeja o primeiro!"
+                : "Nenhuma pergunta encontrada nesta categoria.",
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(12.0),
+      itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _posts.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final post = _posts[index];
+        final data = post.data() as Map<String, dynamic>;
+        final theme = Theme.of(context);
+        final timestamp = data['timestamp'] as Timestamp?;
+        final date = timestamp != null
+            ? DateFormat('dd/MM/yy').format(timestamp.toDate())
+            : '';
+        final bibleReference = data['bibleReference'] as String?;
+        final isProtected = data['isPasswordProtected'] ?? false;
+        final authorPhotoUrl = data['authorPhotoUrl'] as String?;
+        final authorName = data['authorName'] ?? 'Anônimo';
+        final title = data['title'] ?? 'Pergunta sem título';
+        final content = data['content'] as String?;
+        final category =
+            _getCategoryLabel(data['category'] ?? 'duvidas_gerais');
+        final answerCount = (data['answerCount'] ?? 0).toString();
+
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => _handlePostTap(context, post.id, isProtected),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(-1.0, -1.0),
+                  radius: 1.5,
+                  colors: [
+                    theme.colorScheme.primary.withOpacity(0.1),
+                    theme.cardColor,
+                  ],
+                  stops: const [0.0, 1.0],
+                ),
+              ),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (bibleReference != null && bibleReference.isNotEmpty)
+                        _buildTagChip(theme, bibleReference, isReference: true),
+                      if (bibleReference != null && bibleReference.isNotEmpty)
+                        const SizedBox(width: 8),
+                      _buildTagChip(theme, category),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundImage: (authorPhotoUrl != null &&
+                                authorPhotoUrl.isNotEmpty)
+                            ? NetworkImage(authorPhotoUrl)
+                            : null,
+                        child: (authorPhotoUrl == null ||
+                                authorPhotoUrl.isEmpty)
+                            ? Text(authorName.isNotEmpty ? authorName[0] : '?')
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$authorName • $date',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (content != null && content.isNotEmpty)
+                    Text(
+                      content,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  if (content != null && content.isNotEmpty)
+                    const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.comment_outlined,
+                          size: 16, color: theme.textTheme.bodySmall?.color),
+                      const SizedBox(width: 6),
+                      Text(answerCount, style: theme.textTheme.bodyMedium),
+                      const Spacer(),
+                      if (isProtected)
+                        Icon(Icons.lock_outline,
+                            size: 18, color: theme.textTheme.bodySmall?.color),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )
+            .animate()
+            .fadeIn(duration: 400.ms, delay: (100 * (index % _postsPerPage)).ms)
+            .slideY(begin: 0.2, curve: Curves.easeOut);
+      },
+    );
+  }
+
   Widget _buildTagChip(ThemeData theme, String label,
       {bool isReference = false}) {
     return Container(

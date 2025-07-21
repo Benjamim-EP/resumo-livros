@@ -143,7 +143,7 @@ async def perform_community_search_async(user_query: str, top_k: int = 20) -> li
                 "authorName": metadata.get("authorName"),
                 "content_preview": metadata.get("content_preview"),
             })
-        
+        print('resultados formatados: ',formatted_results)
         return formatted_results
     except Exception as e:
         print(f"ERRO CRÍTICO em perform_community_search_async: {e}")
