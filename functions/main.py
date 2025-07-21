@@ -8,6 +8,8 @@ from firebase_functions import https_fn, options,pubsub_fn, firestore_fn, schedu
 from firebase_functions.firestore_fn import on_document_updated, Change, Event
 from firebase_admin.firestore import transactional
 from datetime import datetime, time, timezone, timedelta
+from firebase_admin import firestore
+
 import asyncio
 import httpx
 import traceback
@@ -1663,6 +1665,7 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
     user_id = req.auth.uid
     post_id = req.data.get("postId")
     data = req.data
+    is_anonymous = data.get("isAnonymous", False)
     
     post_data = {
         "title": data.get("title"),
@@ -1740,14 +1743,23 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
 
             user_doc = db.collection('users').document(user_id).get()
             user_data = user_doc.to_dict() or {}
+            post_data["authorId"] = user_id # post_data["authorId"] = user_id # <<< SEMPRE SALVA O ID REAL
+
+            # <<< INÍCIO DA MUDANÇA: Define nome e foto com base na flag >>>
+            if is_anonymous:
+                post_data["authorName"] = "Autor Anônimo"
+                post_data["authorPhotoUrl"] = "" # URL vazia para usar o avatar padrão
+            else:
+                post_data["authorName"] = user_data.get('nome', 'Anônimo')
+                post_data["authorPhotoUrl"] = user_data.get('photoURL', '')
+            # <<< FIM DA MUDANÇA >>>
+            
             post_data.update({
-                "authorId": user_id,
-                "authorName": user_data.get('nome', 'Anônimo'),
-                "authorPhotoUrl": user_data.get('photoURL', ''),
                 "timestamp": firestore.SERVER_TIMESTAMP,
                 "answerCount": 0,
                 "upvoteCount": 0,
             })
+            
             new_post_ref = db.collection('posts').add(post_data)
             new_post_id = new_post_ref[1].id
             history_ref.document(new_post_id).set({"createdAt": firestore.SERVER_TIMESTAMP})
@@ -2128,3 +2140,96 @@ def semanticCommunitySearch(request: https_fn.CallableRequest) -> dict:
     except Exception as e:
         print(f"Erro em semanticCommunitySearch: {e}")
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro ao realizar a busca na comunidade.")
+    
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256 
+)
+def submitReplyOrComment(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+    
+    current_user_id = req.auth.uid
+    post_id = req.data.get("postId")
+    content = req.data.get("content")
+    
+    # Parâmetros opcionais para comentários aninhados (Nível 2)
+    parent_reply_id = req.data.get("parentReplyId") 
+    replying_to_user_id = req.data.get("replyingToUserId")
+    replying_to_user_name = req.data.get("replyingToUserName")
+
+    if not post_id or not content:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="postId e content são obrigatórios.")
+
+    try:
+        post_ref = db.collection('posts').document(post_id)
+        
+        @transactional
+        def _add_reply_or_comment_transaction(transaction):
+            post_docs = list(transaction.get(post_ref))
+            post_doc = post_docs[0] if post_docs else None
+            
+            if not post_doc or not post_doc.exists:
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="A pergunta original não foi encontrada.")
+            
+            post_data = post_doc.to_dict()
+            original_author_id = post_data.get("authorId")
+            is_post_anonymous = post_data.get("isAnonymous", False)
+
+            user_ref = db.collection('users').document(current_user_id)
+            user_docs = list(transaction.get(user_ref))
+            user_doc = user_docs[0] if user_docs else None
+            user_data = user_doc.to_dict() if user_doc and user_doc.exists else {}
+
+            # Monta os dados base do autor
+            author_data = {
+                'authorId': current_user_id,
+                'content': content,
+                'timestamp': firestore.SERVER_TIMESTAMP,
+            }
+            
+            # A LÓGICA CENTRAL DO ANONIMATO
+            if is_post_anonymous and current_user_id == original_author_id:
+                author_data['authorName'] = "Autor Anônimo"
+                author_data['authorPhotoUrl'] = ""
+            else:
+                author_data['authorName'] = user_data.get('nome', 'Anônimo')
+                author_data['authorPhotoUrl'] = user_data.get('photoURL', '')
+            
+            # DECIDE ONDE SALVAR (RESPOSTA NÍVEL 1 ou COMENTÁRIO NÍVEL 2)
+            if parent_reply_id:
+                # É um comentário aninhado (Nível 2)
+                comment_data = {**author_data} # Copia os dados do autor
+                comment_data.update({
+                    'replyingToUserId': replying_to_user_id,
+                    'replyingToUserName': replying_to_user_name,
+                })
+                
+                reply_ref = post_ref.collection('replies').document(parent_reply_id)
+                new_comment_ref = reply_ref.collection('comments').document()
+                
+                transaction.set(new_comment_ref, comment_data)
+                transaction.update(reply_ref, {'commentCount': firestore.firestore.Increment(1)})
+                
+            else:
+                # É uma resposta principal (Nível 1)
+                reply_data = {**author_data}
+                reply_data.update({
+                    'upvoteCount': 0,
+                    'upvotedBy': [],
+                    'commentCount': 0,
+                })
+                
+                new_reply_ref = post_ref.collection('replies').document()
+                transaction.set(new_reply_ref, reply_data)
+                transaction.update(post_ref, {'answerCount': firestore.firestore.Increment(1)})
+
+        _add_reply_or_comment_transaction(db.transaction())
+        return {"status": "success", "message": "Enviado com sucesso!"}
+
+    except Exception as e:
+        print(f"ERRO em submitReplyOrComment: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao enviar: {e}")

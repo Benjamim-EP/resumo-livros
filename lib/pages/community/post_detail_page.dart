@@ -1,4 +1,4 @@
-// lib/pages/community/post_detail_page.dart
+// lib/pages/community/post_detail_page.dart (Versão Final com Anonimato)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -24,85 +24,21 @@ class _PostDetailPageState extends State<PostDetailPage> {
   final _replyController = TextEditingController();
   bool _isReplying = false;
 
-  // Estados para armazenar os dados do post e do autor
   Map<String, dynamic>? _postData;
   bool _isPostAuthor = false;
   bool _isLoadingPost = true;
 
-  String? _replyingToId; // ID da resposta pai à qual estamos respondendo
-  String? _replyingToName; // Nome do autor da resposta pai
+  String? _replyingToId;
+  String? _replyingToName;
   String? _replyingToUserId;
 
   @override
   void initState() {
     super.initState();
-    _loadPostData(); // Carrega os dados do post apenas uma vez
+    _loadPostData();
   }
 
-  // >>>>> NOVA FUNÇÃO PARA DELETAR O POST <<<<<
-  Future<void> _deletePost() async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("Confirmar Exclusão"),
-        content: const Text(
-            "Tem certeza que deseja excluir esta pergunta? Esta ação não pode ser desfeita."),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text("Cancelar")),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text("Excluir",
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    // Mostra um indicador de loading
-    showDialog(
-        context: context,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-        barrierDismissible: false);
-
-    try {
-      final functions =
-          FirebaseFunctions.instanceFor(region: "southamerica-east1");
-      final callable = functions.httpsCallable('deletePost');
-      await callable.call({'postId': widget.postId});
-
-      // Se a chamada foi bem-sucedida, o backend fez a exclusão.
-      // Agora, lidamos com a UI.
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Fecha o loading
-        Navigator.of(context).pop(); // Fecha a PostDetailPage
-
-        // Mostra a notificação de sucesso na tela anterior (ForumHomePage)
-        Future.microtask(() {
-          if (navigatorKey.currentContext != null) {
-            CustomNotificationService.showSuccess(
-                navigatorKey.currentContext!, "Pergunta excluída com sucesso.");
-          }
-        });
-      }
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Fecha o loading
-        CustomNotificationService.showError(
-            context, e.message ?? "Erro ao excluir a pergunta.");
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Fecha o loading
-        CustomNotificationService.showError(
-            context, "Ocorreu um erro inesperado.");
-      }
-    }
-  }
-
+  // >>>>> FUNÇÃO DE ADICIONAR RESPOSTA TOTALMENTE SUBSTITUÍDA <<<<<
   Future<void> _addReply() async {
     final replyText = _replyController.text.trim();
     if (replyText.isEmpty) return;
@@ -118,86 +54,52 @@ class _PostDetailPageState extends State<PostDetailPage> {
     setState(() => _isReplying = true);
 
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      final userData = userDoc.data();
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable(
+          'submitReplyOrComment'); // <<< CHAMA A NOVA FUNÇÃO ÚNICA
 
-      // Verifica se é uma resposta aninhada (Nível 2) ou uma resposta principal (Nível 1)
+      // Monta o payload para a Cloud Function
+      final Map<String, dynamic> payload = {
+        'postId': widget.postId,
+        'content': replyText,
+      };
+
+      // Adiciona os parâmetros de resposta aninhada, se aplicável
       if (_replyingToId != null) {
-        // --- CENÁRIO 2: ADICIONANDO UM COMENTÁRIO ANINHADO (NÍVEL 2) ---
-
-        // Monta os dados para o novo documento na subcoleção "comments"
-        final commentData = {
-          'authorId': user.uid,
-          'authorName': userData?['nome'] ?? 'Anônimo',
-          'authorPhotoUrl': userData?['photoURL'] ?? '',
-          'content': replyText,
-          'timestamp': FieldValue.serverTimestamp(),
-
-          'replyingToUserId':
-              _replyingToUserId, // ✅ Salva o ID do usuário mencionado
-          'replyingToUserName': _replyingToName,
-        };
-
-        // Referência para a resposta "pai" (Nível 1)
-        final replyRef = FirebaseFirestore.instance
-            .collection('posts')
-            .doc(widget.postId)
-            .collection('replies')
-            .doc(_replyingToId!);
-
-        // Escreve o novo comentário na sub-subcoleção e incrementa o contador
-        await replyRef.collection('comments').add(commentData);
-        await replyRef.update({'commentCount': FieldValue.increment(1)});
-      } else {
-        // --- CENÁRIO 1: ADICIONANDO UMA RESPOSTA PRINCIPAL (NÍVEL 1) ---
-
-        // Monta os dados para o novo documento na subcoleção "replies"
-        final replyData = {
-          'authorId': user.uid,
-          'authorName': userData?['nome'] ?? 'Anônimo',
-          'authorPhotoUrl': userData?['photoURL'] ?? '',
-          'content': replyText,
-          'timestamp': FieldValue.serverTimestamp(),
-          'upvoteCount': 0,
-          'upvotedBy': [],
-          'commentCount':
-              0, // Inicia o contador de comentários aninhados como 0
-        };
-
-        final postRef =
-            FirebaseFirestore.instance.collection('posts').doc(widget.postId);
-
-        // Adiciona a nova resposta e incrementa o contador de respostas no post principal
-        await postRef.collection('replies').add(replyData);
-        await postRef.update({'answerCount': FieldValue.increment(1)});
+        payload['parentReplyId'] = _replyingToId;
+        payload['replyingToUserId'] = _replyingToUserId;
+        payload['replyingToUserName'] = _replyingToName;
       }
 
-      // Limpa o estado e a UI após o envio bem-sucedido
+      // Chama a Cloud Function com o payload
+      await callable.call(payload);
+
+      // Limpa a UI após o sucesso
       _replyController.clear();
-      FocusScope.of(context).unfocus(); // Esconde o teclado
+      FocusScope.of(context).unfocus();
       if (mounted) {
         setState(() {
           _replyingToId = null;
           _replyingToName = null;
-          _isReplying = false;
+          _replyingToUserId = null;
         });
       }
-    } catch (e) {
-      print("Erro ao enviar resposta/comentário: $e");
-      if (mounted) {
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted)
         CustomNotificationService.showError(
-            context, "Erro ao enviar resposta.");
-        setState(() =>
-            _isReplying = false); // Garante que o loading para em caso de erro
-      }
+            context, e.message ?? "Erro ao enviar resposta.");
+    } catch (e) {
+      print("Erro ao chamar submitReplyOrComment: $e");
+      if (mounted)
+        CustomNotificationService.showError(
+            context, "Ocorreu um erro inesperado.");
+    } finally {
+      if (mounted) setState(() => _isReplying = false);
     }
-    // O 'finally' não é mais necessário aqui, pois o setState é chamado no sucesso e no erro.
   }
 
-  // Carrega os dados do post principal no início
+  // (O resto das funções de helper como _loadPostData, _deletePost, _editPost, etc. permanecem as mesmas)
   Future<void> _loadPostData() async {
     try {
       final postDoc = await FirebaseFirestore.instance
@@ -220,7 +122,60 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  // Função para navegar para a tela de edição
+  Future<void> _deletePost() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Confirmar Exclusão"),
+        content: const Text(
+            "Tem certeza que deseja excluir esta pergunta? Esta ação não pode ser desfeita."),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text("Cancelar")),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text("Excluir",
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    showDialog(
+        context: context,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false);
+    try {
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('deletePost');
+      await callable.call({'postId': widget.postId});
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        Navigator.of(context).pop();
+        Future.microtask(() {
+          if (navigatorKey.currentContext != null) {
+            CustomNotificationService.showSuccess(
+                navigatorKey.currentContext!, "Pergunta excluída com sucesso.");
+          }
+        });
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        CustomNotificationService.showError(
+            context, e.message ?? "Erro ao excluir a pergunta.");
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        CustomNotificationService.showError(
+            context, "Ocorreu um erro inesperado.");
+      }
+    }
+  }
+
   void _editPost(Map<String, dynamic> currentData) {
     Navigator.push(
       context,
@@ -233,7 +188,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  // Função para dar ou remover upvote em uma resposta
   Future<void> upvoteReply(String replyId, List<String> currentUpvoters) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -242,14 +196,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
             context, "Você precisa estar logado para votar.");
       return;
     }
-
     final replyRef = FirebaseFirestore.instance
         .collection('posts')
         .doc(widget.postId)
         .collection('replies')
         .doc(replyId);
     final bool hasUpvoted = currentUpvoters.contains(user.uid);
-
     try {
       await replyRef.update({
         'upvotedBy': hasUpvoted
@@ -265,7 +217,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  // Função para marcar uma resposta como a melhor
   Future<void> markAsBestAnswer(String replyId) async {
     final postRef =
         FirebaseFirestore.instance.collection('posts').doc(widget.postId);
@@ -285,56 +236,46 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Pergunta da Comunidade")),
-
-      // >>>>> INÍCIO DA SUBSTITUIÇÃO DO BODY <<<<<
       body: _isLoadingPost
           ? const Center(child: CircularProgressIndicator())
           : _postData == null
-              ? const Center(child: Text("Esta pergunta não foi encontrada."))
+              ? const Center(
+                  child:
+                      Text("Esta pergunta não foi encontrada ou foi removida."))
               : CustomScrollView(
                   slivers: [
-                    // SliverToBoxAdapter permite colocar um widget normal dentro de uma CustomScrollView
                     SliverToBoxAdapter(
                       child: _buildPostHeader(_postData!, _isPostAuthor),
                     ),
-
-                    // StreamBuilder para as respostas
                     StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('posts')
                           .doc(widget.postId)
                           .collection('replies')
-                          .orderBy(
-                              'timestamp') // Pode ordenar por 'upvoteCount' depois
+                          .orderBy('timestamp')
                           .snapshots(),
                       builder: (context, repliesSnapshot) {
                         if (!repliesSnapshot.hasData) {
                           return const SliverToBoxAdapter(
                               child: Center(
                                   child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: CircularProgressIndicator(),
-                          )));
+                                      padding: EdgeInsets.all(32.0),
+                                      child: CircularProgressIndicator())));
                         }
                         if (repliesSnapshot.data!.docs.isEmpty) {
                           return const SliverToBoxAdapter(
                               child: Center(
                                   child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: Text(
-                                "Ninguém respondeu ainda. Seja o primeiro!"),
-                          )));
+                                      padding: EdgeInsets.all(32.0),
+                                      child: Text(
+                                          "Ninguém respondeu ainda. Seja o primeiro!"))));
                         }
-
-                        // SliverList é mais performático que ListView para listas longas
                         return _buildRepliesList(repliesSnapshot.data!.docs,
                             _postData!, _isPostAuthor);
                       },
                     ),
                   ],
                 ),
-      // >>>>> FIM DA SUBSTITUIÇÃO DO BODY <<<<<
-
       bottomNavigationBar: SafeArea(
         child: _buildReplyComposer(),
       ),
@@ -349,25 +290,37 @@ class _PostDetailPageState extends State<PostDetailPage> {
         : '';
     final bibleReference = data['bibleReference'] as String?;
     final authorId = data['authorId'] as String?;
+    // >>>>> NOVA VARIÁVEL PARA O ESTADO DE ANONIMATO <<<<<
+    final bool isAnonymous = data['isAnonymous'] ?? false;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Informações do Autor
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
-              backgroundImage: (data['authorPhotoUrl'] != null &&
+              // >>>>> LÓGICA ATUALIZADA PARA O AVATAR <<<<<
+              backgroundImage: (!isAnonymous &&
+                      data['authorPhotoUrl'] != null &&
                       data['authorPhotoUrl']!.isNotEmpty)
                   ? NetworkImage(data['authorPhotoUrl']!)
+                  : null,
+              child: (isAnonymous ||
+                      data['authorPhotoUrl'] == null ||
+                      data['authorPhotoUrl']!.isEmpty)
+                  ? const Icon(
+                      Icons.person_outline) // Ícone genérico para anônimo
                   : null,
             ),
             title: Text(data['authorName'] ?? 'Anônimo'),
             subtitle: Text("Postado em $date"),
             onTap: () {
-              if (authorId != null &&
+              // >>>>> LÓGICA ATUALIZADA PARA O ONTAP <<<<<
+              // Só permite navegar se o post NÃO for anônimo
+              if (!isAnonymous &&
+                  authorId != null &&
                   authorId != FirebaseAuth.instance.currentUser?.uid) {
                 Navigator.push(
                     context,
@@ -405,33 +358,24 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 : null,
           ),
           const SizedBox(height: 16),
-
-          // Título da Pergunta
           Text(data['title'] ?? '',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
-
-          // Referência Bíblica
           if (bibleReference != null && bibleReference.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12.0),
               child: Chip(
-                label: Text(bibleReference),
-                backgroundColor:
-                    theme.colorScheme.primaryContainer.withOpacity(0.5),
-              ),
+                  label: Text(bibleReference),
+                  backgroundColor:
+                      theme.colorScheme.primaryContainer.withOpacity(0.5)),
             ),
-
-          // Conteúdo do Post
           if (data['content'] != null && data['content'].isNotEmpty) ...[
             const SizedBox(height: 16),
             MarkdownBody(
-              data: data['content'],
-              styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                  p: theme.textTheme.bodyLarge?.copyWith(height: 1.6)),
-            ),
+                data: data['content'],
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                    p: theme.textTheme.bodyLarge?.copyWith(height: 1.6))),
           ],
-
           const Divider(height: 32),
           Text("Respostas", style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
@@ -440,13 +384,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  // >>>>> ALTERADO PARA RETORNAR UM SliverList <<<<<
   Widget _buildRepliesList(List<QueryDocumentSnapshot> replies,
       Map<String, dynamic> postData, bool isPostAuthor) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          // O ReplyCard agora é usado aqui
           return ReplyCard(
             replyDoc: replies[index],
             postData: postData,
@@ -472,7 +414,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget _buildReplyComposer() {
     final theme = Theme.of(context);
     final isReplyingToComment = _replyingToId != null;
-
     return Material(
       elevation: 8,
       color: theme.scaffoldBackgroundColor,
@@ -480,14 +421,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
         padding:
             EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         decoration: BoxDecoration(
-          border:
-              Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
-        ),
+            border:
+                Border(top: BorderSide(color: theme.dividerColor, width: 0.5))),
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min, // Faz a coluna encolher ao seu conteúdo
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Barra que indica a quem você está respondendo
             if (isReplyingToComment)
               Container(
                 color: theme.colorScheme.primary.withOpacity(0.1),
@@ -498,11 +436,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   children: [
                     Expanded(
                       child: Text(
-                        "Respondendo a @${_replyingToName ?? 'Anônimo'}",
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: theme.colorScheme.primary),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                          "Respondendo a @${_replyingToName ?? 'Anônimo'}",
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: theme.colorScheme.primary),
+                          overflow: TextOverflow.ellipsis),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, size: 18),
@@ -513,15 +450,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         setState(() {
                           _replyingToId = null;
                           _replyingToName = null;
-                          _replyingToUserId = null; // Limpa também o ID
+                          _replyingToUserId = null;
                         });
                       },
                     )
                   ],
                 ),
               ),
-
-            // Campo de texto e botão de enviar
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
@@ -531,19 +466,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: theme.cardColor.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(24.0),
-                      ),
+                          color: theme.cardColor.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(24.0)),
                       child: TextField(
                         controller: _replyController,
-                        autofocus:
-                            isReplyingToComment, // Dá o foco automaticamente ao clicar em "Responder"
+                        autofocus: isReplyingToComment,
                         decoration: const InputDecoration(
-                          hintText: "Adicionar uma resposta...",
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                        ),
+                            hintText: "Adicionar uma resposta...",
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10)),
                         maxLines: null,
                       ),
                     ),

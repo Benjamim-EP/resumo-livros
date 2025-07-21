@@ -41,6 +41,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   List<int> _availableChapters = [];
   bool _isPasswordProtected = false;
   final _passwordController = TextEditingController();
+  bool _isAnonymous = false;
 
   final List<Map<String, String>> _categories = [
     {'value': 'apologetica', 'label': 'Apologética (Defesa da Fé)'},
@@ -142,6 +143,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final postData = {
       "title": _titleController.text.trim(),
       "content": _contentController.text.trim(),
+      "isAnonymous": _isAnonymous,
       "category": _selectedCategory,
       "bibleReference": finalReference,
       "refBook": _selectedBookAbbrev,
@@ -454,6 +456,21 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           });
                         }
                       },
+                    ),
+                    const SizedBox(height: 24),
+                    // <<< INÍCIO DO NOVO WIDGET >>>
+                    SwitchListTile(
+                      title: const Text("Postar Anonimamente"),
+                      subtitle: const Text(
+                          "Seu nome e foto não serão exibidos nesta pergunta."),
+                      value: _isAnonymous,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _isAnonymous = value;
+                        });
+                      },
+                      secondary: const Icon(Icons.visibility_off_outlined),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                     ),
                     const SizedBox(height: 24),
                     Container(
