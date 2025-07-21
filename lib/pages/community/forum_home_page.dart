@@ -6,9 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/pages/community/post_detail_page.dart';
+import 'package:septima_biblia/redux/actions/community_actions.dart';
+import 'package:septima_biblia/redux/reducers/community_search_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 
 class ForumHomePage extends StatefulWidget {
   const ForumHomePage({super.key});
@@ -30,6 +34,9 @@ class _ForumHomePageState extends State<ForumHomePage> {
   List<DocumentSnapshot> _posts = [];
   DocumentSnapshot? _lastDocument;
   final ScrollController _scrollController = ScrollController();
+
+  bool _isSearchVisible = false;
+  final TextEditingController _searchController = TextEditingController();
 
   // Mapa de categorias para construir os chips de filtro
   final List<Map<String, String>> _categories = [
@@ -238,6 +245,15 @@ class _ForumHomePageState extends State<ForumHomePage> {
     return category['label']!;
   }
 
+  void _triggerSearch() {
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      FocusScope.of(context).unfocus(); // Esconde o teclado
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(SearchCommunityPostsAction(query));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -437,6 +453,22 @@ class _ForumHomePageState extends State<ForumHomePage> {
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
         child: Row(
           children: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: "Buscar Perguntas",
+              onPressed: () {
+                setState(() {
+                  _isSearchVisible = !_isSearchVisible;
+                  // Se a busca for escondida, limpa os resultados
+                  if (!_isSearchVisible) {
+                    _searchController.clear();
+                    StoreProvider.of<AppState>(context, listen: false)
+                        .dispatch(ClearCommunitySearchResultsAction());
+                  }
+                });
+              },
+            ),
+            const SizedBox(width: 8),
             FilterChip(
               label: const Text('Todos'),
               selected: _selectedCategory == null,
@@ -461,6 +493,90 @@ class _ForumHomePageState extends State<ForumHomePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: TextField(
+        controller: _searchController,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: "Buscar por tema ou palavra-chave...",
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: _triggerSearch,
+          ),
+        ),
+        onSubmitted: (_) => _triggerSearch(),
+      ),
+    );
+  }
+
+  // <<< NOVO WIDGET PARA EXIBIR OS RESULTADOS DA BUSCA >>>
+  Widget _buildSearchResults(CommunitySearchState state) {
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state.error != null) {
+      return Center(child: Text("Erro: ${state.error}"));
+    }
+    if (state.results.isEmpty) {
+      return Center(
+          child: Text(
+              "Nenhum resultado encontrado para '${state.currentQuery}'."));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(12.0),
+      itemCount: state.results.length,
+      itemBuilder: (context, index) {
+        final result = state.results[index];
+        final bool isProtected = result['isPasswordProtected'] ??
+            false; // Adicione isso se o metadata tiver
+
+        // Reutilizamos o Card do post, mas com os dados da busca
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => _handlePostTap(context, result['id'], isProtected),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(result['title'] ?? 'Sem Título',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(result['content_preview'] ?? '',
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Chip(
+                          label: Text(
+                              _getCategoryLabel(result['category'] ?? ''),
+                              style: const TextStyle(fontSize: 10))),
+                      const Spacer(),
+                      Text(result['authorName'] ?? 'Anônimo',
+                          style: Theme.of(context).textTheme.bodySmall)
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

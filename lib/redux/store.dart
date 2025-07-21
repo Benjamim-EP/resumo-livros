@@ -4,12 +4,14 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/middleware/backend_validation_middleware.dart';
 import 'package:septima_biblia/redux/middleware/bible_progress_middleware.dart';
 import 'package:septima_biblia/redux/middleware/book_search_middleware.dart';
+import 'package:septima_biblia/redux/middleware/community_search_middleware.dart';
 import 'package:septima_biblia/redux/middleware/fake_payment_middleware.dart';
 import 'package:septima_biblia/redux/middleware/firestore_sync_middleware.dart';
 import 'package:septima_biblia/redux/middleware/metadata_middleware.dart';
 import 'package:septima_biblia/redux/middleware/payment_middleware.dart';
 import 'package:septima_biblia/redux/middleware/sermon_data_middleware.dart';
 import 'package:septima_biblia/redux/middleware/sermon_search_middleware.dart';
+import 'package:septima_biblia/redux/reducers/community_search_reducer.dart';
 import 'package:septima_biblia/redux/reducers/metadata_reducer.dart';
 import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
@@ -39,6 +41,7 @@ class AppState {
   final MetadataState metadataState;
   final SubscriptionState subscriptionState;
   final SermonState sermonState;
+  final CommunitySearchState communitySearchState;
 
   AppState({
     required this.booksState,
@@ -53,37 +56,42 @@ class AppState {
     required this.sermonSearchState,
     required this.bookSearchState,
     required this.sermonState,
+    required this.communitySearchState,
   });
 
   // O método copyWith é útil para testes ou cenários de atualização mais complexos,
   // mas geralmente os reducers individuais cuidam da imutabilidade.
-  AppState copyWith(
-      {BooksState? booksState,
-      UserState? userState,
-      AuthorState? authorState,
-      TopicState? topicState,
-      ChatState? chatState,
-      ThemeState? themeState,
-      BibleSearchState? bibleSearchState, // NOVO
-      BookSearchState? bookSearchState,
-      SermonSearchState? sermonSearchState,
-      SermonState? sermonState,
-      SubscriptionState? subscriptionState}) {
+  AppState copyWith({
+    BooksState? booksState,
+    UserState? userState,
+    AuthorState? authorState,
+    TopicState? topicState,
+    ChatState? chatState,
+    ThemeState? themeState,
+    BibleSearchState? bibleSearchState, // NOVO
+    BookSearchState? bookSearchState,
+    SermonSearchState? sermonSearchState,
+    SermonState? sermonState,
+    SubscriptionState? subscriptionState,
+    MetadataState? metadataState,
+    CommunitySearchState? communitySearchState,
+  }) {
     return AppState(
-      booksState: booksState ?? this.booksState,
-      userState: userState ?? this.userState,
-      authorState: authorState ?? this.authorState,
-      topicState: topicState ?? this.topicState,
-      chatState: chatState ?? this.chatState,
-      themeState: themeState ?? this.themeState,
-      bibleSearchState: bibleSearchState ?? this.bibleSearchState, // NOVO
-      metadataState:
-          metadataState ?? metadataState, // Mantém o estado de metadados atual
-      subscriptionState: subscriptionState ?? this.subscriptionState,
-      sermonSearchState: sermonSearchState ?? this.sermonSearchState,
-      bookSearchState: bookSearchState ?? this.bookSearchState,
-      sermonState: sermonState ?? this.sermonState,
-    );
+        booksState: booksState ?? this.booksState,
+        userState: userState ?? this.userState,
+        authorState: authorState ?? this.authorState,
+        topicState: topicState ?? this.topicState,
+        chatState: chatState ?? this.chatState,
+        themeState: themeState ?? this.themeState,
+        bibleSearchState: bibleSearchState ?? this.bibleSearchState, // NOVO
+        metadataState: metadataState ??
+            this.metadataState, // Mantém o estado de metadados atual
+        subscriptionState: subscriptionState ?? this.subscriptionState,
+        sermonSearchState: sermonSearchState ?? this.sermonSearchState,
+        bookSearchState: bookSearchState ?? this.bookSearchState,
+        sermonState: sermonState ?? this.sermonState,
+        communitySearchState:
+            communitySearchState ?? this.communitySearchState);
   }
 }
 
@@ -103,6 +111,8 @@ AppState appReducer(AppState state, dynamic action) {
     sermonSearchState: sermonSearchReducer(state.sermonSearchState, action),
     bookSearchState: bookSearchReducer(state.bookSearchState, action),
     sermonState: sermonReducer(state.sermonState, action),
+    communitySearchState:
+        communitySearchReducer(state.communitySearchState, action),
   );
 }
 
@@ -126,6 +136,7 @@ final Store<AppState> store = Store<AppState>(
         SermonSearchState(), // NOVO: Estado inicial para busca de sermões
     bookSearchState: BookSearchState(),
     sermonState: SermonState(), // Novo estado inicial para sermões
+    communitySearchState: CommunitySearchState(),
   ),
   middleware: createAppMiddleware(),
 );
@@ -148,6 +159,7 @@ List<Middleware<AppState>> createAppMiddleware() {
     ...createBookSearchMiddleware(),
     ...createBookMiddleware(),
     ...createSermonDataMiddleware(),
+    ...createCommunitySearchMiddleware(),
   ];
 
   // A constante kDebugMode é verdadeira apenas quando você roda em modo debug

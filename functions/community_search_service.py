@@ -89,3 +89,63 @@ async def upsert_post_to_pinecone_async(post_id: str, vector: list[float], metad
     except Exception as e:
         print(f"CommunitySearchService: Erro na consulta ao Pinecone: {e}")
         raise
+
+async def query_pinecone_community_async(vector: list[float], top_k: int) -> list[dict]:
+    """
+    Consulta o índice 'community-rooms' do Pinecone de forma assíncrona.
+    """
+    _initialize_community_clients()
+    
+    httpx_client = _httpx_client_community
+    pinecone_api_key = _pinecone_api_key_community_loaded
+
+    if not httpx_client or not pinecone_api_key:
+        raise ConnectionError("Falha na inicialização dos clientes para consulta ao Pinecone.")
+
+    request_url = f"{PINECONE_ENDPOINT_COMMUNITY}/query"
+    headers = { "Api-Key": pinecone_api_key, "Content-Type": "application/json" }
+    payload = {
+        "vector": vector,
+        "topK": top_k,
+        "includeMetadata": True,
+        "includeValues": False
+    }
+    
+    print(f"CommunitySearchService: Consultando Pinecone com top_k={top_k}")
+    try:
+        response = await httpx_client.post(request_url, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json().get("matches", [])
+    except Exception as e:
+        print(f"CommunitySearchService: Erro na consulta ao Pinecone: {e}")
+        raise
+
+async def perform_community_search_async(user_query: str, top_k: int = 20) -> list[dict]:
+    """
+    Orquestra a busca: gera embedding e consulta o Pinecone.
+    """
+    if not user_query:
+        raise ValueError("A query do usuário não pode ser vazia.")
+    
+    try:
+        query_vector = await generate_embedding_for_post_async(user_query)
+        search_results = await query_pinecone_community_async(query_vector, top_k)
+        
+        # Formata os resultados para enviar de volta ao cliente
+        formatted_results = []
+        for match in search_results:
+            metadata = match.get('metadata', {})
+            formatted_results.append({
+                "id": match.get('id'),
+                "score": match.get('score'),
+                "title": metadata.get("title"),
+                "category": metadata.get("category"),
+                "authorName": metadata.get("authorName"),
+                "content_preview": metadata.get("content_preview"),
+            })
+        
+        return formatted_results
+    except Exception as e:
+        print(f"ERRO CRÍTICO em perform_community_search_async: {e}")
+        traceback.print_exc()
+        raise

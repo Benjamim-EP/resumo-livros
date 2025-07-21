@@ -1982,3 +1982,29 @@ def generateForumQuestion(req: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro ao gerar a pergunta: {e}"
         )
+    
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=60
+)
+def semanticCommunitySearch(request: https_fn.CallableRequest) -> dict:
+    """
+    Busca semanticamente nos posts da comunidade.
+    """
+    if not request.auth or not request.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+
+    user_query = request.data.get("query")
+    if not user_query:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'query' é obrigatório.")
+
+    try:
+        search_results = _run_async_handler_wrapper(
+            community_search_service.perform_community_search_async(user_query)
+        )
+        return {"results": search_results}
+    except Exception as e:
+        print(f"Erro em semanticCommunitySearch: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro ao realizar a busca na comunidade.")
