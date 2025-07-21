@@ -1,4 +1,4 @@
-// lib/pages/community/forum_home_page.dart (Versão Corrigida e Refatorada)
+// lib/pages/community/forum_home_page.dart (Versão Final Refatorada)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -35,6 +35,7 @@ class _ForumHomePageState extends State<ForumHomePage> {
   DocumentSnapshot? _lastDocument;
   final ScrollController _scrollController = ScrollController();
 
+  // --- ESTADO PARA A BUSCA ---
   final TextEditingController _searchController = TextEditingController();
 
   final List<Map<String, String>> _categories = [
@@ -49,11 +50,12 @@ class _ForumHomePageState extends State<ForumHomePage> {
     super.initState();
     _fetchInitialPosts();
     _scrollController.addListener(_scrollListener);
+    // Adiciona um listener para reconstruir a UI quando o texto de busca muda (para mostrar/esconder o botão de limpar)
+    _searchController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -79,7 +81,7 @@ class _ForumHomePageState extends State<ForumHomePage> {
   }
 
   Future<void> _fetchInitialPosts() async {
-    // Ao buscar os posts iniciais, limpamos qualquer busca semântica anterior.
+    // Sempre que buscamos os posts iniciais, limpamos qualquer resultado de busca anterior
     StoreProvider.of<AppState>(context, listen: false)
         .dispatch(ClearCommunitySearchResultsAction());
 
@@ -105,6 +107,7 @@ class _ForumHomePageState extends State<ForumHomePage> {
   Future<void> _fetchMorePosts() async {
     if (_isLoadingMore || !_hasMore) return;
     setState(() => _isLoadingMore = true);
+
     try {
       Query query =
           _buildQuery().startAfterDocument(_lastDocument!).limit(_postsPerPage);
@@ -125,8 +128,16 @@ class _ForumHomePageState extends State<ForumHomePage> {
     }
   }
 
+  // <<< FUNÇÃO ATUALIZADA >>>
+  // Agora, ao filtrar, também limpamos a busca semântica
   void _onFilterChanged(String? newCategory) {
     if (_selectedCategory == newCategory) return;
+
+    // Limpa a busca ao aplicar um filtro
+    _searchController.clear();
+    StoreProvider.of<AppState>(context, listen: false)
+        .dispatch(ClearCommunitySearchResultsAction());
+
     setState(() {
       _selectedCategory = newCategory;
       _posts = [];
@@ -134,20 +145,36 @@ class _ForumHomePageState extends State<ForumHomePage> {
       _hasMore = true;
       _isLoading = true;
     });
+
     _fetchInitialPosts();
   }
 
+  // <<< FUNÇÃO ATUALIZADA >>>
+  // Ao buscar, limpamos o filtro de categoria para não limitar a busca
   void _triggerSearch() {
     final query = _searchController.text.trim();
+    FocusScope.of(context).unfocus();
+
     if (query.isNotEmpty) {
-      FocusScope.of(context).unfocus();
+      // Reseta o filtro de categoria para que a busca seja ampla
+      setState(() {
+        _selectedCategory = null;
+      });
       StoreProvider.of<AppState>(context, listen: false)
           .dispatch(SearchCommunityPostsAction(query));
     } else {
-      // Se a busca for vazia, limpa os resultados e volta para a lista normal
-      StoreProvider.of<AppState>(context, listen: false)
-          .dispatch(ClearCommunitySearchResultsAction());
+      // Se a busca for vazia, limpa tudo
+      _clearAllFilters();
     }
+  }
+
+  // <<< NOVA FUNÇÃO PARA LIMPAR TUDO >>>
+  void _clearAllFilters() {
+    _searchController.clear();
+    StoreProvider.of<AppState>(context, listen: false)
+        .dispatch(ClearCommunitySearchResultsAction());
+    // Chama a função de filtro com null, que já reseta e busca a lista inicial
+    _onFilterChanged(null);
   }
 
   // (O resto das suas funções de helper como _handlePostTap, _getCategoryLabel, etc., permanecem iguais)
@@ -259,10 +286,7 @@ class _ForumHomePageState extends State<ForumHomePage> {
 
           return Column(
             children: [
-              // A nova barra de busca e filtros
               _buildSearchAndFilterBar(),
-
-              // Conteúdo principal que alterna entre busca e lista padrão
               Expanded(
                 child: isSearchActive
                     ? _buildSearchResults(searchState)
@@ -280,24 +304,30 @@ class _ForumHomePageState extends State<ForumHomePage> {
     );
   }
 
-  /// Constrói a nova barra de busca e filtros.
+  /// <<< WIDGET DA BARRA DE FILTROS TOTALMENTE REFATORADO >>>
   Widget _buildSearchAndFilterBar() {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    final bool isAnyFilterActive =
+        _selectedCategory != null || _searchController.text.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        border:
+            Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
       child: Row(
         children: [
-          // Ícone de Lupa
           Icon(Icons.search, color: theme.colorScheme.primary),
           const SizedBox(width: 12),
-
-          // Campo de Texto para Busca
           Expanded(
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: "Buscar no fórum...",
-                border: InputBorder.none, // Aparência mais limpa
+                hintText: _selectedCategory != null
+                    ? "Buscar em '${_getCategoryLabel(_selectedCategory!)}'..."
+                    : "Buscar no fórum...",
+                border: InputBorder.none,
                 isDense: true,
               ),
               onSubmitted: (_) => _triggerSearch(),
@@ -312,26 +342,34 @@ class _ForumHomePageState extends State<ForumHomePage> {
             onSelected: _onFilterChanged,
             itemBuilder: (BuildContext context) {
               return [
-                const PopupMenuItem<String?>(
-                  value: null, // Valor nulo para "Todos"
-                  child: Text("Todas as Categorias"),
+                PopupMenuItem<String?>(
+                  value: null,
+                  child: Text("Todas as Categorias",
+                      style: TextStyle(
+                          fontWeight: _selectedCategory == null
+                              ? FontWeight.bold
+                              : FontWeight.normal)),
                 ),
                 ..._categories.map((category) {
                   return PopupMenuItem<String?>(
                     value: category['value'],
-                    child: Text(category['label']!),
+                    child: Text(category['label']!,
+                        style: TextStyle(
+                            fontWeight: _selectedCategory == category['value']
+                                ? FontWeight.bold
+                                : FontWeight.normal)),
                   );
                 }).toList(),
               ];
             },
           ),
-          // Botão para limpar o filtro de categoria
-          if (_selectedCategory != null)
+
+          // Botão para limpar TUDO (só aparece se houver filtro ou busca)
+          if (isAnyFilterActive)
             IconButton(
-              icon: Icon(Icons.clear,
-                  size: 20, color: theme.iconTheme.color?.withOpacity(0.7)),
-              tooltip: "Limpar Filtro",
-              onPressed: () => _onFilterChanged(null),
+              icon: Icon(Icons.clear, size: 22, color: theme.colorScheme.error),
+              tooltip: "Limpar Busca e Filtros",
+              onPressed: _clearAllFilters,
             ),
         ],
       ),
@@ -339,7 +377,7 @@ class _ForumHomePageState extends State<ForumHomePage> {
   }
 
   Widget _buildSearchResults(CommunitySearchState state) {
-    // ... (seu código existente para _buildSearchResults, está perfeito)
+    // ... (seu código para _buildSearchResults permanece o mesmo, está correto)
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -404,7 +442,7 @@ class _ForumHomePageState extends State<ForumHomePage> {
   }
 
   Widget _buildInitialPostList() {
-    // ... (seu código existente para _buildInitialPostList, está perfeito)
+    // ... (seu código para _buildInitialPostList permanece o mesmo, está correto)
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -553,6 +591,7 @@ class _ForumHomePageState extends State<ForumHomePage> {
 
   Widget _buildTagChip(ThemeData theme, String label,
       {bool isReference = false}) {
+    // ... (seu código para _buildTagChip permanece o mesmo, está correto)
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
