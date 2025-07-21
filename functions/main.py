@@ -1664,7 +1664,6 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
     post_id = req.data.get("postId")
     data = req.data
     
-    # ... (a preparação dos dados do post continua a mesma)
     post_data = {
         "title": data.get("title"),
         "content": data.get("content"),
@@ -1683,7 +1682,7 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
 
     try:
         if post_id:
-            # --- MODO DE EDIÇÃO (Não aplicamos limites aqui) ---
+            # --- MODO DE EDIÇÃO ---
             post_ref = db.collection('posts').document(post_id)
             post_doc = post_ref.get()
             if not post_doc.exists or post_doc.to_dict().get("authorId") != user_id:
@@ -1693,20 +1692,40 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
                 del post_data["password"]
 
             post_ref.update(post_data)
+
+            # <<< INÍCIO DA LÓGICA DE REINDEXAÇÃO NO PINECONE >>>
+            try:
+                text_to_embed = f"{post_data.get('title', '')}\n\n{post_data.get('content', '')}".strip()
+                if text_to_embed:
+                    vector = _run_async_handler_wrapper(
+                        community_search_service.generate_embedding_for_post_async(text_to_embed)
+                    )
+                    # Reutiliza os metadados existentes, atualizando apenas o que mudou
+                    existing_metadata = post_doc.to_dict()
+                    metadata_for_pinecone = {
+                        "title": post_data.get("title", existing_metadata.get("title", "")),
+                        "category": post_data.get("category", existing_metadata.get("category", "geral")),
+                        "authorName": existing_metadata.get("authorName", ""),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "content_preview": post_data.get("content", "")[:150]
+                    }
+                    _run_async_handler_wrapper(
+                        community_search_service.upsert_post_to_pinecone_async(post_id, vector, metadata_for_pinecone)
+                    )
+            except Exception as e_pinecone:
+                print(f"AVISO: Edição do post {post_id} no Firestore bem-sucedida, mas reindexação no Pinecone falhou: {e_pinecone}")
+            # <<< FIM DA LÓGICA DE REINDEXAÇÃO >>>
+            
             return {"status": "success", "message": "Post atualizado!", "postId": post_id}
         else:
-            # --- MODO DE CRIAÇÃO (Aplicamos os limites aqui) ---
-
-            # <<< INÍCIO DA NOVA LÓGICA DE VERIFICAÇÃO DE LIMITE >>>
+            # --- MODO DE CRIAÇÃO (Sua lógica existente permanece aqui) ---
+            # ... (seu código de criação de post, verificação de limite e indexação inicial) ...
+            
             now = datetime.now(timezone.utc)
             twenty_four_hours_ago = now - timedelta(hours=24)
             seven_days_ago = now - timedelta(days=7)
-
             history_ref = db.collection('users').document(user_id).collection('postCreationHistory')
-
-            # Query para buscar posts da última semana
             weekly_posts_query = history_ref.where('createdAt', '>=', seven_days_ago).stream()
-            
             daily_count = 0
             weekly_count = 0
             for post_record in weekly_posts_query:
@@ -1714,18 +1733,13 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
                 record_time = post_record.to_dict().get('createdAt')
                 if record_time and record_time >= twenty_four_hours_ago:
                     daily_count += 1
-            
-            # Verifica os limites
             if daily_count >= 2:
                 raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message="Você atingiu o limite de 2 posts por dia.")
-            
             if weekly_count >= 7:
                 raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED, message="Você atingiu o limite de 7 posts por semana.")
-            # <<< FIM DA NOVA LÓGICA DE VERIFICAÇÃO DE LIMITE >>>
 
             user_doc = db.collection('users').document(user_id).get()
             user_data = user_doc.to_dict() or {}
-            
             post_data.update({
                 "authorId": user_id,
                 "authorName": user_data.get('nome', 'Anônimo'),
@@ -1734,17 +1748,9 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
                 "answerCount": 0,
                 "upvoteCount": 0,
             })
-            
             new_post_ref = db.collection('posts').add(post_data)
             new_post_id = new_post_ref[1].id
-            print(f"Post criado no Firestore com o ID: {new_post_id}")
-            
-            # <<< ADICIONA O REGISTRO DE CRIAÇÃO NO HISTÓRICO DO USUÁRIO >>>
-            history_ref.document(new_post_id).set({
-                "createdAt": firestore.SERVER_TIMESTAMP
-            })
-            
-            # (Lógica de indexação no Pinecone permanece aqui)
+            history_ref.document(new_post_id).set({"createdAt": firestore.SERVER_TIMESTAMP})
             try:
                 text_to_embed = f"{post_data.get('title', '')}\n\n{post_data.get('content', '')}".strip()
                 if text_to_embed:
@@ -1768,11 +1774,60 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
             return {"status": "success", "message": "Post criado!", "postId": new_post_id}
 
     except https_fn.HttpsError as e:
-        # Relança os erros de limite para o cliente
         raise e
     except Exception as e:
         print(f"ERRO em createOrUpdatePost: {e}")
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao salvar o post: {e}")
+
+# <<< NOVA FUNÇÃO PARA EXCLUSÃO >>>
+@https_fn.on_call(
+    secrets=["pinecone-api-key", "openai-api-key"], # Apenas a chave do pinecone é necessária aqui
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+)
+def deletePost(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+    
+    user_id = req.auth.uid
+    post_id = req.data.get("postId")
+    
+    if not post_id:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="'postId' é obrigatório.")
+        
+    try:
+        post_ref = db.collection('posts').document(post_id)
+        post_doc = post_ref.get()
+
+        if not post_doc.exists:
+            # Se o post já não existe, consideramos a operação um sucesso.
+            print(f"Tentativa de deletar post {post_id} que não existe mais.")
+            return {"status": "success", "message": "Post já foi removido."}
+        
+        # Verificação de segurança: Apenas o autor pode deletar
+        if post_doc.to_dict().get("authorId") != user_id:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.PERMISSION_DENIED, message="Você Não tem permissão para excluir este post.")
+
+        # 1. Deletar o post do Firestore
+        post_ref.delete()
+        print(f"Post {post_id} deletado do Firestore.")
+        
+        # 2. Deletar o registro de criação do histórico do usuário
+        history_ref = db.collection('users').document(user_id).collection('postCreationHistory').document(post_id)
+        history_ref.delete()
+        print(f"Registro de criação do post {post_id} deletado do histórico do usuário.")
+
+        # 3. Deletar do Pinecone
+        _run_async_handler_wrapper(
+            community_search_service.delete_post_from_pinecone_async(post_id)
+        )
+        
+        return {"status": "success", "message": "Post excluído com sucesso."}
+        
+    except Exception as e:
+        print(f"ERRO em deletePost: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Ocorreu um erro ao excluir o post: {e}")
     
 @scheduler_fn.on_schedule(
     schedule="every day 03:00", # Roda todo dia às 3 da manhã

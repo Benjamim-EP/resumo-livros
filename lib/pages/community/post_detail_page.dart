@@ -1,10 +1,12 @@
 // lib/pages/community/post_detail_page.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
+import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/community/create_post_page.dart';
 import 'package:septima_biblia/pages/community/public_profile_page.dart';
 import 'package:septima_biblia/pages/community/reply_card.dart';
@@ -35,6 +37,70 @@ class _PostDetailPageState extends State<PostDetailPage> {
   void initState() {
     super.initState();
     _loadPostData(); // Carrega os dados do post apenas uma vez
+  }
+
+  // >>>>> NOVA FUNÇÃO PARA DELETAR O POST <<<<<
+  Future<void> _deletePost() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Confirmar Exclusão"),
+        content: const Text(
+            "Tem certeza que deseja excluir esta pergunta? Esta ação não pode ser desfeita."),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text("Cancelar")),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text("Excluir",
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Mostra um indicador de loading
+    showDialog(
+        context: context,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false);
+
+    try {
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('deletePost');
+      await callable.call({'postId': widget.postId});
+
+      // Se a chamada foi bem-sucedida, o backend fez a exclusão.
+      // Agora, lidamos com a UI.
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Fecha o loading
+        Navigator.of(context).pop(); // Fecha a PostDetailPage
+
+        // Mostra a notificação de sucesso na tela anterior (ForumHomePage)
+        Future.microtask(() {
+          if (navigatorKey.currentContext != null) {
+            CustomNotificationService.showSuccess(
+                navigatorKey.currentContext!, "Pergunta excluída com sucesso.");
+          }
+        });
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Fecha o loading
+        CustomNotificationService.showError(
+            context, e.message ?? "Erro ao excluir a pergunta.");
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Fecha o loading
+        CustomNotificationService.showError(
+            context, "Ocorreu um erro inesperado.");
+      }
+    }
   }
 
   Future<void> _addReply() async {
@@ -151,77 +217,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     } catch (e) {
       if (mounted) setState(() => _isLoadingPost = false);
       print("Erro ao carregar dados do post: $e");
-    }
-  }
-
-  // Função para deletar um post
-  Future<void> _deletePost() async {
-    // A exibição do diálogo de confirmação permanece a mesma
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("Confirmar Exclusão"),
-        content: const Text(
-            "Tem certeza que deseja excluir esta pergunta? Esta ação não pode ser desfeita."),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text("Cancelar")),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text("Excluir",
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-
-    // Se o usuário não confirmou, não fazemos nada.
-    if (confirm != true) return;
-
-    // Mostra um indicador de loading para o usuário saber que algo está acontecendo
-    if (mounted) {
-      CustomNotificationService.showSuccess(context, "Excluindo pergunta...");
-    }
-
-    try {
-      final postRef =
-          FirebaseFirestore.instance.collection('posts').doc(widget.postId);
-
-      // Deleta as respostas (esta lógica pode ser movida para um gatilho de Cloud Function no futuro para mais robustez)
-      final replies = await postRef.collection('replies').get();
-      if (replies.docs.isNotEmpty) {
-        final batch = FirebaseFirestore.instance.batch();
-        for (var doc in replies.docs) {
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-      }
-
-      // Deleta o post principal
-      await postRef.delete();
-
-      // ✅ CORREÇÃO PRINCIPAL APLICADA AQUI
-      // Se chegamos até aqui, a exclusão foi um sucesso.
-      // Agora, usamos um pequeno atraso ANTES de fechar a página.
-
-      // Opcional: Mostra uma notificação de sucesso final, se desejar.
-      // if (mounted) {
-      //   CustomNotificationService.showSuccess(context, "Pergunta excluída.");
-      // }
-
-      await Future.delayed(
-          const Duration(milliseconds: 100)); // Pequeno respiro
-
-      if (mounted) {
-        // Agora, com o Navigator "desbloqueado", podemos fechar a página com segurança.
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        CustomNotificationService.showError(
-            context, "Erro ao excluir a pergunta.");
-      }
     }
   }
 

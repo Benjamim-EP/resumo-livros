@@ -149,3 +149,34 @@ async def perform_community_search_async(user_query: str, top_k: int = 20) -> li
         print(f"ERRO CRÍTICO em perform_community_search_async: {e}")
         traceback.print_exc()
         raise
+
+
+async def delete_post_from_pinecone_async(post_id: str) -> None:
+    """
+    Deleta um vetor do índice Pinecone da comunidade pelo seu ID.
+    """
+    _initialize_community_clients()
+    
+    # O endpoint para deletar é diferente do de upsert/query
+    request_url = f"{PINECONE_ENDPOINT_COMMUNITY}/vectors/delete"
+    headers = {
+        "Api-Key": _pinecone_api_key_community_loaded,
+        "Content-Type": "application/json"
+    }
+    # O payload para deleção requer uma lista de IDs
+    payload = {
+        "ids": [post_id]
+    }
+    
+    print(f"CommunitySearchService: Enviando DELETE para Pinecone para o ID: {post_id}")
+    try:
+        # A API de delete do Pinecone usa o método POST com um corpo específico
+        response = await _httpx_client_community.post(request_url, headers=headers, json=payload)
+        response.raise_for_status()
+        print(f"CommunitySearchService: Delete para o ID {post_id} bem-sucedido.")
+    except httpx.HTTPStatusError as e_http:
+        # Em caso de erro, apenas logamos. A falha em deletar do Pinecone
+        # não deve impedir a exclusão do post no Firestore.
+        print(f"CommunitySearchService: Erro HTTP no delete do Pinecone: {e_http.response.text}")
+    except Exception as e:
+        print(f"CommunitySearchService: Erro na chamada de delete ao Pinecone: {e}")
