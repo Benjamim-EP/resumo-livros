@@ -38,6 +38,7 @@ try:
     import chat_service
     import bible_chat_service
     import book_search_service
+    import community_search_service
     print("Módulos de serviço importados com sucesso.")
 except ImportError as e_import:
     print(f"AVISO: Falha na importação de um ou mais módulos de serviço: {e_import}")
@@ -1649,6 +1650,8 @@ def onNewComment(event: firestore_fn.Event[firestore_fn.Change]) -> None:
 
 
 @https_fn.on_call(
+    # <<< ADICIONE OS SECRETS AQUI SE JÁ NÃO ESTIVEREM >>>
+    secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_256 
 )
@@ -1662,7 +1665,6 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
     post_id = req.data.get("postId") # O ID será enviado se for uma edição
     data = req.data
     
-    # Prepara os dados base
     post_data = {
         "title": data.get("title"),
         "content": data.get("content"),
@@ -1675,33 +1677,30 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
         "lastUpdated": firestore.SERVER_TIMESTAMP,
     }
     
-    # Lida com a senha
     password = data.get("password")
     if post_data["isPasswordProtected"] and password:
-        # Gera o hash da senha
         post_data["passwordHash"] = generate_password_hash(password)
 
     try:
         if post_id:
-            # --- MODO DE EDIÇÃO ---
+            # --- MODO DE EDIÇÃO (NÃO INDEXA NOVAMENTE POR ENQUANTO) ---
             post_ref = db.collection('posts').document(post_id)
-            # Verifica se o autor é o mesmo que está tentando editar
             post_doc = post_ref.get()
             if not post_doc.exists or post_doc.to_dict().get("authorId") != user_id:
-                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.PERMISSION_DENIED, message="Você не tem permissão para editar este post.")
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.PERMISSION_DENIED, message="Você não tem permissão para editar este post.")
             
-            # Remove o campo 'password' se ele for nulo (para não salvar null no DB)
             if "password" in post_data and post_data["password"] is None:
                 del post_data["password"]
 
             post_ref.update(post_data)
+            # <<< ADICIONAL: REINDEXAR O POST APÓS A EDIÇÃO >>>
+            # (Você pode adicionar a lógica de reindexação aqui de forma similar à criação)
             return {"status": "success", "message": "Post atualizado!", "postId": post_id}
         else:
             # --- MODO DE CRIAÇÃO ---
             user_doc = db.collection('users').document(user_id).get()
             user_data = user_doc.to_dict() or {}
             
-            # Adiciona os campos que só existem na criação
             post_data.update({
                 "authorId": user_id,
                 "authorName": user_data.get('nome', 'Anônimo'),
@@ -1711,8 +1710,48 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
                 "upvoteCount": 0,
             })
             
+            # 1. Cria o post no Firestore primeiro para obter o ID
             new_post_ref = db.collection('posts').add(post_data)
-            return {"status": "success", "message": "Post criado!", "postId": new_post_ref[1].id}
+            new_post_id = new_post_ref[1].id
+            print(f"Post criado no Firestore com o ID: {new_post_id}")
+            
+            # <<< INÍCIO DA NOVA LÓGICA DE INDEXAÇÃO NO PINECONE >>>
+            try:
+                # 2. Combina o título e o conteúdo para criar o texto a ser "embedado"
+                text_to_embed = f"{post_data.get('title', '')}\n\n{post_data.get('content', '')}".strip()
+
+                if text_to_embed:
+                    # 3. Gera o vetor de embedding
+                    vector = _run_async_handler_wrapper(
+                        community_search_service.generate_embedding_for_post_async(text_to_embed)
+                    )
+
+                    # 4. Prepara os metadados para salvar no Pinecone
+                    metadata_for_pinecone = {
+                        "title": post_data.get("title", ""),
+                        "category": post_data.get("category", "geral"),
+                        "authorName": post_data.get("authorName", ""),
+                        # Converte o timestamp para uma string no formato ISO 8601
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        # Pega os primeiros 150 caracteres do conteúdo como prévia
+                        "content_preview": post_data.get("content", "")[:150]
+                    }
+
+                    # 5. Envia os dados para o Pinecone
+                    _run_async_handler_wrapper(
+                        community_search_service.upsert_post_to_pinecone_async(new_post_id, vector, metadata_for_pinecone)
+                    )
+                else:
+                    print(f"AVISO: O post {new_post_id} não tem conteúdo para indexar. Pulando a indexação no Pinecone.")
+
+            except Exception as e_pinecone:
+                # Se a indexação falhar, apenas logamos o erro, mas não falhamos a criação do post.
+                # O usuário verá que o post foi criado com sucesso.
+                print(f"AVISO: A criação do post {new_post_id} no Firestore foi bem-sucedida, mas a indexação no Pinecone falhou: {e_pinecone}")
+                traceback.print_exc()
+            # <<< FIM DA NOVA LÓGICA DE INDEXAÇÃO NO PINECONE >>>
+
+            return {"status": "success", "message": "Post criado!", "postId": new_post_id}
 
     except Exception as e:
         print(f"ERRO em createOrUpdatePost: {e}")
