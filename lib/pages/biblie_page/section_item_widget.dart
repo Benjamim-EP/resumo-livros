@@ -415,9 +415,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             ),
                           ),
                           style: TextButton.styleFrom(
-                            foregroundColor: theme.colorScheme.secondary,
+                            foregroundColor: theme.colorScheme.primary,
                             backgroundColor:
-                                theme.colorScheme.secondary.withOpacity(0.1),
+                                theme.colorScheme.primary.withOpacity(0.1),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
