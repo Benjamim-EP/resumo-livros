@@ -1,4 +1,4 @@
-// lib/pages/community/reply_card.dart
+// lib/pages/community/reply_card.dart (VERSÃO CORRIGIDA COM LÓGICA DE ANONIMATO)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -52,9 +52,6 @@ class _ReplyCardState extends State<ReplyCard>
     super.dispose();
   }
 
-  // --- FUNÇÕES DE EXCLUSÃO ---
-
-  /// Exibe um diálogo de confirmação genérico.
   Future<bool> _showDeleteConfirmationDialog(
       BuildContext context, String itemType) async {
     final bool? confirmed = await showDialog<bool>(
@@ -65,9 +62,8 @@ class _ReplyCardState extends State<ReplyCard>
             "Tem certeza que deseja excluir permanentemente este $itemType? Esta ação não pode ser desfeita."),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text("Cancelar"),
-          ),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text("Cancelar")),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text("Excluir",
@@ -79,39 +75,28 @@ class _ReplyCardState extends State<ReplyCard>
     return confirmed ?? false;
   }
 
-  /// Lógica para excluir a resposta principal (Nível 1).
   Future<void> _deleteReply() async {
     if (!await _showDeleteConfirmationDialog(context, "resposta")) return;
-
     try {
       final postRef =
           FirebaseFirestore.instance.collection('posts').doc(widget.postId);
       final replyRef = postRef.collection('replies').doc(widget.replyDoc.id);
-
-      // Usamos um batch para garantir que as duas operações ocorram juntas
       final batch = FirebaseFirestore.instance.batch();
-
       batch.delete(replyRef);
       batch.update(postRef, {'answerCount': FieldValue.increment(-1)});
-
       await batch.commit();
-
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showSuccess(context, "Resposta excluída.");
-      }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showError(
             context, "Erro ao excluir a resposta.");
-      }
       print("Erro ao excluir resposta: $e");
     }
   }
 
-  /// Lógica para excluir um comentário aninhado (Nível 2).
   Future<void> _deleteComment(QueryDocumentSnapshot commentDoc) async {
     if (!await _showDeleteConfirmationDialog(context, "comentário")) return;
-
     try {
       final replyRef = FirebaseFirestore.instance
           .collection('posts')
@@ -119,27 +104,19 @@ class _ReplyCardState extends State<ReplyCard>
           .collection('replies')
           .doc(widget.replyDoc.id);
       final commentRef = replyRef.collection('comments').doc(commentDoc.id);
-
       final batch = FirebaseFirestore.instance.batch();
-
       batch.delete(commentRef);
       batch.update(replyRef, {'commentCount': FieldValue.increment(-1)});
-
       await batch.commit();
-
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showSuccess(context, "Comentário excluído.");
-      }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         CustomNotificationService.showError(
             context, "Erro ao excluir o comentário.");
-      }
       print("Erro ao excluir comentário: $e");
     }
   }
-
-  // --- FIM DAS FUNÇÕES DE EXCLUSÃO ---
 
   @override
   Widget build(BuildContext context) {
@@ -152,14 +129,17 @@ class _ReplyCardState extends State<ReplyCard>
     final userHasUpvoted =
         currentUserId != null && upvoters.contains(currentUserId);
     final commentCount = replyData['commentCount'] ?? 0;
-
-    // --- LÓGICA DE PERMISSÃO PARA EXCLUIR A RESPOSTA PRINCIPAL ---
     final replyAuthorId = replyData['authorId'] as String?;
     final bool canDeleteReply = widget.isPostAuthor ||
         (currentUserId != null && currentUserId == replyAuthorId);
 
+    // ✅✅✅ LÓGICA DE ANONIMATO NA EXIBIÇÃO ✅✅✅
+    final String authorName = replyData['authorName'] ?? 'Anônimo';
+    final String? authorPhotoUrl = replyData['authorPhotoUrl'] as String?;
+    final bool isAnonymous = authorName == "Autor Anônimo";
+    // ✅✅✅ FIM DA LÓGICA ✅✅✅
+
     final cardContent = Card(
-      // ... (código do Card, Container e BoxDecoration permanecem os mesmos) ...
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -187,23 +167,28 @@ class _ReplyCardState extends State<ReplyCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cabeçalho da resposta
             Row(
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundImage: (replyData['authorPhotoUrl'] != null &&
-                          replyData['authorPhotoUrl']!.isNotEmpty)
-                      ? NetworkImage(replyData['authorPhotoUrl']!)
+                  // ✅✅✅ USA AS VARIÁVEIS DE EXIBIÇÃO ✅✅✅
+                  backgroundImage: (!isAnonymous &&
+                          authorPhotoUrl != null &&
+                          authorPhotoUrl.isNotEmpty)
+                      ? NetworkImage(authorPhotoUrl)
+                      : null,
+                  child: (isAnonymous ||
+                          authorPhotoUrl == null ||
+                          authorPhotoUrl.isEmpty)
+                      ? const Icon(Icons.person_outline, size: 18)
                       : null,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    replyData['authorName'] ?? 'Anônimo',
+                    authorName, // ✅ USA A VARIÁVEL DE EXIBIÇÃO
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
-                    // Garante que nomes muito longos não quebrem a linha e mostrem "..."
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -221,17 +206,13 @@ class _ReplyCardState extends State<ReplyCard>
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
-
-                // --- BOTÃO DE OPÇÕES (EXCLUIR) PARA A RESPOSTA PRINCIPAL ---
                 if (canDeleteReply)
                   PopupMenuButton<String>(
                     icon: Icon(Icons.more_vert,
                         size: 20,
                         color: theme.iconTheme.color?.withOpacity(0.6)),
                     onSelected: (value) {
-                      if (value == 'delete') {
-                        _deleteReply();
-                      }
+                      if (value == 'delete') _deleteReply();
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
@@ -249,8 +230,6 @@ class _ReplyCardState extends State<ReplyCard>
               ],
             ),
             const SizedBox(height: 12),
-
-            // Conteúdo da resposta
             MarkdownBody(
               data: replyData['content'] ?? '',
               styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
@@ -258,8 +237,6 @@ class _ReplyCardState extends State<ReplyCard>
               ),
             ),
             const SizedBox(height: 8),
-
-            // Ações (Upvote, Responder, etc.)
             Row(
               children: [
                 TextButton.icon(
@@ -284,9 +261,7 @@ class _ReplyCardState extends State<ReplyCard>
                 ),
                 TextButton.icon(
                   onPressed: () => widget.onReply(
-                      widget.replyDoc.id,
-                      replyData['authorId'],
-                      replyData['authorName'] ?? 'Anônimo'),
+                      widget.replyDoc.id, replyData['authorId'], authorName),
                   icon: Icon(Icons.reply,
                       size: 16, color: theme.iconTheme.color?.withOpacity(0.6)),
                   label: Text("Responder",
@@ -304,8 +279,6 @@ class _ReplyCardState extends State<ReplyCard>
                   ),
               ],
             ),
-
-            // Seção de comentários
             if (commentCount > 0)
               TextButton(
                 onPressed: () => setState(() => _showComments = !_showComments),
@@ -323,7 +296,6 @@ class _ReplyCardState extends State<ReplyCard>
       ),
     );
 
-    // --- LÓGICA DA ANIMAÇÃO (permanece a mesma) ---
     if (isBestAnswer) {
       return AnimatedBuilder(
         animation: _animationController,
@@ -354,7 +326,6 @@ class _ReplyCardState extends State<ReplyCard>
     }
   }
 
-  /// Constrói a seção de comentários aninhados (Nível 2)
   Widget _buildCommentsSection() {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -390,11 +361,18 @@ class _ReplyCardState extends State<ReplyCard>
                 final date = timestamp != null
                     ? DateFormat('dd/MM/yy').format(timestamp.toDate())
                     : '';
-                final authorName = commentData['authorName'] ?? 'Anônimo';
+
+                // ✅✅✅ LÓGICA DE ANONIMATO PARA COMENTÁRIOS ANINHADOS ✅✅✅
+                final String commentAuthorName =
+                    commentData['authorName'] ?? 'Anônimo';
+                final String? commentAuthorPhotoUrl =
+                    commentData['authorPhotoUrl'] as String?;
+                final bool isCommentAnonymous =
+                    commentAuthorName == "Autor Anônimo";
+                // ✅✅✅ FIM DA LÓGICA ✅✅✅
+
                 final replyingToName = commentData['replyingToUserName'] ?? '';
                 final content = commentData['content'] ?? '';
-
-                // --- LÓGICA DE PERMISSÃO PARA EXCLUIR O COMENTÁRIO ---
                 final commentAuthorId = commentData['authorId'] as String?;
                 final bool canDeleteComment = widget.isPostAuthor ||
                     (currentUserId != null && currentUserId == commentAuthorId);
@@ -417,14 +395,20 @@ class _ReplyCardState extends State<ReplyCard>
                   contentPadding: const EdgeInsets.only(left: 12, right: 4),
                   leading: CircleAvatar(
                     radius: 16,
-                    backgroundImage: (commentData['authorPhotoUrl'] != null &&
-                            commentData['authorPhotoUrl']!.isNotEmpty)
-                        ? NetworkImage(commentData['authorPhotoUrl']!)
+                    backgroundImage: (!isCommentAnonymous &&
+                            commentAuthorPhotoUrl != null &&
+                            commentAuthorPhotoUrl.isNotEmpty)
+                        ? NetworkImage(commentAuthorPhotoUrl)
+                        : null,
+                    child: (isCommentAnonymous ||
+                            commentAuthorPhotoUrl == null ||
+                            commentAuthorPhotoUrl.isEmpty)
+                        ? const Icon(Icons.person_outline, size: 18)
                         : null,
                   ),
                   title: Row(
                     children: [
-                      Text(authorName,
+                      Text(commentAuthorName,
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(width: 8),
@@ -438,14 +422,12 @@ class _ReplyCardState extends State<ReplyCard>
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // --- BOTÃO DE RESPOSTA ---
                       IconButton(
                         icon: const Icon(Icons.reply, size: 16),
                         tooltip: "Responder a este comentário",
                         onPressed: () => widget.onReply(widget.replyDoc.id,
-                            commentData['authorId'], authorName),
+                            commentData['authorId'], commentAuthorName),
                       ),
-                      // --- BOTÃO DE EXCLUSÃO (CONDICIONAL) ---
                       if (canDeleteComment)
                         IconButton(
                           icon: const Icon(Icons.delete_outline,

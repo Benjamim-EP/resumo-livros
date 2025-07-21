@@ -1,4 +1,4 @@
-// lib/pages/community/post_detail_page.dart (Versão Final com Anonimato)
+// lib/pages/community/post_detail_page.dart (Versão Final com Anonimato em TODOS os níveis)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -38,7 +38,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     _loadPostData();
   }
 
-  // >>>>> FUNÇÃO DE ADICIONAR RESPOSTA TOTALMENTE SUBSTITUÍDA <<<<<
   Future<void> _addReply() async {
     final replyText = _replyController.text.trim();
     if (replyText.isEmpty) return;
@@ -56,26 +55,21 @@ class _PostDetailPageState extends State<PostDetailPage> {
     try {
       final functions =
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
-      final callable = functions.httpsCallable(
-          'submitReplyOrComment'); // <<< CHAMA A NOVA FUNÇÃO ÚNICA
+      final callable = functions.httpsCallable('submitReplyOrComment');
 
-      // Monta o payload para a Cloud Function
       final Map<String, dynamic> payload = {
         'postId': widget.postId,
         'content': replyText,
       };
 
-      // Adiciona os parâmetros de resposta aninhada, se aplicável
       if (_replyingToId != null) {
         payload['parentReplyId'] = _replyingToId;
         payload['replyingToUserId'] = _replyingToUserId;
         payload['replyingToUserName'] = _replyingToName;
       }
 
-      // Chama a Cloud Function com o payload
       await callable.call(payload);
 
-      // Limpa a UI após o sucesso
       _replyController.clear();
       FocusScope.of(context).unfocus();
       if (mounted) {
@@ -99,7 +93,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  // (O resto das funções de helper como _loadPostData, _deletePost, _editPost, etc. permanecem as mesmas)
   Future<void> _loadPostData() async {
     try {
       final postDoc = await FirebaseFirestore.instance
@@ -290,7 +283,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
         : '';
     final bibleReference = data['bibleReference'] as String?;
     final authorId = data['authorId'] as String?;
-    // >>>>> NOVA VARIÁVEL PARA O ESTADO DE ANONIMATO <<<<<
     final bool isAnonymous = data['isAnonymous'] ?? false;
 
     return Padding(
@@ -301,7 +293,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
-              // >>>>> LÓGICA ATUALIZADA PARA O AVATAR <<<<<
               backgroundImage: (!isAnonymous &&
                       data['authorPhotoUrl'] != null &&
                       data['authorPhotoUrl']!.isNotEmpty)
@@ -310,15 +301,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
               child: (isAnonymous ||
                       data['authorPhotoUrl'] == null ||
                       data['authorPhotoUrl']!.isEmpty)
-                  ? const Icon(
-                      Icons.person_outline) // Ícone genérico para anônimo
+                  ? const Icon(Icons.person_outline)
                   : null,
             ),
             title: Text(data['authorName'] ?? 'Anônimo'),
             subtitle: Text("Postado em $date"),
             onTap: () {
-              // >>>>> LÓGICA ATUALIZADA PARA O ONTAP <<<<<
-              // Só permite navegar se o post NÃO for anônimo
               if (!isAnonymous &&
                   authorId != null &&
                   authorId != FirebaseAuth.instance.currentUser?.uid) {
