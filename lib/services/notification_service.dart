@@ -10,12 +10,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:septima_biblia/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:intl/intl.dart';
+import 'package:septima_biblia/models/devotional_model.dart';
 
-import 'package:septima_biblia/redux/actions.dart'; // ✅ NOVO IMPORT
-import 'package:septima_biblia/redux/store.dart'; // ✅ NOVO IMPORT
-import 'package:septima_biblia/services/firestore_service.dart'; // ✅ NOVO IMPORT
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -26,8 +29,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  final FirebaseMessaging _fcm =
-      FirebaseMessaging.instance; // ✅ Adiciona instância do FCM
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+
+  // ===================================
+  // <<< INÍCIO DA NOVA SEÇÃO >>>
+  // ===================================
+  // Chave para salvar a preferência do usuário no SharedPreferences.
+  // Sendo estática, pode ser acessada de outras partes do app (como a UserSettingsPage).
+  static const String notificationsEnabledKey = 'notifications_enabled';
+  // ===================================
+  // <<< FIM DA NOVA SEÇÃO >>>
+  // ===================================
 
   Future<void> init() async {
     if (kIsWeb) return;
@@ -65,32 +77,23 @@ class NotificationService {
   }
 
   Future<void> _initFcm() async {
-    // Solicita permissão no iOS e Android 13+
     await _fcm.requestPermission();
 
-    // Configura os listeners de mensagens
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('FCM Foreground: Mensagem recebida!');
-      print('Dados da Mensagem: ${message.data}');
-
       if (message.notification != null) {
-        print('A mensagem contém uma notificação: ${message.notification}');
-        // Mostra a notificação local para o usuário ver (quando o app está aberto)
         _showLocalNotification(message);
       }
     });
 
-    // Listener para quando o usuário toca na notificação e abre o app
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('FCM onMessageOpenedApp: O app foi aberto pela notificação.');
       _handleNotificationClick(message.data);
     });
 
-    // Configura o handler para mensagens em background
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
-  // ✅ NOVA FUNÇÃO PARA EXIBIR A NOTIFICAÇÃO LOCAL
   void _showLocalNotification(RemoteMessage message) {
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
@@ -102,18 +105,17 @@ class NotificationService {
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'community_channel', // Um novo canal para notificações da comunidade
+            'community_channel',
             'Comunidade',
             channelDescription: 'Notificações de amigos e interações.',
-            icon: 'icon', // Seu ícone de notificação
+            icon: 'icon',
           ),
         ),
-        payload: jsonEncode(message.data), // Passa os dados para o clique
+        payload: jsonEncode(message.data),
       );
     }
   }
 
-  // ✅ NOVA FUNÇÃO PARA SALVAR O TOKEN
   Future<void> saveFcmTokenToFirestore(String userId) async {
     try {
       String? token = await _fcm.getToken();
@@ -124,7 +126,6 @@ class NotificationService {
       print("FCM Token do Dispositivo: $token");
 
       final firestoreService = FirestoreService();
-      // Usando arrayUnion para adicionar o token sem duplicatas
       await firestoreService.updateUserField(
           userId, 'fcmTokens', FieldValue.arrayUnion([token]));
       print("FCM: Token salvo no Firestore para o usuário $userId.");
@@ -146,17 +147,12 @@ class NotificationService {
     }
   }
 
-  // ✅ NOVA FUNÇÃO PARA LIDAR COM O CLIQUE NA NOTIFICAÇÃO
   void _handleNotificationClick(Map<String, dynamic> data) {
     final String? screen = data['screen'];
     if (screen != null) {
       print("Navegando para a tela: $screen");
-      // Usa a chave global de navegação para navegar de qualquer lugar do app
       navigatorKey.currentState?.pushNamed(screen);
-
-      // Se for um pedido de amizade, também pode ser útil recarregar os dados
       if (data['type'] == 'friend_request') {
-        // Pequeno delay para dar tempo da tela carregar antes de despachar a ação
         Future.delayed(const Duration(milliseconds: 500), () {
           store.dispatch(LoadFriendsDataAction());
         });
@@ -166,40 +162,30 @@ class NotificationService {
 
   Future<Map<String, String>?> _getRandomVerse() async {
     try {
-      // 1. Carrega o mapa de livros
       final String abbrevMapString = await rootBundle
           .loadString('assets/Biblia/completa_traducoes/abbrev_map.json');
       final Map<String, dynamic> booksMap = json.decode(abbrevMapString);
       final List<String> bookKeys = booksMap.keys.toList();
-
       if (bookKeys.isEmpty) return null;
 
-      // 2. Sorteia um livro
       final random = Random();
       final String randomBookAbbrev = bookKeys[random.nextInt(bookKeys.length)];
       final bookData = booksMap[randomBookAbbrev];
       final String bookName = bookData['nome'];
       final int totalChapters = bookData['capitulos'];
-
       if (totalChapters <= 0) return null;
 
-      // 3. Sorteia um capítulo
-      final int randomChapterNum = (1 + random.nextInt(totalChapters)) as int;
+      final int randomChapterNum = (1 + random.nextInt(totalChapters));
 
-      // 4. Carrega o arquivo do capítulo para descobrir o número de versículos
-      // Usaremos a NVI como padrão para as notificações
       final String chapterJsonString = await rootBundle.loadString(
           'assets/Biblia/completa_traducoes/nvi/$randomBookAbbrev/$randomChapterNum.json');
       final List<dynamic> verses = json.decode(chapterJsonString);
-
       if (verses.isEmpty) return null;
 
-      // 5. Sorteia um versículo
       final int randomVerseIndex = random.nextInt(verses.length);
       final String verseText = verses[randomVerseIndex];
       final int verseNumber = randomVerseIndex + 1;
 
-      // 6. Retorna o texto e a referência formatada
       return {
         'reference': '$bookName $randomChapterNum:$verseNumber',
         'text': verseText,
@@ -225,12 +211,29 @@ class NotificationService {
     return scheduledDate;
   }
 
-  /// Agenda as notificações diárias para os devocionais.
+  // ===================================
+  // <<< MÉTODO PRINCIPAL ATUALIZADO >>>
+  // ===================================
+  /// Agenda as notificações diárias para os devocionais, SE estiverem ativadas.
   Future<void> scheduleDailyDevotionals() async {
-    // A verificação de permissões permanece a mesma
+    // 1. Verifica a preferência do usuário ANTES de fazer qualquer coisa.
+    final prefs = await SharedPreferences.getInstance();
+    // O padrão é 'true' (ativado) para novos usuários.
+    final bool areNotificationsEnabled =
+        prefs.getBool(notificationsEnabledKey) ?? true;
+
+    if (!areNotificationsEnabled) {
+      print(
+          "NotificationService: Agendamento ignorado pois as notificações estão desativadas pelo usuário.");
+      // Garante que não haja notificações agendadas se a configuração estiver desativada.
+      await cancelAllNotifications();
+      return;
+    }
+
+    // 2. O resto da sua lógica de agendamento continua aqui.
     if (kIsIntegrationTest) {
       print(
-          "NotificationService: Modo de teste de integração detectado. Pedido de permissão ignorado.");
+          "NotificationService: Modo de teste de integração. Agendamento pulado.");
       return;
     }
     if (Platform.isAndroid) {
@@ -246,7 +249,7 @@ class NotificationService {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
       'devotional_channel_id',
-      'Lembretes Diários', // Nome do canal mais genérico agora
+      'Lembretes Diários',
       channelDescription: 'Notificações diárias com devocionais e versículos.',
       importance: Importance.max,
       priority: Priority.high,
@@ -256,10 +259,10 @@ class NotificationService {
 
     // --- NOTIFICAÇÃO 1: DEVOCIONAL DA MANHÃ (6:00) ---
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      0, // ID 0 para o devocional da manhã
+      0,
       'Sua Leitura da Manhã',
       'Reserve um momento para seu devocional matutino.',
-      _nextInstanceOfTime(6, 0), // <<< MUDANÇA: Horário alterado para 6:00 AM
+      _nextInstanceOfTime(6, 0),
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
@@ -271,68 +274,54 @@ class NotificationService {
     // --- NOTIFICAÇÃO 2: VERSÍCULO DO DIA (8:00) ---
     final randomVerse = await _getRandomVerse();
     if (randomVerse != null) {
-      // <<< INÍCIO DA MUDANÇA >>>
-
-      // 1. Pega o texto e a referência do versículo
       final String verseReference = randomVerse['reference']!;
       final String verseText = randomVerse['text']!;
-
-      // 2. Cria um estilo de notificação que permite texto longo
       final BigTextStyleInformation bigTextStyleInformation =
           BigTextStyleInformation(
-        verseText, // O texto completo que será exibido quando a notificação for expandida
+        verseText,
         htmlFormatBigText: false,
-        contentTitle: verseReference, // O título que aparece no modo expandido
-        summaryText: 'Versículo do Dia', // Um pequeno texto de sumário
+        contentTitle: verseReference,
+        summaryText: 'Versículo do Dia',
       );
-
-      // 3. Cria os detalhes da notificação para Android, agora com o novo estilo
       final AndroidNotificationDetails androidVerseNotificationDetails =
           AndroidNotificationDetails(
-        'verse_of_the_day_channel_id', // Um ID de canal diferente é uma boa prática
+        'verse_of_the_day_channel_id',
         'Versículo do Dia',
         channelDescription:
             'Uma notificação diária com um versículo da Bíblia.',
         importance: Importance.max,
         priority: Priority.high,
-        styleInformation: bigTextStyleInformation, // <<< APLICA O ESTILO AQUI
+        styleInformation: bigTextStyleInformation,
       );
-
-      // 4. Junta os detalhes para todas as plataformas
       final NotificationDetails verseNotificationDetails =
           NotificationDetails(android: androidVerseNotificationDetails);
 
-      // 5. Agenda a notificação usando os novos detalhes
       await flutterLocalNotificationsPlugin.zonedSchedule(
         2,
         verseReference,
-        verseText, // O corpo da notificação (pode aparecer cortado no modo recolhido)
+        verseText,
         _nextInstanceOfTime(8, 0),
-        verseNotificationDetails, // <<< USA OS DETALHES ESPECÍFICOS AQUI
+        verseNotificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
       print("Notificação do versículo do dia agendada para 8:00.");
-    } else {
-      print(
-          "Não foi possível agendar o versículo do dia por falha ao obter o texto.");
     }
 
     // --- NOTIFICAÇÃO 3: DEVOCIONAL DA NOITE (20:00) ---
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      1, // ID 1 (mantido) para o devocional da noite
+      1,
       'Sua Leitura da Noite',
       'Finalize seu dia com uma reflexão devocional.',
-      _nextInstanceOfTime(20, 0), // Horário mantido
+      _nextInstanceOfTime(20, 0),
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
-
     print("Notificação do devocional da noite agendada para 20:00.");
   }
 
@@ -357,7 +346,6 @@ class NotificationService {
     return status.isGranted;
   }
 
-  /// Função para teste imediato que pode ser mantida para depuração futura.
   Future<void> scheduleTestNotification() async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
@@ -378,7 +366,6 @@ class NotificationService {
     print("Notificação de TESTE disparada imediatamente com .show()");
   }
 
-  /// Cancela todas as notificações agendadas.
   Future<void> cancelAllNotifications() async {
     await flutterLocalNotificationsPlugin.cancelAll();
     print("Todas as notificações foram canceladas.");

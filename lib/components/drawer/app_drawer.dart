@@ -6,6 +6,10 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:redux/redux.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:septima_biblia/services/notification_service.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // ViewModel para buscar os dados do usuário para o cabeçalho do Drawer
 class _DrawerViewModel {
@@ -42,8 +46,161 @@ class _DrawerViewModel {
   }
 }
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
+  bool _notificationsEnabled = true;
+  bool _isLoadingPreference = true;
+  final NotificationService _notificationService = NotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Adiciona este widget como um observador do ciclo de vida do app
+    WidgetsBinding.instance.addObserver(this);
+    // Faz a verificação inicial ao construir o widget
+    _syncNotificationStatus();
+  }
+
+  @override
+  void dispose() {
+    // Remove o observador para evitar memory leaks
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Observa as mudanças no ciclo de vida do aplicativo.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Se o app voltou para o primeiro plano (ex: voltando das configurações do Android)
+    if (state == AppLifecycleState.resumed) {
+      print(
+          "Drawer: App voltou para o primeiro plano. Sincronizando status da notificação.");
+      // Sincroniza o estado do switch com a permissão real do sistema
+      _syncNotificationStatus();
+    }
+  }
+
+  /// Sincroniza o estado do switch com a permissão real do sistema E o SharedPreferences.
+  Future<void> _syncNotificationStatus() async {
+    // 1. Pega a permissão REAL do sistema operacional
+    final status = await Permission.notification.status;
+    final bool permissionGranted = status.isGranted;
+
+    // 2. Pega a preferência SALVA pelo usuário no app
+    final prefs = await SharedPreferences.getInstance();
+    final bool userPreference =
+        prefs.getBool(NotificationService.notificationsEnabledKey) ?? true;
+
+    // 3. O estado final do switch é a combinação dos dois:
+    //    Só deve estar "ligado" se o usuário QUER (preferência) E PODE (permissão).
+    final bool finalStatus = userPreference && permissionGranted;
+
+    if (mounted) {
+      setState(() {
+        _notificationsEnabled = finalStatus;
+        _isLoadingPreference = false;
+      });
+    }
+
+    // 4. Se houver uma discrepância, corrige o SharedPreferences para refletir a realidade.
+    if (userPreference != finalStatus) {
+      await prefs.setBool(
+          NotificationService.notificationsEnabledKey, finalStatus);
+    }
+  }
+
+  /// Lida com a interação do usuário com o switch.
+  Future<void> _updateNotificationPreference(bool newValue) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (newValue == true) {
+      // O usuário está TENTANDO ATIVAR as notificações.
+      var status = await Permission.notification.status;
+
+      if (status.isGranted) {
+        print("Drawer: Permissão já concedida. Ativando lembretes.");
+        setState(() => _notificationsEnabled = true);
+        await prefs.setBool(NotificationService.notificationsEnabledKey, true);
+        await _notificationService.scheduleDailyDevotionals();
+        if (mounted)
+          CustomNotificationService.showSuccess(
+              context, "Lembretes diários ativados!");
+        return;
+      }
+
+      if (status.isPermanentlyDenied || status.isRestricted) {
+        print(
+            "Drawer: Permissão negada permanentemente. Abrindo diálogo de configurações.");
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text("Permissão Necessária"),
+              content: const Text(
+                  "Para ativar os lembretes, você precisa permitir as notificações manualmente nas configurações do seu dispositivo para este aplicativo."),
+              actions: [
+                TextButton(
+                  child: const Text("Cancelar"),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+                TextButton(
+                  child: const Text("Abrir Configurações"),
+                  onPressed: () {
+                    openAppSettings();
+                    Navigator.of(dialogContext).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+        setState(() => _notificationsEnabled = false);
+        return;
+      }
+
+      if (status.isDenied) {
+        print(
+            "Drawer: Permissão foi negada anteriormente. Solicitando novamente...");
+        final newStatus = await Permission.notification.request();
+
+        if (newStatus.isGranted) {
+          print("Drawer: Permissão agora concedida. Agendando lembretes.");
+          setState(() => _notificationsEnabled = true);
+          await prefs.setBool(
+              NotificationService.notificationsEnabledKey, true);
+          await _notificationService.scheduleDailyDevotionals();
+          if (mounted)
+            CustomNotificationService.showSuccess(
+                context, "Lembretes diários ativados!");
+        } else {
+          print("Drawer: Usuário negou a permissão novamente.");
+          if (mounted)
+            CustomNotificationService.showError(
+                context, "Permissão de notificação negada.");
+          setState(() => _notificationsEnabled = false);
+        }
+      }
+    } else {
+      // O usuário está DESATIVANDO as notificações.
+      print(
+          "Drawer: Desativando lembretes e cancelando notificações agendadas.");
+      setState(() {
+        _notificationsEnabled = false;
+      });
+      await prefs.setBool(NotificationService.notificationsEnabledKey, false);
+      await _notificationService.cancelAllNotifications();
+      if (mounted) {
+        CustomNotificationService.showSuccess(
+            context, "Lembretes diários desativados.");
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,12 +213,11 @@ class AppDrawer extends StatelessWidget {
             children: <Widget>[
               _buildDrawerHeader(context, viewModel),
               _buildDrawerItem(
-                icon: Icons.people_alt_outlined, // Ícone de grupo de pessoas
-                text: 'Amigos', // Texto alterado
+                icon: Icons.people_alt_outlined,
+                text: 'Amigos',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushNamed(context,
-                      '/friends'); // Rota alterada para o hub de amigos
+                  Navigator.pushNamed(context, '/friends');
                 },
               ),
               _buildDrawerItem(
@@ -74,14 +230,25 @@ class AppDrawer extends StatelessWidget {
                 },
               ),
               _buildDrawerItem(
-                icon: Icons.edit_note_outlined, // Ícone do diário
-                text: 'Diário Devocional', // Nome no menu
+                icon: Icons.edit_note_outlined,
+                text: 'Diário Devocional',
                 onTap: () {
-                  Navigator.pop(context); // Fecha o drawer primeiro
-                  Navigator.pushNamed(
-                      context, '/diary'); // Navega para a nova rota
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/diary');
                 },
               ),
+              _isLoadingPreference
+                  ? const ListTile(title: Text("Carregando configuração..."))
+                  : SwitchListTile(
+                      title: const Text("Lembretes Diários"),
+                      value: _notificationsEnabled,
+                      onChanged: _updateNotificationPreference,
+                      secondary: Icon(
+                        _notificationsEnabled
+                            ? Icons.notifications_active_outlined
+                            : Icons.notifications_off_outlined,
+                      ),
+                    ),
               const Divider(),
               _buildDrawerItem(
                 icon: Icons.settings_outlined,
@@ -103,7 +270,6 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // Novo cabeçalho customizado
   Widget _buildDrawerHeader(BuildContext context, _DrawerViewModel viewModel) {
     final theme = Theme.of(context);
     return DrawerHeader(
@@ -185,12 +351,11 @@ class AppDrawer extends StatelessWidget {
     required IconData icon,
     required String text,
     required GestureTapCallback onTap,
-    int badgeCount = 0, // ✅ NOVO PARÂMETRO OPCIONAL
+    int badgeCount = 0,
   }) {
     return ListTile(
       leading: badgeCount > 0
           ? Badge(
-              // Widget nativo do Flutter para contadores
               label: Text('$badgeCount'),
               child: Icon(icon),
             )
