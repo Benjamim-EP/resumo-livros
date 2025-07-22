@@ -1,4 +1,4 @@
-// lib/pages/community/reply_card.dart (VERSÃO CORRIGIDA COM LÓGICA DE ANONIMATO)
+// lib/pages/community/reply_card.dart (VERSÃO ATUALIZADA COM PERFIS CLICÁVEIS)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
+import 'package:septima_biblia/pages/community/public_profile_page.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
+import 'package:septima_biblia/services/custom_page_route.dart'; // Importante para a transição suave
 
 class ReplyCard extends StatefulWidget {
   final QueryDocumentSnapshot replyDoc;
@@ -133,11 +135,9 @@ class _ReplyCardState extends State<ReplyCard>
     final bool canDeleteReply = widget.isPostAuthor ||
         (currentUserId != null && currentUserId == replyAuthorId);
 
-    // ✅✅✅ LÓGICA DE ANONIMATO NA EXIBIÇÃO ✅✅✅
     final String authorName = replyData['authorName'] ?? 'Anônimo';
     final String? authorPhotoUrl = replyData['authorPhotoUrl'] as String?;
     final bool isAnonymous = authorName == "Autor Anônimo";
-    // ✅✅✅ FIM DA LÓGICA ✅✅✅
 
     final cardContent = Card(
       elevation: 0,
@@ -152,7 +152,7 @@ class _ReplyCardState extends State<ReplyCard>
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8), // Padding ajustado
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: const Alignment(-1.0, -1.0),
@@ -167,78 +167,103 @@ class _ReplyCardState extends State<ReplyCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  // ✅✅✅ USA AS VARIÁVEIS DE EXIBIÇÃO ✅✅✅
-                  backgroundImage: (!isAnonymous &&
-                          authorPhotoUrl != null &&
-                          authorPhotoUrl.isNotEmpty)
-                      ? NetworkImage(authorPhotoUrl)
-                      : null,
-                  child: (isAnonymous ||
-                          authorPhotoUrl == null ||
-                          authorPhotoUrl.isEmpty)
-                      ? const Icon(Icons.person_outline, size: 18)
-                      : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    authorName, // ✅ USA A VARIÁVEL DE EXIBIÇÃO
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isBestAnswer)
-                  Chip(
-                    avatar:
-                        const Icon(Icons.star, color: Colors.green, size: 14),
-                    label: const Text("Melhor Resposta"),
-                    labelStyle: TextStyle(
-                        fontSize: 11,
-                        color: Colors.green.shade800,
-                        fontWeight: FontWeight.bold),
-                    backgroundColor: Colors.green.withOpacity(0.15),
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                  ),
-                if (canDeleteReply)
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert,
-                        size: 20,
-                        color: theme.iconTheme.color?.withOpacity(0.6)),
-                    onSelected: (value) {
-                      if (value == 'delete') _deleteReply();
-                    },
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: ListTile(
-                          leading: Icon(Icons.delete_outline,
-                              color: Colors.redAccent),
-                          title: Text('Excluir Resposta',
-                              style: TextStyle(color: Colors.redAccent)),
+            // ===================================
+            // <<< MUDANÇA: Row -> ListTile >>>
+            // ===================================
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                radius: 18,
+                backgroundImage: (!isAnonymous &&
+                        authorPhotoUrl != null &&
+                        authorPhotoUrl.isNotEmpty)
+                    ? NetworkImage(authorPhotoUrl)
+                    : null,
+                child: (isAnonymous ||
+                        authorPhotoUrl == null ||
+                        authorPhotoUrl.isEmpty)
+                    ? const Icon(Icons.person_outline, size: 20)
+                    : null,
+              ),
+              title: Text(
+                authorName,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isBestAnswer)
+                    Chip(
+                      avatar:
+                          const Icon(Icons.star, color: Colors.green, size: 14),
+                      label: const Text("Melhor Resposta"),
+                      labelStyle: TextStyle(
+                          fontSize: 11,
+                          color: Colors.green.shade800,
+                          fontWeight: FontWeight.bold),
+                      backgroundColor: Colors.green.withOpacity(0.15),
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                  if (canDeleteReply)
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert,
+                          size: 20,
+                          color: theme.iconTheme.color?.withOpacity(0.6)),
+                      onSelected: (value) {
+                        if (value == 'delete') _deleteReply();
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'delete',
+                          child: ListTile(
+                            leading: Icon(Icons.delete_outline,
+                                color: Colors.redAccent),
+                            title: Text('Excluir Resposta',
+                                style: TextStyle(color: Colors.redAccent)),
+                          ),
                         ),
+                      ],
+                    ),
+                ],
+              ),
+              onTap: () {
+                // Navega para o perfil público se não for anônimo e tiver um ID
+                if (!isAnonymous && replyAuthorId != null) {
+                  Navigator.push(
+                    context,
+                    FadeScalePageRoute(
+                      page: PublicProfilePage(
+                        userId: replyAuthorId,
+                        initialUserData: {
+                          'userId': replyAuthorId,
+                          'nome': authorName,
+                          'photoURL': authorPhotoUrl,
+                        },
                       ),
-                    ],
-                  ),
-              ],
+                    ),
+                  );
+                }
+              },
             ),
-            const SizedBox(height: 12),
-            MarkdownBody(
-              data: replyData['content'] ?? '',
-              styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                p: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+            // ===================================
+            // <<< FIM DA MUDANÇA >>>
+            // ===================================
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: 58.0, bottom: 8.0), // Alinha com o avatar
+              child: MarkdownBody(
+                data: replyData['content'] ?? '',
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
             Row(
               children: [
+                const SizedBox(width: 42), // Espaço para alinhar com o avatar
                 TextButton.icon(
                   onPressed: () =>
                       widget.onUpvote(widget.replyDoc.id, upvoters),
@@ -280,14 +305,18 @@ class _ReplyCardState extends State<ReplyCard>
               ],
             ),
             if (commentCount > 0)
-              TextButton(
-                onPressed: () => setState(() => _showComments = !_showComments),
-                child: Text(
-                  _showComments
-                      ? "Ocultar ${commentCount} Respostas"
-                      : "Ver ${commentCount} Respostas",
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.primary),
+              Padding(
+                padding: const EdgeInsets.only(left: 42.0),
+                child: TextButton(
+                  onPressed: () =>
+                      setState(() => _showComments = !_showComments),
+                  child: Text(
+                    _showComments
+                        ? "Ocultar ${commentCount} Respostas"
+                        : "Ver ${commentCount} Respostas",
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.primary),
+                  ),
                 ),
               ),
             if (_showComments) _buildCommentsSection(),
@@ -362,14 +391,12 @@ class _ReplyCardState extends State<ReplyCard>
                     ? DateFormat('dd/MM/yy').format(timestamp.toDate())
                     : '';
 
-                // ✅✅✅ LÓGICA DE ANONIMATO PARA COMENTÁRIOS ANINHADOS ✅✅✅
                 final String commentAuthorName =
                     commentData['authorName'] ?? 'Anônimo';
                 final String? commentAuthorPhotoUrl =
                     commentData['authorPhotoUrl'] as String?;
                 final bool isCommentAnonymous =
                     commentAuthorName == "Autor Anônimo";
-                // ✅✅✅ FIM DA LÓGICA ✅✅✅
 
                 final replyingToName = commentData['replyingToUserName'] ?? '';
                 final content = commentData['content'] ?? '';
@@ -390,7 +417,9 @@ class _ReplyCardState extends State<ReplyCard>
                     TextSpan(text: content),
                   ],
                 );
-
+                // ===================================
+                // <<< MUDANÇA: Row -> ListTile >>>
+                // ===================================
                 return ListTile(
                   contentPadding: const EdgeInsets.only(left: 12, right: 4),
                   leading: CircleAvatar(
@@ -437,7 +466,28 @@ class _ReplyCardState extends State<ReplyCard>
                         ),
                     ],
                   ),
+                  onTap: () {
+                    // Navega para o perfil público do autor do comentário aninhado
+                    if (!isCommentAnonymous && commentAuthorId != null) {
+                      Navigator.push(
+                        context,
+                        FadeScalePageRoute(
+                          page: PublicProfilePage(
+                            userId: commentAuthorId,
+                            initialUserData: {
+                              'userId': commentAuthorId,
+                              'nome': commentAuthorName,
+                              'photoURL': commentAuthorPhotoUrl,
+                            },
+                          ),
+                        ),
+                      );
+                    }
+                  },
                 );
+                // ===================================
+                // <<< FIM DA MUDANÇA >>>
+                // ===================================
               }).toList(),
             ),
           );

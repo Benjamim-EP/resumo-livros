@@ -17,6 +17,78 @@ List<Middleware<AppState>> createUserMiddleware() {
   final FirebaseFunctions functions =
       FirebaseFunctions.instanceFor(region: "southamerica-east1");
 
+  void _handleSendFriendRequestOptimistic(Store<AppState> store,
+      SendFriendRequestOptimisticAction action, NextDispatcher next) async {
+    final originalUserDetails =
+        Map<String, dynamic>.from(store.state.userState.userDetails ?? {});
+    next(action); // Deixa o reducer atualizar a UI primeiro
+
+    try {
+      final callable = functions.httpsCallable('sendFriendRequest');
+      await callable.call({'targetUserId': action.targetUserId});
+      // Em caso de sucesso, a UI já está correta. Podemos opcionalmente recarregar tudo para garantir consistência.
+      store.dispatch(LoadFriendsDataAction());
+    } catch (e) {
+      print("ERRO OTIMISTA (Send): $e");
+      // Reverte a UI e mostra o erro
+      store.dispatch(
+          FriendRequestFailedAction(originalUserDetails: originalUserDetails));
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(context, "Falha ao enviar pedido.");
+      }
+    }
+  }
+
+  void _handleAcceptFriendRequestOptimistic(Store<AppState> store,
+      AcceptFriendRequestOptimisticAction action, NextDispatcher next) async {
+    final originalUserDetails =
+        Map<String, dynamic>.from(store.state.userState.userDetails ?? {});
+    next(action);
+
+    try {
+      final callable = functions.httpsCallable('acceptFriendRequest');
+      await callable.call({'requesterUserId': action.requesterUserId});
+      if (navigatorKey.currentContext != null &&
+          navigatorKey.currentContext!.mounted) {
+        CustomNotificationService.showSuccess(
+            navigatorKey.currentContext!, "Amizade aceita!");
+      }
+      store.dispatch(LoadFriendsDataAction());
+    } catch (e) {
+      print("ERRO OTIMISTA (Accept): $e");
+      store.dispatch(
+          FriendRequestFailedAction(originalUserDetails: originalUserDetails));
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, "Falha ao aceitar pedido.");
+      }
+    }
+  }
+
+  void _handleDeclineFriendRequestOptimistic(Store<AppState> store,
+      DeclineFriendRequestOptimisticAction action, NextDispatcher next) async {
+    final originalUserDetails =
+        Map<String, dynamic>.from(store.state.userState.userDetails ?? {});
+    next(action);
+
+    try {
+      final callable = functions.httpsCallable('declineFriendRequest');
+      await callable.call({'requesterUserId': action.requesterUserId});
+      store.dispatch(LoadFriendsDataAction());
+    } catch (e) {
+      print("ERRO OTIMISTA (Decline): $e");
+      store.dispatch(
+          FriendRequestFailedAction(originalUserDetails: originalUserDetails));
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, "Falha ao recusar pedido.");
+      }
+    }
+  }
+
   void Function(Store<AppState>, LoadNotificationsAction, NextDispatcher)
       _loadNotifications(FirestoreService firestoreService) {
     return (store, action, next) async {
@@ -239,6 +311,15 @@ List<Middleware<AppState>> createUserMiddleware() {
         .call,
     TypedMiddleware<AppState, LoadNotificationsAction>(
             _loadNotifications(firestoreService))
+        .call,
+    TypedMiddleware<AppState, SendFriendRequestOptimisticAction>(
+            _handleSendFriendRequestOptimistic)
+        .call,
+    TypedMiddleware<AppState, AcceptFriendRequestOptimisticAction>(
+            _handleAcceptFriendRequestOptimistic)
+        .call,
+    TypedMiddleware<AppState, DeclineFriendRequestOptimisticAction>(
+            _handleDeclineFriendRequestOptimistic)
         .call,
   ];
 }

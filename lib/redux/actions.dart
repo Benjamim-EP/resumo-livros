@@ -735,3 +735,24 @@ class NotificationsLoadedAction {
   final List<Map<String, dynamic>> notifications;
   NotificationsLoadedAction(this.notifications);
 }
+
+class SendFriendRequestOptimisticAction {
+  final String targetUserId;
+  SendFriendRequestOptimisticAction({required this.targetUserId});
+}
+
+class AcceptFriendRequestOptimisticAction {
+  final String requesterUserId;
+  AcceptFriendRequestOptimisticAction({required this.requesterUserId});
+}
+
+class DeclineFriendRequestOptimisticAction {
+  final String requesterUserId;
+  DeclineFriendRequestOptimisticAction({required this.requesterUserId});
+}
+
+// Ação para reverter o estado em caso de falha no backend
+class FriendRequestFailedAction {
+  final Map<String, dynamic> originalUserDetails; // O estado antes da mudança
+  FriendRequestFailedAction({required this.originalUserDetails});
+}

@@ -946,6 +946,38 @@ UserState userReducer(UserState state, dynamic action) {
     final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
     newDetails['denomination'] = action.denominationName;
     return state.copyWith(userDetails: newDetails);
+  } else if (action is SendFriendRequestOptimisticAction) {
+    final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
+    final sentList = List<String>.from(newDetails['friendRequestsSent'] ?? []);
+    if (!sentList.contains(action.targetUserId)) {
+      sentList.add(action.targetUserId);
+    }
+    newDetails['friendRequestsSent'] = sentList;
+    return state.copyWith(userDetails: newDetails);
+  } else if (action is AcceptFriendRequestOptimisticAction) {
+    final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
+    final receivedList =
+        List<String>.from(newDetails['friendRequestsReceived'] ?? []);
+    final friendsList = List<String>.from(newDetails['friends'] ?? []);
+
+    receivedList.remove(action.requesterUserId);
+    if (!friendsList.contains(action.requesterUserId)) {
+      friendsList.add(action.requesterUserId);
+    }
+
+    newDetails['friendRequestsReceived'] = receivedList;
+    newDetails['friends'] = friendsList;
+    return state.copyWith(userDetails: newDetails);
+  } else if (action is DeclineFriendRequestOptimisticAction) {
+    final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
+    final receivedList =
+        List<String>.from(newDetails['friendRequestsReceived'] ?? []);
+    receivedList.remove(action.requesterUserId);
+    newDetails['friendRequestsReceived'] = receivedList;
+    return state.copyWith(userDetails: newDetails);
+  } else if (action is FriendRequestFailedAction) {
+    // Reverte o estado para como era antes da ação otimista
+    return state.copyWith(userDetails: action.originalUserDetails);
   }
 
   return state;

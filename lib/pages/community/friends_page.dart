@@ -39,52 +39,29 @@ class _FriendsPageState extends State<FriendsPage>
     super.dispose();
   }
 
-  // Função para ACEITAR um pedido de amizade
   Future<void> _acceptRequest(String requesterId) async {
     if (_isProcessingRequest) return;
     setState(() => _isProcessingRequest = true);
 
-    try {
-      final callable =
-          FirebaseFunctions.instanceFor(region: "southamerica-east1")
-              .httpsCallable('acceptFriendRequest');
-      await callable.call({'requesterUserId': requesterId});
-      if (mounted)
-        CustomNotificationService.showSuccess(context, "Amizade aceita!");
-      // Recarrega todos os dados para atualizar todas as listas
-      if (mounted)
-        StoreProvider.of<AppState>(context, listen: false)
-            .dispatch(LoadFriendsDataAction());
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted)
-        CustomNotificationService.showError(
-            context, e.message ?? "Erro ao aceitar pedido.");
-    } finally {
+    StoreProvider.of<AppState>(context, listen: false).dispatch(
+        AcceptFriendRequestOptimisticAction(requesterUserId: requesterId));
+
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isProcessingRequest = false);
-    }
+    });
   }
 
-  // Função para RECUSAR um pedido de amizade
+  // Função para RECUSAR um pedido de amizade (ATUALIZADA)
   Future<void> _declineRequest(String requesterId) async {
     if (_isProcessingRequest) return;
     setState(() => _isProcessingRequest = true);
 
-    try {
-      final callable =
-          FirebaseFunctions.instanceFor(region: "southamerica-east1")
-              .httpsCallable('declineFriendRequest');
-      await callable.call({'requesterUserId': requesterId});
-      // Recarrega todos os dados para atualizar todas as listas
-      if (mounted)
-        StoreProvider.of<AppState>(context, listen: false)
-            .dispatch(LoadFriendsDataAction());
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted)
-        CustomNotificationService.showError(
-            context, e.message ?? "Erro ao recusar pedido.");
-    } finally {
+    StoreProvider.of<AppState>(context, listen: false).dispatch(
+        DeclineFriendRequestOptimisticAction(requesterUserId: requesterId));
+
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isProcessingRequest = false);
-    }
+    });
   }
 
   @override
