@@ -1,4 +1,4 @@
-// lib/pages/community/reply_card.dart (VERSÃO ATUALIZADA COM PERFIS CLICÁVEIS)
+// lib/pages/community/reply_card.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,7 +8,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:septima_biblia/pages/community/public_profile_page.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
-import 'package:septima_biblia/services/custom_page_route.dart'; // Importante para a transição suave
+import 'package:septima_biblia/services/custom_page_route.dart';
 
 class ReplyCard extends StatefulWidget {
   final QueryDocumentSnapshot replyDoc;
@@ -152,7 +152,7 @@ class _ReplyCardState extends State<ReplyCard>
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8), // Padding ajustado
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: const Alignment(-1.0, -1.0),
@@ -168,31 +168,52 @@ class _ReplyCardState extends State<ReplyCard>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ===================================
-            // <<< MUDANÇA: Row -> ListTile >>>
+            // <<< INÍCIO DO NOVO LAYOUT DO HEADER DA RESPOSTA >>>
             // ===================================
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                radius: 18,
-                backgroundImage: (!isAnonymous &&
-                        authorPhotoUrl != null &&
-                        authorPhotoUrl.isNotEmpty)
-                    ? NetworkImage(authorPhotoUrl)
-                    : null,
-                child: (isAnonymous ||
-                        authorPhotoUrl == null ||
-                        authorPhotoUrl.isEmpty)
-                    ? const Icon(Icons.person_outline, size: 20)
-                    : null,
-              ),
-              title: Text(
-                authorName,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+            GestureDetector(
+              onTap: () {
+                if (!isAnonymous && replyAuthorId != null) {
+                  Navigator.push(
+                    context,
+                    FadeScalePageRoute(
+                      page: PublicProfilePage(
+                        userId: replyAuthorId,
+                        initialUserData: {
+                          'userId': replyAuthorId,
+                          'nome': authorName,
+                          'photoURL': authorPhotoUrl,
+                        },
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundImage: (!isAnonymous &&
+                            authorPhotoUrl != null &&
+                            authorPhotoUrl.isNotEmpty)
+                        ? NetworkImage(authorPhotoUrl)
+                        : null,
+                    child: (isAnonymous ||
+                            authorPhotoUrl == null ||
+                            authorPhotoUrl.isEmpty)
+                        ? const Icon(Icons.person_outline, size: 20)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      authorName,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   if (isBestAnswer)
                     Chip(
                       avatar:
@@ -229,31 +250,11 @@ class _ReplyCardState extends State<ReplyCard>
                     ),
                 ],
               ),
-              onTap: () {
-                // Navega para o perfil público se não for anônimo e tiver um ID
-                if (!isAnonymous && replyAuthorId != null) {
-                  Navigator.push(
-                    context,
-                    FadeScalePageRoute(
-                      page: PublicProfilePage(
-                        userId: replyAuthorId,
-                        initialUserData: {
-                          'userId': replyAuthorId,
-                          'nome': authorName,
-                          'photoURL': authorPhotoUrl,
-                        },
-                      ),
-                    ),
-                  );
-                }
-              },
             ),
-            // ===================================
-            // <<< FIM DA MUDANÇA >>>
-            // ===================================
+            const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.only(
-                  left: 58.0, bottom: 8.0), // Alinha com o avatar
+              padding:
+                  const EdgeInsets.only(left: 48.0), // Indentação (18*2 + 12)
               child: MarkdownBody(
                 data: replyData['content'] ?? '',
                 styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
@@ -261,9 +262,12 @@ class _ReplyCardState extends State<ReplyCard>
                 ),
               ),
             ),
+            // ===================================
+            // <<< FIM DO NOVO LAYOUT >>>
+            // ===================================
             Row(
               children: [
-                const SizedBox(width: 42), // Espaço para alinhar com o avatar
+                const SizedBox(width: 32), // Espaço para alinhar com o avatar
                 TextButton.icon(
                   onPressed: () =>
                       widget.onUpvote(widget.replyDoc.id, upvoters),
@@ -298,7 +302,7 @@ class _ReplyCardState extends State<ReplyCard>
                 if (widget.isPostAuthor && !isBestAnswer)
                   TextButton(
                     onPressed: () => widget.onMarkAsBest(widget.replyDoc.id),
-                    child: Text("Marcar como melhor",
+                    child: Text("Melhor",
                         style: TextStyle(
                             fontSize: 12, color: Colors.green.shade600)),
                   ),
@@ -355,6 +359,9 @@ class _ReplyCardState extends State<ReplyCard>
     }
   }
 
+  // ===================================
+  // <<< SEÇÃO DE COMENTÁRIOS ATUALIZADA >>>
+  // ===================================
   Widget _buildCommentsSection() {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -390,14 +397,12 @@ class _ReplyCardState extends State<ReplyCard>
                 final date = timestamp != null
                     ? DateFormat('dd/MM/yy').format(timestamp.toDate())
                     : '';
-
                 final String commentAuthorName =
                     commentData['authorName'] ?? 'Anônimo';
                 final String? commentAuthorPhotoUrl =
                     commentData['authorPhotoUrl'] as String?;
                 final bool isCommentAnonymous =
                     commentAuthorName == "Autor Anônimo";
-
                 final replyingToName = commentData['replyingToUserName'] ?? '';
                 final content = commentData['content'] ?? '';
                 final commentAuthorId = commentData['authorId'] as String?;
@@ -417,77 +422,101 @@ class _ReplyCardState extends State<ReplyCard>
                     TextSpan(text: content),
                   ],
                 );
-                // ===================================
-                // <<< MUDANÇA: Row -> ListTile >>>
-                // ===================================
-                return ListTile(
-                  contentPadding: const EdgeInsets.only(left: 12, right: 4),
-                  leading: CircleAvatar(
-                    radius: 16,
-                    backgroundImage: (!isCommentAnonymous &&
-                            commentAuthorPhotoUrl != null &&
-                            commentAuthorPhotoUrl.isNotEmpty)
-                        ? NetworkImage(commentAuthorPhotoUrl)
-                        : null,
-                    child: (isCommentAnonymous ||
-                            commentAuthorPhotoUrl == null ||
-                            commentAuthorPhotoUrl.isEmpty)
-                        ? const Icon(Icons.person_outline, size: 18)
-                        : null,
-                  ),
-                  title: Row(
+
+                // <<< INÍCIO DO NOVO LAYOUT DO COMENTÁRIO ANINHADO >>>
+                return Padding(
+                  padding: const EdgeInsets.only(left: 12.0, top: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(commentAuthorName,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14)),
-                      const SizedBox(width: 8),
-                      Text(date, style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: RichText(text: contentSpan),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.reply, size: 16),
-                        tooltip: "Responder a este comentário",
-                        onPressed: () => widget.onReply(widget.replyDoc.id,
-                            commentData['authorId'], commentAuthorName),
-                      ),
-                      if (canDeleteComment)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              size: 16, color: Colors.redAccent),
-                          tooltip: "Excluir comentário",
-                          onPressed: () => _deleteComment(doc),
+                      GestureDetector(
+                        onTap: () {
+                          if (!isCommentAnonymous && commentAuthorId != null) {
+                            Navigator.push(
+                              context,
+                              FadeScalePageRoute(
+                                page: PublicProfilePage(
+                                  userId: commentAuthorId,
+                                  initialUserData: {
+                                    'userId': commentAuthorId,
+                                    'nome': commentAuthorName,
+                                    'photoURL': commentAuthorPhotoUrl,
+                                  },
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundImage: (!isCommentAnonymous &&
+                                      commentAuthorPhotoUrl != null &&
+                                      commentAuthorPhotoUrl.isNotEmpty)
+                                  ? NetworkImage(commentAuthorPhotoUrl)
+                                  : null,
+                              child: (isCommentAnonymous ||
+                                      commentAuthorPhotoUrl == null ||
+                                      commentAuthorPhotoUrl.isEmpty)
+                                  ? const Icon(Icons.person_outline, size: 16)
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                commentAuthorName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ),
+                            Text(date,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(fontSize: 11)),
+                            if (canDeleteComment)
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    size: 18, color: Colors.redAccent),
+                                tooltip: "Excluir comentário",
+                                onPressed: () => _deleteComment(doc),
+                                padding: const EdgeInsets.all(4),
+                                constraints: const BoxConstraints(),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
-                  onTap: () {
-                    // Navega para o perfil público do autor do comentário aninhado
-                    if (!isCommentAnonymous && commentAuthorId != null) {
-                      Navigator.push(
-                        context,
-                        FadeScalePageRoute(
-                          page: PublicProfilePage(
-                            userId: commentAuthorId,
-                            initialUserData: {
-                              'userId': commentAuthorId,
-                              'nome': commentAuthorName,
-                              'photoURL': commentAuthorPhotoUrl,
-                            },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 36.0, top: 4.0, bottom: 4.0),
+                        child: RichText(text: contentSpan),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 36.0),
+                        child: TextButton(
+                          onPressed: () => widget.onReply(widget.replyDoc.id,
+                              commentData['authorId'], commentAuthorName),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            "Responder",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
-                      );
-                    }
-                  },
+                      )
+                    ],
+                  ),
                 );
-                // ===================================
-                // <<< FIM DA MUDANÇA >>>
-                // ===================================
+                // <<< FIM DO NOVO LAYOUT >>>
               }).toList(),
             ),
           );
