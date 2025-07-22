@@ -3,8 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 
 // O Enum não é mais necessário, então foi removido.
 
@@ -67,6 +71,14 @@ class _ShareableImageGeneratorPageState
         [XFile(filePath)],
         text: 'Confira este versículo: ${widget.verseReference} #SeptimaApp',
       );
+
+      final store = StoreProvider.of<AppState>(context, listen: false);
+      final isPremium = store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive;
+      if (!isPremium) {
+        interstitialManager.tryShowInterstitial(
+            fromScreen: "ShareImage_Success");
+      }
 
       // Registra o evento de analytics com o resultado
       // Nota: Não conseguimos saber QUAL app foi escolhido (WhatsApp, etc.) por limitações de privacidade das plataformas.

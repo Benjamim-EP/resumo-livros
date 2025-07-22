@@ -4,8 +4,10 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart';
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
@@ -36,6 +38,22 @@ class _FriendsPageState extends State<FriendsPage>
   @override
   void dispose() {
     _tabController.dispose();
+
+    // ===================================
+    // <<< ADICIONE ESTE BLOCO >>>
+    // ===================================
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    if (!isPremium) {
+      interstitialManager.tryShowInterstitial(
+          fromScreen: "FriendsPage_Dispose");
+    }
+    // ===================================
+    // <<< FIM DO NOVO BLOCO >>>
+    // ===================================
+
     super.dispose();
   }
 

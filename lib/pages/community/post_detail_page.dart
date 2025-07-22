@@ -10,7 +10,11 @@ import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/community/create_post_page.dart';
 import 'package:septima_biblia/pages/community/public_profile_page.dart';
 import 'package:septima_biblia/pages/community/reply_card.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String postId;
@@ -36,6 +40,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
   void initState() {
     super.initState();
     _loadPostData();
+  }
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    if (!isPremium) {
+      interstitialManager.tryShowInterstitial(
+          fromScreen: "PostDetailPage_Dispose");
+    }
+
+    super.dispose();
   }
 
   Future<void> _addReply() async {

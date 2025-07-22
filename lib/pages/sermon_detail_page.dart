@@ -559,8 +559,14 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
   void dispose() {
     _ttsManager.playerState.removeListener(_onTtsStateChanged);
     _ttsManager.stop();
-    interstitialManager.tryShowInterstitial(
-        fromScreen: "SermonDetailPage_Dispose");
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    if (!isPremium) {
+      interstitialManager.tryShowInterstitial(
+          fromScreen: "SermonDetailPage_Dispose");
+    }
     _scrollController.dispose(); // <<< NOVO
     _debounce?.cancel();
     super.dispose();
