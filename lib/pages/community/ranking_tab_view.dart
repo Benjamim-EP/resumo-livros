@@ -14,7 +14,7 @@ import 'package:septima_biblia/pages/community/podium_widget.dart';
 import 'package:septima_biblia/pages/community/ranking_list_item.dart';
 import 'package:septima_biblia/pages/community/user_ranking_card.dart';
 
-// Modelo de Dados para o Ranking (sem alterações)
+// Modelo de Dados para o Ranking
 class RankingUser {
   final String id;
   final String name;
@@ -43,6 +43,8 @@ class RankingUser {
     );
   }
 
+  // O construtor fromMock não é mais necessário, mas pode ser mantido se você usá-lo em testes.
+  // Se não, pode ser removido.
   factory RankingUser.fromMock(Map<String, dynamic> mockData) {
     return RankingUser(
       id: mockData['id'] ?? 'mock_id',
@@ -53,7 +55,7 @@ class RankingUser {
   }
 }
 
-// ViewModel (sem alterações)
+// ViewModel para obter os dados do usuário logado do Redux
 class _RankingViewModel {
   final String? loggedInUserId;
   final String? loggedInUserName;
@@ -84,10 +86,6 @@ class RankingTabView extends StatefulWidget {
 class _RankingTabViewState extends State<RankingTabView> {
   late Future<List<RankingUser>> _rankingFuture;
 
-  // ===================================
-  // <<< INÍCIO DA NOVA SEÇÃO DE DADOS >>>
-  // ===================================
-  // Mapa de recompensas, espelhando a lógica do backend.
   final Map<int, int> _rewards = {
     1: 700,
     2: 300,
@@ -100,29 +98,31 @@ class _RankingTabViewState extends State<RankingTabView> {
     9: 30,
     10: 20
   };
-  // ===================================
-  // <<< FIM DA NOVA SEÇÃO DE DADOS >>>
-  // ===================================
 
   @override
   void initState() {
     super.initState();
-    _rankingFuture = _fetchAndFillRanking();
+    _rankingFuture = _fetchRanking(); // Chama a nova função
   }
 
-  Future<List<RankingUser>> _fetchAndFillRanking() async {
-    // ... (esta função permanece a mesma)
+  // ===================================
+  // <<< FUNÇÃO ATUALIZADA AQUI >>>
+  // ===================================
+  Future<List<RankingUser>> _fetchRanking() async {
     List<RankingUser> realUsers = [];
     try {
+      // 1. Busca os documentos de progresso ordenados por score
       final progressSnapshot = await FirebaseFirestore.instance
           .collection('userBibleProgress')
           .orderBy('rankingScore', descending: true)
-          .limit(100)
+          .limit(100) // Limita aos 100 melhores para performance
           .get();
 
       if (progressSnapshot.docs.isNotEmpty) {
+        // 2. Coleta os IDs dos usuários para buscar seus detalhes
         final userIds = progressSnapshot.docs.map((doc) => doc.id).toList();
 
+        // 3. Busca os detalhes dos usuários em lotes de 30 (limite do 'whereIn')
         Map<String, DocumentSnapshot> userDocsMap = {};
         for (var i = 0; i < userIds.length; i += 30) {
           final chunk = userIds.sublist(
@@ -136,6 +136,7 @@ class _RankingTabViewState extends State<RankingTabView> {
           }
         }
 
+        // 4. Combina os dados de progresso com os detalhes do usuário
         for (var progressDoc in progressSnapshot.docs) {
           final userDoc = userDocsMap[progressDoc.id];
           if (userDoc != null) {
@@ -144,34 +145,19 @@ class _RankingTabViewState extends State<RankingTabView> {
         }
       }
     } catch (e) {
-      print("Erro ao buscar ranking real (usando mock como fallback): $e");
+      // O fallback para dados mock foi removido. Agora apenas logamos o erro.
+      print("Erro ao buscar ranking real do Firestore: $e");
     }
 
-    if (realUsers.length < 30) {
-      try {
-        final String jsonString =
-            await rootBundle.loadString('assets/mock_data/ranking_mock.json');
-        final List<dynamic> mockDataList = json.decode(jsonString);
-        final List<RankingUser> mockUsers =
-            mockDataList.map((data) => RankingUser.fromMock(data)).toList();
-
-        final realUserIds = realUsers.map((u) => u.id).toSet();
-
-        for (var mockUser in mockUsers) {
-          if (realUsers.length >= 30) break;
-          if (!realUserIds.contains(mockUser.id)) {
-            realUsers.add(mockUser);
-          }
-        }
-      } catch (e) {
-        print("Erro ao carregar dados mock de ranking: $e");
-      }
-    }
-
+    // A ordenação já é feita pela query do Firestore, mas uma re-ordenação aqui
+    // garante a consistência caso haja alguma manipulação futura.
     realUsers.sort((a, b) => b.rankingScore.compareTo(a.rankingScore));
 
     return realUsers;
   }
+  // ===================================
+  // <<< FIM DA ATUALIZAÇÃO >>>
+  // ===================================
 
   @override
   Widget build(BuildContext context) {
@@ -211,16 +197,13 @@ class _RankingTabViewState extends State<RankingTabView> {
             return RefreshIndicator(
               onRefresh: () async {
                 setState(() {
-                  _rankingFuture = _fetchAndFillRanking();
+                  _rankingFuture = _fetchRanking(); // Recarrega os dados
                 });
               },
               child: ListView(
                 padding: const EdgeInsets.symmetric(
                     vertical: 16.0, horizontal: 16.0),
                 children: [
-                  // ===================================
-                  // <<< INÍCIO DA NOVA SEÇÃO DE UI >>>
-                  // ===================================
                   Text(
                     "🏆 Prêmios da Semana",
                     style: Theme.of(context).textTheme.titleLarge,
@@ -229,14 +212,8 @@ class _RankingTabViewState extends State<RankingTabView> {
                   const SizedBox(height: 16),
                   RankingRewardsList(rewards: _rewards),
                   const SizedBox(height: 24),
-                  // ===================================
-                  // <<< FIM DA NOVA SEÇÃO DE UI >>>
-                  // ===================================
-
                   if (podiumUsers.isNotEmpty) PodiumWidget(users: podiumUsers),
-
                   const SizedBox(height: 40),
-
                   if (loggedInUserRankingData != null)
                     UserRankingCard(
                       name: loggedInUserRankingData.name,
@@ -252,15 +229,12 @@ class _RankingTabViewState extends State<RankingTabView> {
                       rank: 0,
                       photoUrl: viewModel.loggedInUserPhotoUrl,
                     ),
-
                   const SizedBox(height: 24),
-
                   if (listUsers.isNotEmpty)
                     Text(
                       "Top 100 Leitores",
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-
                   if (listUsers.isNotEmpty)
                     ...List.generate(listUsers.length, (index) {
                       final user = listUsers[index];
@@ -294,35 +268,23 @@ class _RankingTabViewState extends State<RankingTabView> {
   }
 }
 
-// ======================================================
-// <<< INÍCIO DOS NOVOS WIDGETS DE RECOMPENSA >>>
-// ======================================================
-
-/// Widget que cria a lista horizontal de cartões de prêmios.
+// Widgets de Recompensa (sem alterações)
 class RankingRewardsList extends StatelessWidget {
   final Map<int, int> rewards;
-
   const RankingRewardsList({super.key, required this.rewards});
-
   @override
   Widget build(BuildContext context) {
-    // Converte o mapa para uma lista para fácil acesso pelo índice
     final rewardsList = rewards.entries.toList();
-
     return SizedBox(
-      height: 125, // Altura da lista horizontal
+      height: 125,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: rewardsList.length,
         itemBuilder: (context, index) {
           final entry = rewardsList[index];
           return Padding(
-            // Adiciona um espaçamento entre os cartões
             padding: EdgeInsets.only(left: index == 0 ? 0 : 4, right: 4),
-            child: RewardCard(
-              rank: entry.key, // Posição
-              coins: entry.value, // Quantidade de moedas
-            ),
+            child: RewardCard(rank: entry.key, coins: entry.value),
           );
         },
       ),
@@ -330,26 +292,21 @@ class RankingRewardsList extends StatelessWidget {
   }
 }
 
-/// Widget para exibir um único cartão de prêmio.
 class RewardCard extends StatelessWidget {
   final int rank;
   final int coins;
-
   const RewardCard({super.key, required this.rank, required this.coins});
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // Define cores e estilos com base na posição
     Color startColor, endColor, iconColor;
-    double width = 90; // Largura padrão
+    double width = 90;
     switch (rank) {
       case 1:
         startColor = Colors.amber.shade300;
         endColor = Colors.amber.shade600;
         iconColor = Colors.amber.shade800;
-        width = 100; // O primeiro lugar é maior
+        width = 100;
         break;
       case 2:
         startColor = Colors.grey.shade300;
@@ -366,7 +323,6 @@ class RewardCard extends StatelessWidget {
         endColor = theme.colorScheme.primary;
         iconColor = theme.colorScheme.onPrimary.withOpacity(0.8);
     }
-
     return Card(
       elevation: 4,
       shadowColor: endColor.withOpacity(0.5),
@@ -385,7 +341,6 @@ class RewardCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // Posição no Ranking
             Text(
               "${rank}º LUGAR",
               style: TextStyle(
@@ -395,13 +350,7 @@ class RewardCard extends StatelessWidget {
                 shadows: const [Shadow(blurRadius: 2, color: Colors.black38)],
               ),
             ),
-            // Ícone de Moeda
-            Icon(
-              Icons.monetization_on,
-              color: iconColor,
-              size: 28,
-            ),
-            // Quantidade de Moedas
+            Icon(Icons.monetization_on, color: iconColor, size: 28),
             Text(
               coins.toString(),
               style: const TextStyle(
@@ -417,6 +366,3 @@ class RewardCard extends StatelessWidget {
     );
   }
 }
-// ======================================================
-// <<< FIM DOS NOVOS WIDGETS DE RECOMPENSA >>>
-// ======================================================

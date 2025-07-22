@@ -2707,5 +2707,19 @@
     "ramo_principal": "Diversos",
     "caminho": "Diversos",
     "numero_adeptos": "0,006 milhão"
+  },
+  {
+    "id": 388,
+    "nome": "Ateu",
+    "ramo_principal": "Diversos",
+    "caminho": "Diversos",
+    "numero_adeptos": "0,656 milhão"
+  },
+  {
+    "id": 389,
+    "nome": "Não Listado",
+    "ramo_principal": "Diversos",
+    "caminho": "Diversos",
+    "numero_adeptos": "-1"
   }
 ]
