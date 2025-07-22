@@ -6,10 +6,28 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:septima_biblia/pages/bibtok/premium_ad_card.dart';
 import 'package:septima_biblia/pages/bibtok/quote_card_widget.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:redux/redux.dart';
+
+class _BibTokViewModel {
+  final bool isPremium;
+  final Map<String, dynamic>? userDetails;
+
+  _BibTokViewModel({required this.isPremium, this.userDetails});
+
+  static _BibTokViewModel fromStore(Store<AppState> store) {
+    return _BibTokViewModel(
+      isPremium: store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive,
+      userDetails: store.state.userState.userDetails,
+    );
+  }
+}
 
 class BibTokPage extends StatefulWidget {
   const BibTokPage({super.key});
@@ -30,6 +48,10 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
 
   static const int _chunkSize = 10000;
   static const String _seenQuotesPrefsKey = 'bibtok_seen_ids_cache';
+
+  bool _isScrollLocked = false;
+
+  final int _adInterval = 7;
 
   @override
   void initState() {
@@ -279,35 +301,87 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     }
   }
 
+  Widget buildQuoteOnlyFeed() {
+    return PageView.builder(
+      controller: _pageController,
+      scrollDirection: Axis.vertical,
+      itemCount: _feedItems.length + (_isFetchingMore ? 1 : 0),
+      onPageChanged: (index) {
+        // Lógica de onPageChanged original, sem cálculo de offset
+        if (index < _feedItems.length) {
+          final quoteData = _feedItems[index];
+          final quoteId = quoteData['id'] as String?;
+          final allCurrentlySeenIds = {
+            ..._persistentSeenIds,
+            ..._sessionOnlySeenIds
+          };
+
+          if (quoteId != null && !allCurrentlySeenIds.contains(quoteId)) {
+            print(
+                "BibTok (Premium): Nova frase VISUALIZADA no índice $index. Marcando '${quoteId.substring(0, 8)}...' como visto.");
+            setState(() {
+              _sessionOnlySeenIds.add(quoteId);
+              _persistentSeenIds.add(quoteId);
+            });
+          }
+        }
+
+        // Lógica de paginação
+        if (index >= _feedItems.length - 3 && !_isFetchingMore) {
+          _fetchAndBuildFeed();
+        }
+      },
+      itemBuilder: (context, index) {
+        // Mostra o loader no final, se estiver buscando mais
+        if (index == _feedItems.length) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // Constrói o card da frase
+        final quoteData = _feedItems[index];
+        final quoteId = quoteData['id'] as String;
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              image: DecorationImage(
+                image:
+                    NetworkImage("https://picsum.photos/seed/$quoteId/450/800"),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.4), BlendMode.darken),
+              ),
+            ),
+            child: QuoteCardWidget(quoteData: quoteData),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // >>>>> CORREÇÃO 3: Envolver a página com um StoreConnector <<<<<
-    // Este conector irá ouvir as mudanças em `userDetails`.
-    // Ele garantirá que `_initializeFeed` só seja chamado DEPOIS que os dados do usuário chegarem.
-    return StoreConnector<AppState, Map<String, dynamic>?>(
-      converter: (store) => store.state.userState.userDetails,
-      // `onInit` é chamado uma vez quando o conector é criado.
+    return StoreConnector<AppState, _BibTokViewModel>(
+      converter: (store) => _BibTokViewModel.fromStore(store),
       onInit: (store) {
-        // Se por algum motivo os detalhes já estiverem lá (navegação rápida),
-        // podemos iniciar o feed imediatamente.
         if (store.state.userState.userDetails != null) {
           _initializeFeed();
         }
       },
-      // `onWillChange` é chamado sempre que `userDetails` muda.
       onWillChange: (previousViewModel, newViewModel) {
-        // Se os detalhes acabaram de chegar (eram nulos e agora não são),
-        // iniciamos o carregamento do feed.
-        if (previousViewModel == null && newViewModel != null) {
+        if (previousViewModel?.userDetails == null &&
+            newViewModel.userDetails != null) {
           _initializeFeed();
         }
       },
-      builder: (context, userDetails) {
-        // O resto da sua UI de build vai aqui
+      builder: (context, viewModel) {
+        // 1. Estado de Carregamento Inicial
         if (_isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
+        // 2. Estado de Feed Vazio (após o carregamento)
         if (_feedItems.isEmpty && !_isFetchingMore) {
           return Center(
             child: Padding(
@@ -328,45 +402,78 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
           );
         }
 
+        // 3. Lógica Principal: Divide a UI com base no status Premium
+
+        // Se o usuário for premium, mostramos o feed simples e sem anúncios.
+        if (viewModel.isPremium) {
+          return buildQuoteOnlyFeed();
+        }
+
+        // Se não for premium, construímos o feed com os anúncios intercalados.
+        final adCount = (_feedItems.length / _adInterval).floor();
+        final totalItemCount =
+            _feedItems.length + adCount + (_isFetchingMore ? 1 : 0);
+        final adSlotRatio = _adInterval + 1; // O anúncio é o 8º item (índice 7)
+
         return PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.vertical,
-          itemCount: _feedItems.length + (_isFetchingMore ? 1 : 0),
+          // Trava o scroll se a flag _isScrollLocked for verdadeira
+          physics:
+              _isScrollLocked ? const NeverScrollableScrollPhysics() : null,
+          itemCount: totalItemCount,
           onPageChanged: (index) {
-            if (index < _feedItems.length) {
-              final quoteData = _feedItems[index];
-              final quoteId = quoteData['id'] as String?;
+            // A lógica de marcar como visto precisa ajustar o índice
+            // para ignorar os anúncios.
+            final adOffset = ((index + 1) / adSlotRatio).floor();
+            final quoteIndex = index - adOffset;
 
-              // Combina os dois conjuntos para ter a lista completa de tudo que já foi visto
+            if (quoteIndex >= 0 && quoteIndex < _feedItems.length) {
+              final quoteData = _feedItems[quoteIndex];
+              final quoteId = quoteData['id'] as String?;
               final allCurrentlySeenIds = {
                 ..._persistentSeenIds,
                 ..._sessionOnlySeenIds
               };
-
-              // SÓ executa a lógica se o ID for válido e NUNCA tiver sido visto antes
               if (quoteId != null && !allCurrentlySeenIds.contains(quoteId)) {
                 print(
-                    "BibTok: Nova frase VISUALIZADA no índice $index. Marcando '${quoteId.substring(0, 8)}...' como visto.");
-                // Adiciona aos dois conjuntos para garantir consistência imediata
+                    "BibTok: Nova frase VISUALIZADA no índice $quoteIndex. Marcando '${quoteId.substring(0, 8)}...' como visto.");
                 setState(() {
                   _sessionOnlySeenIds.add(quoteId);
-                  _persistentSeenIds.add(
-                      quoteId); // Adiciona aqui também para evitar re-marcação
+                  _persistentSeenIds.add(quoteId);
                 });
               }
             }
 
-            // Lógica de paginação
-            if (index >= _feedItems.length - 3 && !_isFetchingMore) {
+            // Lógica de paginação ajustada para carregar mais itens
+            if (quoteIndex >= _feedItems.length - 3 && !_isFetchingMore) {
               _fetchAndBuildFeed();
             }
           },
           itemBuilder: (context, index) {
-            if (index == _feedItems.length) {
+            // Se for o último item da lista e estivermos buscando mais, mostra o loader.
+            if (index == totalItemCount - 1 && _isFetchingMore) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final quoteData = _feedItems[index];
+            // Verifica se a posição atual é um "slot" para o anúncio
+            if ((index + 1) % adSlotRatio == 0 && index != 0) {
+              return PremiumAdCard(
+                onTimerStart: () => setState(() => _isScrollLocked = true),
+                onTimerEnd: () => setState(() => _isScrollLocked = false),
+              );
+            }
+
+            // Se não for um anúncio, calcula o índice correto para a lista de frases
+            final adOffset = ((index + 1) / adSlotRatio).floor();
+            final quoteIndex = index - adOffset;
+
+            // Verificação de segurança para evitar RangeError em casos raros
+            if (quoteIndex >= _feedItems.length) {
+              return const SizedBox.shrink();
+            }
+
+            final quoteData = _feedItems[quoteIndex];
             final quoteId = quoteData['id'] as String;
             return Padding(
               padding: const EdgeInsets.all(8.0),

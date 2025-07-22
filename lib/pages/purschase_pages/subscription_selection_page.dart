@@ -10,9 +10,9 @@ import 'package:septima_biblia/consts.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/login_required.dart';
 
-// ViewModel para obter os dados necessários do store
+// ViewModel (sem alterações)
 class _ViewModel {
-  final bool isLoading; // Loading global do estado de subscrição
+  final bool isLoading;
   final AppThemeOption activeTheme;
   final bool isGuest;
 
@@ -24,7 +24,6 @@ class _ViewModel {
 
   static _ViewModel fromStore(Store<AppState> store) {
     return _ViewModel(
-      // <<< A UI agora depende diretamente deste estado global >>>
       isLoading: store.state.subscriptionState.isLoading,
       activeTheme: store.state.themeState.activeThemeOption,
       isGuest: store.state.userState.isGuestUser,
@@ -32,7 +31,6 @@ class _ViewModel {
   }
 }
 
-// O widget continua sendo um StatefulWidget, mas sem estado de loading local.
 class SubscriptionSelectionPage extends StatefulWidget {
   const SubscriptionSelectionPage({super.key});
 
@@ -42,9 +40,6 @@ class SubscriptionSelectionPage extends StatefulWidget {
 }
 
 class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
-  // O estado de loading local foi removido.
-  // String? _processingProductId; // <<<< REMOVIDO
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -56,13 +51,9 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: theme.textTheme.bodyLarge?.color,
       ),
-      // O StoreConnector principal envolve toda a tela para reagir ao isLoading global
-      // e mostrar um loader de tela cheia, se necessário.
       body: StoreConnector<AppState, _ViewModel>(
         converter: (store) => _ViewModel.fromStore(store),
         builder: (context, viewModel) {
-          // Se o processo de pagamento estiver em andamento (estado global),
-          // mostramos um loader de tela cheia.
           if (viewModel.isLoading) {
             return const Center(
               child: Column(
@@ -105,7 +96,9 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // Card para o plano Gratuito
+  // ===================================
+  // <<< CARD DO PLANO GRATUITO ATUALIZADO >>>
+  // ===================================
   Widget _buildFreePlanCard(BuildContext context, ThemeData theme) {
     return Card(
       elevation: 1,
@@ -121,68 +114,90 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
             Text("Plano Gratuito", style: theme.textTheme.headlineSmall),
             const SizedBox(height: 20),
             _buildFeatureRow(Icons.menu_book_outlined,
-                "Bíblia completa em 3 versões", theme),
+                "Bíblia completa em múltiplas versões", theme),
             const SizedBox(height: 16),
             _buildFeatureRow(
                 Icons.comment_bank_outlined, "Comentários por seção", theme),
             const SizedBox(height: 16),
             _buildFeatureRow(
                 Icons.wb_sunny_outlined, "Devocionais Diários", theme),
-            const SizedBox(height: 16),
-            _buildFeatureRow(Icons.history_edu_outlined,
-                "Sermões e Roteiros de Estudo", theme),
             const Divider(height: 32),
             _buildLimitationRow(
                 Icons.ad_units_outlined, "Anúncios durante a navegação", theme),
+            const SizedBox(height: 16),
+            _buildLimitationRow(Icons.monetization_on_outlined,
+                "Recursos de IA limitados por moedas", theme),
           ],
         ),
       ),
     );
   }
 
-  // Card para o plano Premium
+  // ===================================
+  // <<< CARD PREMIUM TOTALMENTE REFEITO >>>
+  // ===================================
   Widget _buildPremiumPlanCard(BuildContext context, ThemeData theme,
       AppThemeOption activeTheme, bool isGuest) {
     return Card(
       elevation: 8,
-      shadowColor: theme.colorScheme.primary.withOpacity(0.3),
+      shadowColor: Colors.amber.withOpacity(0.4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: theme.cardColor,
+          gradient: LinearGradient(
+            colors: [
+              Colors.amber.shade200.withOpacity(0.2),
+              theme.cardColor,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.center,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Premium", style: theme.textTheme.headlineSmall),
-              const SizedBox(height: 20),
-              _buildPremiumFeatureRow(Icons.all_inclusive,
-                  "Tudo do plano gratuito, e mais:", theme),
-              const SizedBox(height: 16),
-              _buildPremiumFeatureRow(Icons.do_not_disturb_on_outlined,
-                  "Experiência sem anúncios", theme),
-              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.workspace_premium_outlined,
+                      color: Colors.amber.shade700, size: 32),
+                  const SizedBox(width: 12),
+                  Text("Septima Premium", style: theme.textTheme.headlineSmall),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Desbloqueie todas as ferramentas e estude sem limites.",
+                style: theme.textTheme.bodyLarge,
+              ),
+              const Divider(height: 32),
               _buildPremiumFeatureRow(
-                  Icons.translate_rounded, "Estudo Interlinear", theme,
+                  Icons.auto_awesome, "Ferramentas de IA Ilimitadas", theme,
                   isHighlighted: true),
-              _buildSubFeatureRow(
-                  "Hebraico e Grego com Léxico de Strong", theme),
+              _buildSubFeatureRow("Busca Semântica na Bíblia e Sermões", theme),
+              _buildSubFeatureRow("Resumos de Comentários com IA", theme),
+              _buildSubFeatureRow("Chat com Spurgeon AI", theme),
               const SizedBox(height: 16),
               _buildPremiumFeatureRow(
-                  Icons.format_paint_outlined, "Marcações coloridas", theme),
-              _buildSubFeatureRow(
-                  "Destaque e adicione tags em toda a biblioteca", theme),
+                  Icons.translate_rounded, "Aprofunde-se nos Originais", theme),
+              _buildSubFeatureRow("Hebraico e Grego Interlinear", theme),
+              _buildSubFeatureRow("Léxico de Strong Completo", theme),
               const SizedBox(height: 16),
-              _buildPremiumFeatureRow(Icons.school_outlined,
-                  "Conteúdo Exclusivo em Expansão", theme),
+              _buildPremiumFeatureRow(
+                  Icons.menu_book, "Experiência de Estudo Pura", theme),
+              _buildSubFeatureRow("Navegação totalmente sem anúncios", theme),
+              _buildSubFeatureRow("Geração de PDFs ilimitada", theme),
+              _buildSubFeatureRow(
+                  "Destaques coloridos em toda a biblioteca", theme),
+              const SizedBox(height: 16),
+              _buildPremiumFeatureRow(Icons.local_library_outlined,
+                  "Biblioteca Premium em Expansão", theme),
               _buildSubFeatureRow("História da Igreja (8 volumes)", theme),
               _buildSubFeatureRow("Institutas de Turretin (3 volumes)", theme),
+              _buildSubFeatureRow("Acesso antecipado a novos recursos", theme),
               const Divider(height: 40),
-
-              // >>>>> OS BOTÕES AGORA SÃO STATELESS, APENAS DESPACHAM A AÇÃO <<<<<
               _buildPlanOptionButton(
                 context,
                 theme,
@@ -196,7 +211,7 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
                 context,
                 theme,
                 title: "Assinar Plano Trimestral",
-                price: "R\$ 47,99 / 3 meses",
+                price: "R\$ 47,99 / 3 meses (Economize 20%)",
                 productId: googlePlayQuarterlyProductId,
                 isGuest: isGuest,
               ),
@@ -207,7 +222,7 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // Widget para uma linha de benefício Gratuito
+  // Widgets auxiliares (atualizados para o novo design)
   Widget _buildFeatureRow(IconData icon, String text, ThemeData theme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +239,6 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // Widget para uma linha de limitação
   Widget _buildLimitationRow(IconData icon, String text, ThemeData theme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,13 +255,12 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // Widget para uma linha de benefício Premium
   Widget _buildPremiumFeatureRow(IconData icon, String text, ThemeData theme,
       {bool isHighlighted = false}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: theme.colorScheme.primary, size: 22),
+        Icon(icon, color: Colors.amber.shade700, size: 22),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
@@ -257,22 +270,10 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
                     isHighlighted ? FontWeight.bold : FontWeight.normal),
           ),
         ),
-        if (isHighlighted)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8)),
-            child: Text("POPULAR",
-                style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold)),
-          )
       ],
     );
   }
 
-  // Widget para sub-item de benefício
   Widget _buildSubFeatureRow(String text, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(left: 38.0, top: 4.0),
@@ -282,9 +283,6 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // O botão de plano agora é um widget simples que apenas despacha a ação.
-  // Ele não precisa mais de um StoreConnector próprio, pois o loading
-  // é tratado pela tela inteira.
   Widget _buildPlanOptionButton(
     BuildContext context,
     ThemeData theme, {
@@ -293,7 +291,6 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     required String productId,
     required bool isGuest,
   }) {
-    // Usamos o StoreConnector para obter o estado de loading mais recente.
     return StoreConnector<AppState, _ViewModel>(
         converter: (store) => _ViewModel.fromStore(store),
         builder: (context, viewModel) {
@@ -302,8 +299,7 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: viewModel
-                      .isLoading // Desabilita se QUALQUER compra estiver em progresso
+              onTap: viewModel.isLoading
                   ? null
                   : () {
                       if (isGuest) {
