@@ -14,20 +14,20 @@ import 'package:septima_biblia/pages/community/podium_widget.dart';
 import 'package:septima_biblia/pages/community/ranking_list_item.dart';
 import 'package:septima_biblia/pages/community/user_ranking_card.dart';
 
-// Modelo de Dados para o Ranking
+// Modelo de Dados para o Ranking (sem alterações)
 class RankingUser {
   final String id;
   final String name;
   final String? photoURL;
   final double rankingScore;
-  final int? previousRank; // <<< NOVO CAMPO (pode ser nulo)
+  final int? previousRank;
 
   RankingUser({
     required this.id,
     required this.name,
     this.photoURL,
     required this.rankingScore,
-    this.previousRank, // <<< NOVO PARÂMETRO
+    this.previousRank,
   });
 
   factory RankingUser.fromFirestore(
@@ -39,11 +39,10 @@ class RankingUser {
       name: userData['nome'] ?? 'Anônimo',
       photoURL: userData['photoURL'],
       rankingScore: (progressData['rankingScore'] as num?)?.toDouble() ?? 0.0,
-      previousRank: userData['previousRank'] as int?, // <<< LÊ O NOVO CAMPO
+      previousRank: userData['previousRank'] as int?,
     );
   }
 
-  // Construtor para dados artificiais (mock) do JSON
   factory RankingUser.fromMock(Map<String, dynamic> mockData) {
     return RankingUser(
       id: mockData['id'] ?? 'mock_id',
@@ -54,7 +53,7 @@ class RankingUser {
   }
 }
 
-// ViewModel para obter os dados do usuário logado do Redux
+// ViewModel (sem alterações)
 class _RankingViewModel {
   final String? loggedInUserId;
   final String? loggedInUserName;
@@ -85,6 +84,26 @@ class RankingTabView extends StatefulWidget {
 class _RankingTabViewState extends State<RankingTabView> {
   late Future<List<RankingUser>> _rankingFuture;
 
+  // ===================================
+  // <<< INÍCIO DA NOVA SEÇÃO DE DADOS >>>
+  // ===================================
+  // Mapa de recompensas, espelhando a lógica do backend.
+  final Map<int, int> _rewards = {
+    1: 700,
+    2: 300,
+    3: 100,
+    4: 80,
+    5: 70,
+    6: 60,
+    7: 50,
+    8: 40,
+    9: 30,
+    10: 20
+  };
+  // ===================================
+  // <<< FIM DA NOVA SEÇÃO DE DADOS >>>
+  // ===================================
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +111,7 @@ class _RankingTabViewState extends State<RankingTabView> {
   }
 
   Future<List<RankingUser>> _fetchAndFillRanking() async {
+    // ... (esta função permanece a mesma)
     List<RankingUser> realUsers = [];
     try {
       final progressSnapshot = await FirebaseFirestore.instance
@@ -127,7 +147,6 @@ class _RankingTabViewState extends State<RankingTabView> {
       print("Erro ao buscar ranking real (usando mock como fallback): $e");
     }
 
-    // Se tivermos menos de 30 usuários reais, completa com mock data
     if (realUsers.length < 30) {
       try {
         final String jsonString =
@@ -175,8 +194,6 @@ class _RankingTabViewState extends State<RankingTabView> {
             }
 
             final allUsers = snapshot.data!;
-
-            // Lógica para encontrar o usuário logado e sua posição
             RankingUser? loggedInUserRankingData;
             int? loggedInUserRank;
             final userIndex = allUsers
@@ -198,14 +215,28 @@ class _RankingTabViewState extends State<RankingTabView> {
                 });
               },
               child: ListView(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(
+                    vertical: 16.0, horizontal: 16.0),
                 children: [
+                  // ===================================
+                  // <<< INÍCIO DA NOVA SEÇÃO DE UI >>>
+                  // ===================================
+                  Text(
+                    "🏆 Prêmios da Semana",
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  RankingRewardsList(rewards: _rewards),
+                  const SizedBox(height: 24),
+                  // ===================================
+                  // <<< FIM DA NOVA SEÇÃO DE UI >>>
+                  // ===================================
+
                   if (podiumUsers.isNotEmpty) PodiumWidget(users: podiumUsers),
 
                   const SizedBox(height: 40),
 
-                  // Card do usuário atual
                   if (loggedInUserRankingData != null)
                     UserRankingCard(
                       name: loggedInUserRankingData.name,
@@ -230,13 +261,11 @@ class _RankingTabViewState extends State<RankingTabView> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
 
-                  // Restante da lista
                   if (listUsers.isNotEmpty)
                     ...List.generate(listUsers.length, (index) {
                       final user = listUsers[index];
                       final rank = index + 4;
 
-                      // Não mostra o usuário logado novamente na lista
                       if (user.id == viewModel.loggedInUserId) {
                         return const SizedBox.shrink();
                       }
@@ -249,15 +278,11 @@ class _RankingTabViewState extends State<RankingTabView> {
                         previousRank: user.previousRank,
                       )
                           .animate()
-                          .fadeIn(
-                              duration: 500.ms,
-                              delay: (100 * index)
-                                  .ms) // Fade in com delay crescente
+                          .fadeIn(duration: 500.ms, delay: (100 * index).ms)
                           .slideY(
                               begin: 0.5,
                               duration: 500.ms,
-                              curve: Curves
-                                  .easeOutCubic); // Desliza de baixo para cima
+                              curve: Curves.easeOutCubic);
                     }),
                 ],
               ),
@@ -268,3 +293,130 @@ class _RankingTabViewState extends State<RankingTabView> {
     );
   }
 }
+
+// ======================================================
+// <<< INÍCIO DOS NOVOS WIDGETS DE RECOMPENSA >>>
+// ======================================================
+
+/// Widget que cria a lista horizontal de cartões de prêmios.
+class RankingRewardsList extends StatelessWidget {
+  final Map<int, int> rewards;
+
+  const RankingRewardsList({super.key, required this.rewards});
+
+  @override
+  Widget build(BuildContext context) {
+    // Converte o mapa para uma lista para fácil acesso pelo índice
+    final rewardsList = rewards.entries.toList();
+
+    return SizedBox(
+      height: 125, // Altura da lista horizontal
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: rewardsList.length,
+        itemBuilder: (context, index) {
+          final entry = rewardsList[index];
+          return Padding(
+            // Adiciona um espaçamento entre os cartões
+            padding: EdgeInsets.only(left: index == 0 ? 0 : 4, right: 4),
+            child: RewardCard(
+              rank: entry.key, // Posição
+              coins: entry.value, // Quantidade de moedas
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Widget para exibir um único cartão de prêmio.
+class RewardCard extends StatelessWidget {
+  final int rank;
+  final int coins;
+
+  const RewardCard({super.key, required this.rank, required this.coins});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Define cores e estilos com base na posição
+    Color startColor, endColor, iconColor;
+    double width = 90; // Largura padrão
+    switch (rank) {
+      case 1:
+        startColor = Colors.amber.shade300;
+        endColor = Colors.amber.shade600;
+        iconColor = Colors.amber.shade800;
+        width = 100; // O primeiro lugar é maior
+        break;
+      case 2:
+        startColor = Colors.grey.shade300;
+        endColor = Colors.grey.shade500;
+        iconColor = Colors.grey.shade700;
+        break;
+      case 3:
+        startColor = Colors.brown.shade300;
+        endColor = Colors.brown.shade500;
+        iconColor = Colors.brown.shade700;
+        break;
+      default:
+        startColor = theme.colorScheme.primary.withOpacity(0.5);
+        endColor = theme.colorScheme.primary;
+        iconColor = theme.colorScheme.onPrimary.withOpacity(0.8);
+    }
+
+    return Card(
+      elevation: 4,
+      shadowColor: endColor.withOpacity(0.5),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: width,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [startColor, endColor],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            // Posição no Ranking
+            Text(
+              "${rank}º LUGAR",
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                shadows: const [Shadow(blurRadius: 2, color: Colors.black38)],
+              ),
+            ),
+            // Ícone de Moeda
+            Icon(
+              Icons.monetization_on,
+              color: iconColor,
+              size: 28,
+            ),
+            // Quantidade de Moedas
+            Text(
+              coins.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                shadows: [Shadow(blurRadius: 3, color: Colors.black54)],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+// ======================================================
+// <<< FIM DOS NOVOS WIDGETS DE RECOMPENSA >>>
+// ======================================================
