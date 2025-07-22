@@ -9,6 +9,7 @@ from firebase_functions.firestore_fn import on_document_updated, Change, Event
 from firebase_admin.firestore import transactional
 from datetime import datetime, time, timezone, timedelta
 from firebase_admin import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 import asyncio
 import httpx
@@ -1378,41 +1379,50 @@ def acceptFriendRequest(req: https_fn.CallableRequest) -> dict:
 )
 def getRandomUsers(req: https_fn.CallableRequest) -> dict:
     """
-    Retorna uma lista paginada de usuários para a tela 'Encontrar Amigos'.
-    A ordem é pseudo-aleatória para exploração.
+    Retorna uma lista paginada de usuários para a tela 'Encontrar Amigos',
+    usando o ID do documento para uma busca pseudo-aleatória estável.
     """
-    import traceback
-    import logging
-
     db = get_db()
-
-    # Acessamos os dados diretamente do payload `req.data`.
+    
     limit = req.data.get("limit", 20)
-    start_after_id = req.data.get("startAfter")
-
-    # Validação de tipo
     if not isinstance(limit, int):
-        logging.warning(f"O parâmetro 'limit' não é inteiro (tipo: {type(limit)}). Usando o padrão 20.")
+        print(f"AVISO: O parâmetro 'limit' não é um inteiro (tipo: {type(limit)}). Usando o padrão 20.")
         limit = 20
 
+    start_after_id = req.data.get("startAfter")
+
     try:
-        query = db.collection('users').order_by('__name__')
+        users_ref = db.collection('users')
+        query = users_ref.order_by('__name__')
 
         if start_after_id:
-            last_doc_snapshot = db.collection('users').document(start_after_id).get()
+            last_doc_snapshot = users_ref.document(start_after_id).get()
             if last_doc_snapshot.exists:
                 query = query.start_after(last_doc_snapshot)
         else:
-            random_doc = db.collection('users').document()  # Corrigido
-            query = query.where('__name__', '>=', random_doc)  # Corrigido
+            # ✅✅✅ CORREÇÃO CRÍTICA AQUI ✅✅✅
+            # 1. Geramos uma REFERÊNCIA de documento, não apenas o ID string.
+            random_doc_ref = users_ref.document()
+            
+            # 2. Usamos a referência completa na query.
+            # Também usamos a sintaxe com 'filter=' que o warning sugere.
+            query = query.where(filter=FieldFilter('__name__', '>=', random_doc_ref))
+
         query = query.limit(limit)
         docs = list(query.stream())
+        
+        # Lógica de fallback (sem alterações)
+        if len(docs) < limit and not start_after_id:
+            print(f"Busca inicial retornou {len(docs)}/{limit}. Buscando mais do início para completar.")
+            remaining_limit = limit - len(docs)
+            existing_ids = {doc.id for doc in docs}
+            query_from_start = users_ref.order_by('__name__').limit(remaining_limit)
+            additional_docs = list(query_from_start.stream())
+            for doc in additional_docs:
+                if doc.id not in existing_ids:
+                    docs.append(doc)
 
-        if not docs and not start_after_id:
-            logging.info("Busca aleatória inicial não encontrou resultados, tentando do início.")
-            query_from_start = db.collection('users').order_by('__name__').limit(limit)
-            docs = list(query_from_start.stream())
-
+        # Formata a lista final (sem alterações)
         users_list = []
         for doc in docs:
             user_data = doc.to_dict()
@@ -1423,16 +1433,13 @@ def getRandomUsers(req: https_fn.CallableRequest) -> dict:
                 "denomination": user_data.get("denomination")
             })
 
-        logging.info(f"Retornando {len(users_list)} usuários.")
+        print(f"Retornando {len(users_list)} usuários.")
         return {"users": users_list}
 
-    except Exception as err:
-        logging.error("Unhandled error: %s", err)  # <-- Correção aqui
+    except Exception as e:
+        print(f"ERRO em getRandomUsers: {e}")
         traceback.print_exc()
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INTERNAL,
-            message="Erro ao buscar usuários."
-        )
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro ao buscar usuários.")
 
     
 # =================================================================
