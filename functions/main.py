@@ -1374,61 +1374,133 @@ def acceptFriendRequest(req: https_fn.CallableRequest) -> dict:
     
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256 
 )
-def findUserBySeptimaId(req: https_fn.CallableRequest) -> dict:
-    db = get_db()
-    
-    septima_id = req.data.get("septimaId")
-    print(f"Buscando pelo Septima ID: {septima_id}")  # <-- LOG ADICIONADO
+def getRandomUsers(req: https_fn.CallableRequest) -> dict:
+    """
+    Retorna uma lista paginada de usuários para a tela 'Encontrar Amigos'.
+    A ordem é pseudo-aleatória para exploração.
+    """
+    import traceback
+    import logging
 
-    if not septima_id or "#" not in septima_id:
-        print("Erro: Formato de ID inválido.") # <-- LOG ADICIONADO
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
-            message="O formato do Septima ID é inválido. Use 'username#1234'."
-        )
-    
-    username, discriminator = septima_id.split('#', 1)
-    print(f"Username extraído: '{username}', Discriminator: '{discriminator}'") # <-- LOG ADICIONADO
+    db = get_db()
+
+    # Acessamos os dados diretamente do payload `req.data`.
+    limit = req.data.get("limit", 20)
+    start_after_id = req.data.get("startAfter")
+
+    # Validação de tipo
+    if not isinstance(limit, int):
+        logging.warning(f"O parâmetro 'limit' não é inteiro (tipo: {type(limit)}). Usando o padrão 20.")
+        limit = 20
 
     try:
-        query = db.collection('users').where('username', '==', username).where('discriminator', '==', discriminator).limit(1)
-        docs = list(query.stream())
-        
-        if not docs:
-            print("Resultado da busca: Nenhum documento encontrado.") # <-- LOG ADICIONADO
-            raise https_fn.HttpsError(
-                code=https_fn.FunctionsErrorCode.NOT_FOUND,
-                message="Nenhum usuário encontrado com este ID."
-            )
-        
-        user_data = docs[0].to_dict()
-        user_id = docs[0].id
-        print(f"Usuário encontrado! ID: {user_id}, Nome: {user_data.get('nome')}") # <-- LOG ADICIONADO
+        query = db.collection('users').order_by('__name__')
 
-        response_payload = {
-            "status": "success",
-            "user": {
-                "userId": user_id,
+        if start_after_id:
+            last_doc_snapshot = db.collection('users').document(start_after_id).get()
+            if last_doc_snapshot.exists:
+                query = query.start_after(last_doc_snapshot)
+        else:
+            random_doc = db.collection('users').document()  # Corrigido
+            query = query.where('__name__', '>=', random_doc)  # Corrigido
+        query = query.limit(limit)
+        docs = list(query.stream())
+
+        if not docs and not start_after_id:
+            logging.info("Busca aleatória inicial não encontrou resultados, tentando do início.")
+            query_from_start = db.collection('users').order_by('__name__').limit(limit)
+            docs = list(query_from_start.stream())
+
+        users_list = []
+        for doc in docs:
+            user_data = doc.to_dict()
+            users_list.append({
+                "userId": doc.id,
                 "nome": user_data.get("nome"),
                 "photoURL": user_data.get("photoURL"),
-                "descrição": user_data.get("descrição")
-            }
-        }
-        
-        print(f"Retornando payload de sucesso: {response_payload}") # <-- LOG ADICIONADO
-        return response_payload
+                "denomination": user_data.get("denomination")
+            })
 
-    except https_fn.HttpsError as e:
-        # Se for um erro que nós mesmos geramos (como NOT_FOUND), apenas relance.
-        raise e
-    except Exception as e:
-        print(f"ERRO INTERNO em findUserBySeptimaId: {e}")
-        traceback.print_exc() # Imprime o stack trace completo nos logs para depuração
+        logging.info(f"Retornando {len(users_list)} usuários.")
+        return {"users": users_list}
+
+    except Exception as err:
+        logging.error("Unhandled error: %s", err)  # <-- Correção aqui
+        traceback.print_exc()
         raise https_fn.HttpsError(
             code=https_fn.FunctionsErrorCode.INTERNAL,
-            message=f"Ocorreu um erro ao buscar o usuário: {e}"
+            message="Erro ao buscar usuários."
+        )
+
+    
+# =================================================================
+# <<< FUNÇÃO findUserBySeptimaId ATUALIZADA E RENOMEADA >>>
+# =================================================================
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def findUsers(req: https_fn.CallableRequest) -> dict: # <<< NOME ALTERADO
+    """
+    Busca usuários por ID Septima (nome#1234) ou por nome (prefix search).
+    Retorna sempre uma lista de resultados.
+    """
+    db = get_db()
+    
+    query_text = req.data.get("query")
+    print(f"Buscando por: '{query_text}'")
+
+    if not query_text:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'query' é obrigatório."
+        )
+
+    docs = []
+    try:
+        # Lógica para buscar por ID Septima
+        if "#" in query_text:
+            username, discriminator = query_text.split('#', 1)
+            query = db.collection('users').where('username', '==', username).where('discriminator', '==', discriminator).limit(1)
+            docs = list(query.stream())
+        
+        # Lógica para buscar por nome (prefix search)
+        else:
+            search_term = query_text.lower()
+            # O caractere \uf8ff é um ponto de código Unicode alto que funciona como um "fim"
+            # para strings, permitindo uma busca por prefixo eficiente no Firestore.
+            end_term = search_term + '\uf8ff'
+            
+            query = db.collection('users').where('nome', '>=', search_term).where('nome', '<=', end_term).limit(10)
+            docs = list(query.stream())
+        
+        if not docs:
+            print("Nenhum usuário encontrado.")
+            return {"users": []}
+
+        # Formata os resultados para retornar uma lista consistente
+        users_list = []
+        for doc in docs:
+            user_data = doc.to_dict()
+            users_list.append({
+                "userId": doc.id,
+                "nome": user_data.get("nome"),
+                "photoURL": user_data.get("photoURL"),
+                "descrição": user_data.get("descrição"),
+                "denomination": user_data.get("denomination")
+            })
+
+        print(f"Encontrados {len(users_list)} usuários.")
+        return {"users": users_list}
+
+    except Exception as e:
+        print(f"ERRO INTERNO em findUsers: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao buscar usuários: {e}"
         )
 
 @https_fn.on_call(
