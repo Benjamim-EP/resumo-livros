@@ -451,11 +451,32 @@ void Function(Store<AppState>, LoadUserHighlightsAction, NextDispatcher)
       return;
     }
     try {
+      // 1. Busca os destaques de versículos (como antes)
       final highlights = await firestoreService.loadUserHighlights(userId);
+
+      // ===================================
+      // <<< INÍCIO DA LÓGICA ATUALIZADA >>>
+      // ===================================
+
+      // 2. Busca as frases curtidas usando a nova função do serviço
+      final likedQuotes = await firestoreService.loadLikedQuotes(userId);
+
+      // 3. Mescla os dois resultados em um único mapa.
+      // Usamos um prefixo 'liked_quote_' para garantir que os IDs não colidam
+      // com os IDs dos versículos (ex: 'gn_1_1').
+      for (var quote in likedQuotes) {
+        final quoteId = quote['id'];
+        if (quoteId != null) {
+          highlights['liked_quote_$quoteId'] = quote;
+        }
+      }
+      // ===================================
+      // <<< FIM DA LÓGICA ATUALIZADA >>>
+      // ===================================
+
       store.dispatch(UserHighlightsLoadedAction(highlights));
     } catch (e) {
-      print("Erro ao carregar destaques: $e");
-      // ✅ ALTERAÇÃO AQUI
+      print("Erro ao carregar destaques e frases curtidas: $e");
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         CustomNotificationService.showError(

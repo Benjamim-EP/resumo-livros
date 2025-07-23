@@ -82,6 +82,40 @@ class FirestoreService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> loadLikedQuotes(String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('quotes')
+          // A query principal: encontra documentos onde o array 'likedBy' contém o ID do usuário.
+          .where('likedBy', arrayContains: userId)
+          // Opcional: ordenar pelas mais recentes, se houver um campo de timestamp.
+          // Assumindo que você tem um campo 'createdAt' nos seus documentos de 'quotes'.
+          // Se não tiver, pode remover esta linha.
+          // .orderBy('createdAt', descending: true)
+          .limit(100) // Limita a 100 para evitar carregar dados demais.
+          .get();
+
+      // Mapeia os documentos encontrados para um formato que a UI pode usar.
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        // Adicionamos um campo 'type' para que o ViewModel e a UI saibam
+        // que este item é uma frase curtida e deve ser tratado de forma diferente.
+        return {
+          'id': doc.id,
+          'type': 'liked_quote',
+          'text': data['text'] ?? 'Frase indisponível',
+          'author': data['author'] ?? 'Autor desconhecido',
+          'book': data['book'] ?? 'Livro desconhecido',
+          'timestamp': data['createdAt'] // Para ordenação na UI
+        };
+      }).toList();
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao carregar frases curtidas para $userId: $e");
+      return []; // Retorna uma lista vazia em caso de erro.
+    }
+  }
+
   /// Adiciona um novo texto de interação ao perfil do usuário para alimentar as recomendações.
   /// A lógica de "fila" (adicionar no início, remover do final) é gerenciada
   /// atomicamente por uma transação no Firestore.

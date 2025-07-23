@@ -27,7 +27,7 @@ import 'package:percent_indicator/percent_indicator.dart';
 import 'package:septima_biblia/consts/bible_constants.dart'; // Para CANONICAL_BOOK_ORDER
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum HighlightType { verse, literature }
+enum HighlightType { verse, literature, likedQuote }
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -833,6 +833,19 @@ class _UserPageState extends State<UserPage> {
                       },
                     ),
                   ),
+                  Expanded(
+                    child: _buildFilterChip(
+                      context: context,
+                      label: "Frases",
+                      icon: Icons.favorite_border,
+                      value: HighlightType.likedQuote,
+                      groupValue: _selectedHighlightType,
+                      onSelected: (value) {
+                        setState(() =>
+                            _selectedHighlightType = HighlightType.likedQuote);
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -884,6 +897,13 @@ class _UserPageState extends State<UserPage> {
                     filteredList = vm.allHighlights
                         .where((item) => item.type == HighlightItemType.verse)
                         .toList();
+                  } else if (_selectedHighlightType ==
+                      HighlightType.likedQuote) {
+                    filteredList = vm.allHighlights
+                        .where(
+                            (item) => item.type == HighlightItemType.likedQuote)
+                        .toList();
+                    // ===================================
                   } else if (_selectedHighlightType ==
                       HighlightType.literature) {
                     filteredList = vm.allHighlights
@@ -1383,32 +1403,48 @@ class _HighlightsViewModel {
 
     // 1. Processa os destaques de versículos bíblicos
     store.state.userState.userHighlights.forEach((verseId, highlightData) {
-      final parts = verseId.split('_');
-      String referenceText = verseId; // Fallback
+      // Apenas processa os destaques de versículos aqui
+      if (highlightData['type'] == null ||
+          highlightData['type'] != 'liked_quote') {
+        final parts = verseId.split('_');
+        String referenceText = verseId;
 
-      // Tenta traduzir a abreviação do livro para o nome completo
-      if (parts.length == 3 &&
-          booksMap != null &&
-          booksMap.containsKey(parts[0])) {
-        final bookData = booksMap[parts[0]];
-        final bookName = bookData?['nome'] ?? parts[0].toUpperCase();
-        referenceText = "$bookName ${parts[1]}:${parts[2]}";
-      } else if (parts.length == 3) {
-        referenceText = "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+        if (parts.length == 3 &&
+            booksMap != null &&
+            booksMap.containsKey(parts[0])) {
+          final bookData = booksMap[parts[0]];
+          final bookName = bookData?['nome'] ?? parts[0].toUpperCase();
+          referenceText = "$bookName ${parts[1]}:${parts[2]}";
+        } else if (parts.length == 3) {
+          referenceText = "${parts[0].toUpperCase()} ${parts[1]}:${parts[2]}";
+        }
+
+        // ===================================
+        // <<< INÍCIO DA MODIFICAÇÃO PRINCIPAL >>>
+        // ===================================
+        // Cria uma cópia mutável dos dados originais para adicionar o Future
+        final mutableOriginalData = Map<String, dynamic>.from(highlightData);
+        // Adiciona um Future que buscará o texto do versículo usando a tradução 'nvi'
+        mutableOriginalData['fullVerseTextFuture'] =
+            BiblePageHelper.loadSingleVerseText(verseId, 'nvi');
+
+        combinedList.add(
+          HighlightItem(
+            id: verseId,
+            type: HighlightItemType.verse,
+            referenceText: referenceText,
+            // contentPreview permanece como um fallback imediato
+            contentPreview: "Carregando texto do versículo...",
+            tags: List<String>.from(highlightData['tags'] ?? []),
+            colorHex: highlightData['color'] as String?,
+            // Passa os dados com o Future adicionado
+            originalData: mutableOriginalData,
+          ),
+        );
+        // ===================================
+        // <<< FIM DA MODIFICAÇÃO >>>
+        // ===================================
       }
-
-      combinedList.add(
-        HighlightItem(
-          id: verseId,
-          type: HighlightItemType.verse,
-          referenceText: referenceText, // Usa o nome completo do livro
-          contentPreview:
-              "Carregando texto do versículo...", // Será carregado depois
-          tags: List<String>.from(highlightData['tags'] ?? []),
-          colorHex: highlightData['color'] as String?,
-          originalData: {'verseId': verseId, ...highlightData},
-        ),
-      );
     });
 
     // 2. Processa os destaques de literatura (comentários, sermões, etc.)
@@ -1456,6 +1492,22 @@ class _HighlightsViewModel {
       );
     });
 
+    store.state.userState.userHighlights.forEach((key, data) {
+      if (data['type'] == 'liked_quote') {
+        combinedList.add(
+          HighlightItem(
+            id: data['id'] as String? ?? key,
+            type: HighlightItemType.likedQuote, // <<< NOVO TIPO
+            // Usa o autor/livro como "referência"
+            referenceText:
+                "${data['author'] ?? ''}, em '${data['book'] ?? ''}'",
+            contentPreview: data['text'] ?? 'Frase indisponível',
+            tags: [], // Frases curtidas não têm tags neste modelo
+            originalData: data,
+          ),
+        );
+      }
+    });
     // 3. Ordena a lista combinada pela data do timestamp, do mais recente para o mais antigo
     combinedList.sort((a, b) {
       final timestampA = a.originalData['timestamp'] as Timestamp?;

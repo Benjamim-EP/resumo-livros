@@ -17,8 +17,6 @@ class HighlightItemCard extends StatelessWidget {
     required this.onNavigateToVerse,
   });
 
-  // Função auxiliar para converter o hex da cor para um objeto Color.
-  // Retorna uma cor padrão se o hex for inválido ou nulo.
   Color _parseColor(String? hexColor, Color defaultColor) {
     if (hexColor == null || hexColor.isEmpty) return defaultColor;
     try {
@@ -30,6 +28,12 @@ class HighlightItemCard extends StatelessWidget {
 
   void _handleTap(BuildContext context) {
     final sourceType = item.originalData['sourceType'] as String?;
+
+    if (item.type == HighlightItemType.likedQuote) {
+      // Frases curtidas podem, no futuro, abrir uma visualização especial.
+      // Por enquanto, não fazem nada ao serem tocadas.
+      return;
+    }
 
     if (item.type == HighlightItemType.literature) {
       if (sourceType == 'sermon') {
@@ -66,15 +70,12 @@ class HighlightItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isVerse = item.type == HighlightItemType.verse;
+    final bool isLikedQuote = item.type == HighlightItemType.likedQuote;
 
-    // Define as cores com base na cor do destaque.
     final Color baseColor = _parseColor(
         item.colorHex, isVerse ? Colors.blue.shade700 : Colors.amber.shade700);
-
-    // Usa a cor do card do tema como base para o degradê.
     final Color cardBackgroundColor = theme.cardColor;
 
-    // Lógica para determinar o ícone com base no tipo de fonte.
     final sourceType = item.originalData['sourceType'] as String?;
     IconData sourceIcon;
     switch (sourceType) {
@@ -96,41 +97,50 @@ class HighlightItemCard extends StatelessWidget {
 
     return Card(
       elevation: 2,
-      // A cor do card em si é transparente para que o Container interno mostre o degradê.
       color: Colors.transparent,
-      shadowColor: baseColor.withOpacity(0.2),
+      shadowColor: isLikedQuote
+          ? Colors.black.withOpacity(0.4)
+          : baseColor.withOpacity(0.2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias, // Garante que o InkWell respeite as bordas.
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: isVerse ? null : () => _handleTap(context),
         splashColor: baseColor.withOpacity(0.1),
         highlightColor: baseColor.withOpacity(0.05),
         child: Container(
-          // O Container agora é o responsável pelo visual de fundo.
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                baseColor.withOpacity(0.15), // Cor do destaque, mais sutil
-                cardBackgroundColor, // Cor de fundo do card
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: const [0.0, 0.8], // Controla a transição do degradê
-            ),
-          ),
+          decoration: isLikedQuote
+              ? BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(
+                        "https://picsum.photos/seed/${item.id}/400/600"),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Colors.black.withOpacity(0.5),
+                      BlendMode.darken,
+                    ),
+                  ),
+                )
+              : BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [baseColor.withOpacity(0.15), cardBackgroundColor],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: const [0.0, 0.8],
+                  ),
+                ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Linha superior com Ícone, Referência e Botão de Deletar
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      sourceIcon,
-                      color: baseColor, // Ícone usa a cor do destaque
+                      isLikedQuote ? Icons.favorite : sourceIcon,
+                      color:
+                          isLikedQuote ? Colors.redAccent.shade100 : baseColor,
                       size: 22,
                     ),
                     const SizedBox(width: 12),
@@ -139,8 +149,13 @@ class HighlightItemCard extends StatelessWidget {
                         item.referenceText,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color:
-                              baseColor, // Título também usa a cor do destaque
+                          color: isLikedQuote ? Colors.white : baseColor,
+                          shadows: isLikedQuote
+                              ? [
+                                  const Shadow(
+                                      blurRadius: 2, color: Colors.black)
+                                ]
+                              : null,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -148,10 +163,15 @@ class HighlightItemCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: Icon(Icons.delete_outline,
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                          size: 22),
-                      tooltip: "Remover Destaque",
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: isLikedQuote
+                            ? Colors.white.withOpacity(0.7)
+                            : theme.colorScheme.onSurface.withOpacity(0.5),
+                        size: 22,
+                      ),
+                      tooltip:
+                          isLikedQuote ? "Remover Curtida" : "Remover Destaque",
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       visualDensity: VisualDensity.compact,
@@ -160,6 +180,9 @@ class HighlightItemCard extends StatelessWidget {
                             StoreProvider.of<AppState>(context, listen: false);
                         if (isVerse) {
                           store.dispatch(ToggleHighlightAction(item.id));
+                        } else if (isLikedQuote) {
+                          print(
+                              "Ação para descurtir a frase ${item.id} seria chamada aqui.");
                         } else {
                           store.dispatch(RemoveCommentHighlightAction(item.id));
                         }
@@ -169,22 +192,74 @@ class HighlightItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Corpo do Card: exibe o texto completo do versículo ou o trecho da literatura
-                Text(
-                  isVerse
-                      ? (item.originalData['fullVerseText'] ??
-                          'Carregando texto...')
-                      : '"${item.contentPreview}"',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    height: 1.5,
-                    fontStyle: isVerse ? FontStyle.normal : FontStyle.italic,
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.85),
+                // ===================================
+                // <<< INÍCIO DA LÓGICA ATUALIZADA >>>
+                // ===================================
+                if (isVerse)
+                  FutureBuilder<String>(
+                    future: item.originalData['fullVerseTextFuture']
+                        as Future<String>?,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: Center(
+                              child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2))),
+                        );
+                      }
+                      if (snapshot.hasError ||
+                          !snapshot.hasData ||
+                          snapshot.data!.isEmpty) {
+                        return Text(
+                          item.contentPreview, // Usa o preview como fallback em caso de erro
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.5,
+                            fontStyle: FontStyle.italic,
+                            color: theme.colorScheme.error,
+                          ),
+                          maxLines: 10,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }
+                      // Se carregou com sucesso
+                      return Text(
+                        snapshot.data!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.5,
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.85),
+                        ),
+                        maxLines: 10,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                  )
+                else
+                  // Lógica para literatura e frases curtidas (que já têm o texto)
+                  Text(
+                    '"${item.contentPreview}"',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      height: 1.5,
+                      fontStyle: FontStyle.italic,
+                      color: isLikedQuote
+                          ? Colors.white.withOpacity(0.9)
+                          : theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.85),
+                      shadows: isLikedQuote
+                          ? [const Shadow(blurRadius: 2, color: Colors.black)]
+                          : null,
+                    ),
+                    maxLines: isLikedQuote ? 6 : 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: isVerse ? 10 : 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // ===================================
+                // <<< FIM DA LÓGICA ATUALIZADA >>>
+                // ===================================
 
-                // Seção de Tags (se existirem)
                 if (item.tags.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Wrap(
