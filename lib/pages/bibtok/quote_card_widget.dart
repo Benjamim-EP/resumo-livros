@@ -3,7 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_redux/flutter_redux.dart'; // <<< NOVO IMPORT
 import 'package:septima_biblia/pages/bibtok/comments_modal.dart';
+import 'package:septima_biblia/redux/actions.dart'; // <<< NOVO IMPORT
+import 'package:septima_biblia/redux/store.dart'; // <<< NOVO IMPORT
+import 'package:septima_biblia/services/firestore_service.dart'; // <<< NOVO IMPORT
 
 class QuoteCardWidget extends StatefulWidget {
   final Map<String, dynamic> quoteData;
@@ -18,6 +22,15 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
   late bool _isLiked;
   bool _isLikeProcessing = false;
 
+  // ===================================
+  // <<< INÍCIO DA NOVA SEÇÃO >>>
+  // ===================================
+  // Instancia o serviço do Firestore para usar na função de curtir.
+  final FirestoreService _firestoreService = FirestoreService();
+  // ===================================
+  // <<< FIM DA NOVA SEÇÃO >>>
+  // ===================================
+
   @override
   void initState() {
     super.initState();
@@ -27,16 +40,23 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
     _isLiked = currentUserId != null && likedBy.contains(currentUserId);
   }
 
+  // ===================================
+  // <<< FUNÇÃO _toggleLike ATUALIZADA >>>
+  // ===================================
   Future<void> _toggleLike() async {
     if (_isLikeProcessing) return;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return;
 
+    // Atualização otimista da UI
     setState(() {
       _isLikeProcessing = true;
       _isLiked ? _likeCount-- : _likeCount++;
       _isLiked = !_isLiked;
     });
+
+    // Armazena a ação que está sendo feita (curtir ou descurtir)
+    final bool wasLikeAction = _isLiked;
 
     try {
       final quoteRef = FirebaseFirestore.instance
@@ -58,11 +78,13 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
           final currentLikedBy =
               List<String>.from(freshSnap.data()?['likedBy'] ?? []);
           if (currentLikedBy.contains(currentUserId)) {
+            // Lógica de descurtir
             transaction.update(quoteRef, {
               'likeCount': FieldValue.increment(-1),
               'likedBy': FieldValue.arrayRemove([currentUserId])
             });
           } else {
+            // Lógica de curtir
             transaction.update(quoteRef, {
               'likeCount': FieldValue.increment(1),
               'likedBy': FieldValue.arrayUnion([currentUserId])
@@ -70,8 +92,32 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
           }
         }
       });
+
+      // --- LÓGICA DE INTERAÇÃO ADICIONADA AQUI ---
+      // Se a ação foi de curtir (e não descurtir), adiciona ao histórico de interações.
+      if (wasLikeAction) {
+        final quoteText = widget.quoteData['text'] as String?;
+        if (quoteText != null && quoteText.isNotEmpty) {
+          print("BibTok: Adicionando frase curtida às interações recentes.");
+          // Chamada assíncrona ao Firestore em segundo plano. Não esperamos por ela.
+          _firestoreService
+              .addRecentInteraction(currentUserId, quoteText)
+              .then((_) {
+            // Após a interação ser salva com sucesso, despachamos a ação
+            // para recarregar os detalhes do usuário no Redux,
+            // o que atualizará o feed personalizado na próxima vez que for carregado.
+            if (mounted) {
+              StoreProvider.of<AppState>(context, listen: false)
+                  .dispatch(LoadUserDetailsAction());
+            }
+          }).catchError((error) {
+            print("Erro ao adicionar interação recente: $error");
+          });
+        }
+      }
     } catch (e) {
       print("Erro ao curtir a frase: $e");
+      // Reverte a UI em caso de erro
       setState(() {
         _isLiked ? _likeCount++ : _likeCount--;
         _isLiked = !_isLiked;
@@ -80,6 +126,9 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
       if (mounted) setState(() => _isLikeProcessing = false);
     }
   }
+  // ===================================
+  // <<< FIM DA ATUALIZAÇÃO >>>
+  // ===================================
 
   void _showCommentsModal() {
     showModalBottomSheet(
@@ -93,6 +142,7 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // O método build permanece o mesmo
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
