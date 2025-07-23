@@ -8,6 +8,14 @@ import 'package:septima_biblia/pages/bibtok/comments_modal.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
+// ===================================
+// <<< INÍCIO DOS NOVOS IMPORTS >>>
+// ===================================
+import 'package:septima_biblia/pages/sharing/shareable_image_generator_page.dart';
+import 'package:septima_biblia/services/analytics_service.dart';
+// ===================================
+// <<< FIM DOS NOVOS IMPORTS >>>
+// ===================================
 
 class QuoteCardWidget extends StatefulWidget {
   final Map<String, dynamic> quoteData;
@@ -115,46 +123,29 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
     );
   }
 
-  // ===================================
-  // <<< INÍCIO DA NOVA FUNÇÃO >>>
-  // ===================================
-  /// Calcula o tamanho da fonte dinamicamente com base no comprimento do texto.
   double _getFontSizeForText(String text) {
-    const double baseSize = 26.0; // Tamanho para textos curtos
-    const double minSize = 18.0; // Tamanho mínimo para textos muito longos
+    const double baseSize = 26.0;
+    const double minSize = 18.0;
     final int textLength = text.length;
-
-    // Define os limites de caracteres para os tamanhos de fonte
-    const int shortThreshold = 120; // Abaixo disso, o tamanho é `baseSize`
-    const int longThreshold = 300; // Acima disso, o tamanho é `minSize`
-
-    if (textLength <= shortThreshold) {
-      return baseSize;
-    }
-
-    if (textLength >= longThreshold) {
-      return minSize;
-    }
-
-    // Interpolação linear para textos de tamanho intermediário
-    // Calcula a "porcentagem" do caminho entre o limite curto e o longo
+    const int shortThreshold = 120;
+    const int longThreshold = 300;
+    if (textLength <= shortThreshold) return baseSize;
+    if (textLength >= longThreshold) return minSize;
     final double progress =
         (textLength - shortThreshold) / (longThreshold - shortThreshold);
-    // Aplica essa porcentagem à faixa de tamanhos de fonte disponíveis
     return baseSize - (progress * (baseSize - minSize));
   }
-  // ===================================
-  // <<< FIM DA NOVA FUNÇÃO >>>
-  // ===================================
 
   @override
   Widget build(BuildContext context) {
-    // ===================================
-    // <<< MUDANÇA NO BUILD >>>
-    // ===================================
     final String quoteText = widget.quoteData['text'] ?? '';
     final double dynamicFontSize = _getFontSizeForText(quoteText);
-    // ===================================
+    final String author = widget.quoteData['author'] ?? 'Autor Desconhecido';
+    final String book = widget.quoteData['book'] ?? 'Livro Desconhecido';
+    final String quoteId = widget.quoteData['id'] ?? 'default_id';
+    final String reference = "- $author, em '$book'";
+    final String imageUrl =
+        "https://picsum.photos/seed/$quoteId/450/800"; // URL de alta resolução
 
     return Stack(
       alignment: Alignment.bottomRight,
@@ -166,10 +157,9 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '"$quoteText"', // Usa a variável local
+                  '"$quoteText"',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      // Aplica o tamanho dinâmico aqui
                       fontSize: dynamicFontSize,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -180,7 +170,7 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  "- ${widget.quoteData['author']}, em '${widget.quoteData['book']}'",
+                  reference,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 16,
@@ -213,10 +203,40 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
                 onPressed: _showCommentsModal,
               ),
               const SizedBox(height: 24),
+              // ===================================
+              // <<< BOTÃO DE COMPARTILHAR ATUALIZADO >>>
+              // ===================================
               IconButton(
                 icon: const Icon(Icons.share, color: Colors.white, size: 32),
-                onPressed: () {/* Adicionar lógica de compartilhamento */},
+                onPressed: () {
+                  // Registra o evento de analytics
+                  AnalyticsService.instance.logEvent(
+                    name: 'share_attempt',
+                    parameters: {
+                      'content_type': 'bibtok_quote',
+                      'quote_id': quoteId
+                    },
+                  );
+
+                  // Navega para a página de geração de imagem, reutilizando-a
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ShareableImageGeneratorPage(
+                        // Passamos o texto da frase
+                        verseText: quoteText,
+                        // Passamos a referência formatada (autor e livro)
+                        verseReference: reference,
+                        // Passamos a URL da imagem de fundo atual em alta resolução
+                        imageUrl: imageUrl,
+                      ),
+                    ),
+                  );
+                },
               ),
+              // ===================================
+              // <<< FIM DA ATUALIZAÇÃO >>>
+              // ===================================
             ],
           ),
         )
