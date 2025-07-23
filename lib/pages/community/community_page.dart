@@ -45,7 +45,7 @@ class _CommunityPageState extends State<CommunityPage>
             unselectedLabelColor: Colors.grey[600],
             tabs: const [
               Tab(text: "Ranking"),
-              Tab(text: "Clube do Livro"),
+              //Tab(text: "Clube do Livro"),
               Tab(text: "Salas"),
             ],
           ),

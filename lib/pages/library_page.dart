@@ -271,7 +271,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'destinationPage': const SpurgeonSermonsIndexPage(),
         },
-        _bookSearchCardData,
+        // _bookSearchCardData,
         {
           'title': "A Palavra de Deus às Mulheres",
           'description':
