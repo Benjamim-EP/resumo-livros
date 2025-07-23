@@ -58,11 +58,11 @@ class _CommunityPageState extends State<CommunityPage>
           RankingTabView(),
 
           // Aba 2: Placeholder para futuras salas de estudo em tempo real
-          Placeholder(
-            child: Center(
-              child: Text("Salas de Estudo (Em Breve!)"),
-            ),
-          ),
+          // Placeholder(
+          //   child: Center(
+          //     child: Text("Salas de Estudo (Em Breve!)"),
+          //   ),
+          // ),
 
           // Aba 3: O nosso novo Fórum de Perguntas & Respostas
           ForumHomePage(),

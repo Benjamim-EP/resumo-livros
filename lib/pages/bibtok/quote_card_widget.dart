@@ -3,11 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_redux/flutter_redux.dart'; // <<< NOVO IMPORT
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/bibtok/comments_modal.dart';
-import 'package:septima_biblia/redux/actions.dart'; // <<< NOVO IMPORT
-import 'package:septima_biblia/redux/store.dart'; // <<< NOVO IMPORT
-import 'package:septima_biblia/services/firestore_service.dart'; // <<< NOVO IMPORT
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
 
 class QuoteCardWidget extends StatefulWidget {
   final Map<String, dynamic> quoteData;
@@ -22,14 +22,7 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
   late bool _isLiked;
   bool _isLikeProcessing = false;
 
-  // ===================================
-  // <<< INÍCIO DA NOVA SEÇÃO >>>
-  // ===================================
-  // Instancia o serviço do Firestore para usar na função de curtir.
   final FirestoreService _firestoreService = FirestoreService();
-  // ===================================
-  // <<< FIM DA NOVA SEÇÃO >>>
-  // ===================================
 
   @override
   void initState() {
@@ -40,22 +33,17 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
     _isLiked = currentUserId != null && likedBy.contains(currentUserId);
   }
 
-  // ===================================
-  // <<< FUNÇÃO _toggleLike ATUALIZADA >>>
-  // ===================================
   Future<void> _toggleLike() async {
     if (_isLikeProcessing) return;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return;
 
-    // Atualização otimista da UI
     setState(() {
       _isLikeProcessing = true;
       _isLiked ? _likeCount-- : _likeCount++;
       _isLiked = !_isLiked;
     });
 
-    // Armazena a ação que está sendo feita (curtir ou descurtir)
     final bool wasLikeAction = _isLiked;
 
     try {
@@ -78,13 +66,11 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
           final currentLikedBy =
               List<String>.from(freshSnap.data()?['likedBy'] ?? []);
           if (currentLikedBy.contains(currentUserId)) {
-            // Lógica de descurtir
             transaction.update(quoteRef, {
               'likeCount': FieldValue.increment(-1),
               'likedBy': FieldValue.arrayRemove([currentUserId])
             });
           } else {
-            // Lógica de curtir
             transaction.update(quoteRef, {
               'likeCount': FieldValue.increment(1),
               'likedBy': FieldValue.arrayUnion([currentUserId])
@@ -93,19 +79,12 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
         }
       });
 
-      // --- LÓGICA DE INTERAÇÃO ADICIONADA AQUI ---
-      // Se a ação foi de curtir (e não descurtir), adiciona ao histórico de interações.
       if (wasLikeAction) {
         final quoteText = widget.quoteData['text'] as String?;
         if (quoteText != null && quoteText.isNotEmpty) {
-          print("BibTok: Adicionando frase curtida às interações recentes.");
-          // Chamada assíncrona ao Firestore em segundo plano. Não esperamos por ela.
           _firestoreService
               .addRecentInteraction(currentUserId, quoteText)
               .then((_) {
-            // Após a interação ser salva com sucesso, despachamos a ação
-            // para recarregar os detalhes do usuário no Redux,
-            // o que atualizará o feed personalizado na próxima vez que for carregado.
             if (mounted) {
               StoreProvider.of<AppState>(context, listen: false)
                   .dispatch(LoadUserDetailsAction());
@@ -117,7 +96,6 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
       }
     } catch (e) {
       print("Erro ao curtir a frase: $e");
-      // Reverte a UI em caso de erro
       setState(() {
         _isLiked ? _likeCount++ : _likeCount--;
         _isLiked = !_isLiked;
@@ -126,9 +104,6 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
       if (mounted) setState(() => _isLikeProcessing = false);
     }
   }
-  // ===================================
-  // <<< FIM DA ATUALIZAÇÃO >>>
-  // ===================================
 
   void _showCommentsModal() {
     showModalBottomSheet(
@@ -140,9 +115,47 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
     );
   }
 
+  // ===================================
+  // <<< INÍCIO DA NOVA FUNÇÃO >>>
+  // ===================================
+  /// Calcula o tamanho da fonte dinamicamente com base no comprimento do texto.
+  double _getFontSizeForText(String text) {
+    const double baseSize = 26.0; // Tamanho para textos curtos
+    const double minSize = 18.0; // Tamanho mínimo para textos muito longos
+    final int textLength = text.length;
+
+    // Define os limites de caracteres para os tamanhos de fonte
+    const int shortThreshold = 120; // Abaixo disso, o tamanho é `baseSize`
+    const int longThreshold = 300; // Acima disso, o tamanho é `minSize`
+
+    if (textLength <= shortThreshold) {
+      return baseSize;
+    }
+
+    if (textLength >= longThreshold) {
+      return minSize;
+    }
+
+    // Interpolação linear para textos de tamanho intermediário
+    // Calcula a "porcentagem" do caminho entre o limite curto e o longo
+    final double progress =
+        (textLength - shortThreshold) / (longThreshold - shortThreshold);
+    // Aplica essa porcentagem à faixa de tamanhos de fonte disponíveis
+    return baseSize - (progress * (baseSize - minSize));
+  }
+  // ===================================
+  // <<< FIM DA NOVA FUNÇÃO >>>
+  // ===================================
+
   @override
   Widget build(BuildContext context) {
-    // O método build permanece o mesmo
+    // ===================================
+    // <<< MUDANÇA NO BUILD >>>
+    // ===================================
+    final String quoteText = widget.quoteData['text'] ?? '';
+    final double dynamicFontSize = _getFontSizeForText(quoteText);
+    // ===================================
+
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
@@ -153,14 +166,17 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '"${widget.quoteData['text']}"',
+                  '"$quoteText"', // Usa a variável local
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 26,
+                  style: TextStyle(
+                      // Aplica o tamanho dinâmico aqui
+                      fontSize: dynamicFontSize,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Poppins',
-                      shadows: [Shadow(blurRadius: 10, color: Colors.black)]),
+                      shadows: const [
+                        Shadow(blurRadius: 10, color: Colors.black)
+                      ]),
                 ),
                 const SizedBox(height: 24),
                 Text(
