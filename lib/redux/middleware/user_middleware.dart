@@ -165,17 +165,23 @@ List<Middleware<AppState>> createUserMiddleware() {
   }
 
   void _handleUpdateReadingTime(Store<AppState> store,
-      UpdateReadingTimeAction action, NextDispatcher next) {
+      UpdateReadingTimeAction action, NextDispatcher next) async {
     next(action);
 
-    // Se estivermos em um teste de integração, não faça a chamada de rede.
+    // ✅ GUARDA DE SEGURANÇA IMEDIATA
+    // Esta é a linha mais importante. Ela impede qualquer chamada
+    // à função se o tempo acumulado for zero ou negativo.
+    if (action.accumulatedSeconds <= 0) {
+      print(
+          "UpdateReadingTimeMiddleware: Ação ignorada, segundos acumulados é <= 0.");
+      return;
+    }
+
     if (kIsIntegrationTest) {
       print(
           "UpdateReadingTimeMiddleware: Modo de teste. Chamada à Cloud Function ignorada.");
       return;
     }
-
-    if (action.accumulatedSeconds <= 0) return;
 
     final userId = store.state.userState.userId;
     if (userId == null) {
@@ -184,17 +190,20 @@ List<Middleware<AppState>> createUserMiddleware() {
       return;
     }
 
-    print(
-        "UpdateReadingTimeMiddleware: Chamando a Cloud Function 'updateReadingTime'...");
-
     try {
+      print(
+          "UpdateReadingTimeMiddleware: Chamando a Cloud Function 'updateReadingTime' com ${action.accumulatedSeconds} segundos...");
+
       final functions =
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
       final callable = functions.httpsCallable('updateReadingTime');
 
-      callable.call({
+      await callable.call({
         'secondsToAdd': action.accumulatedSeconds,
       });
+
+      print(
+          "UpdateReadingTimeMiddleware: Chamada para 'updateReadingTime' enviada com sucesso.");
     } on FirebaseFunctionsException catch (e) {
       print(
           "UpdateReadingTimeMiddleware: Erro de Firebase Functions ao atualizar tempo: ${e.code} - ${e.message}");

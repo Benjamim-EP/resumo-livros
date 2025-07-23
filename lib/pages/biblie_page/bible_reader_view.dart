@@ -258,6 +258,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
         final int itemCount = contentCount + 1;
 
         return ListView.builder(
+          controller: widget.scrollController1,
           key: PageStorageKey<String>(
               '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation1}-singleView-${widget.showHebrewInterlinear}-${widget.showGreekInterlinear}-${widget.fontSizeMultiplier}'),
           padding: EdgeInsets.only(

@@ -744,7 +744,7 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
 # --- NOVA CLOUD FUNCTION PARA ATUALIZAR TEMPO DE LEITURA ---
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 # <<< CORREÇÃO 1: AUMENTO DE MEMÓRIA
+    memory=options.MemoryOption.MB_256 
 )
 def updateReadingTime(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -756,38 +756,42 @@ def updateReadingTime(req: https_fn.CallableRequest) -> dict:
         )
     
     user_id = req.auth.uid
-    seconds_to_add = req.data.get("secondsToAdd")
+    seconds_to_add_raw = req.data.get("secondsToAdd")
     
-    if not isinstance(seconds_to_add, int) or seconds_to_add <= 0:
+    print('Payload recebido para secondsToAdd:', seconds_to_add_raw) # Log para depuração
+
+    # ✅ INÍCIO DA CORREÇÃO DEFINITIVA
+    processed_seconds = 0
+    if isinstance(seconds_to_add_raw, dict) and 'value' in seconds_to_add_raw:
+        # Caso 1: Recebeu o objeto Protobuf {'@type': ..., 'value': '20'}
+        try:
+            # O valor vem como string, então convertemos para int
+            processed_seconds = int(seconds_to_add_raw['value'])
+        except (ValueError, TypeError):
+            processed_seconds = 0 # Valor inválido dentro do objeto
+    elif isinstance(seconds_to_add_raw, (int, float)):
+        # Caso 2: Recebeu um número normal (para robustez)
+        processed_seconds = int(seconds_to_add_raw)
+    
+    # Agora, validamos o número que extraímos
+    if processed_seconds <= 0:
         raise https_fn.HttpsError(
             code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
-            message="O parâmetro 'secondsToAdd' (inteiro positivo) é obrigatório."
+            message=f"O parâmetro 'secondsToAdd' é inválido ou não é positivo. Valor processado: {processed_seconds}"
         )
-        
+    
+    seconds_to_add = processed_seconds
+    # ✅ FIM DA CORREÇÃO DEFINITIVA
+
     print(f"updateReadingTime: Recebidos {seconds_to_add} segundos para adicionar ao usuário {user_id}.")
     
     try:
         progress_doc_ref = db.collection('userBibleProgress').document(user_id)
         
-        # A transação garante a atomicidade da leitura e escrita
-        @firestore.transactional
-        def update_in_transaction(transaction, doc_ref):
-            snapshot = doc_ref.get(transaction=transaction)
-            
-            # Leitura segura do valor atual, com 0 como padrão se não existir
-            current_time = 0
-            if snapshot.exists:
-                current_time = snapshot.to_dict().get('rawReadingTime', 0)
-            
-            new_time = current_time + seconds_to_add
-            
-            transaction.set(doc_ref, {
-                'rawReadingTime': new_time,
-                'lastTimeUpdate': firestore.SERVER_TIMESTAMP
-            }, merge=True)
-
-        transaction = db.transaction()
-        update_in_transaction(transaction, progress_doc_ref)
+        progress_doc_ref.set({
+            'rawReadingTime': firestore.Increment(seconds_to_add),
+            'lastTimeUpdate': firestore.SERVER_TIMESTAMP
+        }, merge=True)
         
         print(f"updateReadingTime: Tempo de leitura para o usuário {user_id} atualizado com sucesso.")
         return {"status": "success", "message": f"{seconds_to_add} segundos adicionados."}
