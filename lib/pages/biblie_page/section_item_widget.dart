@@ -97,8 +97,43 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   final FirestoreService _firestoreService = FirestoreService();
   bool _isLoadingCommentary = false;
 
+  // ✅ 1. Adicionar novas variáveis de estado para o resumo
+  bool _isGeneratingSummary = false;
+  bool _isSummaryUnlocked = false;
+  static const String _unlockedSummariesPrefsKey = 'unlocked_bible_summaries';
+
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ 2. Verificar o status do resumo quando o widget é construído
+    _checkSummaryStatus();
+  }
+
+  // ✅ 3. Nova função para verificar se o resumo já está desbloqueado
+  Future<void> _checkSummaryStatus() async {
+    // Atraso mínimo para garantir que o contexto está disponível
+    await Future.delayed(Duration.zero);
+    if (!mounted) return;
+
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final isPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+
+    if (isPremium) {
+      if (mounted) setState(() => _isSummaryUnlocked = true);
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final unlockedSummaries =
+        prefs.getStringList(_unlockedSummariesPrefsKey) ?? [];
+    if (unlockedSummaries.contains(_commentaryDocId)) {
+      if (mounted) setState(() => _isSummaryUnlocked = true);
+    }
+  }
 
   String get _sectionIdForTracking {
     final range =
@@ -129,8 +164,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         'verses_range': widget.versesRangeStr,
       },
     );
-    print(
-        "Analytics: Evento 'commentary_opened' para ${widget.bookAbbrev} ${widget.chapterNumber}:${widget.versesRangeStr} registrado.");
     TtsManager().stop();
     setState(() => _isLoadingCommentary = true);
     final commentaryData =
@@ -166,11 +199,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     }
   }
 
-  // ===================================
-  // <<< INÍCIO DA NOVA LÓGICA DE RESUMO >>>
-  // ===================================
-  static const String _unlockedSummariesPrefsKey = 'unlocked_bible_summaries';
-
   Future<void> _loadAndShowSummary(
       String sectionId, String sectionTitle) async {
     try {
@@ -179,7 +207,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
       if (summaryContent == null) {
         CustomNotificationService.showError(
-            context, 'Resumo não encontrado no cache. Tente gerar novamente.');
+            context, 'Resumo não encontrado. Tente gerar novamente.');
         return;
       }
 
@@ -195,7 +223,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         );
       }
     } catch (e) {
-      print("Erro ao carregar resumo para $sectionId: $e");
       if (mounted) {
         CustomNotificationService.showError(
             context, 'Não foi possível exibir o resumo.');
@@ -203,76 +230,65 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     }
   }
 
+  // ✅ 4. Função _handleShowSummary agora gerencia o estado de loading
   Future<void> _handleShowSummary(String sectionId, String sectionTitle) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final isPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
 
-    final prefs = await SharedPreferences.getInstance();
-    final unlockedSummaries =
-        prefs.getStringList(_unlockedSummariesPrefsKey) ?? [];
-
-    bool isUnlocked = isPremium || unlockedSummaries.contains(sectionId);
-
-    if (isUnlocked) {
-      final cachedSummary = prefs.getString(sectionId);
-      if (cachedSummary != null) {
-        print("Resumo encontrado no cache local. Exibindo...");
-        await _loadAndShowSummary(sectionId, sectionTitle);
-        return;
-      }
-    } else {
-      const int summaryCost = 3;
-      final currentUserCoins = store.state.userState.userCoins;
-
-      if (currentUserCoins < summaryCost) {
-        CustomNotificationService.showWarningWithAction(
-          context: context,
-          message: 'Você precisa de $summaryCost moedas para gerar um resumo.',
-          buttonText: 'Ganhar Moedas',
-          onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
-        );
-        return;
-      }
-
-      final bool? shouldProceed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Gerar Resumo com IA'),
-          content: Text('Isso custará $summaryCost moedas. Deseja continuar?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldProceed != true) return;
-
-      store.dispatch(UpdateUserCoinsAction(currentUserCoins - summaryCost));
+    // Se já está desbloqueado, apenas mostra
+    if (_isSummaryUnlocked) {
+      await _loadAndShowSummary(sectionId, sectionTitle);
+      return;
     }
 
-    CustomNotificationService.showSuccess(
-        context, "Gerando resumo, aguarde...");
+    // Lógica de custo para não-premium
+    const int summaryCost = 3;
+    final currentUserCoins = store.state.userState.userCoins;
+
+    if (currentUserCoins < summaryCost) {
+      CustomNotificationService.showWarningWithAction(
+        context: context,
+        message: 'Você precisa de $summaryCost moedas para gerar um resumo.',
+        buttonText: 'Ganhar Moedas',
+        onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
+      );
+      return;
+    }
+
+    final bool? shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Gerar Resumo com IA'),
+        content: Text('Isso custará $summaryCost moedas. Deseja continuar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldProceed != true) return;
+
+    store.dispatch(UpdateUserCoinsAction(currentUserCoins - summaryCost));
+
+    // Ativa o loading ANTES de chamar a função
+    if (mounted) setState(() => _isGeneratingSummary = true);
 
     try {
+      // (Lógica de chamada da Cloud Function permanece a mesma)
       final commentaryData =
           await _firestoreService.getSectionCommentary(_commentaryDocId);
       final commentaryItems = (commentaryData?['commentary'] as List?)
               ?.map((e) => Map<String, dynamic>.from(e))
               .toList() ??
           [];
-
-      if (commentaryItems.isEmpty) {
-        throw Exception(
-            "Comentário de Matthew Henry não encontrado para esta seção.");
-      }
+      if (commentaryItems.isEmpty)
+        throw Exception("Comentário não encontrado.");
 
       final contextText = commentaryItems
           .map((item) => (item['traducao'] as String? ?? "").trim())
@@ -284,38 +300,104 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       final callable = functions.httpsCallable('generateCommentarySummary');
       final result = await callable
           .call<Map<String, dynamic>>({'context_text': contextText});
-
       final summary = result.data['summary'] as String?;
-      if (summary == null || summary.isEmpty) {
+      if (summary == null || summary.isEmpty)
         throw Exception("A IA não retornou um resumo válido.");
-      }
 
+      final prefs = await SharedPreferences.getInstance();
       await prefs.setString(sectionId, summary);
 
-      if (!isPremium) {
-        unlockedSummaries.add(sectionId);
-        await prefs.setStringList(
-            _unlockedSummariesPrefsKey, unlockedSummaries);
-      }
+      // Desbloqueia permanentemente
+      final unlockedSummaries =
+          prefs.getStringList(_unlockedSummariesPrefsKey) ?? [];
+      unlockedSummaries.add(sectionId);
+      await prefs.setStringList(_unlockedSummariesPrefsKey, unlockedSummaries);
+      if (mounted) setState(() => _isSummaryUnlocked = true);
 
       await _loadAndShowSummary(sectionId, sectionTitle);
     } catch (e) {
-      print("Erro ao gerar resumo: $e");
       if (mounted)
         CustomNotificationService.showError(
             context, "Falha ao gerar o resumo. Tente novamente.");
-      if (!isPremium) {
-        store.dispatch(
-            UpdateUserCoinsAction(store.state.userState.userCoins + 3));
-        if (mounted)
-          CustomNotificationService.showSuccess(
-              context, "Suas moedas foram devolvidas.");
-      }
+      store
+          .dispatch(UpdateUserCoinsAction(store.state.userState.userCoins + 3));
+      if (mounted)
+        CustomNotificationService.showSuccess(
+            context, "Suas moedas foram devolvidas.");
+    } finally {
+      // Desativa o loading, não importa se deu certo ou errado
+      if (mounted) setState(() => _isGeneratingSummary = false);
     }
   }
-  // ===================================
-  // <<< FIM DA NOVA LÓGICA DE RESUMO >>>
-  // ===================================
+
+  // ✅ 5. Novo widget para construir o botão de resumo dinamicamente
+  Widget _buildSummaryButton(ThemeData theme) {
+    // Estado de Geração (Loading)
+    if (_isGeneratingSummary) {
+      return TextButton(
+        onPressed: null, // Desabilitado
+        style: TextButton.styleFrom(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          visualDensity: VisualDensity.compact,
+          disabledBackgroundColor: theme.colorScheme.surface.withOpacity(0.5),
+        ),
+        child: const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    // Estado Desbloqueado/Gerado
+    if (_isSummaryUnlocked) {
+      return TextButton.icon(
+        onPressed: () =>
+            _handleShowSummary(_commentaryDocId, widget.sectionTitle),
+        icon: Icon(Icons.article_outlined, size: 20),
+        label: const Text(
+          "Resumo",
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          foregroundColor: theme.colorScheme.primary,
+          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          visualDensity: VisualDensity.compact,
+        ),
+      );
+    }
+
+    // Estado Padrão (Não gerado)
+    return TextButton.icon(
+      onPressed: () =>
+          _handleShowSummary(_commentaryDocId, widget.sectionTitle),
+      icon: const Icon(Icons.bolt_outlined, size: 20),
+      label: const Text(
+        "Resumo",
+        style: TextStyle(
+          fontFamily: 'Poppins',
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: theme.colorScheme.primary,
+        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -397,39 +479,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                               _handlePlayRequest(TtsContentType.versesOnly),
                           splashRadius: 24,
                         ),
-                        // ===================================
-                        // <<< NOVO BOTÃO DE RESUMO AQUI >>>
-                        // ===================================
-                        TextButton.icon(
-                          onPressed: () => _handleShowSummary(
-                            _commentaryDocId,
-                            widget.sectionTitle,
-                          ),
-                          icon: const Icon(Icons.bolt_outlined, size: 20),
-                          label: const Text(
-                            "Resumo",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: theme.colorScheme.primary,
-                            backgroundColor:
-                                theme.colorScheme.primary.withOpacity(0.1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
+                        // ✅ 6. Substitui o botão antigo pelo nosso novo botão dinâmico
+                        _buildSummaryButton(theme),
                         const SizedBox(width: 8),
-                        // ===================================
-                        // <<< FIM DO NOVO BOTÃO >>>
-                        // ===================================
                         if (_isLoadingCommentary)
                           const SizedBox(
                             width: 40,
