@@ -846,7 +846,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         });
         CustomNotificationService.showSuccess(
             context, 'PDF do capítulo gerado com sucesso!');
-        OpenFile.open(filePath);
+        OpenFile.open(filePath, type: 'application/pdf');
       }
     } catch (e) {
       print("Erro ao gerar PDF: $e"); // Mantém o log técnico para você

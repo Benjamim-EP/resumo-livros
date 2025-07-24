@@ -305,7 +305,8 @@ class PdfGenerationService {
   }) async {
     final bytes = await pdf.save();
 
-    final dir = await getApplicationDocumentsDirectory();
+    // ✅ CORREÇÃO: Usa o diretório de cache/temporário, que é o local correto para arquivos a serem compartilhados.
+    final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$name');
 
     await file.writeAsBytes(bytes);
