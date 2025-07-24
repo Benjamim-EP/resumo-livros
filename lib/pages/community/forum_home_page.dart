@@ -335,6 +335,18 @@ class _ForumHomePageState extends State<ForumHomePage> {
             ),
           ),
 
+          // ✅ INÍCIO DA MUDANÇA
+
+          // Botão para Recarregar a Lista
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: theme.iconTheme.color),
+            tooltip: "Recarregar Perguntas",
+            // Desabilita o botão se já estiver carregando para evitar cliques duplos
+            onPressed: _isLoading || _isLoadingMore ? null : _fetchInitialPosts,
+          ),
+
+          // ✅ FIM DA MUDANÇA
+
           // Menu Suspenso de Filtros
           PopupMenuButton<String?>(
             icon: Icon(Icons.filter_list, color: theme.iconTheme.color),
@@ -442,7 +454,6 @@ class _ForumHomePageState extends State<ForumHomePage> {
   }
 
   Widget _buildInitialPostList() {
-    // ... (seu código para _buildInitialPostList permanece o mesmo, está correto)
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -459,134 +470,148 @@ class _ForumHomePageState extends State<ForumHomePage> {
         ),
       );
     }
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(12.0),
-      itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _posts.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final post = _posts[index];
-        final data = post.data() as Map<String, dynamic>;
-        final theme = Theme.of(context);
-        final timestamp = data['timestamp'] as Timestamp?;
-        final date = timestamp != null
-            ? DateFormat('dd/MM/yy').format(timestamp.toDate())
-            : '';
-        final bibleReference = data['bibleReference'] as String?;
-        final isProtected = data['isPasswordProtected'] ?? false;
-        final authorPhotoUrl = data['authorPhotoUrl'] as String?;
-        final authorName = data['authorName'] ?? 'Anônimo';
-        final title = data['title'] ?? 'Pergunta sem título';
-        final content = data['content'] as String?;
-        final category =
-            _getCategoryLabel(data['category'] ?? 'duvidas_gerais');
-        final answerCount = (data['answerCount'] ?? 0).toString();
 
-        return Card(
-          elevation: 2,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => _handlePostTap(context, post.id, isProtected),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(-1.0, -1.0),
-                  radius: 1.5,
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(0.1),
-                    theme.cardColor,
-                  ],
-                  stops: const [0.0, 1.0],
+    // ✅ INÍCIO DA MUDANÇA
+    // Envolvemos o ListView.builder com o RefreshIndicator.
+    return RefreshIndicator(
+      // A mágica acontece aqui: onRefresh chama a mesma função que você usa para o carregamento inicial.
+      onRefresh: _fetchInitialPosts,
+      child: ListView.builder(
+        // O ListView agora é um filho (child) do RefreshIndicator
+        controller: _scrollController,
+        padding: const EdgeInsets.all(12.0),
+        itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          // A sua lógica de itemBuilder permanece exatamente a mesma.
+          if (index == _posts.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final post = _posts[index];
+          final data = post.data() as Map<String, dynamic>;
+          final theme = Theme.of(context);
+          final timestamp = data['timestamp'] as Timestamp?;
+          final date = timestamp != null
+              ? DateFormat('dd/MM/yy').format(timestamp.toDate())
+              : '';
+          final bibleReference = data['bibleReference'] as String?;
+          final isProtected = data['isPasswordProtected'] ?? false;
+          final authorPhotoUrl = data['authorPhotoUrl'] as String?;
+          final authorName = data['authorName'] ?? 'Anônimo';
+          final title = data['title'] ?? 'Pergunta sem título';
+          final content = data['content'] as String?;
+          final category =
+              _getCategoryLabel(data['category'] ?? 'duvidas_gerais');
+          final answerCount = (data['answerCount'] ?? 0).toString();
+
+          return Card(
+            elevation: 2,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => _handlePostTap(context, post.id, isProtected),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(-1.0, -1.0),
+                    radius: 1.5,
+                    colors: [
+                      theme.colorScheme.primary.withOpacity(0.1),
+                      theme.cardColor,
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
                 ),
-              ),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (bibleReference != null && bibleReference.isNotEmpty)
-                        _buildTagChip(theme, bibleReference, isReference: true),
-                      if (bibleReference != null && bibleReference.isNotEmpty)
-                        const SizedBox(width: 8),
-                      _buildTagChip(theme, category),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold,
-                      height: 1.3,
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (bibleReference != null && bibleReference.isNotEmpty)
+                          _buildTagChip(theme, bibleReference,
+                              isReference: true),
+                        if (bibleReference != null && bibleReference.isNotEmpty)
+                          const SizedBox(width: 8),
+                        _buildTagChip(theme, category),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundImage: (authorPhotoUrl != null &&
-                                authorPhotoUrl.isNotEmpty)
-                            ? NetworkImage(authorPhotoUrl)
-                            : null,
-                        child: (authorPhotoUrl == null ||
-                                authorPhotoUrl.isEmpty)
-                            ? Text(authorName.isNotEmpty ? authorName[0] : '?')
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$authorName • $date',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (content != null && content.isNotEmpty)
+                    const SizedBox(height: 12),
                     Text(
-                      content,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color:
-                            theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                        height: 1.3,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  if (content != null && content.isNotEmpty)
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage: (authorPhotoUrl != null &&
+                                  authorPhotoUrl.isNotEmpty)
+                              ? NetworkImage(authorPhotoUrl)
+                              : null,
+                          child: (authorPhotoUrl == null ||
+                                  authorPhotoUrl.isEmpty)
+                              ? Text(
+                                  authorName.isNotEmpty ? authorName[0] : '?')
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$authorName • $date',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Icon(Icons.comment_outlined,
-                          size: 16, color: theme.textTheme.bodySmall?.color),
-                      const SizedBox(width: 6),
-                      Text(answerCount, style: theme.textTheme.bodyMedium),
-                      const Spacer(),
-                      if (isProtected)
-                        Icon(Icons.lock_outline,
-                            size: 18, color: theme.textTheme.bodySmall?.color),
-                    ],
-                  ),
-                ],
+                    if (content != null && content.isNotEmpty)
+                      Text(
+                        content,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.7),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (content != null && content.isNotEmpty)
+                      const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Icon(Icons.comment_outlined,
+                            size: 16, color: theme.textTheme.bodySmall?.color),
+                        const SizedBox(width: 6),
+                        Text(answerCount, style: theme.textTheme.bodyMedium),
+                        const Spacer(),
+                        if (isProtected)
+                          Icon(Icons.lock_outline,
+                              size: 18,
+                              color: theme.textTheme.bodySmall?.color),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        )
-            .animate()
-            .fadeIn(duration: 400.ms, delay: (100 * (index % _postsPerPage)).ms)
-            .slideY(begin: 0.2, curve: Curves.easeOut);
-      },
+          )
+              .animate()
+              .fadeIn(
+                  duration: 400.ms, delay: (100 * (index % _postsPerPage)).ms)
+              .slideY(begin: 0.2, curve: Curves.easeOut);
+        },
+      ),
     );
+    // ✅ FIM DA MUDANÇA
   }
 
   Widget _buildTagChip(ThemeData theme, String label,
