@@ -8,24 +8,31 @@ import 'package:septima_biblia/pages/bibtok/comments_modal.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
-// ===================================
-// <<< INÍCIO DOS NOVOS IMPORTS >>>
-// ===================================
 import 'package:septima_biblia/pages/sharing/shareable_image_generator_page.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
-// ===================================
-// <<< FIM DOS NOVOS IMPORTS >>>
-// ===================================
 
 class QuoteCardWidget extends StatefulWidget {
   final Map<String, dynamic> quoteData;
-  const QuoteCardWidget({super.key, required this.quoteData});
+  // Callback para notificar o pai (BibTokPage) sobre uma mudança na curtida.
+  final void Function(String quoteId, bool isNowLiked, int newLikeCount)
+      onLikeChanged;
+  // Callback para notificar o pai que o modal de comentários foi fechado,
+  // para que ele possa atualizar a contagem de comentários.
+  final void Function(String quoteId) onCommentPosted;
+
+  const QuoteCardWidget({
+    super.key,
+    required this.quoteData,
+    required this.onLikeChanged,
+    required this.onCommentPosted,
+  });
 
   @override
   State<QuoteCardWidget> createState() => _QuoteCardWidgetState();
 }
 
 class _QuoteCardWidgetState extends State<QuoteCardWidget> {
+  // O estado local é usado para uma resposta instantânea da UI.
   late int _likeCount;
   late bool _isLiked;
   bool _isLikeProcessing = false;
@@ -35,26 +42,60 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
   @override
   void initState() {
     super.initState();
-    _likeCount = widget.quoteData['likeCount'] ?? 0;
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final List<dynamic> likedBy = widget.quoteData['likedBy'] ?? [];
-    _isLiked = currentUserId != null && likedBy.contains(currentUserId);
+    // Inicializa o estado local com os dados recebidos do widget pai.
+    _updateStateFromWidget();
   }
 
+  /// Sincroniza o estado local do widget com os dados recebidos do pai.
+  /// Isso é crucial para quando o widget é reconstruído após rolar a tela.
+  @override
+  void didUpdateWidget(covariant QuoteCardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Se os dados de curtida do pai mudaram, atualiza a UI local.
+    if (widget.quoteData['likeCount'] != _likeCount ||
+        _isLikedByCurrentUser(widget.quoteData) != _isLiked) {
+      _updateStateFromWidget();
+    }
+  }
+
+  /// Função central para atualizar o estado local a partir dos `props` (widget.quoteData).
+  void _updateStateFromWidget() {
+    setState(() {
+      _likeCount = widget.quoteData['likeCount'] ?? 0;
+      _isLiked = _isLikedByCurrentUser(widget.quoteData);
+    });
+  }
+
+  /// Helper para verificar se o usuário atual curtiu a frase.
+  bool _isLikedByCurrentUser(Map<String, dynamic> data) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final List<dynamic> likedBy = data['likedBy'] ?? [];
+    return currentUserId != null && likedBy.contains(currentUserId);
+  }
+
+  /// Lida com o toque no botão de curtir.
   Future<void> _toggleLike() async {
     if (_isLikeProcessing) return;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return;
 
+    // 1. Atualização Otimista da UI Local:
+    // A UI responde instantaneamente, antes da confirmação do backend.
     setState(() {
       _isLikeProcessing = true;
       _isLiked ? _likeCount-- : _likeCount++;
       _isLiked = !_isLiked;
     });
 
+    // 2. Notifica o Pai:
+    // Avisa a BibTokPage sobre a mudança para que ela atualize sua lista de dados.
+    widget.onLikeChanged(widget.quoteData['id'], _isLiked, _likeCount);
+
     final bool wasLikeAction = _isLiked;
 
     try {
+      // 3. Persistência no Backend (Firestore):
+      // A lógica de transação no Firestore permanece a mesma.
       final quoteRef = FirebaseFirestore.instance
           .collection('quotes')
           .doc(widget.quoteData['id']);
@@ -97,22 +138,25 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
               StoreProvider.of<AppState>(context, listen: false)
                   .dispatch(LoadUserDetailsAction());
             }
-          }).catchError((error) {
-            print("Erro ao adicionar interação recente: $error");
           });
         }
       }
     } catch (e) {
       print("Erro ao curtir a frase: $e");
+      // 4. Reversão em caso de erro:
+      // Se a chamada ao Firestore falhar, desfaz a mudança na UI local.
       setState(() {
         _isLiked ? _likeCount++ : _likeCount--;
         _isLiked = !_isLiked;
       });
+      // E também avisa o pai para que ele reverta o estado.
+      widget.onLikeChanged(widget.quoteData['id'], _isLiked, _likeCount);
     } finally {
       if (mounted) setState(() => _isLikeProcessing = false);
     }
   }
 
+  /// Mostra o modal de comentários e notifica o pai quando ele é fechado.
   void _showCommentsModal() {
     showModalBottomSheet(
       context: context,
@@ -120,9 +164,14 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
       backgroundColor: Colors.transparent,
       builder: (context) => CommentsModal(
           quoteId: widget.quoteData['id'], quoteText: widget.quoteData['text']),
-    );
+    ).whenComplete(() {
+      // Quando o modal é fechado, chama o callback para que a BibTokPage
+      // possa buscar a nova contagem de comentários do Firestore.
+      widget.onCommentPosted(widget.quoteData['id']);
+    });
   }
 
+  /// Calcula o tamanho da fonte com base no comprimento do texto da citação.
   double _getFontSizeForText(String text) {
     const double baseSize = 26.0;
     const double minSize = 18.0;
@@ -144,8 +193,9 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
     final String book = widget.quoteData['book'] ?? 'Livro Desconhecido';
     final String quoteId = widget.quoteData['id'] ?? 'default_id';
     final String reference = "- $author, em '$book'";
-    final String imageUrl =
-        "https://picsum.photos/seed/$quoteId/450/800"; // URL de alta resolução
+    final String imageUrl = "https://picsum.photos/seed/$quoteId/450/800";
+    // Usa a contagem de comentários do estado do widget pai (que é atualizado)
+    final int commentCount = widget.quoteData['commentCount'] ?? 0;
 
     return Stack(
       alignment: Alignment.bottomRight,
@@ -202,14 +252,13 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
                     color: Colors.white, size: 32),
                 onPressed: _showCommentsModal,
               ),
+              // Exibe a contagem de comentários
+              Text(commentCount.toString(),
+                  style: const TextStyle(color: Colors.white)),
               const SizedBox(height: 24),
-              // ===================================
-              // <<< BOTÃO DE COMPARTILHAR ATUALIZADO >>>
-              // ===================================
               IconButton(
                 icon: const Icon(Icons.share, color: Colors.white, size: 32),
                 onPressed: () {
-                  // Registra o evento de analytics
                   AnalyticsService.instance.logEvent(
                     name: 'share_attempt',
                     parameters: {
@@ -217,26 +266,18 @@ class _QuoteCardWidgetState extends State<QuoteCardWidget> {
                       'quote_id': quoteId
                     },
                   );
-
-                  // Navega para a página de geração de imagem, reutilizando-a
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ShareableImageGeneratorPage(
-                        // Passamos o texto da frase
                         verseText: quoteText,
-                        // Passamos a referência formatada (autor e livro)
                         verseReference: reference,
-                        // Passamos a URL da imagem de fundo atual em alta resolução
                         imageUrl: imageUrl,
                       ),
                     ),
                   );
                 },
               ),
-              // ===================================
-              // <<< FIM DA ATUALIZAÇÃO >>>
-              // ===================================
             ],
           ),
         )

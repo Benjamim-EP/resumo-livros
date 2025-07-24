@@ -1,4 +1,4 @@
-// lib/pages/bibtok/bibtok_page.dart
+// lib/pages/bibtok_page.dart
 
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -46,9 +46,8 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   static const int _chunkSize = 10000;
   static const String _seenQuotesPrefsKey = 'bibtok_seen_ids_cache';
 
-  // A variável _isScrollLocked foi removida, pois a física não muda mais.
   final int _adInterval = 7;
-  int _currentPageIndex = 0; // Mantida para passar ao PremiumAdCard
+  int _currentPageIndex = 0;
 
   @override
   void initState() {
@@ -76,6 +75,60 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _persistSessionIds();
+    }
+  }
+
+  // ✅ 1. NOVA FUNÇÃO DE CALLBACK PARA CURTIDAS
+  /// Atualiza o estado da lista `_feedItems` quando uma curtida muda.
+  void _onLikeChanged(String quoteId, bool isNowLiked, int newLikeCount) {
+    if (!mounted) return;
+
+    final index = _feedItems.indexWhere((quote) => quote['id'] == quoteId);
+    if (index == -1) return;
+
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return;
+
+    setState(() {
+      _feedItems[index]['likeCount'] = newLikeCount;
+
+      // Garante que a lista 'likedBy' local esteja sincronizada
+      final List<dynamic> likedBy =
+          List.from(_feedItems[index]['likedBy'] ?? []);
+      if (isNowLiked) {
+        if (!likedBy.contains(currentUserId)) {
+          likedBy.add(currentUserId);
+        }
+      } else {
+        likedBy.remove(currentUserId);
+      }
+      _feedItems[index]['likedBy'] = likedBy;
+    });
+  }
+
+  // ✅ 2. NOVA FUNÇÃO DE CALLBACK PARA COMENTÁRIOS
+  /// Busca a contagem de comentários mais recente do Firestore.
+  void _onCommentPosted(String quoteId) async {
+    if (!mounted) return;
+
+    try {
+      final quoteDoc = await FirebaseFirestore.instance
+          .collection('quotes')
+          .doc(quoteId)
+          .get();
+      if (!quoteDoc.exists) return;
+
+      final newCommentCount = quoteDoc.data()?['commentCount'] ?? 0;
+      final index = _feedItems.indexWhere((quote) => quote['id'] == quoteId);
+      if (index == -1) return;
+
+      if (_feedItems[index]['commentCount'] != newCommentCount) {
+        setState(() {
+          _feedItems[index]['commentCount'] = newCommentCount;
+        });
+      }
+    } catch (e) {
+      print("Erro ao atualizar contagem de comentários na BibTokPage: $e");
     }
   }
 
@@ -311,7 +364,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
         return PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.vertical,
-          // A física agora é constante, removendo a causa do bug.
           physics: const BouncingScrollPhysics(),
           itemCount: totalItemCount,
           onPageChanged: (index) {
@@ -344,7 +396,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
             }
 
             if ((index + 1) % adSlotRatio == 0 && index != 0) {
-              // Passamos o PageController para o card para que ele possa gerenciar o "travamento".
               return PremiumAdCard(
                 pageController: _pageController,
                 currentPageIndex: index,
@@ -373,7 +424,12 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
                         Colors.black.withOpacity(0.4), BlendMode.darken),
                   ),
                 ),
-                child: QuoteCardWidget(quoteData: quoteData),
+                // ✅ 3. PASSA AS FUNÇÕES DE CALLBACK PARA O WIDGET FILHO
+                child: QuoteCardWidget(
+                  quoteData: quoteData,
+                  onLikeChanged: _onLikeChanged,
+                  onCommentPosted: _onCommentPosted,
+                ),
               ),
             );
           },
@@ -425,7 +481,12 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
                     Colors.black.withOpacity(0.4), BlendMode.darken),
               ),
             ),
-            child: QuoteCardWidget(quoteData: quoteData),
+            // ✅ 4. PASSA AS FUNÇÕES DE CALLBACK AQUI TAMBÉM (PARA USUÁRIOS PREMIUM)
+            child: QuoteCardWidget(
+              quoteData: quoteData,
+              onLikeChanged: _onLikeChanged,
+              onCommentPosted: _onCommentPosted,
+            ),
           ),
         );
       },
