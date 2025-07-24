@@ -131,7 +131,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   void initState() {
     super.initState();
     _setupUserListener();
-    _updateService.checkForUpdate();
+    //_updateService.checkForUpdate();
 
     if (!_notificationsInitialized) {
       _scheduleNotifications();
@@ -149,6 +149,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _initializeScreenState();
+        _updateService.checkForUpdate();
       }
     });
   }

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:septima_biblia/services/notification_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // ViewModel para buscar os dados do usuário para o cabeçalho do Drawer
 class _DrawerViewModel {
@@ -366,6 +367,9 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
   }
 
   Future<void> _showLogoutConfirmationDialog(BuildContext context) async {
+    final store = StoreProvider.of<AppState>(context,
+        listen: false); // Pega a store antes
+
     return showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -380,11 +384,18 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
             TextButton(
               child:
                   const Text('Sair', style: TextStyle(color: Colors.redAccent)),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.pop(context);
-                StoreProvider.of<AppState>(context, listen: false)
-                    .dispatch(UserLoggedOutAction());
+              // ✅ 1. TRANSFORME O onPressed EM 'async'
+              onPressed: () async {
+                Navigator.of(dialogContext).pop(); // Fecha o diálogo
+
+                // ✅ 2. ADICIONE A CHAMADA PARA O FIREBASE AUTH SIGNOUT
+                // Esta é a linha que faltava e que corrige o bug permanentemente.
+                await FirebaseAuth.instance.signOut();
+
+                // ✅ 3. DESPACHE A AÇÃO DO REDUX PARA LIMPAR A UI
+                // A chamada para Navigator.pop(context) não é mais necessária,
+                // pois o AuthCheck cuidará de reconstruir a árvore de widgets.
+                store.dispatch(UserLoggedOutAction());
               },
             ),
           ],
