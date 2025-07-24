@@ -13,6 +13,7 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/pages/community/podium_widget.dart';
 import 'package:septima_biblia/pages/community/ranking_list_item.dart';
 import 'package:septima_biblia/pages/community/user_ranking_card.dart';
+import 'package:septima_biblia/pages/community/weekly_countdown_timer.dart'; // Importa o contador
 
 // Modelo de Dados para o Ranking
 class RankingUser {
@@ -40,17 +41,6 @@ class RankingUser {
       photoURL: userData['photoURL'],
       rankingScore: (progressData['rankingScore'] as num?)?.toDouble() ?? 0.0,
       previousRank: userData['previousRank'] as int?,
-    );
-  }
-
-  // O construtor fromMock não é mais necessário, mas pode ser mantido se você usá-lo em testes.
-  // Se não, pode ser removido.
-  factory RankingUser.fromMock(Map<String, dynamic> mockData) {
-    return RankingUser(
-      id: mockData['id'] ?? 'mock_id',
-      name: mockData['name'] ?? 'Usuário Fictício',
-      photoURL: mockData['photoURL'],
-      rankingScore: (mockData['rankingScore'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -102,27 +92,22 @@ class _RankingTabViewState extends State<RankingTabView> {
   @override
   void initState() {
     super.initState();
-    _rankingFuture = _fetchRanking(); // Chama a nova função
+    _rankingFuture = _fetchRanking();
   }
 
-  // ===================================
-  // <<< FUNÇÃO ATUALIZADA AQUI >>>
-  // ===================================
+  /// Busca e combina os dados de progresso e de usuário do Firestore para montar o ranking.
   Future<List<RankingUser>> _fetchRanking() async {
     List<RankingUser> realUsers = [];
     try {
-      // 1. Busca os documentos de progresso ordenados por score
       final progressSnapshot = await FirebaseFirestore.instance
           .collection('userBibleProgress')
           .orderBy('rankingScore', descending: true)
-          .limit(100) // Limita aos 100 melhores para performance
+          .limit(100)
           .get();
 
       if (progressSnapshot.docs.isNotEmpty) {
-        // 2. Coleta os IDs dos usuários para buscar seus detalhes
         final userIds = progressSnapshot.docs.map((doc) => doc.id).toList();
 
-        // 3. Busca os detalhes dos usuários em lotes de 30 (limite do 'whereIn')
         Map<String, DocumentSnapshot> userDocsMap = {};
         for (var i = 0; i < userIds.length; i += 30) {
           final chunk = userIds.sublist(
@@ -136,7 +121,6 @@ class _RankingTabViewState extends State<RankingTabView> {
           }
         }
 
-        // 4. Combina os dados de progresso com os detalhes do usuário
         for (var progressDoc in progressSnapshot.docs) {
           final userDoc = userDocsMap[progressDoc.id];
           if (userDoc != null) {
@@ -145,19 +129,12 @@ class _RankingTabViewState extends State<RankingTabView> {
         }
       }
     } catch (e) {
-      // O fallback para dados mock foi removido. Agora apenas logamos o erro.
       print("Erro ao buscar ranking real do Firestore: $e");
     }
 
-    // A ordenação já é feita pela query do Firestore, mas uma re-ordenação aqui
-    // garante a consistência caso haja alguma manipulação futura.
     realUsers.sort((a, b) => b.rankingScore.compareTo(a.rankingScore));
-
     return realUsers;
   }
-  // ===================================
-  // <<< FIM DA ATUALIZAÇÃO >>>
-  // ===================================
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +190,13 @@ class _RankingTabViewState extends State<RankingTabView> {
                   RankingRewardsList(rewards: _rewards),
                   const SizedBox(height: 24),
                   if (podiumUsers.isNotEmpty) PodiumWidget(users: podiumUsers),
-                  const SizedBox(height: 40),
+
+                  // Adiciona o contador regressivo no espaço vazio
+                  const SizedBox(height: 24),
+                  const WeeklyCountdownTimer(),
+                  const SizedBox(height: 24),
+
+                  // Card do usuário logado
                   if (loggedInUserRankingData != null)
                     UserRankingCard(
                       name: loggedInUserRankingData.name,
@@ -226,28 +209,32 @@ class _RankingTabViewState extends State<RankingTabView> {
                     UserRankingCard(
                       name: viewModel.loggedInUserName ?? "Você",
                       score: "0",
-                      rank: 0,
+                      rank: 0, // 0 indica que não está no ranking
                       photoUrl: viewModel.loggedInUserPhotoUrl,
                     ),
                   const SizedBox(height: 24),
+
+                  // Título para o resto da lista
                   if (listUsers.isNotEmpty)
                     Text(
                       "Top 100 Leitores",
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
+
+                  // Lista dos outros usuários no ranking
                   if (listUsers.isNotEmpty)
                     ...List.generate(listUsers.length, (index) {
                       final user = listUsers[index];
-                      final rank = index + 4;
+                      final rank = index + 4; // A lista começa na 4ª posição
 
+                      // Não mostra o usuário logado novamente na lista se ele já apareceu no card
                       if (user.id == viewModel.loggedInUserId) {
                         return const SizedBox.shrink();
                       }
 
                       return RankingListItem(
                         rank: rank,
-                        user:
-                            user, // ✅ Simplesmente passe o objeto 'user' inteiro
+                        user: user, // Passa o objeto completo
                       )
                           .animate()
                           .fadeIn(duration: 500.ms, delay: (100 * index).ms)
