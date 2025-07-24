@@ -1,20 +1,18 @@
 // lib/pages/community/ranking_list_item.dart
 import 'package:flutter/material.dart';
+import 'package:septima_biblia/pages/community/public_profile_page.dart';
+import 'package:septima_biblia/pages/community/ranking_tab_view.dart'; // Para o modelo RankingUser
+import 'package:septima_biblia/services/custom_page_route.dart';
 
 class RankingListItem extends StatelessWidget {
   final int rank;
-  final String name;
-  final String? photoUrl;
-  final String score;
-  final int? previousRank; // A posição do usuário na semana anterior
+  // Recebe o objeto completo do usuário para ter acesso a todos os seus dados (ID, nome, foto, etc.)
+  final RankingUser user;
 
   const RankingListItem({
     super.key,
     required this.rank,
-    required this.name,
-    this.photoUrl,
-    required this.score,
-    this.previousRank,
+    required this.user,
   });
 
   @override
@@ -23,19 +21,23 @@ class RankingListItem extends StatelessWidget {
 
     // --- LÓGICA PARA DEFINIR O ÍCONE DE TENDÊNCIA ---
     Widget trendWidget;
-    if (previousRank != null) {
-      if (rank < previousRank!) {
+    if (user.previousRank != null) {
+      if (rank < user.previousRank!) {
+        // Subiu no ranking
         trendWidget = const Icon(Icons.arrow_drop_up,
             color: Colors.greenAccent, size: 24);
-      } else if (rank > previousRank!) {
+      } else if (rank > user.previousRank!) {
+        // Desceu no ranking
         trendWidget = const Icon(Icons.arrow_drop_down,
             color: Colors.redAccent, size: 24);
       } else {
+        // Manteve a posição
         trendWidget = Icon(Icons.remove, color: Colors.grey.shade600, size: 20);
       }
     } else {
+      // Sem dados da semana anterior
       trendWidget =
-          const SizedBox(width: 24); // Espaço vazio se não houver ícone
+          const SizedBox(width: 24); // Espaço vazio para manter o alinhamento
     }
     // --- FIM DA LÓGICA DO ÍCONE ---
 
@@ -45,11 +47,11 @@ class RankingListItem extends StatelessWidget {
       color: theme.cardColor.withOpacity(0.85),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip
-          .antiAlias, // Importante para o InkWell funcionar com o borderRadius
+          .antiAlias, // Garante que o InkWell respeite as bordas arredondadas
       child: Stack(
-        // Usamos Stack para colocar o InkWell por cima
+        // Usamos Stack para sobrepor o InkWell e capturar o toque em toda a área do card
         children: [
-          // 1. Conteúdo principal do Card
+          // 1. Conteúdo visual do Card
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
@@ -72,11 +74,15 @@ class RankingListItem extends StatelessWidget {
                 CircleAvatar(
                   radius: 22,
                   backgroundColor: theme.colorScheme.surface,
-                  backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
-                      ? NetworkImage(photoUrl!)
-                      : null,
-                  child: photoUrl == null || photoUrl!.isEmpty
-                      ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  backgroundImage:
+                      user.photoURL != null && user.photoURL!.isNotEmpty
+                          ? NetworkImage(user.photoURL!)
+                          : null,
+                  child: user.photoURL == null || user.photoURL!.isEmpty
+                      ? Text(
+                          user.name.isNotEmpty
+                              ? user.name[0].toUpperCase()
+                              : '?',
                           style: const TextStyle(fontWeight: FontWeight.bold))
                       : null,
                 ),
@@ -88,7 +94,7 @@ class RankingListItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        name,
+                        user.name,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -97,7 +103,7 @@ class RankingListItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Score: $score',
+                        'Score: ${user.rankingScore.toStringAsFixed(0)}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.textTheme.bodyMedium?.color
                               ?.withOpacity(0.7),
@@ -114,15 +120,28 @@ class RankingListItem extends StatelessWidget {
             ),
           ),
 
-          // 2. Camada de feedback de toque (InkWell)
+          // 2. Camada de feedback de toque (InkWell) que cobre todo o card
           Positioned.fill(
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
-                  print("Tocou no usuário do ranking: $name (Rank: $rank)");
-                  // No futuro, aqui você pode navegar para o perfil público do usuário.
-                  // Ex: Navigator.push(context, FadeScalePageRoute(page: UserProfilePage(userId: ...)));
+                  // Ação de clique: navegar para o perfil público do usuário
+                  Navigator.push(
+                    context,
+                    FadeScalePageRoute(
+                      // Usando sua transição de página customizada
+                      page: PublicProfilePage(
+                        userId: user.id,
+                        // Passa os dados que já temos para evitar um loading inicial na próxima tela
+                        initialUserData: {
+                          'userId': user.id,
+                          'nome': user.name,
+                          'photoURL': user.photoURL,
+                        },
+                      ),
+                    ),
+                  );
                 },
                 splashColor: theme.colorScheme.primary.withOpacity(0.12),
                 highlightColor: theme.colorScheme.primary.withOpacity(0.08),

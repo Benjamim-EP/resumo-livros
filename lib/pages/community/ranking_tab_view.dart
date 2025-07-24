@@ -246,10 +246,8 @@ class _RankingTabViewState extends State<RankingTabView> {
 
                       return RankingListItem(
                         rank: rank,
-                        name: user.name,
-                        photoUrl: user.photoURL,
-                        score: user.rankingScore.toStringAsFixed(0),
-                        previousRank: user.previousRank,
+                        user:
+                            user, // ✅ Simplesmente passe o objeto 'user' inteiro
                       )
                           .animate()
                           .fadeIn(duration: 500.ms, delay: (100 * index).ms)
