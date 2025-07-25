@@ -3,14 +3,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:provider/provider.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/services/language_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:septima_biblia/services/notification_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // ViewModel para buscar os dados do usuário para o cabeçalho do Drawer
 class _DrawerViewModel {
@@ -205,6 +208,9 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final l10n =
+        AppLocalizations.of(context)!; // Para pegar os nomes dos idiomas
     return StoreConnector<AppState, _DrawerViewModel>(
       converter: (store) => _DrawerViewModel.fromStore(store),
       builder: (context, viewModel) {
@@ -264,10 +270,48 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
                 text: 'Sair',
                 onTap: () => _showLogoutConfirmationDialog(context),
               ),
+              _buildLanguageSelector(context, languageProvider, l10n),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLanguageSelector(
+      BuildContext context, LanguageProvider provider, AppLocalizations l10n) {
+    // Define os idiomas que você suporta
+    final supportedLanguages = {
+      'pt': 'Português',
+      'en': 'English',
+    };
+
+    // Determina o código do idioma atual (ex: 'pt', 'en')
+    // Se appLocale for nulo, ele usa o idioma do dispositivo.
+    final currentLangCode = provider.appLocale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
+
+    return ListTile(
+      leading: const Icon(Icons.language_outlined),
+      title: const Text('Idioma'),
+      trailing: DropdownButton<String>(
+        value: supportedLanguages.containsKey(currentLangCode)
+            ? currentLangCode
+            : 'pt', // Valor padrão 'pt'
+        underline: const SizedBox(), // Remove a linha de baixo
+        items: supportedLanguages.entries.map((entry) {
+          return DropdownMenuItem<String>(
+            value: entry.key,
+            child: Text(entry.value),
+          );
+        }).toList(),
+        onChanged: (String? newLanguageCode) {
+          if (newLanguageCode != null) {
+            // Chama o método no provider para mudar o idioma
+            provider.changeLocale(newLanguageCode);
+          }
+        },
+      ),
     );
   }
 

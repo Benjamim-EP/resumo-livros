@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:septima_biblia/design/theme.dart';
 import 'package:septima_biblia/pages/start_screen_page.dart';
 import 'package:septima_biblia/pages/login_page.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
+import 'package:septima_biblia/services/language_provider.dart';
 import 'package:septima_biblia/services/navigation_service.dart';
 import 'package:septima_biblia/main.dart'; // Para o navigatorKey
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -27,6 +29,8 @@ class AuthCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+
     return StoreConnector<AppState, _ViewModel>(
       converter: (store) => _ViewModel.fromStore(store),
       onInit: (store) {
@@ -54,6 +58,7 @@ class AuthCheck extends StatelessWidget {
           return MaterialApp(
             navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
+            locale: languageProvider.appLocale,
             theme: vm.theme,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -66,7 +71,7 @@ class AuthCheck extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.greenTheme,
-          locale: const Locale('pt', 'BR'),
+          locale: languageProvider.appLocale,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

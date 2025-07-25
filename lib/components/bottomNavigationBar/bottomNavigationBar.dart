@@ -421,6 +421,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
         }
       },
       builder: (context, mainScreenViewModel) {
+        final l10n = AppLocalizations.of(context)!;
         if (mainScreenViewModel == null) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
@@ -608,41 +609,32 @@ class _MainAppScreenState extends State<MainAppScreen> {
                       _tutorialService.buildShowcasedBottomNavItem(
                           key: _tutorialService.keyAbaUsuario,
                           icon: Icons.account_circle,
-                          label: 'Usuário',
-                          description:
-                              'Acesse seu perfil, progresso e notas aqui.'),
+                          label: l10n.navUser, // <-- MUDANÇA
+                          description: l10n.showcaseUserDesc), // <-- MUDANÇA
                       BottomNavigationBarItem(
-                        // O ícone agora é um widget Image.asset
                         icon: Image.asset(
-                          'assets/icon/bibtok.png', // <<< O caminho para o seu PNG
-                          width:
-                              24, // Tamanho padrão para ícones da barra de navegação
+                          'assets/icon/bibtok.png',
+                          width: 24,
                           height: 24,
-                          // Aplica uma cor cinza quando o ícone NÃO está selecionado
-                          color: _selectedIndex == 1
-                              ? null // Mantém a cor original do PNG quando selecionado
-                              : Colors.grey[600],
-                          // O BlendMode ajuda a garantir que a cor seja aplicada corretamente
+                          color: _selectedIndex == 1 ? null : Colors.grey[600],
                           colorBlendMode: BlendMode.modulate,
                         ),
-                        label: 'BibTok',
+                        label: 'BibTok', // Mantido, pois é uma marca
                       ),
                       _tutorialService.buildShowcasedBottomNavItem(
                           key: _tutorialService.keyAbaBiblia,
                           icon: Icons.book_outlined,
-                          label: 'Bíblia',
-                          description:
-                              'Navegue pelos livros da Bíblia e faça estudos profundos.'),
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.groups_outlined),
-                        label: 'Comunidade',
+                          label: l10n.bible, // <-- MUDANÇA
+                          description: l10n.showcaseBibleDesc), // <-- MUDANÇA
+                      BottomNavigationBarItem(
+                        icon: const Icon(Icons.groups_outlined),
+                        label: l10n.community, // <-- MUDANÇA
                       ),
                       _tutorialService.buildShowcasedBottomNavItem(
                           key: _tutorialService.keyAbaBiblioteca,
                           icon: Icons.local_library_outlined,
-                          label: 'Biblioteca',
-                          description:
-                              'Explore uma vasta coleção de sermões, livros e outros recursos.'),
+                          label: l10n.library, // <-- MUDANÇA
+                          description: l10n.showcaseLibraryDesc), // <-- MUDANÇA
                     ],
                   ),
           ),

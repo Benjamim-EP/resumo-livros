@@ -8,15 +8,11 @@
     "profile": "Profile",
     "loginRequiredTitle": "Login Required",
     "loginRequiredContent": "To access {featureName}, please log in or create an account.",
-    "@loginRequiredContent": {
-        "description": "A message shown when a feature requires login.",
-        "placeholders": {
-            "featureName": {
-                "type": "String",
-                "example": "this feature"
-            }
-        }
-    },
     "cancel": "Cancel",
-    "loginRegister": "Login / Register"
+    "loginRegister": "Login / Register",
+
+    "navUser": "User",
+    "showcaseUserDesc": "Access your profile, progress, and notes here.",
+    "showcaseBibleDesc": "Browse the books of the Bible and do in-depth studies.",
+    "showcaseLibraryDesc": "Explore a vast collection of sermons, books, and other resources."
 }

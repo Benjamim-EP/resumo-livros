@@ -9,5 +9,10 @@
     "loginRequiredTitle": "Login Necessário",
     "loginRequiredContent": "Para acessar {featureName}, por favor, faça login ou crie uma conta.",
     "cancel": "Cancelar",
-    "loginRegister": "Login / Cadastro"
+    "loginRegister": "Login / Cadastro",
+
+    "navUser": "Usuário",
+    "showcaseUserDesc": "Acesse seu perfil, progresso e notas aqui.",
+    "showcaseBibleDesc": "Navegue pelos livros da Bíblia e faça estudos profundos.",
+    "showcaseLibraryDesc": "Explore uma vasta coleção de sermões, livros e outros recursos."
 }
