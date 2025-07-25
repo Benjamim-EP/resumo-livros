@@ -20,6 +20,8 @@ import 'package:septima_biblia/main.dart'; // Para o navigatorKey
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:septima_biblia/services/notification_service.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 class AuthCheck extends StatelessWidget {
   const AuthCheck({super.key});
 
@@ -53,15 +55,8 @@ class AuthCheck extends StatelessWidget {
             navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
             theme: vm.theme,
-            locale: const Locale('pt', 'BR'),
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('pt', 'BR'),
-            ],
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: const MainAppScreen(),
             onGenerateRoute: NavigationService.generateRoute,
           );

@@ -1,0 +1,22 @@
+{
+    "@@locale": "en",
+    "appTitle": "Septima Bible",
+    "helloWorld": "Hello World!",
+    "library": "Library",
+    "bible": "Bible",
+    "community": "Community",
+    "profile": "Profile",
+    "loginRequiredTitle": "Login Required",
+    "loginRequiredContent": "To access {featureName}, please log in or create an account.",
+    "@loginRequiredContent": {
+        "description": "A message shown when a feature requires login.",
+        "placeholders": {
+            "featureName": {
+                "type": "String",
+                "example": "this feature"
+            }
+        }
+    },
+    "cancel": "Cancel",
+    "loginRegister": "Login / Register"
+}

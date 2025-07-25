@@ -1,0 +1,13 @@
+{
+    "@@locale": "pt",
+    "appTitle": "Septima Bíblia",
+    "helloWorld": "Olá, Mundo!",
+    "library": "Biblioteca",
+    "bible": "Bíblia",
+    "community": "Comunidade",
+    "profile": "Perfil",
+    "loginRequiredTitle": "Login Necessário",
+    "loginRequiredContent": "Para acessar {featureName}, por favor, faça login ou crie uma conta.",
+    "cancel": "Cancelar",
+    "loginRegister": "Login / Cadastro"
+}

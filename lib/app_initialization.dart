@@ -1,5 +1,4 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 // import 'package:google_mobile_ads/google_mobile_ads.dart'; // REMOVIDO
 import 'package:septima_biblia/consts.dart';
 import 'firebase_options.dart';

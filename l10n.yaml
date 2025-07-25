@@ -1,0 +1,10 @@
+# Diretório onde seus arquivos de tradução (.arb) estarão.
+arb-dir: lib/l10n
+
+# O arquivo que servirá como modelo para todas as traduções.
+# Geralmente, usamos o inglês como base.
+template-arb-file: app_en.arb
+
+# O nome do arquivo Dart que será gerado.
+# Por padrão, ele cria uma classe chamada "AppLocalizations".
+output-localization-file: app_localizations.dart

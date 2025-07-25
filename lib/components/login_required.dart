@@ -4,21 +4,23 @@ import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 void showLoginRequiredDialog(BuildContext context,
     {String featureName = "esta funcionalidade"}) {
+  final l10n = AppLocalizations.of(context)!;
   showDialog(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: const Text("Login Necessário"),
-      content: Text(
-          "Para acessar $featureName, por favor, faça login ou crie uma conta."),
+      content: Text(l10n.loginRequiredContent(featureName)),
       actions: [
         TextButton(
-          child: const Text("Cancelar"),
+          child: Text(l10n.cancel),
           onPressed: () => Navigator.of(dialogContext).pop(),
         ),
         TextButton(
-          child: const Text("Login / Cadastro"),
+          child: Text(l10n.loginRegister),
           onPressed: () {
             Navigator.of(dialogContext).pop(); // Fecha o diálogo
             // Navega para a tela de login, limpando o estado de convidado

@@ -16,7 +16,6 @@ import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/pages/bible_page.dart';
 import 'package:septima_biblia/pages/bibtok_page.dart';
 import 'package:septima_biblia/pages/community/community_page.dart';
-import 'package:septima_biblia/pages/devotional_page/devotional_diary_page.dart';
 import 'package:septima_biblia/pages/library_page.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/query_results_page.dart';
@@ -33,6 +32,8 @@ import 'package:septima_biblia/services/notification_service.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:septima_biblia/services/tutorial_service.dart'; // <<< ARQUIVO REFATORADO
 import 'package:septima_biblia/services/update_service.dart'; // <<< ARQUIVO REFATORADO
+
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // ViewModels (sem alterações)
 class _UserCoinsViewModel {
@@ -326,16 +327,15 @@ class _MainAppScreenState extends State<MainAppScreen> {
   String _getAppBarTitle(int index) {
     switch (index) {
       case 0:
-        return "Meu Perfil";
+        return AppLocalizations.of(context)!.profile;
       case 1:
-        return "BibTok";
+        return "BibTok"; // Mantém se for uma marca
       case 2:
-        return "Bíblia";
-      case 3: // Novo índice para a Comunidade
-        return "Comunidade";
+        return AppLocalizations.of(context)!.bible;
+      case 3:
+        return AppLocalizations.of(context)!.community;
       case 4:
-        return "Biblioteca";
-
+        return AppLocalizations.of(context)!.library;
       default:
         return "Septima";
     }

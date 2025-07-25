@@ -1,14 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Permissões Corrigidas -->
+
+    <!-- Permissões Essenciais -->
     <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <!-- A permissão de escrita agora é restrita a versões mais antigas do Android -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- A permissão de escrita é necessária para salvar PDFs em versões mais antigas do Android -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- Bloco <queries> ÚNICO e no local correto -->
+    <!-- Bloco de 'queries' para interações com outros apps (TTS, etc.) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
@@ -21,8 +23,10 @@
     
     <application
         android:label="Septima Bíblia"
+        android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
-        <!-- ATRIBUTO 'networkSecurityConfig' REMOVIDO POR SEGURANÇA -->
+        
+        <!-- Activity Principal (Entrada do App) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -32,6 +36,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
             
+            <!-- Meta-data essencial para a V2 Embedding do Flutter -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
@@ -42,21 +47,24 @@
             </intent-filter>
         </activity>
 
+        <!-- Configuração para Notificações Locais (essencial) -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <!-- A linha abaixo pode ser removida se não for necessária para dispositivos HTC específicos -->
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
 
+        <!-- Meta-data para a V2 Embedding do Flutter (bom manter) -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Configuração do Start.io -->
+        <!-- Configuração do SDK de Anúncios Start.io (essencial) -->
         <meta-data
             android:name="com.startapp.sdk.APPLICATION_ID"
             android:value="205332932" />
@@ -64,7 +72,7 @@
             android:name="com.startapp.sdk.RETURN_ADS_ENABLED"
             android:value="false" />
         <provider
-            android:authorities="com.startapp.flutter.sdk.${applicationId}"
+            android:authorities="${applicationId}.startapp.flutter.sdk.provider"
             android:name="com.startapp.flutter.sdk.StartAppFlutterHelper"
             android:exported="false">
             <meta-data
@@ -72,7 +80,7 @@
                 android:value="false" />
         </provider>
 
-        <!-- Provider para compartilhamento de arquivos (PDFs, etc.) -->
+        <!-- Provider para Compartilhamento de Arquivos (PDFs, etc. - essencial) -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -83,6 +91,4 @@
                 android:resource="@xml/filepaths" />
         </provider>
     </application>
-
-    <!-- O SEGUNDO BLOCO <queries> FOI REMOVIDO DAQUI -->
 </manifest>
