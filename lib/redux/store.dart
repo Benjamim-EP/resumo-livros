@@ -1,22 +1,19 @@
-// redux/store.dart
+// lib/redux/store.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
-import 'package:septima_biblia/redux/middleware/backend_validation_middleware.dart';
-import 'package:septima_biblia/redux/middleware/bible_progress_middleware.dart';
-import 'package:septima_biblia/redux/middleware/book_search_middleware.dart';
-import 'package:septima_biblia/redux/middleware/community_search_middleware.dart';
-import 'package:septima_biblia/redux/middleware/fake_payment_middleware.dart';
-import 'package:septima_biblia/redux/middleware/firestore_sync_middleware.dart';
-import 'package:septima_biblia/redux/middleware/metadata_middleware.dart';
-import 'package:septima_biblia/redux/middleware/payment_middleware.dart';
-import 'package:septima_biblia/redux/middleware/sermon_data_middleware.dart';
-import 'package:septima_biblia/redux/middleware/sermon_search_middleware.dart';
-import 'package:septima_biblia/redux/reducers/community_search_reducer.dart';
-import 'package:septima_biblia/redux/reducers/metadata_reducer.dart';
-import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
-import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
-import 'reducers.dart'; // Seu arquivo de reducers principal
 
+// Importa a interface e as implementações do serviço de pagamento
+import 'package:septima_biblia/services/payment_service.dart';
+
+// Importa todos os seus reducers
+import 'reducers.dart';
+import 'reducers/community_search_reducer.dart';
+import 'reducers/metadata_reducer.dart';
+import 'reducers/sermon_search_reducer.dart';
+import 'reducers/subscription_reducer.dart';
+
+// Importa todos os seus middlewares
 import 'middleware/book_middleware.dart';
 import 'middleware/author_middleware.dart';
 import 'middleware/user_middleware.dart';
@@ -24,8 +21,19 @@ import 'middleware/topic_middleware.dart';
 import 'middleware/misc_middleware.dart';
 import 'middleware/theme_middleware.dart';
 import 'middleware/ad_middleware.dart';
-import 'middleware/bible_search_middleware.dart'; // NOVO: Middleware para busca semântica BÍBLICA
+import 'middleware/bible_search_middleware.dart';
+import 'middleware/bible_progress_middleware.dart';
+import 'middleware/metadata_middleware.dart';
+import 'middleware/firestore_sync_middleware.dart';
+import 'middleware/sermon_search_middleware.dart';
+import 'middleware/backend_validation_middleware.dart';
+import 'middleware/book_search_middleware.dart';
+import 'middleware/sermon_data_middleware.dart';
+import 'middleware/community_search_middleware.dart';
+import 'middleware/payment_middleware.dart';
+import 'middleware/fake_payment_middleware.dart';
 
+// A definição do seu AppState (sem alterações)
 class AppState {
   final BooksState booksState;
   final UserState userState;
@@ -33,11 +41,9 @@ class AppState {
   final TopicState topicState;
   final ChatState chatState;
   final ThemeState themeState;
-  final BibleSearchState
-      bibleSearchState; // NOVO: Estado para a busca semântica bíblica
-  final SermonSearchState sermonSearchState; // NOVO ESTADO
+  final BibleSearchState bibleSearchState;
+  final SermonSearchState sermonSearchState;
   final BookSearchState bookSearchState;
-
   final MetadataState metadataState;
   final SubscriptionState subscriptionState;
   final SermonState sermonState;
@@ -50,7 +56,7 @@ class AppState {
     required this.topicState,
     required this.chatState,
     required this.themeState,
-    required this.bibleSearchState, // NOVO
+    required this.bibleSearchState,
     required this.metadataState,
     required this.subscriptionState,
     required this.sermonSearchState,
@@ -59,8 +65,7 @@ class AppState {
     required this.communitySearchState,
   });
 
-  // O método copyWith é útil para testes ou cenários de atualização mais complexos,
-  // mas geralmente os reducers individuais cuidam da imutabilidade.
+  // copyWith (sem alterações)
   AppState copyWith({
     BooksState? booksState,
     UserState? userState,
@@ -68,7 +73,7 @@ class AppState {
     TopicState? topicState,
     ChatState? chatState,
     ThemeState? themeState,
-    BibleSearchState? bibleSearchState, // NOVO
+    BibleSearchState? bibleSearchState,
     BookSearchState? bookSearchState,
     SermonSearchState? sermonSearchState,
     SermonState? sermonState,
@@ -83,9 +88,8 @@ class AppState {
         topicState: topicState ?? this.topicState,
         chatState: chatState ?? this.chatState,
         themeState: themeState ?? this.themeState,
-        bibleSearchState: bibleSearchState ?? this.bibleSearchState, // NOVO
-        metadataState: metadataState ??
-            this.metadataState, // Mantém o estado de metadados atual
+        bibleSearchState: bibleSearchState ?? this.bibleSearchState,
+        metadataState: metadataState ?? this.metadataState,
         subscriptionState: subscriptionState ?? this.subscriptionState,
         sermonSearchState: sermonSearchState ?? this.sermonSearchState,
         bookSearchState: bookSearchState ?? this.bookSearchState,
@@ -95,7 +99,7 @@ class AppState {
   }
 }
 
-// Reducer principal que combina todos os outros reducers
+// O seu appReducer principal (sem alterações)
 AppState appReducer(AppState state, dynamic action) {
   return AppState(
     booksState: booksReducer(state.booksState, action),
@@ -104,8 +108,7 @@ AppState appReducer(AppState state, dynamic action) {
     topicState: topicReducer(state.topicState, action),
     chatState: chatReducer(state.chatState, action),
     themeState: themeReducer(state.themeState, action),
-    bibleSearchState:
-        bibleSearchReducer(state.bibleSearchState, action), // NOVO
+    bibleSearchState: bibleSearchReducer(state.bibleSearchState, action),
     metadataState: metadataReducer(state.metadataState, action),
     subscriptionState: subscriptionReducer(state.subscriptionState, action),
     sermonSearchState: sermonSearchReducer(state.sermonSearchState, action),
@@ -116,34 +119,8 @@ AppState appReducer(AppState state, dynamic action) {
   );
 }
 
-// Criação do store global com o estado combinado e todos os middlewares
-final Store<AppState> store = Store<AppState>(
-  appReducer,
-  initialState: AppState(
-    // Inicializa cada parte do estado com seu estado inicial padrão
-    booksState: BooksState(), // Assumindo construtor padrão em BooksState
-    //userState: UserState(), // Assumindo construtor padrão em UserState
-    authorState: AuthorState(), // Assumindo construtor padrão em AuthorState
-    topicState: TopicState(), // Assumindo construtor padrão em TopicState
-    chatState: ChatState(), // Assumindo construtor padrão em ChatState
-    themeState: ThemeState.initial(), // Usa o factory do ThemeState
-    bibleSearchState:
-        BibleSearchState(), // NOVO: Estado inicial para busca bíblica
-    metadataState: MetadataState(),
-    userState: UserState(pendingFirestoreWrites: []),
-    subscriptionState: SubscriptionState.initial(),
-    sermonSearchState:
-        SermonSearchState(), // NOVO: Estado inicial para busca de sermões
-    bookSearchState: BookSearchState(),
-    sermonState: SermonState(), // Novo estado inicial para sermões
-    communitySearchState: CommunitySearchState(),
-  ),
-  middleware: createAppMiddleware(),
-);
-
-// Função para criar a lista de middlewares dinamicamente
-List<Middleware<AppState>> createAppMiddleware() {
-  // Lista de middlewares que rodam em ambos os modos (debug e release)
+// A sua função createAppMiddleware, agora recebendo o IPaymentService
+List<Middleware<AppState>> createAppMiddleware(IPaymentService paymentService) {
   List<Middleware<AppState>> commonMiddleware = [
     ...createAuthorMiddleware(),
     ...createUserMiddleware(),
@@ -162,47 +139,66 @@ List<Middleware<AppState>> createAppMiddleware() {
     ...createCommunitySearchMiddleware(),
   ];
 
-  // A constante kDebugMode é verdadeira apenas quando você roda em modo debug
   if (kDebugMode) {
     print("<<<<< MODO DEBUG: Usando Middleware de Pagamento FALSO >>>>>");
-    // Adiciona o middleware falso
     return [
       ...commonMiddleware,
-      ...createFakePaymentMiddleware(), // <<< USA O FALSO
+      ...createFakePaymentMiddleware(),
     ];
   } else {
     print("<<<<< MODO RELEASE: Usando Middleware de Pagamento REAL >>>>>");
-    // Adiciona os middlewares reais de pagamento
     return [
       ...commonMiddleware,
-      ...createPaymentMiddleware(), // <<< USA O REAL
+      ...createPaymentMiddleware(paymentService), // <<< USA O SERVIÇO INJETADO
     ];
   }
 }
 
-class MetadataState {
-  final Map<String, dynamic> bibleSectionCounts;
-  final bool isLoadingSectionCounts;
-  final String? sectionCountsError;
+// ==========================================================
+// FUNÇÃO CENTRAL PARA CRIAR E CONFIGURAR A STORE
+// ==========================================================
+Store<AppState> createStore() {
+  // 1. Detecta qual "sabor" (flavor) do app está sendo executado.
+  // Isso funciona por causa da flag "--dart-define=IS_PLAY_STORE=true/false"
+  // que configuramos no seu arquivo `launch.json`.
+  const bool isPlayStoreBuild = bool.fromEnvironment('IS_PLAY_STORE');
 
-  MetadataState({
-    this.bibleSectionCounts = const {},
-    this.isLoadingSectionCounts = false,
-    this.sectionCountsError,
-  });
-
-  MetadataState copyWith({
-    Map<String, dynamic>? bibleSectionCounts,
-    bool? isLoadingSectionCounts,
-    String? sectionCountsError,
-    bool clearError = false,
-  }) {
-    return MetadataState(
-      bibleSectionCounts: bibleSectionCounts ?? this.bibleSectionCounts,
-      isLoadingSectionCounts:
-          isLoadingSectionCounts ?? this.isLoadingSectionCounts,
-      sectionCountsError:
-          clearError ? null : sectionCountsError ?? this.sectionCountsError,
-    );
+  // 2. Escolhe a implementação correta do serviço de pagamento com base no flavor.
+  IPaymentService paymentService;
+  if (isPlayStoreBuild) {
+    print(
+        "STORE INIT: Detectado build da Play Store. Usando GooglePlayPaymentService.");
+    paymentService = GooglePlayPaymentService();
+  } else {
+    print(
+        "STORE INIT: Detectado build do Website. Usando StripePaymentService.");
+    paymentService = StripePaymentService();
   }
+
+  // 3. Cria a instância da Store, passando o estado inicial e os middlewares configurados.
+  return Store<AppState>(
+    appReducer,
+    // Este é o estado inicial do seu aplicativo. Cada "fatia" do estado
+    // é inicializada com seu valor padrão.
+    initialState: AppState(
+      booksState: BooksState(),
+      userState: UserState(pendingFirestoreWrites: []),
+      authorState: AuthorState(),
+      topicState: TopicState(),
+      chatState: ChatState(),
+      themeState: ThemeState.initial(),
+      bibleSearchState: BibleSearchState(),
+      metadataState: MetadataState(),
+      subscriptionState: SubscriptionState.initial(),
+      sermonSearchState: SermonSearchState(),
+      bookSearchState: BookSearchState(),
+      sermonState: SermonState(),
+      communitySearchState: CommunitySearchState(),
+    ),
+    // Passa o serviço de pagamento escolhido para a função que cria os middlewares.
+    middleware: createAppMiddleware(paymentService),
+  );
 }
+
+// Cria a instância GLOBAL e ÚNICA da sua store para todo o aplicativo.
+final Store<AppState> store = createStore();

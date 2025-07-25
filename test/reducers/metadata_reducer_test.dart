@@ -2,6 +2,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:septima_biblia/redux/actions/metadata_actions.dart';
+import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/metadata_reducer.dart';
 import 'package:septima_biblia/redux/store.dart'; // Importa para ter acesso ao MetadataState
 

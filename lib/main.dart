@@ -1,42 +1,39 @@
-// Em: lib/main.dart
+// lib/main.dart
 
 import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+// REMOVA O IMPORT DO FLAVOR, NÃO É MAIS NECESSÁRIO AQUI
+// import 'package:flutter_flavor/flutter_flavor.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
-import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/redux/store.dart'; // Apenas o import do store
 import 'package:septima_biblia/services/auth_check.dart';
 import 'package:septima_biblia/services/language_provider.dart';
+// REMOVA O IMPORT DO PAYMENT SERVICE, NÃO É MAIS NECESSÁRIO AQUI
+// import 'package:septima_biblia/services/payment_service.dart';
 import './app_initialization.dart';
+// REMOVA O IMPORT DO REDUX CORE, NÃO É MAIS NECESSÁRIO AQUI
+// import 'package:redux/redux.dart';
 
-// Chave global para navegação a partir de locais sem acesso direto ao BuildContext,
-// como middlewares do Redux. Essencial para sua arquitetura.
 const bool kIsIntegrationTest = bool.fromEnvironment('integration_test');
-
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
-  // Garante que todos os bindings do Flutter estejam inicializados antes de
-  // qualquer código assíncrono ou de inicialização de plugins.
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
-  // Inicializa a formatação de data e hora para o local 'pt_BR'.
-  // Crucial para que datas como "15 de Outubro de 2024" sejam exibidas corretamente.
+  // NENHUMA LÓGICA DE FLAVOR OU STORE PRECISA ESTAR AQUI AGORA.
+  // A variável `store` já foi criada e configurada em `store.dart`.
+
   await initializeDateFormatting('pt_BR');
-
-  // Inicializa serviços essenciais como o Firebase.
-  // AdMob foi removido daqui e a inicialização do Start.io é feita nativamente.
   await AppInitialization.init();
-
   FirebaseInAppMessaging.instance.setMessagesSuppressed(false);
 
-  // Despacha as ações iniciais para carregar dados persistidos no estado do Redux.
-  // Isso carrega o tema salvo e qualquer progresso de leitura da Bíblia que
-  // estava pendente de sincronização da última sessão.
+  // A variável `store` importada de `store.dart` já está pronta para uso.
   store.dispatch(LoadSavedThemeAction());
   store.dispatch(LoadPendingBibleProgressAction());
 
@@ -45,16 +42,16 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  // O construtor não precisa mais receber o store, pois ele é uma variável global.
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // O StoreProvider disponibiliza o store Redux para toda a árvore de widgets abaixo dele.
     return StoreProvider<AppState>(
-      store: store,
+      store: store, // Usa a instância global do store.
       child: ChangeNotifierProvider(
-        create: (_) => LanguageProvider(), // Cria a instância do provider
-        child: const AuthCheck(), // O AuthCheck agora é filho do provider
+        create: (_) => LanguageProvider(),
+        child: const AuthCheck(),
       ),
     );
   }

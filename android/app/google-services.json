@@ -66,6 +66,74 @@
       },
       "oauth_client": [
         {
+          "client_id": "225819514315-22n6f6jq4as2glnsjm9hbl4b7mprrq2n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.septima.septimabiblia",
+            "certificate_hash": "e40de3aaaf29a8c8bc684a0ef6c42ba20d4dbb17"
+          }
+        },
+        {
+          "client_id": "225819514315-sjcumsbq9o2l6ackoggvlubrdpqqntgn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.septima.septimabiblia",
+            "certificate_hash": "1bd8c3750aa46328b1ca9201cd4faf07cf2825ba"
+          }
+        },
+        {
+          "client_id": "225819514315-k4dvdejbplugoc530d9d6e01rkmet4i1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcuHVPneHpt5LWM3u2ZtpUimfHrQsNAlk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "225819514315-k4dvdejbplugoc530d9d6e01rkmet4i1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "225819514315-gvem7jh47k9fcihtq3m309qt4mb39b8h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.resumoDosDeusesFlutter"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225819514315:android:d33dd1dcbeef281923d24e",
+        "android_client_info": {
+          "package_name": "com.septima.septimabiblia.website"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "225819514315-9o6h8v033nblj5kvcmhruib3hqmjsptd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.septima.septimabiblia.website",
+            "certificate_hash": "e40de3aaaf29a8c8bc684a0ef6c42ba20d4dbb17"
+          }
+        },
+        {
+          "client_id": "225819514315-hubika17f6dsis8q20thvab64ufg0p3c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.septima.septimabiblia.website",
+            "certificate_hash": "1bd8c3750aa46328b1ca9201cd4faf07cf2825ba"
+          }
+        },
+        {
           "client_id": "225819514315-k4dvdejbplugoc530d9d6e01rkmet4i1.apps.googleusercontent.com",
           "client_type": 3
         }

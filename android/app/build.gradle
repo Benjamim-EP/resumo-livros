@@ -37,24 +37,51 @@ android {
     compileSdk = 35
     ndkVersion = "27.0.12077973"
 
+    // <<< INÍCIO DA SEÇÃO ADICIONADA >>>
+    // 1. Define uma "categoria" para nossos flavors. Essencial para o Gradle.
+    flavorDimensions "distribution"
+
+    // 2. Define os dois "sabores" do seu aplicativo.
+    productFlavors {
+        // Flavor para a versão da Play Store
+        playStore {
+            dimension "distribution"
+            // Para este flavor, não adicionamos um sufixo ao ID do aplicativo.
+            // O ID será: com.septima.septimabiblia
+        }
+        // Flavor para a versão do seu site
+        website {
+            dimension "distribution"
+            // Adicionamos um sufixo ao ID do aplicativo.
+            // O ID final será: com.septima.septimabiblia.website
+            // Isso permite que você instale AMBAS as versões no mesmo celular para testes!
+            applicationIdSuffix ".website"
+        }
+    }
+    // <<< FIM DA SEÇÃO ADICIONADA >>>
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-        // CORREÇÃO APLICADA AQUI: Ativa o "desugaring" para compatibilidade de bibliotecas.
         coreLibraryDesugaringEnabled true
     }
+
     kotlinOptions {
         jvmTarget = '1.8'
     }
 
+    // <<< INÍCIO DA MODIFICAÇÃO NO defaultConfig >>>
     defaultConfig {
-        applicationId = "com.septima.septimabiblia"
+        // A linha "applicationId" será movida para dentro de cada flavor.
+        // Se ela ainda estiver aqui, você pode removê-la com segurança.
+        // applicationId = "com.septima.septimabiblia" // <-- PODE REMOVER ESTA LINHA
         minSdkVersion 23
         targetSdk = 35
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
-        multiDexEnabled true // Mantém a compatibilidade com multidex
+        multiDexEnabled true
     }
+    // <<< FIM DA MODIFICAÇÃO NO defaultConfig >>>
 
     signingConfigs {
         release {

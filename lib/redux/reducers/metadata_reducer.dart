@@ -1,5 +1,6 @@
 // lib/redux/reducers/metadata_reducer.dart
 import 'package:septima_biblia/redux/actions/metadata_actions.dart';
+import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart'; // Para MetadataState
 
 MetadataState metadataReducer(MetadataState state, dynamic action) {

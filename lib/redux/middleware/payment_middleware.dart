@@ -6,8 +6,10 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/payment_service.dart';
 
-List<Middleware<AppState>> createPaymentMiddleware() {
+List<Middleware<AppState>> createPaymentMiddleware(
+    IPaymentService paymentService) {
   final InAppPurchase iapConnection =
       InAppPurchase.instance; // <<< CORREÇÃO AQUI
   StreamSubscription<List<PurchaseDetails>>?
@@ -128,77 +130,50 @@ List<Middleware<AppState>> createPaymentMiddleware() {
     InitiateGooglePlaySubscriptionAction action,
     NextDispatcher next,
   ) async {
+    // 1. Validação prévia (lógica de negócio que independe do provedor de pagamento)
     if (store.state.userState.isGuestUser) {
       print(
           "PaymentMiddleware: Ação de compra bloqueada. Usuário é um convidado.");
-
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Por favor, faça login para assinar.')),
         );
       }
-      // Não passa a ação adiante, encerrando o fluxo aqui.
-      return;
+      return; // Encerra o fluxo
     }
+
+    // 2. Passa a ação para o reducer, que ativará o estado de `isLoading: true`
     next(action);
+
+    // 3. Garante que o listener de compras está ativo
     _listenToPurchaseUpdated(store);
 
-    final bool available = await iapConnection.isAvailable();
-    if (!available) {
-      print("PaymentMiddleware: Serviço de compra não disponível.");
-      // <<< CORREÇÃO AQUI >>>
-      store.dispatch(
-          GooglePlayPaymentFailedAction("Serviço de compra não disponível."));
-      _showErrorDialog(
-          "Serviço de compra não disponível. Verifique sua conexão com a Play Store.");
-      return;
-    }
-
-    final Set<String> kProductIds = {action.productId};
-
+    // 4. Delega a lógica de compra para o serviço de pagamento injetado
     try {
       print(
-          "PaymentMiddleware: Consultando detalhes do produto: ${action.productId}");
-      final ProductDetailsResponse productDetailResponse =
-          await iapConnection.queryProductDetails(kProductIds);
+          "PaymentMiddleware: Delegando compra de '${action.productId}' para o serviço de pagamento...");
 
-      if (productDetailResponse.error != null) {
-        print(
-            "PaymentMiddleware: Erro ao consultar detalhes do produto: ${productDetailResponse.error!.message}");
-        // <<< CORREÇÃO AQUI >>>
-        store.dispatch(GooglePlayPaymentFailedAction(
-            "Erro ao buscar produto: ${productDetailResponse.error!.message}"));
-        _showErrorDialog(
-            "Erro ao buscar detalhes do plano: ${productDetailResponse.error!.message}.");
-        return;
-      }
-
-      if (productDetailResponse.productDetails.isEmpty) {
-        print("PaymentMiddleware: Produto não encontrado: ${action.productId}");
-        // <<< CORREÇÃO AQUI >>>
-        store.dispatch(GooglePlayPaymentFailedAction(
-            "Plano de assinatura não encontrado."));
-        _showErrorDialog(
-            "Plano de assinatura não encontrado. Por favor, tente mais tarde.");
-        return;
-      }
-
-      final ProductDetails productDetails =
-          productDetailResponse.productDetails.first;
-      final PurchaseParam purchaseParam =
-          PurchaseParam(productDetails: productDetails);
+      // A chamada agora é simples e abstrata. O `paymentService` pode ser
+      // o `GooglePlayPaymentService` ou o `StripePaymentService`.
+      await paymentService.initiatePurchase(action.productId);
 
       print(
-          "PaymentMiddleware: Iniciando fluxo de compra para: ${productDetails.id}");
-      await iapConnection.buyNonConsumable(purchaseParam: purchaseParam);
+          "PaymentMiddleware: O serviço de pagamento iniciou o fluxo com sucesso.");
+      // Se a função acima não lançar um erro, significa que o fluxo de compra
+      // (ex: a tela do Google Play) foi aberto. O resultado será capturado pelo
+      // listener `_listenToPurchaseUpdated`.
     } catch (e) {
-      print("PaymentMiddleware: Exceção ao iniciar compra: $e");
-      // <<< CORREÇÃO AQUI >>>
-      store.dispatch(
-          GooglePlayPaymentFailedAction("Erro ao iniciar compra: $e"));
+      // 5. Se o serviço lançar um erro (ex: produto não encontrado, loja indisponível),
+      // o middleware captura, mostra um erro para o usuário e atualiza o estado do Redux.
+      print("PaymentMiddleware: Erro recebido do serviço de pagamento: $e");
+
+      store.dispatch(GooglePlayPaymentFailedAction(
+          "Erro ao iniciar a compra: ${e.toString()}"));
+
+      // Mostra um erro genérico, pois os detalhes já foram logados.
       _showErrorDialog(
-          "Ocorreu um erro ao tentar iniciar a assinatura. Tente novamente.");
+          "Não foi possível iniciar a compra. Verifique sua conexão e tente novamente.");
     }
   }
 
