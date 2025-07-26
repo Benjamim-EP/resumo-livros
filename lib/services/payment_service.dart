@@ -1,6 +1,11 @@
 // lib/services/payment_service.dart
 
 // 1. A Interface (o "Contrato")
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:septima_biblia/main.dart';
+
 abstract class IPaymentService {
   /// Inicia o fluxo de compra para um produto específico (assinatura).
   Future<void> initiatePurchase(String productId);
@@ -33,24 +38,84 @@ class GooglePlayPaymentService implements IPaymentService {
 
 // 3. Implementação da Stripe (para a versão do site)
 class StripePaymentService implements IPaymentService {
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: "southamerica-east1");
+
   @override
-  Future<void> initiatePurchase(String productId) async {
-    // AQUI VAI A LÓGICA PARA INICIAR O CHECKOUT DA STRIPE
-    // 1. Chamar sua Cloud Function 'createStripeCheckoutSession'.
-    // 2. Receber o clientSecret.
-    // 3. Usar o pacote flutter_stripe para apresentar a folha de pagamento.
-    print("StripePaymentService: Compra iniciada para o plano $productId.");
-    // A implementação detalhada virá a seguir.
+  Future<void> initiatePurchase(String priceId) async {
+    final BuildContext? context = navigatorKey.currentContext;
+    if (context == null) {
+      throw Exception("Contexto de navegação inválido.");
+    }
+
+    try {
+      // 1. Chamar a Cloud Function para criar a sessão de pagamento
+      print(
+          "StripePaymentService: Chamando a Cloud Function 'createStripeCheckoutSession'...");
+      final HttpsCallable callable =
+          _functions.httpsCallable('createStripeCheckoutSession');
+      final response =
+          await callable.call<Map<String, dynamic>>({'priceId': priceId});
+
+      final clientSecret = response.data['clientSecret'] as String?;
+      final customerId = response.data['customerId'] as String?;
+
+      if (clientSecret == null || customerId == null) {
+        throw Exception(
+            "Resposta do servidor inválida. clientSecret ou customerId nulos.");
+      }
+      print(
+          "StripePaymentService: clientSecret recebido. Inicializando o Payment Sheet...");
+
+      // 2. Inicializar o Payment Sheet da Stripe no app
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          merchantDisplayName: 'Septima Bíblia',
+          paymentIntentClientSecret: clientSecret,
+          customerId: customerId,
+          // Para PIX e outros, o ideal é que a Stripe gerencie isso automaticamente
+          // mas você pode configurar mais opções aqui se necessário.
+        ),
+      );
+
+      print(
+          "StripePaymentService: Payment Sheet inicializado. Apresentando ao usuário...");
+
+      // 3. Apresentar a folha de pagamento para o usuário
+      await Stripe.instance.presentPaymentSheet();
+
+      print(
+          "StripePaymentService: Fluxo do Payment Sheet concluído com sucesso pelo usuário.");
+      // O webhook cuidará da ativação da assinatura. O app pode mostrar uma mensagem de "Processando...".
+    } on StripeException catch (e) {
+      // Erros específicos da Stripe (ex: cartão recusado, cancelado pelo usuário)
+      print("StripePaymentService: Erro da Stripe: ${e.error.message}");
+      // Se o usuário simplesmente fechou a tela, não mostre um erro feio.
+      if (e.error.code != FailureCode.Canceled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text(e.error.message ?? 'Ocorreu um erro no pagamento.')),
+        );
+      }
+      rethrow; // Relança para o middleware saber que falhou.
+    } catch (e) {
+      // Outros erros (ex: Cloud Function falhou, erro de rede)
+      print("StripePaymentService: Erro inesperado: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Ocorreu um erro inesperado. Tente novamente.')),
+      );
+      rethrow; // Relança para o middleware saber que falhou.
+    }
   }
 
   @override
   Future<void> restorePurchases() async {
-    // A Stripe não tem um fluxo de "restaurar compras" como as lojas de app.
-    // A fonte da verdade é o seu backend (Firestore).
-    // O usuário simplesmente precisa fazer login para que o app verifique
-    // o status da assinatura no documento dele no Firestore.
     print(
-        "StripePaymentService: 'Restaurar' não é aplicável. O status é verificado no login.");
+        "StripePaymentService: 'Restaurar' não é aplicável. O status da assinatura é verificado no login através do Firestore.");
+    // Opcional: Você pode forçar uma recarga dos dados do usuário aqui
+    // StoreProvider.of<AppState>(navigatorKey.currentContext!, listen: false).dispatch(LoadUserDetailsAction());
     return;
   }
 }

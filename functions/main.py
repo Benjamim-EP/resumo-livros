@@ -1,4 +1,6 @@
 # functions/main.py
+
+import stripe
 import os
 import sys
 import firebase_admin
@@ -2629,3 +2631,169 @@ def processReferralById(req: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro inesperado ao processar a indicação: {e}"
         )
+
+################## Stripe ####################
+
+@https_fn.on_call(
+    secrets=["STRIPE_SECRET_KEY"], # Informa ao Firebase para injetar a chave secreta
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+)
+def createStripeCheckoutSession(req: https_fn.CallableRequest) -> dict:
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+    
+    # Configura a chave da API da Stripe usando o secret
+    stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+    db = get_db()
+
+    user_id = req.auth.uid
+    price_id = req.data.get("priceId")
+
+    if not price_id:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O 'priceId' do plano é obrigatório.")
+
+    try:
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        user_data = user_doc.to_dict() or {}
+        
+        customer_id = user_data.get("stripeCustomerId")
+
+        # Cria um novo cliente na Stripe se o usuário ainda não tiver um
+        if not customer_id:
+            customer = stripe.Customer.create(
+                email=user_data.get("email"),
+                name=user_data.get("nome"),
+                metadata={'firebaseUID': user_id}
+            )
+            customer_id = customer.id
+            # Salva o ID do cliente no Firestore para uso futuro
+            user_ref.set({'stripeCustomerId': customer_id}, merge=True)
+            print(f"Novo cliente Stripe criado para o usuário {user_id}: {customer_id}")
+
+        # Cria a Sessão de Checkout na Stripe
+        checkout_session = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=['card', 'pix'], # <<< AQUI ATIVAMOS O PIX
+            mode='subscription',
+            line_items=[{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            # URLs de redirecionamento (importante para web, mas bom ter como fallback)
+            success_url='https://septimahome.com/sucesso',
+            cancel_url='https://septimahome.com/cancelado',
+            # Metadados essenciais para ligar o pagamento ao usuário no webhook
+            metadata={
+                'firebaseUID': user_id
+            }
+        )
+
+        print(f"Sessão de Checkout criada para {user_id}.")
+        
+        # Retorna o client_secret para o app Flutter
+        return {
+            "clientSecret": checkout_session.client_secret,
+            "customerId": customer_id
+        }
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em createStripeCheckoutSession: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro ao criar sessão de pagamento: {e}")
+
+
+# ==============================================================================
+# 2. FUNÇÃO WEBHOOK (CHAMADA PELA STRIPE)
+# ==============================================================================
+# Crie um novo secret para o webhook
+# No terminal: firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
+# Cole o "Segredo do endpoint" que a Stripe te dará no painel de webhooks.
+
+@https_fn.on_request(
+    secrets=["STRIPE_WEBHOOK_SECRET"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+)
+def stripeWebhook(req: https_fn.Request) -> https_fn.Response:
+    stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+    endpoint_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+    payload = req.data
+    sig_header = req.headers.get('stripe-signature')
+
+    try:
+        # Verifica a assinatura para garantir que o evento veio da Stripe
+        event = stripe.Webhook.construct_event(
+            payload=payload, sig_header=sig_header, secret=endpoint_secret
+        )
+    except ValueError as e:
+        print(f"Webhook error: Invalid payload - {e}")
+        return https_fn.Response(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        print(f"Webhook error: Invalid signature - {e}")
+        return https_fn.Response(status=400)
+
+    # Lida com o evento
+    event_type = event['type']
+    data_object = event['data']['object']
+    
+    db = get_db()
+
+    print(f"Webhook recebido: {event_type}")
+
+    if event_type == 'checkout.session.completed':
+        # Pagamento inicial bem-sucedido
+        user_id = data_object.get('metadata', {}).get('firebaseUID')
+        customer_id = data_object.get('customer')
+        subscription_id = data_object.get('subscription')
+
+        if user_id and subscription_id:
+            # Busca os detalhes da assinatura para pegar a data de expiração
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            end_date = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
+            
+            # Atualiza o documento do usuário no Firestore
+            db.collection('users').document(user_id).set({
+                'stripeCustomerId': customer_id,
+                'stripeSubscriptionId': subscription_id,
+                'subscriptionStatus': 'active',
+                'activePriceId': subscription.plan.id,
+                'subscriptionEndDate': end_date
+            }, merge=True)
+            print(f"Assinatura ATIVADA para o usuário {user_id}.")
+
+    elif event_type == 'invoice.payment_succeeded':
+        # Renovação bem-sucedida
+        customer_id = data_object.get('customer')
+        subscription_id = data_object.get('subscription')
+
+        if customer_id and subscription_id:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            end_date = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
+            
+            # Busca o usuário pelo customerId
+            users_query = db.collection('users').where('stripeCustomerId', '==', customer_id).limit(1)
+            user_docs = list(users_query.stream())
+            if user_docs:
+                user_id = user_docs[0].id
+                db.collection('users').document(user_id).update({
+                    'subscriptionStatus': 'active',
+                    'subscriptionEndDate': end_date
+                })
+                print(f"Assinatura RENOVADA para o usuário {user_id}.")
+
+    elif event_type == 'customer.subscription.deleted':
+        # Assinatura cancelada ou expirada
+        customer_id = data_object.get('customer')
+        if customer_id:
+            users_query = db.collection('users').where('stripeCustomerId', '==', customer_id).limit(1)
+            user_docs = list(users_query.stream())
+            if user_docs:
+                user_id = user_docs[0].id
+                db.collection('users').document(user_id).update({
+                    'subscriptionStatus': 'inactive',
+                    'stripeSubscriptionId': None,
+                    'activePriceId': None
+                })
+                print(f"Assinatura DESATIVADA para o usuário {user_id}.")
+
+    return https_fn.Response(status=200)
