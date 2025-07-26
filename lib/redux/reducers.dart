@@ -258,6 +258,7 @@ class UserState {
   final List<Map<String, dynamic>> userNotifications; // ✅ CAMPO QUE FALTAVA
   final bool isLoadingNotifications; // ✅ CAMPO QUE FALTAVA
   final List<Map<String, dynamic>> recentInteractions;
+  final bool hasBeenReferred;
 
   UserState({
     this.userId,
@@ -316,6 +317,7 @@ class UserState {
     this.userNotifications = const [], // ✅ NOVO VALOR PADRÃO
     this.isLoadingNotifications = false, // ✅ NOVO VALOR PADRÃO
     this.recentInteractions = const [],
+    this.hasBeenReferred = false,
   });
 
   UserState copyWith({
@@ -386,6 +388,7 @@ class UserState {
     List<Map<String, dynamic>>? userNotifications, // ✅ NOVO PARÂMETRO
     bool? isLoadingNotifications, // ✅ NOVO PARÂMETRO
     List<Map<String, dynamic>>? recentInteractions,
+    bool? hasBeenReferred,
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -487,6 +490,7 @@ class UserState {
       isLoadingNotifications:
           isLoadingNotifications ?? this.isLoadingNotifications, // ✅ MAPEAMENTO
       recentInteractions: recentInteractions ?? this.recentInteractions,
+      hasBeenReferred: hasBeenReferred ?? this.hasBeenReferred,
     );
   }
 }
@@ -577,6 +581,7 @@ UserState userReducer(UserState state, dynamic action) {
       userDetails: action.userDetails,
       userCoins: action.userDetails['userCoins'] as int? ?? state.userCoins,
 
+      hasBeenReferred: action.userDetails['hasBeenReferred'] as bool? ?? false,
       recentInteractions: List<Map<String, dynamic>>.from(
           action.userDetails['recentInteractions'] as List? ?? []),
 

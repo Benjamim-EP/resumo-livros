@@ -213,6 +213,42 @@ List<Middleware<AppState>> createUserMiddleware() {
     }
   }
 
+  void _handleProcessReferral(Store<AppState> store,
+      SubmitReferralCodeAction action, NextDispatcher next) async {
+    next(action);
+    final context = navigatorKey.currentContext;
+
+    try {
+      final callable = functions.httpsCallable('processReferralById');
+      final result = await callable
+          .call<Map<String, dynamic>>({'septimaId': action.septimaId});
+
+      final message = result.data['message'] as String? ?? "Sucesso!";
+
+      if (context != null && context.mounted) {
+        CustomNotificationService.showSuccess(context, message);
+      }
+
+      // Recarrega os dados do usuário para atualizar as moedas e o status 'hasBeenReferred'
+      store.dispatch(LoadUserDetailsAction());
+
+      action.completer.complete(); // Sinaliza que a ação terminou com sucesso
+    } on FirebaseFunctionsException catch (e) {
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, e.message ?? "Ocorreu um erro desconhecido.");
+      }
+      action.completer
+          .completeError(e); // Sinaliza que a ação terminou com erro
+    } catch (e) {
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, "Ocorreu um erro inesperado.");
+      }
+      action.completer.completeError(e);
+    }
+  }
+
   return [
     TypedMiddleware<AppState, LoadUserTagsAction>((store, action, next) async {
       next(action);
@@ -329,6 +365,8 @@ List<Middleware<AppState>> createUserMiddleware() {
         .call,
     TypedMiddleware<AppState, DeclineFriendRequestOptimisticAction>(
             _handleDeclineFriendRequestOptimistic)
+        .call,
+    TypedMiddleware<AppState, SubmitReferralCodeAction>(_handleProcessReferral)
         .call,
   ];
 }

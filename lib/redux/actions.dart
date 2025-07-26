@@ -1,5 +1,7 @@
 // redux/actions.dart
 // Define as ações para carregar livros e alterar a página
+import 'dart:async';
+
 import 'package:septima_biblia/redux/reducers.dart';
 
 class LoadBooksAction {
@@ -755,4 +757,14 @@ class DeclineFriendRequestOptimisticAction {
 class FriendRequestFailedAction {
   final Map<String, dynamic> originalUserDetails; // O estado antes da mudança
   FriendRequestFailedAction({required this.originalUserDetails});
+}
+
+class SubmitReferralCodeAction {
+  final String septimaId;
+  // Adicionamos um Completer para saber quando a ação terminou (sucesso ou falha)
+  final Completer<void> completer;
+
+  SubmitReferralCodeAction(this.septimaId) : completer = Completer<void>();
+
+  Future<void> get future => completer.future;
 }

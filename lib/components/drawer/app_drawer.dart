@@ -219,6 +219,22 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
             padding: EdgeInsets.zero,
             children: <Widget>[
               _buildDrawerHeader(context, viewModel),
+              StoreConnector<AppState, bool>(
+                converter: (store) => store.state.userState.hasBeenReferred,
+                builder: (context, hasBeenReferred) {
+                  // Se o usuário já foi indicado, não mostra nada.
+                  if (hasBeenReferred) {
+                    return const SizedBox.shrink();
+                  }
+                  // Senão, mostra a seção de input e um divisor.
+                  return const Column(
+                    children: [
+                      _ReferralInputSection(),
+                      Divider(),
+                    ],
+                  );
+                },
+              ),
               _buildDrawerItem(
                 icon: Icons.people_alt_outlined,
                 text: 'Amigos',
@@ -445,6 +461,101 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
           ],
         );
       },
+    );
+  }
+}
+
+class _ReferralInputSection extends StatefulWidget {
+  const _ReferralInputSection();
+
+  @override
+  State<_ReferralInputSection> createState() => _ReferralInputSectionState();
+}
+
+class _ReferralInputSectionState extends State<_ReferralInputSection> {
+  final _referralController = TextEditingController();
+  bool _isLoading = false;
+
+  void _submitCode() {
+    final code = _referralController.text.trim();
+    if (code.isEmpty || !code.contains('#')) {
+      CustomNotificationService.showError(
+          context, "Por favor, insira um ID válido (ex: nome#1234).");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    // A ação do Redux cuidará da chamada da Cloud Function
+    // e o Future.whenComplete vai garantir que o loading pare.
+    StoreProvider.of<AppState>(context, listen: false)
+        .dispatch(SubmitReferralCodeAction(code))
+        .whenComplete(() {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _referralController.clear();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _referralController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Foi indicado por um amigo?",
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface.withOpacity(0.9),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Insira o ID Septima dele para ganhar 1000 Pontos no Ranking!",
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _referralController,
+                  decoration: const InputDecoration(
+                    hintText: "nome#1234",
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _submitCode(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: _isLoading ? null : _submitCode,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.send),
+                tooltip: "Validar Código",
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

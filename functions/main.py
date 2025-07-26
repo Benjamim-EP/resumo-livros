@@ -2513,3 +2513,119 @@ Agora, resuma o seguinte sermão:
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro ao gerar o resumo do sermão: {e}"
         )
+
+@https_fn.on_call(
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_256
+)
+def processReferralById(req: https_fn.CallableRequest) -> dict:
+    """
+    Processa um pedido de indicação baseado no Septima ID (username#discriminator).
+    Recompensa ambos os usuários com pontos de ranking (rawReadingTime).
+    """
+    db = get_db()
+
+    # 1. Validações Iniciais (sem alterações)
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='Você precisa estar logado para usar um código de indicação.'
+        )
+    # ... (o resto das suas validações de input permanecem as mesmas)
+    new_user_id = req.auth.uid
+    septima_id_input = req.data.get("septimaId")
+    if not septima_id_input or "#" not in septima_id_input:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O ID Septima fornecido é inválido.")
+    
+    try:
+        username, discriminator = septima_id_input.strip().split('#', 1)
+    except ValueError:
+         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O formato do ID Septima é inválido.")
+
+    # 2. Busca o usuário "indicante" (sem alterações)
+    referrer_query = db.collection('users').where('username', '==', username.lower()).where('discriminator', '==', discriminator).limit(1)
+    referrer_docs = list(referrer_query.stream())
+    if not referrer_docs:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Não encontramos um usuário com este ID Septima.")
+    
+    referrer_doc = referrer_docs[0]
+    referrer_id = referrer_doc.id
+    if referrer_id == new_user_id:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Você não pode indicar a si mesmo.")
+
+    # 3. Transação Atômica (LÓGICA PRINCIPAL ALTERADA)
+    try:
+        @firestore.transactional
+        def _referral_transaction(transaction):
+            new_user_ref = db.collection('users').document(new_user_id)
+            new_user_snapshot = new_user_ref.get(transaction=transaction)
+            if not new_user_snapshot.exists:
+                raise Exception("Ocorreu um erro, seu perfil não foi encontrado.")
+            if new_user_snapshot.to_dict().get("hasBeenReferred"):
+                raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.ALREADY_EXISTS, message="Você já utilizou um código de indicação.")
+
+            # <<< MUDANÇA AQUI: Definição dos pontos de ranking >>>
+            reward_points = 1000
+
+            # --- Atualiza o novo usuário ---
+            transaction.update(new_user_ref, {
+                "referredBy": referrer_id,
+                "hasBeenReferred": True,
+            })
+            
+            # <<< MUDANÇA AQUI: Alvo agora é a coleção 'userBibleProgress' >>>
+            new_user_progress_ref = db.collection('userBibleProgress').document(new_user_id)
+            transaction.set(new_user_progress_ref, {
+                "rawReadingTime": firestore.Increment(reward_points)
+            }, merge=True) # Usa 'set' com 'merge=True' para criar o doc se não existir
+
+            # --- Atualiza o usuário que indicou ---
+            referrer_progress_ref = db.collection('userBibleProgress').document(referrer_id)
+            transaction.set(referrer_progress_ref, {
+                "rawReadingTime": firestore.Increment(reward_points)
+            }, merge=True)
+
+            return {
+                "referrer_name": referrer_doc.to_dict().get("nome", "Um amigo"),
+                "new_user_name": new_user_snapshot.to_dict().get("nome", "Um novo usuário")
+            }
+
+        user_names = _referral_transaction(db.transaction())
+        referrer_name = user_names["referrer_name"]
+        new_user_name = user_names["new_user_name"]
+        reward_points = 1000
+
+        # 4. Enviar Notificações (MENSAGEM ALTERADA)
+        
+        # A. Notificação para quem INDICOU
+        referrer_notifications_ref = db.collection('users').document(referrer_id).collection('notifications')
+        referrer_notifications_ref.add({
+            "type": "referral_success_referrer",
+            "title": "Você ganhou pontos no ranking!", # <<< MUDANÇA
+            "body": f"{new_user_name} usou seu código! Ambos ganharam {reward_points} pontos para o ranking semanal.", # <<< MUDANÇA
+            "timestamp": firestore.SERVER_TIMESTAMP,
+            "isRead": False
+        })
+        
+        # B. Notificação para quem FOI INDICADO
+        new_user_notifications_ref = db.collection('users').document(new_user_id).collection('notifications')
+        new_user_notifications_ref.add({
+            "type": "referral_success_new_user",
+            "title": "Bônus de Ranking Recebido!", # <<< MUDANÇA
+            "body": f"Seu código de {referrer_name} foi validado! Você ganhou {reward_points} pontos de bônus.", # <<< MUDANÇA
+            "timestamp": firestore.SERVER_TIMESTAMP,
+            "isRead": False
+        })
+        
+        # 5. Retorno Final (MENSAGEM ALTERADA)
+        return {"status": "success", "message": f"Código validado! Você e {referrer_name} ganharam {reward_points} pontos no ranking!"}
+
+    except https_fn.HttpsError as e:
+        raise e
+    except Exception as e:
+        print(f"ERRO CRÍTICO em processReferralById: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro inesperado ao processar a indicação: {e}"
+        )
