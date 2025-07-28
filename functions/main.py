@@ -2798,3 +2798,37 @@ def stripeWebhook(req: https_fn.Request) -> https_fn.Response:
                 print(f"Assinatura DESATIVADA para o usuário {user_id}.")
 
     return https_fn.Response(status=200)
+
+@https_fn.on_call(
+    secrets=["STRIPE_SECRET_KEY"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+)
+def createStripePortalSession(req: https_fn.CallableRequest) -> dict:
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+    
+    stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+    db = get_db()
+    user_id = req.auth.uid
+
+    try:
+        user_doc = db.collection('users').document(user_id).get()
+        customer_id = user_doc.to_dict().get("stripeCustomerId")
+
+        if not customer_id:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Nenhum cliente de pagamento encontrado para este usuário.")
+
+        # URL de retorno para onde o usuário voltará após gerenciar a assinatura
+        return_url = 'https://septimahome.com/perfil' # ou a URL do seu app
+
+        portal_session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url,
+        )
+        
+        print(f"Sessão do Portal do Cliente criada para {user_id}.")
+        return {"url": portal_session.url}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em createStripePortalSession: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro ao criar sessão do portal: {e}")

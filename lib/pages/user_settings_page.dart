@@ -1,4 +1,5 @@
 // lib/pages/user_settings_page.dart
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -403,29 +404,81 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
   Widget _buildSubscriptionSection(BuildContext context, ThemeData theme,
       bool isPremium, _SettingsViewModel viewModel) {
+    // Detecta qual "flavor" do aplicativo está em execução.
+    // Isso funciona por causa da flag --dart-define que configuramos nos comandos de build.
+    const bool isPlayStoreBuild = bool.fromEnvironment('IS_PLAY_STORE');
+
+    // --- CENÁRIO 1: O USUÁRIO JÁ É PREMIUM ---
     if (isPremium) {
       return ElevatedButton.icon(
         icon: const Icon(Icons.manage_accounts_outlined),
         label: const Text('Gerenciar Assinatura'),
         onPressed: () async {
-          if (viewModel.activeProductId != null) {
-            try {
-              const String packageName = "com.septima.septimabiblia";
-              await SubscriptionManager.openSubscriptionManagement(
-                  viewModel.activeProductId!, packageName);
-            } catch (e) {
+          // LÓGICA CONDICIONAL COM BASE NO FLAVOR
+          if (isPlayStoreBuild) {
+            // --- Lógica para Google Play ---
+            print("Gerenciamento: Versão da Play Store detectada.");
+            if (viewModel.activeProductId != null) {
+              try {
+                const String packageName = "com.septima.septimabiblia";
+                await SubscriptionManager.openSubscriptionManagement(
+                    viewModel.activeProductId!, packageName);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              }
+            } else {
               if (context.mounted) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(e.toString())));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text(
+                          'ID do produto não encontrado para gerenciar a assinatura.')),
+                );
               }
             }
           } else {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+            // --- Lógica para Stripe (Versão do Site) ---
+            print("Gerenciamento: Versão do site detectada.");
+            // Mostra um indicador de loading para o usuário
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (dialogContext) => const PopScope(
+                canPop: false,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            );
+
+            try {
+              final functions =
+                  FirebaseFunctions.instanceFor(region: "southamerica-east1");
+              final callable =
+                  functions.httpsCallable('createStripePortalSession');
+              final result = await callable.call<Map<String, dynamic>>();
+
+              // Fecha o loading
+              if (context.mounted) Navigator.pop(context);
+
+              final url = result.data['url'] as String?;
+              if (url != null && context.mounted) {
+                // Lança a URL do Portal do Cliente da Stripe
+                await launchUrl(Uri.parse(url),
+                    mode: LaunchMode.externalApplication);
+              } else {
+                throw Exception("URL do portal não recebida.");
+              }
+            } catch (e) {
+              // Fecha o loading em caso de erro
+              if (context.mounted) Navigator.pop(context);
+
+              print("Erro ao criar sessão do portal Stripe: $e");
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text(
-                        'ID do produto não encontrado para gerenciar a assinatura.')),
-              );
+                        'Não foi possível abrir o portal de gerenciamento.')));
+              }
             }
           }
         },
@@ -434,7 +487,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           foregroundColor: theme.colorScheme.onSecondaryContainer,
         ),
       );
-    } else {
+    }
+    // --- CENÁRIO 2: O USUÁRIO NÃO É PREMIUM ---
+    else {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -450,14 +505,17 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             },
           ),
           const SizedBox(height: 12),
-          TextButton.icon(
-            icon: const Icon(Icons.restore),
-            label: const Text('Restaurar Compras'),
-            onPressed: _handleRestorePurchases,
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.secondary,
+          // O botão de restaurar compras só faz sentido na versão da Play Store
+          if (isPlayStoreBuild)
+            TextButton.icon(
+              icon: const Icon(Icons.restore),
+              label: const Text('Restaurar Compras'),
+              onPressed:
+                  _handleRestorePurchases, // Chama a sua função existente
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.secondary,
+              ),
             ),
-          ),
         ],
       );
     }

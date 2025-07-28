@@ -5,6 +5,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:septima_biblia/main.dart';
+import 'package:septima_biblia/redux/actions/payment_actions.dart';
+import 'package:septima_biblia/redux/store.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 
 abstract class IPaymentService {
   /// Inicia o fluxo de compra para um produto específico (assinatura).
@@ -94,6 +97,8 @@ class StripePaymentService implements IPaymentService {
         const SnackBar(
             content: Text('Pagamento recebido! Atualizando sua assinatura...')),
       );
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(FinalizePurchaseAttemptAction());
     } on StripeException catch (e) {
       // Erros específicos da Stripe (ex: cartão recusado, cancelado pelo usuário)
       print("StripePaymentService: Erro da Stripe: ${e.error.message}");
@@ -105,6 +110,8 @@ class StripePaymentService implements IPaymentService {
                   Text(e.error.message ?? 'Ocorreu um erro no pagamento.')),
         );
       }
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(FinalizePurchaseAttemptAction());
       // Relança o erro para que o middleware possa atualizar o estado (parar o loading)
       rethrow;
     } catch (e) {
@@ -114,6 +121,8 @@ class StripePaymentService implements IPaymentService {
         const SnackBar(
             content: Text('Ocorreu um erro inesperado. Tente novamente.')),
       );
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(FinalizePurchaseAttemptAction());
       rethrow; // Relança o erro
     }
   }
