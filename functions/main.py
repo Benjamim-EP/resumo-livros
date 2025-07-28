@@ -1012,94 +1012,95 @@ def assignSeptimaId(req: https_fn.CallableRequest) -> dict:
     # --- FUNÇÃO AGENDADA PARA O RANKING SEMANAL ---
 
 @scheduler_fn.on_schedule(
-    schedule="every sunday 00:01", # Roda todo Domingo à 00:01
-    timezone=scheduler_fn.Timezone("America/Sao_Paulo"), # Fuso horário de São Paulo
+    schedule="every sunday 00:01",
+    timezone=scheduler_fn.Timezone("America/Sao_Paulo"),
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_512, # Memória suficiente para processar lotes de usuários
-    timeout_sec=540 # Timeout de 9 minutos para garantir a conclusão
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=540
 )
 def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
-    """
-    Processa o ranking semanal. Esta função faz o seguinte:
-    1. Busca os 200 melhores usuários da semana com base no 'rankingScore'.
-    2. Para cada um desses usuários, salva sua posição final no campo 'previousRank' no documento da coleção 'users'.
-    3. Para os 10 primeiros, distribui moedas de recompensa ('weeklyRewardCoins') com uma data de expiração de 7 dias.
-    4. Reseta os campos 'rawReadingTime' e 'rankingScore' para 0 em TODOS os documentos da coleção 'userBibleProgress' para iniciar a nova semana.
-    """
     print("Iniciando o processamento do ranking semanal...")
     db = get_db()
     
-    # Mapeamento de recompensas: Posição -> Moedas
     rewards = {
         1: 700, 2: 300, 3: 100, 4: 80, 5: 70,
         6: 60, 7: 50, 8: 40, 9: 30, 10: 20
     }
     
     try:
-        # --- ETAPA 1: Obter o ranking da semana e preparar as atualizações ---
+        # --- ETAPA 1: Obter o ranking e preparar as atualizações ---
         
-        # Busca os 200 melhores scores da coleção de progresso para salvar suas posições finais.
-        # Limitamos a 200 para manter a performance, mas você pode ajustar este número.
         weekly_ranking_query = db.collection('userBibleProgress').order_by('rankingScore', direction=firestore.Query.DESCENDING).limit(200)
         weekly_ranking_docs = list(weekly_ranking_query.stream())
         
         if not weekly_ranking_docs:
-            print("Nenhum usuário com rankingScore encontrado. Encerrando o processamento da semana.")
+            print("Nenhum usuário com rankingScore encontrado. Encerrando.")
             return
 
-        print(f"Encontrados {len(weekly_ranking_docs)} usuários no ranking desta semana para processamento.")
+        print(f"Encontrados {len(weekly_ranking_docs)} usuários no ranking para processamento.")
         
-        # Prepara a distribuição de recompensas e o salvamento do rank anterior em um único batch
         batch = db.batch()
         now = datetime.now(timezone.utc)
-        expiration_date = now + timedelta(days=7) # Moedas expiram em 7 dias
+        expiration_date = now + timedelta(days=7)
         
+        # <<< INÍCIO DA CORREÇÃO >>>
+        # Pega todos os IDs dos usuários do ranking para verificar sua existência
+        user_ids_in_ranking = [doc.id for doc in weekly_ranking_docs]
+        
+        # Busca todos os documentos correspondentes na coleção 'users' de uma só vez
+        users_ref = db.collection('users')
+        users_snapshot = users_ref.where(firestore.firestore.FieldPath.document_id(), 'in', user_ids_in_ranking).get()
+        
+        # Cria um conjunto (Set) com os IDs dos usuários que REALMENTE existem
+        existing_user_ids = {doc.id for doc in users_snapshot}
+        print(f"Verificação de existência concluída. {len(existing_user_ids)} usuários válidos encontrados na coleção 'users'.")
+        # <<< FIM DA CORREÇÃO >>>
+
         for i, progress_doc in enumerate(weekly_ranking_docs):
             rank = i + 1
             user_id = progress_doc.id
-            user_ref = db.collection('users').document(user_id) # Referência ao doc na coleção 'users'
-            
-            # A. Salva a posição da semana como 'previousRank' para a próxima semana
-            batch.update(user_ref, {'previousRank': rank})
-            
-            # B. Distribui recompensas para os 10 primeiros
-            reward_amount = rewards.get(rank)
-            if reward_amount:
-                batch.update(user_ref, {
-                    'weeklyRewardCoins': reward_amount,
-                    'rewardExpiration': expiration_date
-                })
-                print(f"Recompensa de {reward_amount} moedas preparada para o usuário {user_id} (Rank {rank}).")
+
+            # <<< CORREÇÃO AQUI: Verifica se o usuário existe antes de tentar atualizar >>>
+            if user_id in existing_user_ids:
+                user_ref = db.collection('users').document(user_id)
+                
+                batch.update(user_ref, {'previousRank': rank})
+                
+                reward_amount = rewards.get(rank)
+                if reward_amount:
+                    batch.update(user_ref, {
+                        'weeklyRewardCoins': reward_amount,
+                        'rewardExpiration': expiration_date
+                    })
+                    print(f"Recompensa de {reward_amount} moedas preparada para o usuário {user_id} (Rank {rank}).")
+            else:
+                # Se o usuário não existe, apenas loga um aviso e continua para o próximo
+                print(f"AVISO: O usuário {user_id} (Rank {rank}) existe em 'userBibleProgress', mas não na coleção 'users'. A atualização foi pulada.")
         
-        # Executa o batch de recompensas e salvamento de rank
         batch.commit()
-        print("Recompensas e posições anteriores ('previousRank') salvas com sucesso.")
+        print("Recompensas e posições anteriores ('previousRank') salvas com sucesso para usuários válidos.")
 
         # --- ETAPA 2: Resetar o tempo de leitura de TODOS os usuários ---
+        # (Esta parte do código já está correta e não precisa de alterações)
         
-        print("Iniciando reset do 'rawReadingTime' e 'rankingScore' para todos os usuários...")
+        print("Iniciando reset do 'rawReadingTime' e 'rankingScore'...")
         all_users_progress_ref = db.collection('userBibleProgress')
-        
-        # Processa o reset em lotes para evitar problemas de memória e timeout
         docs_stream = all_users_progress_ref.stream()
         
         reset_batch = db.batch()
         docs_processed = 0
         for doc in docs_stream:
-            # Reseta apenas os campos da competição semanal
             reset_batch.update(doc.reference, {
                 'rawReadingTime': 0,
                 'rankingScore': 0
             })
             docs_processed += 1
             
-            # O Firestore limita um batch a 500 operações. Usamos 400 por segurança.
             if docs_processed % 400 == 0:
                 reset_batch.commit()
-                reset_batch = db.batch() # Inicia um novo batch
+                reset_batch = db.batch()
                 print(f"{docs_processed} documentos tiveram o score resetado...")
 
-        # Executa o último batch com os documentos restantes
         reset_batch.commit()
         
         print(f"Reset concluído para um total de {docs_processed} usuários.")
