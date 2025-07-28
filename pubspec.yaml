@@ -81,7 +81,7 @@ dependencies:
   flutter_downloader: ^1.11.8
   package_info_plus: ^8.3.0
   provider: ^6.1.5
-  flutter_stripe: ^11.5.0
+  flutter_stripe: 10.1.1 
   flutter_flavor: ^3.1.3
   
 dev_dependencies:
@@ -688,6 +688,8 @@ flutter:
           
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+dependency_overrides:
+  stripe_platform_interface: 10.1.1
 
 flutter_launcher_icons:
   android: "launcher_icon" # Nome do ícone para Android

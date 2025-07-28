@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // REMOVA O IMPORT DO FLAVOR, NÃO É MAIS NECESSÁRIO AQUI
 // import 'package:flutter_flavor/flutter_flavor.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:septima_biblia/redux/actions.dart';
@@ -28,6 +29,11 @@ void main() async {
 
   // NENHUMA LÓGICA DE FLAVOR OU STORE PRECISA ESTAR AQUI AGORA.
   // A variável `store` já foi criada e configurada em `store.dart`.
+  if (dotenv.env['STRIPE_PUBLISHABLE_KEY'] != null) {
+    Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+    await Stripe.instance.applySettings();
+    print("Stripe SDK inicializado com sucesso.");
+  }
 
   await initializeDateFormatting('pt_BR');
   await AppInitialization.init();

@@ -139,7 +139,7 @@ List<Middleware<AppState>> createAppMiddleware(IPaymentService paymentService) {
     ...createCommunitySearchMiddleware(),
   ];
 
-  if (kDebugMode) {
+  if (!kDebugMode) {
     print("<<<<< MODO DEBUG: Usando Middleware de Pagamento FALSO >>>>>");
     return [
       ...commonMiddleware,

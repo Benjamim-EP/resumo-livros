@@ -1,21 +1,50 @@
-// --- Google Play Product IDs ---
-const String googlePlayMonthlyProductId =
-    "premium_monthly_v1"; // ID REAL DO PLAY CONSOLE
-const String googlePlayQuarterlyProductId =
-    "premium_quarterly_v1"; // ID REAL DO PLAY CONSOLE
+// lib/consts.dart
+
+// --- IDs de Produto para GOOGLE PLAY ---
+const String googlePlayMonthlyProductId = "premium_monthly_v1";
+const String googlePlayQuarterlyProductId = "premium_quarterly_v1";
+
+// --- IDs de Preço para STRIPE (MODO DE TESTE) ---
+const String stripeMonthlyPriceId = "price_1QuboKEKXwg5KYoEtlbkQLR1";
+const String stripeQuarterlyPriceId = "price_1QuborEKXwg5KYoEMaset6VY";
 
 // Mapeamento dos produtos para exibição na UI
-const List<Map<String, String>> availableSubscriptions = [
-  {
-    'id': googlePlayMonthlyProductId,
-    'title': 'Plano Premium Mensal',
-    'description': 'Acesso a todos os recursos premium com renovação mensal.',
-  },
-  {
-    'id': googlePlayQuarterlyProductId,
-    'title': 'Plano Premium Trimestral',
-    'description': 'Economize com 3 meses de acesso premium.',
-  },
-];
+// AGORA ESTE MAPA SERÁ DINÂMICO
+List<Map<String, String>> getAvailableSubscriptions(bool isPlayStoreBuild) {
+  if (isPlayStoreBuild) {
+    return [
+      {
+        'id': googlePlayMonthlyProductId,
+        'title': 'Plano Premium Mensal',
+        'description':
+            'Acesso a todos os recursos premium com renovação mensal.',
+        'price': 'R\$ 19,99 / mês', // Adicione o preço para UI
+      },
+      {
+        'id': googlePlayQuarterlyProductId,
+        'title': 'Plano Premium Trimestral',
+        'description': 'Economize com 3 meses de acesso premium.',
+        'price': 'R\$ 47,99 / 3 meses', // Adicione o preço para UI
+      },
+    ];
+  } else {
+    // Versão do Site (Stripe)
+    return [
+      {
+        'id': stripeMonthlyPriceId, // <<< USA O ID DA STRIPE
+        'title': 'Plano Premium Mensal',
+        'description':
+            'Acesso a todos os recursos premium com renovação mensal.',
+        'price': 'R\$ 19,99 / mês',
+      },
+      {
+        'id': stripeQuarterlyPriceId, // <<< USA O ID DA STRIPE
+        'title': 'Plano Premium Trimestral',
+        'description': 'Economize com 3 meses de acesso premium.',
+        'price': 'R\$ 47,99 / 3 meses',
+      },
+    ];
+  }
+}
 
 const String guestUserCoinsPrefsKey = 'global_guest_user_coins_balance';

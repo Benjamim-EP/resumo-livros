@@ -44,6 +44,10 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    const bool isPlayStore = bool.fromEnvironment('IS_PLAY_STORE');
+    final List<Map<String, String>> availablePlans =
+        getAvailableSubscriptions(isPlayStore);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Seja Septima Premium"),
@@ -74,8 +78,8 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
               children: [
                 _buildFreePlanCard(context, theme),
                 const SizedBox(height: 24),
-                _buildPremiumPlanCard(
-                    context, theme, viewModel.activeTheme, viewModel.isGuest),
+                _buildPremiumPlanCard(context, theme, viewModel.activeTheme,
+                    viewModel.isGuest, availablePlans),
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -136,8 +140,12 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
   // ===================================
   // <<< CARD PREMIUM TOTALMENTE REFEITO >>>
   // ===================================
-  Widget _buildPremiumPlanCard(BuildContext context, ThemeData theme,
-      AppThemeOption activeTheme, bool isGuest) {
+  Widget _buildPremiumPlanCard(
+      BuildContext context,
+      ThemeData theme,
+      AppThemeOption activeTheme,
+      bool isGuest,
+      List<Map<String, String>> plans) {
     return Card(
       elevation: 8,
       shadowColor: Colors.amber.withOpacity(0.4),
@@ -198,23 +206,20 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
               _buildSubFeatureRow("Institutas de Turretin (3 volumes)", theme),
               _buildSubFeatureRow("Acesso antecipado a novos recursos", theme),
               const Divider(height: 40),
-              _buildPlanOptionButton(
-                context,
-                theme,
-                title: "Assinar Plano Mensal",
-                price: "R\$ 19,99 / mês",
-                productId: googlePlayMonthlyProductId,
-                isGuest: isGuest,
-              ),
-              const SizedBox(height: 16),
-              _buildPlanOptionButton(
-                context,
-                theme,
-                title: "Assinar Plano Trimestral",
-                price: "R\$ 47,99 / 3 meses (Economize 20%)",
-                productId: googlePlayQuarterlyProductId,
-                isGuest: isGuest,
-              ),
+              ...plans.map((plan) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: _buildPlanOptionButton(
+                    context,
+                    theme,
+                    title: plan['title']!,
+                    price: plan['price']!,
+                    productId:
+                        plan['id']!, // <<< O ID CORRETO SERÁ PASSADO AQUI
+                    isGuest: isGuest,
+                  ),
+                );
+              }).toList(),
             ],
           ),
         ),
@@ -306,10 +311,12 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
                         showLoginRequiredDialog(context,
                             featureName: "fazer uma assinatura");
                       } else {
+                        // Esta ação agora é genérica. O middleware decidirá o que fazer.
                         StoreProvider.of<AppState>(context, listen: false)
                             .dispatch(
                           InitiateGooglePlaySubscriptionAction(
-                              productId: productId),
+                              productId:
+                                  productId), // productId é o ID do preço da Stripe
                         );
                       }
                     },
