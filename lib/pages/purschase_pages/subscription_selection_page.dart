@@ -1,16 +1,18 @@
 // lib/pages/purschase_pages/subscription_selection_page.dart
 
+import 'dart:convert';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
+import 'package:septima_biblia/components/login_required.dart';
+import 'package:septima_biblia/consts.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/consts.dart';
-import 'package:redux/redux.dart';
-import 'package:septima_biblia/components/login_required.dart';
 
-// ViewModel (sem alterações)
 class _ViewModel {
   final bool isLoading;
   final AppThemeOption activeTheme;
@@ -40,6 +42,107 @@ class SubscriptionSelectionPage extends StatefulWidget {
 }
 
 class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
+  // ==========================================================
+  // <<< NOVA FUNÇÃO PARA LIDAR COM O PAGAMENTO PIX >>>
+  // ==========================================================
+  Future<void> _handlePixPayment(BuildContext context) async {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    if (store.state.userState.isGuestUser) {
+      showLoginRequiredDialog(context, featureName: "realizar um pagamento");
+      return;
+    }
+
+    final functions =
+        FirebaseFunctions.instanceFor(region: "southamerica-east1");
+    final callable = functions.httpsCallable('createMercadoPagoPix');
+
+    // Mostra um loader enquanto chama a Cloud Function
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    try {
+      final result = await callable.call<Map<String, dynamic>>();
+      final data = result.data;
+      final String? qrCodeBase64 = data['qr_code_base64'];
+      final String? qrCodeCopiaECola = data['qr_code_copia_e_cola'];
+
+      if (qrCodeBase64 == null || qrCodeCopiaECola == null) {
+        throw Exception("Resposta do servidor inválida para o PIX.");
+      }
+
+      if (context.mounted) {
+        Navigator.pop(context); // Fecha o loader
+
+        // Mostra o diálogo com o QR Code para o usuário
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text("Pague com PIX para Ativar"),
+            content: SingleChildScrollView(
+              // Para evitar overflow em telas pequenas
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.memory(base64Decode(qrCodeBase64)),
+                  const SizedBox(height: 16),
+                  const Text("Escaneie o QR Code ou use o código abaixo:",
+                      textAlign: TextAlign.center),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: TextEditingController(text: qrCodeCopiaECola),
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.copy),
+                        tooltip: "Copiar código",
+                        onPressed: () {
+                          Clipboard.setData(
+                              ClipboardData(text: qrCodeCopiaECola));
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            const SnackBar(
+                                content: Text("Código PIX copiado!")),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Após o pagamento, seu acesso será liberado automaticamente em alguns instantes.",
+                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text("Fechar"),
+              )
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Fecha o loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  "Erro ao gerar PIX: ${e is FirebaseFunctionsException ? e.message : e}")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -79,12 +182,15 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
                 _buildFreePlanCard(context, theme),
                 const SizedBox(height: 24),
                 _buildPremiumPlanCard(context, theme, viewModel.activeTheme,
-                    viewModel.isGuest, availablePlans),
+                    viewModel.isGuest, availablePlans, isPlayStore),
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text(
-                    "As assinaturas são processadas pela Google Play Store e podem ser gerenciadas a qualquer momento nas configurações da sua conta na Play Store.",
+                    // Mensagem dinâmica com base no flavor
+                    isPlayStore
+                        ? "As assinaturas são processadas pela Google Play Store e podem ser gerenciadas a qualquer momento nas configurações da sua conta na Play Store."
+                        : "As assinaturas são processadas de forma segura pela Stripe e podem ser gerenciadas a qualquer momento através do portal do cliente.",
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -100,9 +206,6 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // ===================================
-  // <<< CARD DO PLANO GRATUITO ATUALIZADO >>>
-  // ===================================
   Widget _buildFreePlanCard(BuildContext context, ThemeData theme) {
     return Card(
       elevation: 1,
@@ -137,15 +240,14 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // ===================================
-  // <<< CARD PREMIUM TOTALMENTE REFEITO >>>
-  // ===================================
   Widget _buildPremiumPlanCard(
       BuildContext context,
       ThemeData theme,
       AppThemeOption activeTheme,
       bool isGuest,
-      List<Map<String, String>> plans) {
+      List<Map<String, String>> plans,
+      bool isPlayStoreBuild) {
+    // <<< Adicionado isPlayStoreBuild
     return Card(
       elevation: 8,
       shadowColor: Colors.amber.withOpacity(0.4),
@@ -206,6 +308,8 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
               _buildSubFeatureRow("Institutas de Turretin (3 volumes)", theme),
               _buildSubFeatureRow("Acesso antecipado a novos recursos", theme),
               const Divider(height: 40),
+
+              // Constrói os botões de assinatura
               ...plans.map((plan) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
@@ -214,12 +318,36 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
                     theme,
                     title: plan['title']!,
                     price: plan['price']!,
-                    productId:
-                        plan['id']!, // <<< O ID CORRETO SERÁ PASSADO AQUI
+                    productId: plan['id']!,
                     isGuest: isGuest,
                   ),
                 );
               }).toList(),
+
+              // <<< LÓGICA CONDICIONAL PARA O BOTÃO PIX >>>
+              if (!isPlayStoreBuild) ...[
+                const Divider(height: 8, indent: 40, endIndent: 40),
+                const SizedBox(height: 8),
+                Text(
+                  "Ou pague uma única vez por 1 Mês de Acesso",
+                  style: theme.textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.pix),
+                    // <<< LABEL ATUALIZADO >>>
+                    label: const Text("Pagar com PIX (R\$ 19,90)"),
+                    onPressed: () => _handlePixPayment(context),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00B6DE),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12)),
+                  ),
+                ),
+              ]
             ],
           ),
         ),
@@ -227,7 +355,7 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
   }
 
-  // Widgets auxiliares (atualizados para o novo design)
+  // Widgets auxiliares (sem alterações)
   Widget _buildFeatureRow(IconData icon, String text, ThemeData theme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,12 +439,10 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
                         showLoginRequiredDialog(context,
                             featureName: "fazer uma assinatura");
                       } else {
-                        // Esta ação agora é genérica. O middleware decidirá o que fazer.
                         StoreProvider.of<AppState>(context, listen: false)
                             .dispatch(
                           InitiateGooglePlaySubscriptionAction(
-                              productId:
-                                  productId), // productId é o ID do preço da Stripe
+                              productId: productId),
                         );
                       }
                     },

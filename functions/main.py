@@ -35,6 +35,9 @@ from googleapiclient.discovery import build
 
 from openai import OpenAI
 
+import mercadopago
+from datetime import datetime, timedelta, timezone
+
 print(">>>> main.py (VERSÃO LAZY INIT - CORRETA) <<<<")
 CHAT_COST = 5
 
@@ -2833,3 +2836,179 @@ def createStripePortalSession(req: https_fn.CallableRequest) -> dict:
     except Exception as e:
         print(f"ERRO CRÍTICO em createStripePortalSession: {e}")
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro ao criar sessão do portal: {e}")
+    
+    # ==============================================================================
+# 1. FUNÇÃO PARA CRIAR O PAGAMENTO PIX
+# ==============================================================================
+@https_fn.on_call(
+    secrets=["MERCADO_PAGO_ACCESS_TOKEN"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+)
+def createMercadoPagoPix(req: https_fn.CallableRequest) -> dict:
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+
+    user_id = req.auth.uid
+    db = get_db()
+    
+    amount = 19.90
+    description = "Acesso Premium por 1 Mês (PIX) - Septima Bíblia"
+    access_duration_days = 31
+
+    try:
+        sdk = mercadopago.SDK(os.environ.get("MERCADO_PAGO_ACCESS_TOKEN"))
+        
+        # <<< INÍCIO DA MUDANÇA PRINCIPAL >>>
+
+        # Obtém o e-mail do usuário a partir do token de autenticação
+        user_email = req.auth.token.get("email")
+        if not user_email:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION, message="O usuário não possui um e-mail verificado.")
+
+        # URL do seu webhook (certifique-se de que está correta)
+        webhook_url = "https://southamerica-east1-resumo-livros.cloudfunctions.net/mercadoPagoWebhook"
+
+        # Criação de um objeto de preferência de pagamento. É uma abordagem alternativa
+        # e mais robusta que a criação direta de 'payment'.
+        preference_data = {
+            "items": [
+                {
+                    "title": description,
+                    "quantity": 1,
+                    "unit_price": amount
+                }
+            ],
+            "payer": {
+                "email": user_email
+            },
+            "payment_methods": {
+                "excluded_payment_methods": [],
+                "excluded_payment_types": [],
+                "installments": 1
+            },
+            "external_reference": user_id,
+            "notification_url": webhook_url, # Informa explicitamente ao MP para onde enviar a notificação
+            "metadata": {
+                 "firebaseUID": user_id,
+                 "access_duration_days": access_duration_days 
+            }
+        }
+        
+        preference_response = sdk.preference().create(preference_data)
+
+        if preference_response["status"] != 201:
+             print(f"ERRO da API do Mercado Pago (Preference): {preference_response['response']}")
+             raise Exception("Não foi possível criar a preferência de pagamento.")
+
+        # A resposta da preferência não contém o QR Code diretamente.
+        # A nova abordagem é enviar o link de checkout para o app,
+        # onde o usuário será redirecionado para a página do MP para ver o PIX.
+        # No entanto, vamos tentar a criação de pagamento novamente com dados mínimos.
+        
+        # TENTATIVA 2: Criar pagamento com dados mínimos
+        payment_data = {
+            "transaction_amount": amount,
+            "description": description,
+            "payment_method_id": "pix",
+            "payer": { "email": user_email },
+            "notification_url": webhook_url,
+            "external_reference": user_id,
+            "metadata": {
+                 "firebaseUID": user_id,
+                 "access_duration_days": access_duration_days 
+            }
+        }
+        
+        payment_response = sdk.payment().create(payment_data)
+
+        # <<< FIM DA MUDANÇA PRINCIPAL >>>
+        
+        if payment_response["status"] == 201:
+            payment = payment_response["response"]
+            qr_code_base64 = payment['point_of_interaction']['transaction_data']['qr_code_base64']
+            qr_code_copia_e_cola = payment['point_of_interaction']['transaction_data']['qr_code']
+            
+            print(f"Pagamento PIX de 1 mês criado para usuário {user_id}.")
+
+            return {
+                "qr_code_base64": qr_code_base64,
+                "qr_code_copia_e_cola": qr_code_copia_e_cola
+            }
+        else:
+            print(f"ERRO da API do Mercado Pago (Payment). Status: {payment_response['status']}. Resposta: {payment_response['response']}")
+            raise Exception("Não foi possível gerar o código PIX.")
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em createMercadoPagoPix: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro ao criar pagamento PIX: {e}")
+
+
+# ==============================================================================
+# 2. FUNÇÃO WEBHOOK (COM DURAÇÃO CORRIGIDA)
+# ==============================================================================
+@https_fn.on_request(
+    secrets=["MERCADO_PAGO_ACCESS_TOKEN", "STRIPE_SECRET_KEY"], # Adicionei stripe p/ n dar erro
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+)
+def mercadoPagoWebhook(req: https_fn.Request) -> https_fn.Response:
+    db = get_db()
+    sdk = mercadopago.SDK(os.environ.get("MERCADO_PAGO_ACCESS_TOKEN"))
+
+    # <<< INÍCIO DA CORREÇÃO >>>
+    
+    payment_id = None
+    topic = None
+
+    # O Mercado Pago pode enviar dados como query params (GET) ou no corpo (POST)
+    if req.method == 'POST':
+        # Para POST, os dados estão no corpo. O curl envia como 'form'.
+        # O webhook real do MP envia como JSON, então verificamos ambos.
+        if req.form:
+            payment_id = req.form.get("id")
+            topic = req.form.get("topic")
+        elif req.json:
+            data = req.json.get("data", {})
+            payment_id = data.get("id")
+            topic = req.json.get("type") # O webhook real usa 'type' para o evento
+            if topic == 'payment': # Ajuste para o webhook real
+                topic = 'payment'
+    elif req.method == 'GET':
+        payment_id = req.args.get("id")
+        topic = req.args.get("topic")
+        
+    print(f"Webhook recebido. Método: {req.method}, Topic: {topic}, ID: {payment_id}")
+
+    # Verifica se o evento é o que nos interessa ('payment')
+    if topic == "payment" and payment_id:
+    # <<< FIM DA CORREÇÃO >>>
+
+        print(f"Processando notificação para o pagamento: {payment_id}")
+
+        try:
+            payment_info = sdk.payment().get(payment_id)
+            if payment_info["status"] == 200:
+                payment = payment_info["response"]
+                
+                if payment['status'] == 'approved':
+                    user_id = payment.get("external_reference")
+                    metadata = payment.get("metadata", {})
+                    access_duration_days = metadata.get("access_duration_days", 31)
+
+                    if user_id:
+                        end_date = datetime.now(timezone.utc) + timedelta(days=access_duration_days)
+                        
+                        db.collection('users').document(user_id).set({
+                            'subscriptionStatus': 'active',
+                            'subscriptionEndDate': end_date,
+                            'activePriceId': 'pix_1_month',
+                            'lastPurchaseMethod': 'mercadopago_pix'
+                        }, merge=True)
+                        print(f"Acesso Premium (PIX 1 Mês) ATIVADO para o usuário {user_id}. Válido até {end_date}.")
+        
+        except Exception as e:
+            print(f"Erro ao processar webhook do Mercado Pago: {e}")
+            return https_fn.Response(status=500)
+
+    # Se o tópico não for 'payment' ou se faltar o ID, apenas confirme o recebimento.
+    return https_fn.Response(status=200)
