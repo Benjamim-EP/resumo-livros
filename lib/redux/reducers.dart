@@ -496,7 +496,42 @@ class UserState {
 }
 
 UserState userReducer(UserState state, dynamic action) {
-  if (action is UnreadNotificationsCountUpdatedAction) {
+  if (action is ToggleBookClubSubscriptionAction) {
+    final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
+    final subscribedClubs =
+        Set<String>.from(newDetails['subscribedBookClubs'] ?? []);
+
+    if (action.isSubscribing) {
+      subscribedClubs.add(action.bookId);
+    } else {
+      subscribedClubs.remove(action.bookId);
+    }
+
+    newDetails['subscribedBookClubs'] = subscribedClubs.toList();
+    return state.copyWith(userDetails: newDetails);
+  }
+
+  if (action is UpdateBookReadingStatusAction) {
+    final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
+    final booksRead = Set<String>.from(newDetails['booksRead'] ?? []);
+    final booksToRead = Set<String>.from(newDetails['booksToRead'] ?? []);
+
+    // Remove o livro de todas as listas para evitar duplicidade
+    booksRead.remove(action.bookId);
+    booksToRead.remove(action.bookId);
+
+    // Adiciona à lista correta com base no novo status
+    if (action.status == BookReadStatus.isRead) {
+      booksRead.add(action.bookId);
+    } else if (action.status == BookReadStatus.toRead) {
+      booksToRead.add(action.bookId);
+    }
+    // Se o status for .none, ele já foi removido de ambas as listas.
+
+    newDetails['booksRead'] = booksRead.toList();
+    newDetails['booksToRead'] = booksToRead.toList();
+    return state.copyWith(userDetails: newDetails);
+  } else if (action is UnreadNotificationsCountUpdatedAction) {
     return state.copyWith(unreadNotificationsCount: action.count);
   }
   // ✅ ADICIONE ESTE NOVO BLOCO DE LÓGICA

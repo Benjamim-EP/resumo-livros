@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/redux/middleware/book_club_middleware.dart';
 
 // Importa a interface e as implementações do serviço de pagamento
 import 'package:septima_biblia/services/payment_service.dart';
@@ -137,6 +138,7 @@ List<Middleware<AppState>> createAppMiddleware(IPaymentService paymentService) {
     ...createBookMiddleware(),
     ...createSermonDataMiddleware(),
     ...createCommunitySearchMiddleware(),
+    ...createBookClubMiddleware(),
   ];
 
   if (!kDebugMode) {

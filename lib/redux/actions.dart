@@ -768,3 +768,40 @@ class SubmitReferralCodeAction {
 
   Future<void> get future => completer.future;
 }
+
+class ToggleBookClubSubscriptionAction {
+  final String bookId;
+  final bool isSubscribing; // true para entrar, false para sair
+  ToggleBookClubSubscriptionAction(
+      {required this.bookId, required this.isSubscribing});
+}
+
+// Enum para o status de leitura
+enum BookReadStatus { none, toRead, isRead }
+
+class UpdateBookReadingStatusAction {
+  final String bookId;
+  final BookReadStatus status;
+  UpdateBookReadingStatusAction({required this.bookId, required this.status});
+}
+
+class ToggleBookClubPostLikeAction {
+  final String bookId;
+  final String postId;
+  final bool isLiked; // true se o usuário está curtindo, false se descurtindo
+  ToggleBookClubPostLikeAction(
+      {required this.bookId, required this.postId, required this.isLiked});
+}
+
+class ToggleBookClubReplyLikeAction {
+  final String bookId;
+  final String postId;
+  final String replyId; // ID da resposta que está sendo curtida
+  final bool isLiked;
+  ToggleBookClubReplyLikeAction({
+    required this.bookId,
+    required this.postId,
+    required this.replyId,
+    required this.isLiked,
+  });
+}
