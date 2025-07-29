@@ -1,26 +1,30 @@
 // lib/pages/community/book_club_detail_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/community/post_card_widget.dart';
 import 'package:septima_biblia/pages/community/create_book_club_post_page.dart';
 import 'package:septima_biblia/pages/community/book_club_post_detail_page.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
+// 1. IMPORTAR O NOVO MODAL
+import 'package:septima_biblia/pages/community/article_viewer_modal.dart';
 
-// O ViewModel não muda
+// --- ATUALIZAR O VIEWMODEL PARA INCLUIR O STATUS PREMIUM ---
 class _ViewModel {
   final Set<String> subscribedClubs;
   final Set<String> booksRead;
   final Set<String> booksToRead;
+  final bool isPremium; // Adicionado
 
   _ViewModel({
     required this.subscribedClubs,
     required this.booksRead,
     required this.booksToRead,
+    required this.isPremium, // Adicionado
   });
 
   static _ViewModel fromStore(Store<AppState> store) {
@@ -30,6 +34,8 @@ class _ViewModel {
           Set<String>.from(userDetails['subscribedBookClubs'] ?? []),
       booksRead: Set<String>.from(userDetails['booksRead'] ?? []),
       booksToRead: Set<String>.from(userDetails['booksToRead'] ?? []),
+      isPremium: store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive, // Adicionado
     );
   }
 }
@@ -37,7 +43,7 @@ class _ViewModel {
 // Enum para os tipos de ordenação
 enum PostSortOrder { mostRelevant, newest, oldest }
 
-// --- ALTERAÇÃO PRINCIPAL: Convertido para StatefulWidget ---
+// O resto da classe permanece StatefulWidget
 class BookClubDetailPage extends StatefulWidget {
   final String bookId;
   const BookClubDetailPage({super.key, required this.bookId});
@@ -47,10 +53,8 @@ class BookClubDetailPage extends StatefulWidget {
 }
 
 class _BookClubDetailPageState extends State<BookClubDetailPage> {
-  // Estado para guardar a ordenação atual
   PostSortOrder _currentSortOrder = PostSortOrder.mostRelevant;
 
-  // Função para construir a query do Firestore dinamicamente
   Stream<QuerySnapshot> _getPostsStream() {
     Query query = FirebaseFirestore.instance
         .collection('bookClubs')
@@ -64,9 +68,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
         return query.orderBy('timestamp', descending: false).snapshots();
       case PostSortOrder.mostRelevant:
       default:
-        // Ordena por likes e depois por data para desempate
-        // IMPORTANTE: O Firestore exigirá um índice composto para esta query.
-        // O erro no console do Flutter te dará um link para criá-lo com um clique.
         return query
             .orderBy('likeCount', descending: true)
             .orderBy('timestamp', descending: true)
@@ -74,8 +75,8 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
     }
   }
 
-  // Função para construir o botão de ordenação
   Widget _buildSortPopupMenu() {
+    // (Este widget não muda)
     String getSortOrderText(PostSortOrder order) {
       switch (order) {
         case PostSortOrder.newest:
@@ -106,10 +107,8 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
           children: [
             const Icon(Icons.sort, size: 16),
             const SizedBox(width: 6),
-            Text(
-              getSortOrderText(_currentSortOrder),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text(getSortOrderText(_currentSortOrder),
+                style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),
@@ -165,7 +164,7 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
   }
 
   SliverAppBar _buildSliverAppBar(Map<String, dynamic> clubData) {
-    // ... (este widget não muda)
+    // (Este widget não muda)
     final String coverUrl = clubData['bookCover'] ?? '';
     final String title = clubData['bookTitle'] ?? 'Clube do Livro';
 
@@ -177,15 +176,12 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: true,
         titlePadding: const EdgeInsets.symmetric(horizontal: 48, vertical: 12),
-        title: Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 16.0,
-            fontWeight: FontWeight.bold,
-            shadows: [Shadow(blurRadius: 6, color: Colors.black)],
-          ),
-        ),
+        title: Text(title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
+                shadows: [Shadow(blurRadius: 6, color: Colors.black)])),
         background: Stack(
           fit: StackFit.expand,
           children: [
@@ -206,10 +202,11 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
     );
   }
 
+  // --- ATUALIZAR O WIDGET DE BOTÕES DE AÇÃO ---
   Widget _buildActionButtons(
       BuildContext context, Map<String, dynamic> clubData) {
-    // ... (este widget não muda)
     final theme = Theme.of(context);
+    final String articleContent = clubData['article'] as String? ?? '';
 
     return SliverToBoxAdapter(
       child: StoreConnector<AppState, _ViewModel>(
@@ -223,6 +220,7 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // Botão de Participar (sem mudanças)
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -239,13 +237,38 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
                               isSubscribing: !isParticipating));
                     },
                     style: FilledButton.styleFrom(
-                      backgroundColor: isParticipating
-                          ? Colors.green.shade700
-                          : theme.colorScheme.primary,
-                    ),
+                        backgroundColor: isParticipating
+                            ? Colors.green.shade700
+                            : theme.colorScheme.primary),
                   ),
                 ),
+
+                // --- BOTÃO DO ARTIGO ADICIONADO AQUI ---
+                if (articleContent.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      icon: const Icon(Icons.article_outlined),
+                      label: const Text("Ler Artigo do Livro"),
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => ArticleViewerModal(
+                            title: clubData['bookTitle'] ?? 'Artigo',
+                            content: articleContent,
+                            isPremiumUser: vm.isPremium,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 8),
+                // Botões de status de leitura (sem mudanças)
                 Row(
                   children: [
                     Expanded(
@@ -257,10 +280,9 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
                             color: hasRead ? Colors.green : null),
                         label: const Text("Já li"),
                         style: OutlinedButton.styleFrom(
-                          side: hasRead
-                              ? BorderSide(color: Colors.green, width: 2)
-                              : null,
-                        ),
+                            side: hasRead
+                                ? BorderSide(color: Colors.green, width: 2)
+                                : null),
                         onPressed: () {
                           final newStatus = hasRead
                               ? BookReadStatus.none
@@ -281,10 +303,9 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
                             color: wantsToRead ? Colors.blue : null),
                         label: const Text("Quero ler"),
                         style: OutlinedButton.styleFrom(
-                          side: wantsToRead
-                              ? BorderSide(color: Colors.blue, width: 2)
-                              : null,
-                        ),
+                            side: wantsToRead
+                                ? BorderSide(color: Colors.blue, width: 2)
+                                : null),
                         onPressed: () {
                           final newStatus = wantsToRead
                               ? BookReadStatus.none
@@ -305,8 +326,8 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
     );
   }
 
-  // --- CABEÇALHO DA LISTA ATUALIZADO ---
   Widget _buildPostListHeader(BuildContext context) {
+    // (Este widget não muda)
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -314,11 +335,9 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              "Discussões",
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            _buildSortPopupMenu(), // Adiciona o botão de filtro
+            Text("Discussões",
+                style: Theme.of(context).textTheme.headlineSmall),
+            _buildSortPopupMenu(),
           ],
         ),
       ),
@@ -326,8 +345,8 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
   }
 
   Widget _buildPostList(String bookId) {
+    // (Este widget não muda)
     return StreamBuilder<QuerySnapshot>(
-      // --- USA A NOVA FUNÇÃO PARA OBTER O STREAM DINÂMICO ---
       stream: _getPostsStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
