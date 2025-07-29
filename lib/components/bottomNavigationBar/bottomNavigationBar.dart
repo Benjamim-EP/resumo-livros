@@ -150,7 +150,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _initializeScreenState();
-        _updateService.checkForUpdate();
+        _updateService.checkForUpdate(context);
       }
     });
   }
@@ -324,7 +324,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
     }
   }
 
-  String _getAppBarTitle(int index) {
+  String _getAppBarTitle(int index, BuildContext context) {
     switch (index) {
       case 0:
         return AppLocalizations.of(context)!.profile;
@@ -454,7 +454,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     ),
 
                     // Agora o título pode ser apenas um texto simples.
-                    title: Text(_getAppBarTitle(_selectedIndex)),
+                    title: Text(_getAppBarTitle(_selectedIndex, context)),
                     // As actions (botões da direita) permanecem as mesmas.
                     actions: [
                       _tutorialService.buildShowcase(
@@ -568,7 +568,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                       }
                       int previousIndex = _selectedIndex;
                       if (previousIndex != index) {
-                        final String tabName = _getAppBarTitle(index);
+                        final String tabName = _getAppBarTitle(index, context);
                         AnalyticsService.instance.logTabSelected(tabName);
                         print(
                             "Analytics: Evento 'main_tab_selected' registrado para a aba: '$tabName'");
@@ -592,11 +592,12 @@ class _MainAppScreenState extends State<MainAppScreen> {
                           }
                         }
 
+                        // CÓDIGO NOVO E CORRETO
                         if (!isPremium) {
                           interstitialManager
                               .tryShowInterstitial(
                                   fromScreen:
-                                      "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex)}_To_${_getAppBarTitle(index)}")
+                                      "MainAppScreen_TabChange_From_${_getAppBarTitle(previousIndex, context)}_To_${_getAppBarTitle(index, context)}") // <<< MUDANÇA AQUI
                               .then((_) {
                             navigateToNewTab();
                           });
