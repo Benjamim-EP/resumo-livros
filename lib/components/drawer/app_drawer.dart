@@ -14,6 +14,7 @@ import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ViewModel para buscar os dados do usuário para o cabeçalho do Drawer
 class _DrawerViewModel {
@@ -206,6 +207,66 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
     }
   }
 
+  /// Abre o cliente de e-mail padrão do usuário com informações pré-preenchidas.
+  Future<void> _launchEmailSupport() async {
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'sep7imadev@gmail.com', // <<< SUBSTITUA PELO SEU E-MAIL
+      queryParameters: {
+        'subject': 'Suporte App Septima Bíblia',
+        'body':
+            'Olá,\n\nEstou entrando em contato sobre o aplicativo Septima Bíblia.\n\n(Descreva sua dúvida ou problema aqui)\n\n---'
+      },
+    );
+
+    try {
+      if (await canLaunchUrl(emailLaunchUri)) {
+        await launchUrl(emailLaunchUri);
+      } else {
+        // Fallback para caso o dispositivo não tenha um cliente de e-mail configurado
+        _showLaunchError('Não foi possível abrir o cliente de e-mail.');
+      }
+    } catch (e) {
+      _showLaunchError('Ocorreu um erro ao tentar abrir o e-mail: $e');
+    }
+  }
+
+  /// Abre uma conversa no WhatsApp com o número de suporte.
+  Future<void> _launchWhatsAppSupport() async {
+    // IMPORTANTE: Use o número completo com o código do país, sem o '+' e sem espaços/hífens.
+    const String phoneNumber = '5598989064247'; // <<< SUBSTITUA PELO SEU NÚMERO
+    const String message =
+        'Olá! Preciso de ajuda com o aplicativo Septima Bíblia.';
+
+    // Codifica a mensagem para ser usada na URL
+    final String encodedMessage = Uri.encodeComponent(message);
+
+    // A URL universal do WhatsApp que funciona em Android e iOS
+    final Uri whatsappUrl =
+        Uri.parse("https://wa.me/$phoneNumber?text=$encodedMessage");
+
+    try {
+      if (await canLaunchUrl(whatsappUrl)) {
+        // `externalApplication` garante que abrirá o app do WhatsApp, e não um navegador interno.
+        await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+      } else {
+        _showLaunchError(
+            'Não foi possível abrir o WhatsApp. Verifique se ele está instalado.');
+      }
+    } catch (e) {
+      _showLaunchError('Ocorreu um erro ao tentar abrir o WhatsApp: $e');
+    }
+  }
+
+  /// Mostra uma SnackBar de erro se não for possível abrir o link.
+  void _showLaunchError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
@@ -236,7 +297,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
                 },
               ),
               _buildDrawerItem(
-                icon: Icons.people_alt_outlined,
+                leadingWidget: const Icon(Icons.people_alt_outlined),
                 text: 'Amigos',
                 onTap: () {
                   Navigator.pop(context);
@@ -244,7 +305,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
                 },
               ),
               _buildDrawerItem(
-                icon: Icons.notifications_outlined,
+                leadingWidget: const Icon(Icons.notifications_outlined),
                 text: 'Notificações',
                 badgeCount: viewModel.unreadCount,
                 onTap: () {
@@ -253,7 +314,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
                 },
               ),
               _buildDrawerItem(
-                icon: Icons.edit_note_outlined,
+                leadingWidget: const Icon(Icons.edit_note_outlined),
                 text: 'Diário Devocional',
                 onTap: () {
                   Navigator.pop(context);
@@ -274,7 +335,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
                     ),
               const Divider(),
               _buildDrawerItem(
-                icon: Icons.settings_outlined,
+                leadingWidget: const Icon(Icons.settings_outlined),
                 text: 'Configurações e Perfil',
                 onTap: () {
                   Navigator.pop(context);
@@ -282,11 +343,41 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
                 },
               ),
               _buildDrawerItem(
-                icon: Icons.logout,
+                leadingWidget: const Icon(Icons.logout),
                 text: 'Sair',
                 onTap: () => _showLogoutConfirmationDialog(context),
               ),
               _buildLanguageSelector(context, languageProvider, l10n),
+              const Divider(height: 1), // Adiciona um separador visual
+
+              ListTile(
+                title: Text(
+                  'Suporte',
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              _buildDrawerItem(
+                leadingWidget: const Icon(Icons.email_outlined),
+                text: 'Contato por E-mail',
+                onTap: _launchEmailSupport, // Chama a nova função
+              ),
+
+              _buildDrawerItem(
+                leadingWidget: Image.asset(
+                  'assets/icon/whatsapp.png',
+                  width: 24, // Tamanho padrão de um ícone de ListTile
+                  height: 24,
+                ),
+                text: 'Contato por WhatsApp',
+                onTap: _launchWhatsAppSupport, // Chama a nova função
+              ),
+              // <<< FIM DA NOVA SEÇÃO DE SUPORTE >>>
+
+              const Divider(),
             ],
           ),
         );
@@ -409,7 +500,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
   }
 
   Widget _buildDrawerItem({
-    required IconData icon,
+    required Widget leadingWidget, // <<< Agora espera um Widget completo
     required String text,
     required GestureTapCallback onTap,
     int badgeCount = 0,
@@ -418,9 +509,9 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
       leading: badgeCount > 0
           ? Badge(
               label: Text('$badgeCount'),
-              child: Icon(icon),
+              child: leadingWidget, // <<< Usa o Widget diretamente
             )
-          : Icon(icon),
+          : leadingWidget, // <<< Usa o Widget diretamente
       title: Text(text),
       onTap: onTap,
     );
