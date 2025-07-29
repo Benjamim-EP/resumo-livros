@@ -1,4 +1,5 @@
 // lib/pages/community/book_club_detail_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -10,21 +11,22 @@ import 'package:septima_biblia/pages/community/post_card_widget.dart';
 import 'package:septima_biblia/pages/community/create_book_club_post_page.dart';
 import 'package:septima_biblia/pages/community/book_club_post_detail_page.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
-// 1. IMPORTAR O NOVO MODAL
 import 'package:septima_biblia/pages/community/article_viewer_modal.dart';
+// 1. IMPORTAR O NOVO BOTÃO ANIMADO
+import 'package:septima_biblia/pages/community/animated_article_button.dart';
 
-// --- ATUALIZAR O VIEWMODEL PARA INCLUIR O STATUS PREMIUM ---
+// ViewModel não muda
 class _ViewModel {
   final Set<String> subscribedClubs;
   final Set<String> booksRead;
   final Set<String> booksToRead;
-  final bool isPremium; // Adicionado
+  final bool isPremium;
 
   _ViewModel({
     required this.subscribedClubs,
     required this.booksRead,
     required this.booksToRead,
-    required this.isPremium, // Adicionado
+    required this.isPremium,
   });
 
   static _ViewModel fromStore(Store<AppState> store) {
@@ -35,15 +37,13 @@ class _ViewModel {
       booksRead: Set<String>.from(userDetails['booksRead'] ?? []),
       booksToRead: Set<String>.from(userDetails['booksToRead'] ?? []),
       isPremium: store.state.subscriptionState.status ==
-          SubscriptionStatus.premiumActive, // Adicionado
+          SubscriptionStatus.premiumActive,
     );
   }
 }
 
-// Enum para os tipos de ordenação
 enum PostSortOrder { mostRelevant, newest, oldest }
 
-// O resto da classe permanece StatefulWidget
 class BookClubDetailPage extends StatefulWidget {
   final String bookId;
   const BookClubDetailPage({super.key, required this.bookId});
@@ -56,6 +56,7 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
   PostSortOrder _currentSortOrder = PostSortOrder.mostRelevant;
 
   Stream<QuerySnapshot> _getPostsStream() {
+    // (Esta função não muda)
     Query query = FirebaseFirestore.instance
         .collection('bookClubs')
         .doc(widget.bookId)
@@ -76,7 +77,7 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
   }
 
   Widget _buildSortPopupMenu() {
-    // (Este widget não muda)
+    // (Esta função não muda)
     String getSortOrderText(PostSortOrder order) {
       switch (order) {
         case PostSortOrder.newest:
@@ -139,9 +140,9 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
 
           return CustomScrollView(
             slivers: [
-              _buildSliverAppBar(clubData),
-              _buildActionButtons(context, clubData),
-              _buildPostListHeader(context),
+              _buildSliverAppBar(context, clubData),
+              _buildPostListHeader(
+                  context, clubData), // 2. Passa clubData para o Header
               _buildPostList(widget.bookId),
             ],
           );
@@ -150,12 +151,10 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  CreateBookClubPostPage(bookId: widget.bookId),
-            ),
-          );
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      CreateBookClubPostPage(bookId: widget.bookId)));
         },
         child: const Icon(Icons.add_comment_outlined),
         tooltip: "Iniciar uma discussão",
@@ -163,37 +162,166 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
     );
   }
 
-  SliverAppBar _buildSliverAppBar(Map<String, dynamic> clubData) {
-    // (Este widget não muda)
+  SliverAppBar _buildSliverAppBar(
+      BuildContext context, Map<String, dynamic> clubData) {
     final String coverUrl = clubData['bookCover'] ?? '';
     final String title = clubData['bookTitle'] ?? 'Clube do Livro';
+    final String author = clubData['authorName'] ?? 'Desconhecido';
 
     return SliverAppBar(
-      expandedHeight: 250.0,
+      expandedHeight: 220.0,
       floating: false,
       pinned: true,
       stretch: true,
+      actions: [
+        // 3. REMOVER o 'read_article' do menu. O resto permanece.
+        StoreConnector<AppState, _ViewModel>(
+          converter: (store) => _ViewModel.fromStore(store),
+          builder: (context, vm) {
+            return PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'participate') {
+                  final isParticipating =
+                      vm.subscribedClubs.contains(widget.bookId);
+                  StoreProvider.of<AppState>(context, listen: false).dispatch(
+                      ToggleBookClubSubscriptionAction(
+                          bookId: widget.bookId,
+                          isSubscribing: !isParticipating));
+                } else if (value == 'mark_read') {
+                  final hasRead = vm.booksRead.contains(widget.bookId);
+                  final newStatus =
+                      hasRead ? BookReadStatus.none : BookReadStatus.isRead;
+                  StoreProvider.of<AppState>(context, listen: false).dispatch(
+                      UpdateBookReadingStatusAction(
+                          bookId: widget.bookId, status: newStatus));
+                } else if (value == 'mark_toread') {
+                  final wantsToRead = vm.booksToRead.contains(widget.bookId);
+                  final newStatus =
+                      wantsToRead ? BookReadStatus.none : BookReadStatus.toRead;
+                  StoreProvider.of<AppState>(context, listen: false).dispatch(
+                      UpdateBookReadingStatusAction(
+                          bookId: widget.bookId, status: newStatus));
+                }
+              },
+              itemBuilder: (BuildContext context) {
+                final isParticipating =
+                    vm.subscribedClubs.contains(widget.bookId);
+                final hasRead = vm.booksRead.contains(widget.bookId);
+                final wantsToRead = vm.booksToRead.contains(widget.bookId);
+
+                return [
+                  PopupMenuItem<String>(
+                    value: 'participate',
+                    child: ListTile(
+                      leading: Icon(isParticipating
+                          ? Icons.notifications_off_outlined
+                          : Icons.notifications_active_outlined),
+                      title: Text(isParticipating
+                          ? 'Cancelar Inscrição'
+                          : 'Participar (Notificações)'),
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem<String>(
+                    value: 'mark_read',
+                    child: ListTile(
+                      leading: Icon(
+                          hasRead
+                              ? Icons.bookmark_remove_outlined
+                              : Icons.bookmark_added_outlined,
+                          color: hasRead ? Colors.green : null),
+                      title: Text(
+                          hasRead ? 'Remover de "Lidos"' : 'Marcar como Lido'),
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'mark_toread',
+                    child: ListTile(
+                      leading: Icon(
+                          wantsToRead
+                              ? Icons.bookmark_remove_outlined
+                              : Icons.bookmark_add_outlined,
+                          color: wantsToRead ? Colors.blue : null),
+                      title: Text(wantsToRead
+                          ? 'Remover de "Quero Ler"'
+                          : 'Adicionar a "Quero Ler"'),
+                    ),
+                  ),
+                ];
+              },
+            );
+          },
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
-        centerTitle: true,
-        titlePadding: const EdgeInsets.symmetric(horizontal: 48, vertical: 12),
-        title: Text(title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 16.0,
-                fontWeight: FontWeight.bold,
-                shadows: [Shadow(blurRadius: 6, color: Colors.black)])),
+        // O FlexibleSpaceBar permanece o mesmo
         background: Stack(
           fit: StackFit.expand,
           children: [
-            if (coverUrl.isNotEmpty) Image.network(coverUrl, fit: BoxFit.cover),
+            if (coverUrl.isNotEmpty)
+              Image.network(coverUrl,
+                  fit: BoxFit.cover,
+                  color: Colors.black.withOpacity(0.4),
+                  colorBlendMode: BlendMode.darken),
             Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
-                  stops: const [0.5, 1.0],
-                ),
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7)
+                ],
+                        stops: const [
+                  0.3,
+                  1.0
+                ]))),
+            Padding(
+              padding: const EdgeInsets.only(left: 20, right: 70, bottom: 20),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Card(
+                    elevation: 8,
+                    clipBehavior: Clip.antiAlias,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    child: SizedBox(
+                        width: 90,
+                        height: 120,
+                        child: coverUrl.isNotEmpty
+                            ? Image.network(coverUrl, fit: BoxFit.cover)
+                            : const Icon(Icons.book)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20.0,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(blurRadius: 4, color: Colors.black)
+                                ]),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 4),
+                        Text(author,
+                            style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14.0,
+                                shadows: [
+                                  Shadow(blurRadius: 2, color: Colors.black)
+                                ])),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -202,141 +330,54 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
     );
   }
 
-  // --- ATUALIZAR O WIDGET DE BOTÕES DE AÇÃO ---
-  Widget _buildActionButtons(
+  // --- CABEÇALHO DA LISTA DE POSTS ATUALIZADO ---
+  Widget _buildPostListHeader(
       BuildContext context, Map<String, dynamic> clubData) {
-    final theme = Theme.of(context);
     final String articleContent = clubData['article'] as String? ?? '';
 
     return SliverToBoxAdapter(
-      child: StoreConnector<AppState, _ViewModel>(
-        converter: (store) => _ViewModel.fromStore(store),
-        builder: (context, vm) {
-          final isParticipating = vm.subscribedClubs.contains(widget.bookId);
-          final hasRead = vm.booksRead.contains(widget.bookId);
-          final wantsToRead = vm.booksToRead.contains(widget.bookId);
-
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Botão de Participar (sem mudanças)
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    icon: Icon(isParticipating
-                        ? Icons.notifications_active
-                        : Icons.notifications_none_outlined),
-                    label: Text(isParticipating
-                        ? "Inscrito (Receber Notificações)"
-                        : "Participar do Clube"),
-                    onPressed: () {
-                      StoreProvider.of<AppState>(context, listen: false)
-                          .dispatch(ToggleBookClubSubscriptionAction(
-                              bookId: widget.bookId,
-                              isSubscribing: !isParticipating));
-                    },
-                    style: FilledButton.styleFrom(
-                        backgroundColor: isParticipating
-                            ? Colors.green.shade700
-                            : theme.colorScheme.primary),
-                  ),
-                ),
-
-                // --- BOTÃO DO ARTIGO ADICIONADO AQUI ---
-                if (articleContent.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.tonalIcon(
-                      icon: const Icon(Icons.article_outlined),
-                      label: const Text("Ler Artigo do Livro"),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => ArticleViewerModal(
-                            title: clubData['bookTitle'] ?? 'Artigo',
-                            content: articleContent,
-                            isPremiumUser: vm.isPremium,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 8),
-                // Botões de status de leitura (sem mudanças)
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: Icon(
-                            hasRead
-                                ? Icons.bookmark_added
-                                : Icons.bookmark_border,
-                            color: hasRead ? Colors.green : null),
-                        label: const Text("Já li"),
-                        style: OutlinedButton.styleFrom(
-                            side: hasRead
-                                ? BorderSide(color: Colors.green, width: 2)
-                                : null),
-                        onPressed: () {
-                          final newStatus = hasRead
-                              ? BookReadStatus.none
-                              : BookReadStatus.isRead;
-                          StoreProvider.of<AppState>(context, listen: false)
-                              .dispatch(UpdateBookReadingStatusAction(
-                                  bookId: widget.bookId, status: newStatus));
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: Icon(
-                            wantsToRead
-                                ? Icons.bookmark
-                                : Icons.bookmark_outline,
-                            color: wantsToRead ? Colors.blue : null),
-                        label: const Text("Quero ler"),
-                        style: OutlinedButton.styleFrom(
-                            side: wantsToRead
-                                ? BorderSide(color: Colors.blue, width: 2)
-                                : null),
-                        onPressed: () {
-                          final newStatus = wantsToRead
-                              ? BookReadStatus.none
-                              : BookReadStatus.toRead;
-                          StoreProvider.of<AppState>(context, listen: false)
-                              .dispatch(UpdateBookReadingStatusAction(
-                                  bookId: widget.bookId, status: newStatus));
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPostListHeader(BuildContext context) {
-    // (Este widget não muda)
-    return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment:
+              CrossAxisAlignment.center, // Alinha verticalmente os itens
           children: [
-            Text("Discussões",
-                style: Theme.of(context).textTheme.headlineSmall),
+            // --- TÍTULO À ESQUERDA ---
+            // Text(
+            //   "Discussões",
+            //   style: Theme.of(context).textTheme.headlineSmall,
+            // ),
+
+            // --- CORREÇÃO AQUI: Spacer() para empurrar para a direita ---
+            // O Spacer é um widget que ocupa todo o espaço flexível disponível,
+            // empurrando os widgets seguintes para o final do eixo principal (neste caso, a direita).
+            const Spacer(),
+            // --- FIM DA CORREÇÃO ---
+
+            // Botão de Artigo (se existir)
+            if (articleContent.isNotEmpty)
+              StoreConnector<AppState, _ViewModel>(
+                converter: (store) => _ViewModel.fromStore(store),
+                builder: (context, vm) {
+                  return AnimatedArticleButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => ArticleViewerModal(
+                          title: clubData['bookTitle'] ?? 'Artigo',
+                          content: articleContent,
+                          isPremiumUser: vm.isPremium,
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            if (articleContent.isNotEmpty) const SizedBox(width: 8),
+
+            // Botão de Filtro
             _buildSortPopupMenu(),
           ],
         ),
@@ -356,10 +397,10 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
         if (snapshot.data!.docs.isEmpty) {
           return const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Center(
-                  child: Text("Nenhuma discussão iniciada. Seja o primeiro!")),
-            ),
+                padding: EdgeInsets.all(24.0),
+                child: Center(
+                    child:
+                        Text("Nenhuma discussão iniciada. Seja o primeiro!"))),
           );
         }
         final posts = snapshot.data!.docs;
@@ -368,7 +409,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
             (context, index) {
               final postDoc = posts[index];
               final postData = postDoc.data() as Map<String, dynamic>;
-
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: PostCardWidget(
@@ -378,14 +418,10 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
                   postId: postDoc.id,
                   onTap: () {
                     Navigator.push(
-                      context,
-                      FadeScalePageRoute(
-                        page: BookClubPostDetailPage(
-                          bookId: bookId,
-                          postId: postDoc.id,
-                        ),
-                      ),
-                    );
+                        context,
+                        FadeScalePageRoute(
+                            page: BookClubPostDetailPage(
+                                bookId: bookId, postId: postDoc.id)));
                   },
                 ),
               );
