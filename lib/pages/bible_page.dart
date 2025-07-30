@@ -34,6 +34,7 @@ import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 import 'package:septima_biblia/services/reading_time_tracker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class _BiblePageViewModel {
   final String? initialBook;
@@ -232,67 +233,99 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
   Future<void> _handleShowSummary(String sectionId, String sectionTitle) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final isPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
-    final unlockedSummaries = await _getUnlockedSummaries();
+    final isGuest = store.state.userState.isGuestUser;
+    final userId = store.state.userState.userId;
+    print("Usuário ID: $userId, É convidado: $isGuest");
+    if (userId == null && !isGuest) return;
 
-    bool isUnlocked = isPremium || unlockedSummaries.contains(sectionId);
-
-    // Se já está desbloqueado, apenas carrega e mostra.
-    if (isUnlocked) {
-      await _loadAndShowSummary(sectionId, sectionTitle);
-      return;
-    }
-
-    // Se não, verifica o custo.
-    final currentUserCoins = store.state.userState.userCoins;
-    const int summaryCost = 3; // Custo para desbloquear um resumo
-
-    if (currentUserCoins < summaryCost) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Moedas insuficientes. Você precisa de $summaryCost moedas.'),
-          action: SnackBarAction(
-            label: 'Ganhar Moedas',
-            onPressed: () => store.dispatch(RequestRewardedAdAction()),
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Se tem moedas, confirma com o usuário.
-    final bool? shouldProceed = await showDialog<bool>(
+    showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Desbloquear Resumo'),
-        content: Text('Isso custará $summaryCost moedas. Deseja continuar?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Confirmar')),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (c) => const PopScope(
+          canPop: false, child: Center(child: CircularProgressIndicator())),
     );
 
-    if (shouldProceed == true) {
-      // Deduz as moedas e persiste
-      final newCoinTotal = currentUserCoins - summaryCost;
-      store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+    try {
+      bool isUserPremium = false;
+      int currentUserCoins = 0;
 
-      final userId = store.state.userState.userId;
-      if (userId != null) {
-        await _firestoreService.updateUserField(
-            userId, 'userCoins', newCoinTotal);
+      if (isGuest) {
+        final prefs = await SharedPreferences.getInstance();
+        currentUserCoins = prefs.getInt(guestUserCoinsPrefsKey) ?? 0;
+      } else {
+        final userDetails = await _firestoreService.getUserDetails(userId!);
+        if (userDetails != null) {
+          currentUserCoins = userDetails['userCoins'] as int? ?? 0;
+          final statusString = userDetails['subscriptionStatus'] as String?;
+          final endDate =
+              (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+          if (statusString == 'active' &&
+              endDate != null &&
+              endDate.isAfter(DateTime.now())) {
+            isUserPremium = true;
+          }
+        }
+      }
+      print("Usuário Premium: $isUserPremium, Moedas: $currentUserCoins");
+
+      if (mounted) Navigator.pop(context);
+
+      final unlockedSummaries = await _getUnlockedSummaries();
+      bool isUnlocked = isUserPremium || unlockedSummaries.contains(sectionId);
+
+      if (isUnlocked) {
+        await _loadAndShowSummary(sectionId, sectionTitle);
+        return;
       }
 
-      // Marca como desbloqueado e mostra
-      await _addUnlockedSummary(sectionId);
-      await _loadAndShowSummary(sectionId, sectionTitle);
+      const int summaryCost = 3;
+      if (currentUserCoins < summaryCost) {
+        CustomNotificationService.showWarningWithAction(
+          context: context,
+          message: 'Você precisa de $summaryCost moedas para ver este resumo.',
+          buttonText: 'Ganhar Moedas',
+          onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
+        );
+        return;
+      }
+
+      final bool? shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Gerar Resumo com IA'),
+          content: Text('Isso custará $summaryCost moedas. Deseja continuar?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancelar')),
+            FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Confirmar')),
+          ],
+        ),
+      );
+
+      if (shouldProceed == true) {
+        final newCoinTotal = currentUserCoins - summaryCost;
+
+        store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+
+        if (userId != null) {
+          await _firestoreService.updateUserField(
+              userId, 'userCoins', newCoinTotal);
+        } else if (isGuest) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt(guestUserCoinsPrefsKey, newCoinTotal);
+        }
+
+        await _addUnlockedSummary(sectionId);
+        await _loadAndShowSummary(sectionId, sectionTitle);
+      }
+    } catch (e) {
+      if (mounted && Navigator.of(context).canPop()) Navigator.pop(context);
+      if (mounted)
+        CustomNotificationService.showError(
+            context, "Erro ao verificar seu status. Tente novamente.");
     }
   }
 
