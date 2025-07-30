@@ -12,10 +12,9 @@ import 'package:septima_biblia/pages/community/create_book_club_post_page.dart';
 import 'package:septima_biblia/pages/community/book_club_post_detail_page.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
 import 'package:septima_biblia/pages/community/article_viewer_modal.dart';
-// 1. IMPORTAR O NOVO BOTÃO ANIMADO
 import 'package:septima_biblia/pages/community/animated_article_button.dart';
 
-// ViewModel não muda
+// --- VIEWMODEL ATUALIZADO COM LÓGICA ROBUSTA ---
 class _ViewModel {
   final Set<String> subscribedClubs;
   final Set<String> booksRead;
@@ -31,13 +30,34 @@ class _ViewModel {
 
   static _ViewModel fromStore(Store<AppState> store) {
     final userDetails = store.state.userState.userDetails ?? {};
+
+    // --- INÍCIO DA LÓGICA DE CORREÇÃO ---
+    bool isConsideredPremium = false;
+
+    // 1. Verifica o estado oficial da assinatura
+    if (store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive) {
+      isConsideredPremium = true;
+    } else {
+      // 2. Como fallback, verifica os dados brutos do Firestore
+      final statusString = userDetails['subscriptionStatus'] as String?;
+      final endDate =
+          (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+
+      if (statusString == 'active' &&
+          endDate != null &&
+          endDate.isAfter(DateTime.now())) {
+        isConsideredPremium = true;
+      }
+    }
+    // --- FIM DA LÓGICA DE CORREÇÃO ---
+
     return _ViewModel(
       subscribedClubs:
           Set<String>.from(userDetails['subscribedBookClubs'] ?? []),
       booksRead: Set<String>.from(userDetails['booksRead'] ?? []),
       booksToRead: Set<String>.from(userDetails['booksToRead'] ?? []),
-      isPremium: store.state.subscriptionState.status ==
-          SubscriptionStatus.premiumActive,
+      isPremium: isConsideredPremium, // Usa a nova variável robusta
     );
   }
 }
@@ -56,7 +76,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
   PostSortOrder _currentSortOrder = PostSortOrder.mostRelevant;
 
   Stream<QuerySnapshot> _getPostsStream() {
-    // (Esta função não muda)
     Query query = FirebaseFirestore.instance
         .collection('bookClubs')
         .doc(widget.bookId)
@@ -77,7 +96,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
   }
 
   Widget _buildSortPopupMenu() {
-    // (Esta função não muda)
     String getSortOrderText(PostSortOrder order) {
       switch (order) {
         case PostSortOrder.newest:
@@ -108,8 +126,10 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
           children: [
             const Icon(Icons.sort, size: 16),
             const SizedBox(width: 6),
-            Text(getSortOrderText(_currentSortOrder),
-                style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              getSortOrderText(_currentSortOrder),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         ),
       ),
@@ -141,8 +161,7 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
           return CustomScrollView(
             slivers: [
               _buildSliverAppBar(context, clubData),
-              _buildPostListHeader(
-                  context, clubData), // 2. Passa clubData para o Header
+              _buildPostListHeader(context, clubData),
               _buildPostList(widget.bookId),
             ],
           );
@@ -151,10 +170,12 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      CreateBookClubPostPage(bookId: widget.bookId)));
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  CreateBookClubPostPage(bookId: widget.bookId),
+            ),
+          );
         },
         child: const Icon(Icons.add_comment_outlined),
         tooltip: "Iniciar uma discussão",
@@ -167,6 +188,7 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
     final String coverUrl = clubData['bookCover'] ?? '';
     final String title = clubData['bookTitle'] ?? 'Clube do Livro';
     final String author = clubData['authorName'] ?? 'Desconhecido';
+    final String articleContent = clubData['article'] as String? ?? '';
 
     return SliverAppBar(
       expandedHeight: 220.0,
@@ -174,7 +196,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
       pinned: true,
       stretch: true,
       actions: [
-        // 3. REMOVER o 'read_article' do menu. O resto permanece.
         StoreConnector<AppState, _ViewModel>(
           converter: (store) => _ViewModel.fromStore(store),
           builder: (context, vm) {
@@ -255,7 +276,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        // O FlexibleSpaceBar permanece o mesmo
         background: Stack(
           fit: StackFit.expand,
           children: [
@@ -330,7 +350,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
     );
   }
 
-  // --- CABEÇALHO DA LISTA DE POSTS ATUALIZADO ---
   Widget _buildPostListHeader(
       BuildContext context, Map<String, dynamic> clubData) {
     final String articleContent = clubData['article'] as String? ?? '';
@@ -339,22 +358,9 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
         child: Row(
-          crossAxisAlignment:
-              CrossAxisAlignment.center, // Alinha verticalmente os itens
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // --- TÍTULO À ESQUERDA ---
-            // Text(
-            //   "Discussões",
-            //   style: Theme.of(context).textTheme.headlineSmall,
-            // ),
-
-            // --- CORREÇÃO AQUI: Spacer() para empurrar para a direita ---
-            // O Spacer é um widget que ocupa todo o espaço flexível disponível,
-            // empurrando os widgets seguintes para o final do eixo principal (neste caso, a direita).
             const Spacer(),
-            // --- FIM DA CORREÇÃO ---
-
-            // Botão de Artigo (se existir)
             if (articleContent.isNotEmpty)
               StoreConnector<AppState, _ViewModel>(
                 converter: (store) => _ViewModel.fromStore(store),
@@ -376,8 +382,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
                 },
               ),
             if (articleContent.isNotEmpty) const SizedBox(width: 8),
-
-            // Botão de Filtro
             _buildSortPopupMenu(),
           ],
         ),
@@ -386,7 +390,6 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
   }
 
   Widget _buildPostList(String bookId) {
-    // (Este widget não muda)
     return StreamBuilder<QuerySnapshot>(
       stream: _getPostsStream(),
       builder: (context, snapshot) {
@@ -409,6 +412,7 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
             (context, index) {
               final postDoc = posts[index];
               final postData = postDoc.data() as Map<String, dynamic>;
+
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: PostCardWidget(
@@ -418,10 +422,14 @@ class _BookClubDetailPageState extends State<BookClubDetailPage> {
                   postId: postDoc.id,
                   onTap: () {
                     Navigator.push(
-                        context,
-                        FadeScalePageRoute(
-                            page: BookClubPostDetailPage(
-                                bookId: bookId, postId: postDoc.id)));
+                      context,
+                      FadeScalePageRoute(
+                        page: BookClubPostDetailPage(
+                          bookId: bookId,
+                          postId: postDoc.id,
+                        ),
+                      ),
+                    );
                   },
                 ),
               );
