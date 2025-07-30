@@ -1,11 +1,13 @@
 // lib/pages/community/book_club_list_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:septima_biblia/pages/community/book_club_card.dart';
 import 'package:septima_biblia/pages/community/book_club_detail_page.dart';
-import 'package:septima_biblia/pages/community/book_club_grid_card.dart'; // Importa o novo card de grade
+import 'package:septima_biblia/pages/community/book_club_grid_card.dart';
+// 1. IMPORTAR O PACOTE SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart';
 
-// 1. Converte o widget para StatefulWidget
 class BookClubListPage extends StatefulWidget {
   const BookClubListPage({super.key});
 
@@ -14,13 +16,36 @@ class BookClubListPage extends StatefulWidget {
 }
 
 class _BookClubListPageState extends State<BookClubListPage> {
-  // 2. Adiciona estado para controlar a visualização
-  bool _isGridView = false;
+  // 2. DEFINIR A CHAVE DE PREFERÊNCIA E O ESTADO
+  static const String _viewModeKey = 'book_club_view_mode';
+  bool _isGridView = false; // O valor padrão será carregado no initState
+
+  @override
+  void initState() {
+    super.initState();
+    // 3. CARREGAR A PREFERÊNCIA QUANDO A TELA É INICIADA
+    _loadViewPreference();
+  }
+
+  Future<void> _loadViewPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Lê o valor salvo. Se não houver, o padrão é 'false' (visualização em lista).
+    if (mounted) {
+      setState(() {
+        _isGridView = prefs.getBool(_viewModeKey) ?? false;
+      });
+    }
+  }
+
+  // 4. SALVAR A PREFERÊNCIA QUANDO O USUÁRIO MUDA
+  Future<void> _saveViewPreference(bool isGrid) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_viewModeKey, isGrid);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 3. Adiciona um AppBar simples para conter o botão de alternância
       appBar: AppBar(
         title: const Text("Clubes do Livro"),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -35,6 +60,8 @@ class _BookClubListPageState extends State<BookClubListPage> {
             onPressed: () {
               setState(() {
                 _isGridView = !_isGridView;
+                // 5. CHAMA A FUNÇÃO DE SALVAR AO MUDAR
+                _saveViewPreference(_isGridView);
               });
             },
           ),
@@ -59,15 +86,15 @@ class _BookClubListPageState extends State<BookClubListPage> {
 
           final clubs = snapshot.data!.docs;
 
-          // 4. Lógica para alternar entre ListView e GridView
+          // A lógica de alternância permanece a mesma
           if (_isGridView) {
             return GridView.builder(
               padding: const EdgeInsets.all(12.0),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // 2 colunas
+                crossAxisCount: 2,
                 crossAxisSpacing: 12.0,
                 mainAxisSpacing: 12.0,
-                childAspectRatio: 3 / 4, // Proporção clássica de livro
+                childAspectRatio: 3 / 4,
               ),
               itemCount: clubs.length,
               itemBuilder: (context, index) {
