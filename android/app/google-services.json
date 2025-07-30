@@ -74,6 +74,14 @@
           }
         },
         {
+          "client_id": "225819514315-9ia9ovojrqengsluu5ddjo9267o2906b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.septima.septimabiblia",
+            "certificate_hash": "ea26f883627d6dda31053361d319ef854e7762b0"
+          }
+        },
+        {
           "client_id": "225819514315-sjcumsbq9o2l6ackoggvlubrdpqqntgn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -131,6 +139,14 @@
           "android_info": {
             "package_name": "com.septima.septimabiblia.website",
             "certificate_hash": "1bd8c3750aa46328b1ca9201cd4faf07cf2825ba"
+          }
+        },
+        {
+          "client_id": "225819514315-juauel4r8n022v5hjnin50rjtj1f9jag.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.septima.septimabiblia.website",
+            "certificate_hash": "ea26f883627d6dda31053361d319ef854e7762b0"
           }
         },
         {
