@@ -2723,7 +2723,8 @@ def createStripeCheckoutSession(req: https_fn.CallableRequest) -> dict:
 
 @https_fn.on_request(
     secrets=["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
-    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512
 )
 def stripeWebhook(req: https_fn.Request) -> https_fn.Response:
     stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")

@@ -5,8 +5,8 @@ const String googlePlayMonthlyProductId = "premium_monthly_v1";
 const String googlePlayQuarterlyProductId = "premium_quarterly_v1";
 
 // --- IDs de Preço para STRIPE (MODO DE TESTE) ---
-const String stripeMonthlyPriceId = "price_1QuboKEKXwg5KYoEtlbkQLR1";
-const String stripeQuarterlyPriceId = "price_1QuborEKXwg5KYoEMaset6VY";
+const String stripeMonthlyPriceId = "price_1Rqx5GEKXwg5KYoEJFLzoGPd";
+const String stripeQuarterlyPriceId = "price_1Rqx5qEKXwg5KYoE32jofD84";
 
 // Mapeamento dos produtos para exibição na UI
 // AGORA ESTE MAPA SERÁ DINÂMICO

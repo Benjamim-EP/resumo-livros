@@ -34,7 +34,7 @@ import 'middleware/community_search_middleware.dart';
 import 'middleware/payment_middleware.dart';
 import 'middleware/fake_payment_middleware.dart';
 
-// A definição do seu AppState (sem alterações)
+// ... (Sua classe AppState e appReducer permanecem iguais) ...
 class AppState {
   final BooksState booksState;
   final UserState userState;
@@ -100,7 +100,6 @@ class AppState {
   }
 }
 
-// O seu appReducer principal (sem alterações)
 AppState appReducer(AppState state, dynamic action) {
   return AppState(
     booksState: booksReducer(state.booksState, action),
@@ -120,9 +119,14 @@ AppState appReducer(AppState state, dynamic action) {
   );
 }
 
-// A sua função createAppMiddleware, agora recebendo o IPaymentService
-List<Middleware<AppState>> createAppMiddleware(IPaymentService paymentService) {
-  List<Middleware<AppState>> commonMiddleware = [
+// ==========================================================
+// FUNÇÃO createAppMiddleware CORRIGIDA
+// ==========================================================
+List<Middleware<AppState>> createAppMiddleware({
+  required IPaymentService paymentService,
+  required bool useFakePayment, // Novo parâmetro para controlar o fake
+}) {
+  final commonMiddleware = [
     ...createAuthorMiddleware(),
     ...createUserMiddleware(),
     ...createMiscMiddleware(),
@@ -141,47 +145,51 @@ List<Middleware<AppState>> createAppMiddleware(IPaymentService paymentService) {
     ...createBookClubMiddleware(),
   ];
 
-  if (!kDebugMode) {
-    print("<<<<< MODO DEBUG: Usando Middleware de Pagamento FALSO >>>>>");
+  if (useFakePayment) {
+    print("<<<<< USANDO MIDDLEWARE DE PAGAMENTO FALSO (SIMULADOR) >>>>>");
     return [
       ...commonMiddleware,
-      ...createFakePaymentMiddleware(),
+      ...createFakePaymentMiddleware(), // Usa o simulador
     ];
   } else {
-    print("<<<<< MODO RELEASE: Usando Middleware de Pagamento REAL >>>>>");
+    print("<<<<< USANDO MIDDLEWARE DE PAGAMENTO REAL >>>>>");
     return [
       ...commonMiddleware,
-      ...createPaymentMiddleware(paymentService), // <<< USA O SERVIÇO INJETADO
+      ...createPaymentMiddleware(paymentService), // Usa o serviço real
     ];
   }
 }
 
 // ==========================================================
-// FUNÇÃO CENTRAL PARA CRIAR E CONFIGURAR A STORE
+// FUNÇÃO createStore CORRIGIDA E MELHORADA
 // ==========================================================
 Store<AppState> createStore() {
-  // 1. Detecta qual "sabor" (flavor) do app está sendo executado.
-  // Isso funciona por causa da flag "--dart-define=IS_PLAY_STORE=true/false"
-  // que configuramos no seu arquivo `launch.json`.
   const bool isPlayStoreBuild = bool.fromEnvironment('IS_PLAY_STORE');
+  late IPaymentService paymentService;
+  bool useFakePayment = false;
 
-  // 2. Escolhe a implementação correta do serviço de pagamento com base no flavor.
-  IPaymentService paymentService;
-  if (isPlayStoreBuild) {
-    print(
-        "STORE INIT: Detectado build da Play Store. Usando GooglePlayPaymentService.");
+  // Lógica de 3 vias para clareza: Debug vs. Release Play Store vs. Release Site
+  if (kDebugMode && !isPlayStoreBuild) {
+    print("STORE INIT: MODO DEBUG detectado. Usando simulador de pagamento.");
+    useFakePayment = true;
+    // Em modo debug, não importa qual serviço real instanciamos,
+    // pois o `useFakePayment` vai garantir que o middleware falso seja usado.
+    // Mas, por consistência, podemos instanciar um.
     paymentService = GooglePlayPaymentService();
+  } else if (isPlayStoreBuild) {
+    print(
+        "STORE INIT: MODO RELEASE (Play Store) detectado. Usando GooglePlayPaymentService.");
+    paymentService = GooglePlayPaymentService();
+    useFakePayment = false;
   } else {
     print(
-        "STORE INIT: Detectado build do Website. Usando StripePaymentService.");
+        "STORE INIT: MODO RELEASE (Website/Stripe) detectado. Usando StripePaymentService.");
     paymentService = StripePaymentService();
+    useFakePayment = false;
   }
 
-  // 3. Cria a instância da Store, passando o estado inicial e os middlewares configurados.
   return Store<AppState>(
     appReducer,
-    // Este é o estado inicial do seu aplicativo. Cada "fatia" do estado
-    // é inicializada com seu valor padrão.
     initialState: AppState(
       booksState: BooksState(),
       userState: UserState(pendingFirestoreWrites: []),
@@ -197,10 +205,12 @@ Store<AppState> createStore() {
       sermonState: SermonState(),
       communitySearchState: CommunitySearchState(),
     ),
-    // Passa o serviço de pagamento escolhido para a função que cria os middlewares.
-    middleware: createAppMiddleware(paymentService),
+    middleware: createAppMiddleware(
+      paymentService: paymentService,
+      useFakePayment: useFakePayment,
+    ),
   );
 }
 
-// Cria a instância GLOBAL e ÚNICA da sua store para todo o aplicativo.
+// A instância global permanece a mesma
 final Store<AppState> store = createStore();
