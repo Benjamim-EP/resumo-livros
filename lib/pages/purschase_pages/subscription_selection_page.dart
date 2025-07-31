@@ -1,14 +1,15 @@
 // lib/pages/purschase_pages/subscription_selection_page.dart
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/consts.dart';
-import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -52,11 +53,6 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
       return;
     }
 
-    final functions =
-        FirebaseFunctions.instanceFor(region: "southamerica-east1");
-    final callable = functions.httpsCallable('createMercadoPagoPix');
-
-    // Mostra um loader enquanto chama a Cloud Function
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -67,7 +63,36 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
     );
 
     try {
-      final result = await callable.call<Map<String, dynamic>>();
+      // 2. OBTÉM O DEVICE ID USANDO O PACOTE device_info_plus
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      String? deviceId;
+
+      if (Platform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id; // ID único para a instalação do Android
+      } else if (Platform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        deviceId =
+            iosInfo.identifierForVendor; // ID único para o fornecedor no iOS
+      }
+
+      print("Device Info Plus ID: $deviceId");
+
+      if (deviceId == null) {
+        throw Exception(
+            "Não foi possível obter o identificador do dispositivo.");
+      }
+      // --- FIM DA LÓGICA DO DEVICE ID ---
+
+      // 3. CHAMA A CLOUD FUNCTION ENVIANDO O DEVICE ID (esta parte não muda)
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('createMercadoPagoPix');
+
+      final result = await callable.call<Map<String, dynamic>>({
+        'deviceId': deviceId,
+      });
+
       final data = result.data;
       final String? qrCodeBase64 = data['qr_code_base64'];
       final String? qrCodeCopiaECola = data['qr_code_copia_e_cola'];
@@ -79,13 +104,12 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
       if (context.mounted) {
         Navigator.pop(context); // Fecha o loader
 
-        // Mostra o diálogo com o QR Code para o usuário
+        // O resto da sua lógica para mostrar o QR Code permanece o mesmo
         showDialog(
           context: context,
           builder: (dialogContext) => AlertDialog(
             title: const Text("Pague com PIX para Ativar"),
             content: SingleChildScrollView(
-              // Para evitar overflow em telas pequenas
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -124,9 +148,8 @@ class _SubscriptionSelectionPageState extends State<SubscriptionSelectionPage> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text("Fechar"),
-              )
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text("Fechar"))
             ],
           ),
         );

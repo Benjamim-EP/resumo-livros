@@ -1,4 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.septima.septimabiblia">
 
     <!-- Permissões Essenciais -->
     <uses-permission android:name="com.android.vending.BILLING" />
@@ -8,7 +10,7 @@
     <!-- A permissão de escrita é necessária para salvar PDFs em versões mais antigas do Android -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
 
     <!-- Bloco de 'queries' para interações com outros apps (TTS, etc.) -->
     <queries>

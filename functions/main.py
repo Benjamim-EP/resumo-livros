@@ -36,6 +36,7 @@ from googleapiclient.discovery import build
 from openai import OpenAI
 
 import mercadopago
+from mercadopago.config import RequestOptions
 from datetime import datetime, timedelta, timezone
 
 print(">>>> main.py (VERSÃO LAZY INIT - CORRETA) <<<<")
@@ -2851,77 +2852,79 @@ def createMercadoPagoPix(req: https_fn.CallableRequest) -> dict:
     user_id = req.auth.uid
     db = get_db()
     
+    device_id = req.data.get("deviceId")
+    print(f"Device ID recebido do cliente: {device_id}")
+
     amount = 19.90
-    description = "Acesso Premium por 1 Mês (PIX) - Septima Bíblia"
+    item_id = "premium_monthly_pix_01"
+    item_title = "Septima Premium - 1 Mês"
+    item_description = "Acesso completo por 31 dias ao Septima Bíblia Premium"
     access_duration_days = 31
 
     try:
         sdk = mercadopago.SDK(os.environ.get("MERCADO_PAGO_ACCESS_TOKEN"))
         
-        # <<< INÍCIO DA MUDANÇA PRINCIPAL >>>
+        user_doc = db.collection('users').document(user_id).get()
+        if not user_doc.exists:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Usuário não encontrado.")
+        
+        user_data = user_doc.to_dict()
+        user_email = user_data.get("email")
+        full_name = user_data.get("nome", "Usuário Septima")
+        
+        name_parts = full_name.split(" ", 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else " "
 
-        # Obtém o e-mail do usuário a partir do token de autenticação
-        user_email = req.auth.token.get("email")
         if not user_email:
             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION, message="O usuário não possui um e-mail verificado.")
 
-        # URL do seu webhook (certifique-se de que está correta)
         webhook_url = "https://southamerica-east1-resumo-livros.cloudfunctions.net/mercadoPagoWebhook"
 
-        # Criação de um objeto de preferência de pagamento. É uma abordagem alternativa
-        # e mais robusta que a criação direta de 'payment'.
-        preference_data = {
-            "items": [
-                {
-                    "title": description,
-                    "quantity": 1,
-                    "unit_price": amount
-                }
-            ],
-            "payer": {
-                "email": user_email
-            },
-            "payment_methods": {
-                "excluded_payment_methods": [],
-                "excluded_payment_types": [],
-                "installments": 1
-            },
-            "external_reference": user_id,
-            "notification_url": webhook_url, # Informa explicitamente ao MP para onde enviar a notificação
-            "metadata": {
-                 "firebaseUID": user_id,
-                 "access_duration_days": access_duration_days 
-            }
-        }
-        
-        preference_response = sdk.preference().create(preference_data)
-
-        if preference_response["status"] != 201:
-             print(f"ERRO da API do Mercado Pago (Preference): {preference_response['response']}")
-             raise Exception("Não foi possível criar a preferência de pagamento.")
-
-        # A resposta da preferência não contém o QR Code diretamente.
-        # A nova abordagem é enviar o link de checkout para o app,
-        # onde o usuário será redirecionado para a página do MP para ver o PIX.
-        # No entanto, vamos tentar a criação de pagamento novamente com dados mínimos.
-        
-        # TENTATIVA 2: Criar pagamento com dados mínimos
         payment_data = {
             "transaction_amount": amount,
-            "description": description,
+            "description": item_description,
             "payment_method_id": "pix",
-            "payer": { "email": user_email },
-            "notification_url": webhook_url,
             "external_reference": user_id,
-            "metadata": {
-                 "firebaseUID": user_id,
-                 "access_duration_days": access_duration_days 
+            "notification_url": webhook_url,
+            "statement_descriptor": "SEPTIMA BIBLIA",
+            "metadata": { "firebaseUID": user_id, "access_duration_days": access_duration_days },
+            "payer": {
+                "email": user_email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "entity_type": "individual"
+            },
+            "additional_info": {
+                "items": [
+                    {
+                        "id": item_id,
+                        "title": item_title,
+                        "description": item_description,
+                        "category_id": "services",
+                        "quantity": 1,
+                        "unit_price": amount
+                    }
+                ]
             }
         }
         
-        payment_response = sdk.payment().create(payment_data)
+        # --- INÍCIO DA CORREÇÃO FINAL ---
+        
+        request_options = None
+        if device_id:
+            # 2. Cria uma instância da classe RequestOptions
+            request_options = RequestOptions()
+            # 3. Adiciona os headers customizados a ela
+            request_options.custom_headers = {
+                'X-meli-session-id': device_id
+            }
+            print(f"Opções de requisição customizadas criadas com header 'X-meli-session-id'.")
 
-        # <<< FIM DA MUDANÇA PRINCIPAL >>>
+        # --- FIM DA CORREÇÃO FINAL ---
+        
+        # 4. Passa o objeto RequestOptions para a chamada de criação
+        payment_response = sdk.payment().create(payment_data, request_options)
         
         if payment_response["status"] == 201:
             payment = payment_response["response"]
@@ -2936,12 +2939,13 @@ def createMercadoPagoPix(req: https_fn.CallableRequest) -> dict:
             }
         else:
             print(f"ERRO da API do Mercado Pago (Payment). Status: {payment_response['status']}. Resposta: {payment_response['response']}")
-            raise Exception("Não foi possível gerar o código PIX.")
+            error_desc = payment_response['response'].get('cause', [{}])[0].get('description', 'Erro desconhecido')
+            raise Exception(f"Não foi possível gerar o código PIX: {error_desc}")
 
     except Exception as e:
         print(f"ERRO CRÍTICO em createMercadoPagoPix: {e}")
         traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro ao criar pagamento PIX: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=str(e))
 
 
 # ==============================================================================
