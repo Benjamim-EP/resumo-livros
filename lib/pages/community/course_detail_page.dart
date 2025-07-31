@@ -59,6 +59,8 @@ class CourseDetailPage extends StatelessWidget {
   }
 
   Widget _buildChapterList(BuildContext context, String partId) {
+    final theme = Theme.of(context); // Pega o tema para estilizar
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('cursos')
@@ -72,15 +74,39 @@ class CourseDetailPage extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const ListTile(title: Text("Nenhum capítulo nesta parte."));
-        }
 
+        // <<< AQUI ESTÁ A MUDANÇA >>>
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          // Em vez de um ListTile simples, mostramos uma mensagem mais elaborada.
+          return Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.update,
+                    size: 32,
+                    color: theme.iconTheme.color?.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Capítulos em breve...",
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color:
+                          theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        // O resto da lógica para quando há capítulos permanece igual.
         final chapters = snapshot.data!.docs;
         return Column(
           children: chapters.map((doc) {
             return ListTile(
-              title: Text(doc.id), // O título do capítulo é o ID do documento
+              title: Text(doc.id),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.push(
