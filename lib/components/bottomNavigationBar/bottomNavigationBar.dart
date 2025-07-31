@@ -25,6 +25,7 @@ import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/middleware/ad_middleware.dart';
 import 'package:septima_biblia/redux/reducers.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
@@ -52,10 +53,16 @@ class _UserCoinsViewModel {
         if (endDateTimestamp != null) {
           premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
         } else {
-          premiumStatus = true;
+          premiumStatus = true; // Lida com casos sem data de expiração (raro)
         }
       }
     }
+    // Otimização: se o userDetails já confirmou, não precisa checar o subscriptionState
+    if (!premiumStatus) {
+      premiumStatus = store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive;
+    }
+
     return _UserCoinsViewModel(
       userCoins: store.state.userState.userCoins,
       isPremium: premiumStatus,
@@ -92,6 +99,11 @@ class _MainAppScreenViewModel {
         }
       }
     }
+    if (!premiumStatus) {
+      premiumStatus = store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive;
+    }
+
     return _MainAppScreenViewModel(
       userDetails: userDetails,
       targetBottomNavIndex: store.state.userState.targetBottomNavIndex,

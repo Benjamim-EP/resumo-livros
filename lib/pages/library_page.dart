@@ -27,9 +27,8 @@ class _LibraryViewModel {
   _LibraryViewModel({required this.isPremium});
 
   static _LibraryViewModel fromStore(Store<AppState> store) {
-    final subscriptionState = store.state.subscriptionState;
-    bool isCurrentlyPremium =
-        subscriptionState.status == SubscriptionStatus.premiumActive;
+    bool isCurrentlyPremium = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
 
     if (!isCurrentlyPremium) {
       final userDetails = store.state.userState.userDetails;

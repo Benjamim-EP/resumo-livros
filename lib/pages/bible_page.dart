@@ -172,6 +172,31 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
     await prefs.setStringList(_unlockedSummariesPrefsKey, unlockedSet.toList());
   }
 
+  bool _isUserPremium(Store<AppState> store) {
+    // 1. Verifica a fonte de verdade primária (após um pagamento)
+    if (store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive) {
+      return true;
+    }
+
+    // 2. Como fallback, verifica os dados carregados do Firestore
+    final userDetails = store.state.userState.userDetails;
+    if (userDetails != null) {
+      final status = userDetails['subscriptionStatus'] as String?;
+      final endDate =
+          (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+
+      if (status == 'active' &&
+          endDate != null &&
+          endDate.isAfter(DateTime.now())) {
+        return true;
+      }
+    }
+
+    // 3. Se nenhuma das condições for atendida, não é premium
+    return false;
+  }
+
   void _showPremiumDialog(BuildContext context) {
     AnalyticsService.instance.logPremiumFeatureImpression('interlinear_study');
     showDialog(
@@ -621,8 +646,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   }
 
   Future<void> _loadCurrentChapterHebrewDataIfNeeded() async {
-    final isPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
+    final isPremium = _isUserPremium(_store!);
+
     if (!isPremium) {
       // Se não for premium, zera os dados e não faz nada.
       if (mounted) setState(() => _currentChapterHebrewData = null);
@@ -653,8 +678,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   }
 
   Future<void> _loadCurrentChapterGreekDataIfNeeded() async {
-    final isPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
+    final isPremium = _isUserPremium(_store!);
     if (!isPremium) {
       if (mounted) setState(() => _currentChapterGreekData = null);
       return;
@@ -765,8 +789,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
     // 1. Obter o estado atual do usuário e da assinatura do Redux
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final isPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
+    final isPremium = _isUserPremium(_store!);
     final currentUserCoins = store.state.userState.userCoins;
     final userId = store.state.userState.userId;
     final isGuest = store.state.userState.isGuestUser;
@@ -1411,8 +1434,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
   List<Widget> _buildAppBarActions() {
     final theme = Theme.of(context);
-    final isPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
+    final isPremium = _isUserPremium(_store!);
 
     final Color defaultIconColor = theme.appBarTheme.actionsIconTheme?.color ??
         theme.colorScheme.onPrimary;
@@ -1908,8 +1930,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
   Widget _buildComparisonSelectorBar() {
     final theme = Theme.of(context);
-    final isPremium = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
+    final isPremium = _isUserPremium(_store!);
 
     // Função auxiliar para criar um botão de seletor
     Widget _buildSelectorButton(
