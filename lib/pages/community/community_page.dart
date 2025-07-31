@@ -1,9 +1,10 @@
 // lib/pages/community/community_page.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/community/BookClubListPage.dart';
+import 'package:septima_biblia/pages/community/course_list_page.dart';
 import 'package:septima_biblia/pages/community/forum_home_page.dart';
 import 'package:septima_biblia/pages/community/ranking_tab_view.dart';
-// 1. IMPORTAR A NOVA PÁGINA DA LISTA DE CLUBES
+// <<< 1. IMPORTAR A NOVA PÁGINA DA LISTA DE CURSOS >>>
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -19,8 +20,8 @@ class _CommunityPageState extends State<CommunityPage>
   @override
   void initState() {
     super.initState();
-    // 2. ALTERAR O NÚMERO DE ABAS PARA 3
-    _tabController = TabController(length: 3, vsync: this);
+    // <<< 2. ALTERAR O NÚMERO DE ABAS PARA 4 >>>
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -44,9 +45,10 @@ class _CommunityPageState extends State<CommunityPage>
             labelColor: theme.colorScheme.primary,
             unselectedLabelColor: Colors.grey[600],
             tabs: const [
-              // 3. ATUALIZAR AS LABELS DAS ABAS
+              // <<< 3. ATUALIZAR AS LABELS DAS ABAS >>>
               Tab(text: "Ranking"),
-              Tab(text: "Clube do Livro"), // Nova aba
+              Tab(text: "Clube do Livro"),
+              Tab(text: "Cursos"), // Nova aba
               Tab(text: "Fórum"),
             ],
           ),
@@ -55,9 +57,10 @@ class _CommunityPageState extends State<CommunityPage>
       body: TabBarView(
         controller: _tabController,
         children: const [
-          // 4. ADICIONAR O WIDGET DA NOVA PÁGINA
+          // <<< 4. ADICIONAR O WIDGET DA NOVA PÁGINA >>>
           RankingTabView(),
-          BookClubListPage(), // Novo widget
+          BookClubListPage(),
+          CourseListPage(), // Novo widget
           ForumHomePage(),
         ],
       ),
