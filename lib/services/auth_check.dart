@@ -1,6 +1,7 @@
 // Em: lib/services/auth_check.dart
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -143,8 +144,6 @@ class AuthCheck extends StatelessWidget {
         print(
             "AuthCheck: Novo usuário detectado. Criando documentos no Firestore...");
 
-        // ✅ ESTA É A LINHA CORRIGIDA
-        // Usando o novo método `logSignUp` que criamos no AnalyticsService.
         AnalyticsService.instance.logSignUp(loginMethod);
         print("Analytics: Evento 'sign_up' registrado.");
 
@@ -194,6 +193,49 @@ class AuthCheck extends StatelessWidget {
             "AuthCheck: Usuário existente. Carregando detalhes do Firestore.");
         userData = docSnapshot.data()!;
       }
+
+      // ===================================================================
+      // ✅ INÍCIO DO NOVO BLOCO DE CÓDIGO PARA SEGMENTAÇÃO
+      // ===================================================================
+
+      // Detecta a fonte de instalação usando a flag de compilação
+      const bool isPlayStoreBuild = bool.fromEnvironment('IS_PLAY_STORE');
+      final String installSource =
+          isPlayStoreBuild ? 'play_store' : 'website_apk';
+
+      // --- ESTRATÉGIA 1: Tópicos do FCM (para notificações imediatas) ---
+      try {
+        final fcm = FirebaseMessaging.instance;
+        if (isPlayStoreBuild) {
+          // Inscreve no tópico da Play Store e remove do tópico do site (caso o usuário tenha trocado)
+          await fcm.subscribeToTopic('play_store_users');
+          await fcm.unsubscribeFromTopic('website_apk_users');
+          print("FCM: Usuário inscrito no tópico 'play_store_users'.");
+        } else {
+          // Faz o inverso para a versão do site
+          await fcm.subscribeToTopic('website_apk_users');
+          await fcm.unsubscribeFromTopic('play_store_users');
+          print("FCM: Usuário inscrito no tópico 'website_apk_users'.");
+        }
+      } catch (e) {
+        print("FCM: Erro ao inscrever/desinscrever de tópicos: $e");
+      }
+
+      // --- ESTRATÉGIA 2: Propriedades do Analytics (para segmentação de longo prazo) ---
+      try {
+        await AnalyticsService.instance.setUserProperty(
+          name: 'installation_source', // Nome da propriedade
+          value: installSource, // Valor ('play_store' ou 'website_apk')
+        );
+        print(
+            "Analytics: Propriedade do usuário 'installation_source' definida como '$installSource'.");
+      } catch (e) {
+        print("Analytics: Erro ao definir a propriedade do usuário: $e");
+      }
+
+      // ===================================================================
+      // ✅ FIM DO NOVO BLOCO DE CÓDIGO
+      // ===================================================================
 
       if (userData['username'] == null || userData['discriminator'] == null) {
         print(

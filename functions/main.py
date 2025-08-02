@@ -796,6 +796,7 @@ def updateReadingTime(req: https_fn.CallableRequest) -> dict:
         
         progress_doc_ref.set({
             'rawReadingTime': firestore.Increment(seconds_to_add),
+            'lifetimeReadingTime': firestore.Increment(seconds_to_add),
             'lastTimeUpdate': firestore.SERVER_TIMESTAMP
         }, merge=True)
         

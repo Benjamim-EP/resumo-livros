@@ -24,8 +24,8 @@ class AdHelperStartIo {
   Completer<StartAppRewardedVideoAd?>? _rewardedAdLoadCompleter;
 
   AdHelperStartIo() {
-    _sdk.setTestAdsEnabled(true);
-    print("Start.io Helper: Test Ads Enabled.");
+    _sdk.setTestAdsEnabled(false);
+    //print("Start.io Helper: Test Ads Enabled.");
     // Inicia um pré-carregamento, mas não bloqueia.
     // O showRewardedAd tentará carregar se necessário.
     ensureRewardedVideoIsLoaded();

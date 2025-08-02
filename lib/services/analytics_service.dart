@@ -23,6 +23,11 @@ class AnalyticsService {
     await _analytics.logLogin(loginMethod: method);
   }
 
+  Future<void> setUserProperty(
+      {required String name, required String? value}) async {
+    await _analytics.setUserProperty(name: name, value: value);
+  }
+
   // ✅ NOVO MÉTODO ADICIONADO AQUI
   /// Evento para quando um novo usuário se cadastra.
   Future<void> logSignUp(String signUpMethod) async {
