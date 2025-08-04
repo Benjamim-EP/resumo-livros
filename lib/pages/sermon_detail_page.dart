@@ -27,6 +27,7 @@ import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:redux/redux.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Modelo de dados para o sermão (sem alterações)
 class Sermon {
@@ -122,8 +123,8 @@ class SermonDetailPage extends StatefulWidget {
 // NOVO/CORRIGIDO: ViewModel para a SermonDetailPage
 class _SermonDetailViewModel {
   final List<Map<String, dynamic>> highlights;
-  final bool isPremium;
-  final Set<String> favoritedSermonIds; // Adicionado para os favoritos
+  final bool isPremium; // Esta propriedade continua a mesma
+  final Set<String> favoritedSermonIds;
 
   _SermonDetailViewModel({
     required this.highlights,
@@ -131,26 +132,48 @@ class _SermonDetailViewModel {
     required this.favoritedSermonIds,
   });
 
+  // ✅ SUBSTITUA A SUA FUNÇÃO 'fromStore' INTEIRA POR ESTA VERSÃO
   static _SermonDetailViewModel fromStore(
       Store<AppState> store, String sermonId) {
+    // Pega os destaques (lógica inalterada)
     final sermonHighlights = store.state.userState.userCommentHighlights
         .where((h) => h['sourceId'] == sermonId)
         .toList();
 
-    bool premiumStatus = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
+    // --- INÍCIO DA NOVA LÓGICA DE VERIFICAÇÃO PREMIUM ---
+    bool premiumStatus = false;
+    final userDetails = store.state.userState.userDetails ?? {};
 
-    final favoritedSermonIds =
-        store.state.sermonState.favoritedSermonIds; // Pega do SermonState
+    // 1. Verifica os dados do Firestore primeiro (fonte de verdade a longo prazo)
+    final status = userDetails['subscriptionStatus'] as String?;
+    final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
+
+    if (status == 'active') {
+      if (endDateTimestamp != null) {
+        premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
+      } else {
+        premiumStatus = true;
+      }
+    }
+
+    // 2. Como fallback, verifica o estado do Redux (feedback imediato pós-compra)
+    if (!premiumStatus) {
+      premiumStatus = store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive;
+    }
+    // --- FIM DA NOVA LÓGICA DE VERIFICAÇÃO PREMIUM ---
+
+    final favoritedSermonIds = store.state.sermonState.favoritedSermonIds;
 
     return _SermonDetailViewModel(
       highlights: sermonHighlights,
-      isPremium: premiumStatus,
-      favoritedSermonIds: favoritedSermonIds, // Passa para o ViewModel
+      isPremium: premiumStatus, // Usa o status calculado e robusto
+      favoritedSermonIds: favoritedSermonIds,
     );
   }
 
-  // Métodos de igualdade para otimização do StoreConnector (distinct: true)
+  // O seu método de comparação (operator == e hashCode) já está correto
+  // e continuará funcionando, pois ele já compara a propriedade 'isPremium'.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -9,6 +9,8 @@ import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:redux/redux.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:septima_biblia/utils/text_span_utils.dart';
 
 class _TurretinViewModel {
   final List<Map<String, dynamic>> highlights;
@@ -16,15 +18,41 @@ class _TurretinViewModel {
 
   _TurretinViewModel({required this.highlights, required this.isPremium});
 
+  // ✅ SUBSTITUA A SUA FUNÇÃO 'fromStore' POR ESTA
   static _TurretinViewModel fromStore(
       Store<AppState> store, String topicTitle) {
+    // Pega os destaques (lógica inalterada)
     final relevantHighlights = store.state.userState.userCommentHighlights
         .where((h) => h['sourceParentTitle'] == topicTitle)
         .toList();
-    bool premiumStatus = store.state.subscriptionState.status ==
-        SubscriptionStatus.premiumActive;
+
+    // --- INÍCIO DA LÓGICA DE VERIFICAÇÃO PREMIUM (COPIADA E ADAPTADA) ---
+    bool premiumStatus = false;
+    final userDetails = store.state.userState.userDetails ?? {};
+
+    // 1. Verifica os dados do Firestore primeiro
+    final status = userDetails['subscriptionStatus'] as String?;
+    final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
+
+    if (status == 'active') {
+      if (endDateTimestamp != null) {
+        premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
+      } else {
+        premiumStatus = true;
+      }
+    }
+
+    // 2. Fallback para o estado do Redux
+    if (!premiumStatus) {
+      premiumStatus = store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive;
+    }
+    // --- FIM DA LÓGICA DE VERIFICAÇÃO PREMIUM ---
+
     return _TurretinViewModel(
-        highlights: relevantHighlights, isPremium: premiumStatus);
+        highlights: relevantHighlights,
+        isPremium: premiumStatus // Usa o valor robusto
+        );
   }
 }
 
@@ -137,19 +165,24 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
         .showSnackBar(const SnackBar(content: Text("Destaque salvo!")));
   }
 
-  List<TextSpan> _buildHighlightedParagraph(String paragraph,
-      List<Map<String, dynamic>> highlights, ThemeData theme) {
-    if (highlights.isEmpty) return [TextSpan(text: paragraph)];
-    List<TextSpan> spans = [];
-    int lastEnd = 0;
+  List<TextSpan> _buildHighlightedParagraph(
+      String originalParagraph,
+      List<TextSpan> spansWithLinks, // A lista que já tem os links
+      List<Map<String, dynamic>> highlights,
+      ThemeData theme) {
+    if (highlights.isEmpty) {
+      return spansWithLinks; // Se não há destaques, retorna os spans com links como estão.
+    }
 
+    // O resto da sua lógica para encontrar os trechos destacados no parágrafo original
+    // permanece a mesma.
     List<Map<String, dynamic>> snippetsInParagraph = [];
     for (var highlight in highlights) {
       String snippet = highlight['selectedSnippet'] ?? '';
       if (snippet.isEmpty) continue;
       int startIndex = 0;
-      while (startIndex < paragraph.length) {
-        int pos = paragraph.indexOf(snippet, startIndex);
+      while (startIndex < originalParagraph.length) {
+        int pos = originalParagraph.indexOf(snippet, startIndex);
         if (pos == -1) break;
         snippetsInParagraph.add({
           'start': pos,
@@ -160,28 +193,46 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
       }
     }
 
-    if (snippetsInParagraph.isEmpty) return [TextSpan(text: paragraph)];
-    snippetsInParagraph.sort((a, b) => a['start'].compareTo(b['start']));
+    if (snippetsInParagraph.isEmpty) {
+      return spansWithLinks;
+    }
 
-    for (var snippetInfo in snippetsInParagraph) {
-      if (snippetInfo['start'] > lastEnd) {
-        spans.add(
-            TextSpan(text: paragraph.substring(lastEnd, snippetInfo['start'])));
+    // Nova lógica para aplicar a cor de fundo aos spans existentes
+    final List<TextSpan> finalSpans = [];
+    int charIndex = 0;
+
+    for (final span in spansWithLinks) {
+      final text = span.text;
+      if (text == null || text.isEmpty) {
+        finalSpans.add(span);
+        continue;
       }
-      spans.add(TextSpan(
-        text: paragraph.substring(snippetInfo['start'], snippetInfo['end']),
-        style: TextStyle(
-            backgroundColor: Color(int.parse(
-                    (snippetInfo['color'] as String).replaceFirst('#', '0xff')))
-                .withOpacity(0.35)),
+
+      final spanStart = charIndex;
+      final spanEnd = charIndex + text.length;
+      charIndex = spanEnd;
+
+      Color? backgroundColor;
+      // Verifica se este span está dentro de algum trecho destacado
+      for (final highlight in snippetsInParagraph) {
+        if (spanStart < highlight['end'] && spanEnd > highlight['start']) {
+          backgroundColor = Color(int.parse(
+                  (highlight['color'] as String).replaceFirst('#', '0xff')))
+              .withOpacity(0.35);
+          break;
+        }
+      }
+
+      // Cria um novo TextSpan com o mesmo estilo, mas com a cor de fundo adicionada
+      finalSpans.add(TextSpan(
+        text: text,
+        style: span.style?.copyWith(backgroundColor: backgroundColor) ??
+            TextStyle(backgroundColor: backgroundColor),
+        recognizer: span.recognizer,
       ));
-      lastEnd = snippetInfo['end'];
     }
 
-    if (lastEnd < paragraph.length) {
-      spans.add(TextSpan(text: paragraph.substring(lastEnd)));
-    }
-    return spans;
+    return finalSpans;
   }
 
   void _onTtsStateChanged() {
@@ -319,47 +370,60 @@ class _TurretinTopicPageState extends State<TurretinTopicPage> {
                       ),
                     ],
                     Divider(color: theme.dividerColor, height: 32),
-                    ...question.content
-                        .map((paragraph) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: SelectableText.rich(
-                                TextSpan(
-                                  style: theme.textTheme.bodyLarge
-                                      ?.copyWith(height: 1.6),
-                                  children: _buildHighlightedParagraph(
-                                      paragraph, questionHighlights, theme),
-                                ),
-                                contextMenuBuilder:
-                                    (context, editableTextState) {
-                                  final buttonItems =
-                                      editableTextState.contextMenuButtonItems;
+                    ...question.content.map((paragraph) {
+                      // Ignora parágrafos vazios
+                      if (paragraph.trim().isEmpty)
+                        return const SizedBox.shrink();
 
-                                  buttonItems.insert(
-                                    0,
-                                    ContextMenuButtonItem(
-                                      label: 'Destacar',
-                                      onPressed: () {
-                                        _handleHighlight(
-                                            context,
-                                            paragraph,
-                                            question.questionTitle,
-                                            editableTextState,
-                                            viewModel.isPremium);
-                                      },
-                                    ),
-                                  );
-
-                                  return AdaptiveTextSelectionToolbar
-                                      .buttonItems(
-                                    anchors:
-                                        editableTextState.contextMenuAnchors,
-                                    buttonItems: buttonItems,
-                                  );
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: SelectableText.rich(
+                          TextSpan(
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                                height: 1.6,
+                                color: theme.textTheme.bodyLarge?.color
+                                    ?.withOpacity(0.9)),
+                            // A mágica acontece aqui:
+                            // 1. Primeiro, criamos os spans com as referências clicáveis.
+                            // 2. Depois, passamos essa lista de spans para a função que aplica os destaques.
+                            children: _buildHighlightedParagraph(
+                                paragraph,
+                                // A função TextSpanUtils retorna uma List<TextSpan>
+                                TextSpanUtils.buildTextSpansForSegment(
+                                    paragraph,
+                                    theme,
+                                    context,
+                                    16.0), // 16.0 é o fontSize base
+                                questionHighlights,
+                                theme),
+                          ),
+                          contextMenuBuilder: (context, editableTextState) {
+                            // ... (seu contextMenuBuilder existente permanece o mesmo)
+                            final buttonItems =
+                                editableTextState.contextMenuButtonItems;
+                            buttonItems.insert(
+                              0,
+                              ContextMenuButtonItem(
+                                label: 'Destacar',
+                                onPressed: () {
+                                  _handleHighlight(
+                                      context,
+                                      paragraph,
+                                      question.questionTitle,
+                                      editableTextState,
+                                      viewModel.isPremium);
                                 },
-                                textAlign: TextAlign.justify,
                               ),
-                            ))
-                        .toList(),
+                            );
+                            return AdaptiveTextSelectionToolbar.buttonItems(
+                              anchors: editableTextState.contextMenuAnchors,
+                              buttonItems: buttonItems,
+                            );
+                          },
+                          textAlign: TextAlign.justify,
+                        ),
+                      );
+                    }).toList(),
                   ],
                 ),
               );

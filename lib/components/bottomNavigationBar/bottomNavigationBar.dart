@@ -38,33 +38,67 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // ViewModels (sem alterações)
 class _UserCoinsViewModel {
-  final int userCoins;
+  // ✅ ALTERAÇÃO: O ViewModel agora retorna o total calculado
+  final int totalUserCoins;
+  final bool hasWeeklyReward;
   final bool isPremium;
 
-  _UserCoinsViewModel({required this.userCoins, required this.isPremium});
+  _UserCoinsViewModel({
+    required this.totalUserCoins,
+    required this.hasWeeklyReward,
+    required this.isPremium,
+  });
 
   static _UserCoinsViewModel fromStore(Store<AppState> store) {
+    // --- 1. LÓGICA ROBUSTA PARA DETERMINAR O STATUS PREMIUM ---
     bool premiumStatus = false;
-    final userDetails = store.state.userState.userDetails;
-    if (userDetails != null) {
-      final status = userDetails['subscriptionStatus'] as String?;
-      final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
-      if (status == 'active') {
-        if (endDateTimestamp != null) {
-          premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
-        } else {
-          premiumStatus = true; // Lida com casos sem data de expiração (raro)
-        }
+    final userDetails = store.state.userState.userDetails ?? {};
+
+    // Primeiro, verifica os dados do Firestore
+    final status = userDetails['subscriptionStatus'] as String?;
+    final endDateTimestamp = userDetails['subscriptionEndDate'] as Timestamp?;
+
+    if (status == 'active') {
+      if (endDateTimestamp != null) {
+        premiumStatus = endDateTimestamp.toDate().isAfter(DateTime.now());
+      } else {
+        // Considera premium se o status for ativo mas não houver data de fim (caso raro)
+        premiumStatus = true;
       }
     }
-    // Otimização: se o userDetails já confirmou, não precisa checar o subscriptionState
+
+    // Como fallback, verifica o estado da assinatura no Redux
+    // (útil logo após uma compra, antes do listener do Firestore atualizar)
     if (!premiumStatus) {
       premiumStatus = store.state.subscriptionState.status ==
           SubscriptionStatus.premiumActive;
     }
 
+    // --- 2. LÓGICA PARA CALCULAR O TOTAL DE MOEDAS ---
+    int mainCoins = store.state.userState.userCoins;
+    int rewardCoins = userDetails['weeklyRewardCoins'] as int? ?? 0;
+    final rewardExpiration =
+        (userDetails['rewardExpiration'] as Timestamp?)?.toDate();
+
+    bool hasValidReward = false;
+    int totalCoinsToShow = mainCoins;
+
+    // Verifica se a recompensa é válida
+    if (rewardExpiration != null && rewardExpiration.isAfter(DateTime.now())) {
+      // Se a data de expiração ainda não passou...
+      if (rewardCoins > 0) {
+        // ...e se há moedas de recompensa para usar...
+        hasValidReward = true;
+        // ...o total a ser exibido para o usuário é a soma das duas.
+        totalCoinsToShow += rewardCoins;
+      }
+    }
+
+    // --- 3. RETORNA O VIEWMODEL COM OS DADOS CALCULADOS ---
     return _UserCoinsViewModel(
-      userCoins: store.state.userState.userCoins,
+      totalUserCoins: totalCoinsToShow, // Usa o total calculado
+      hasWeeklyReward:
+          hasValidReward, // Informa a UI se há uma recompensa ativa
       isPremium: premiumStatus,
     );
   }
@@ -494,37 +528,54 @@ class _MainAppScreenState extends State<MainAppScreen> {
                           converter: (store) =>
                               _UserCoinsViewModel.fromStore(store),
                           builder: (context, coinsViewModel) {
-                            if (coinsViewModel.isPremium)
+                            // Se o usuário for premium, não mostra nada
+                            if (coinsViewModel.isPremium) {
                               return const SizedBox.shrink();
+                            }
+
+                            // Constrói a UI das moedas para usuários não-premium
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.monetization_on,
-                                      color:
-                                          currentThemeData.colorScheme.primary,
-                                      size: 22),
+                                  // Ícone dinâmico: Presente para recompensa, Moeda para o normal
+                                  Icon(
+                                    coinsViewModel.hasWeeklyReward
+                                        ? Icons.card_giftcard
+                                        : Icons.monetization_on,
+                                    color: currentThemeData.colorScheme.primary,
+                                    size: 22,
+                                  ),
                                   const SizedBox(width: 4),
-                                  Text('${coinsViewModel.userCoins}',
-                                      style: TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.bold,
-                                          color: currentThemeData.appBarTheme
-                                                  .titleTextStyle?.color ??
-                                              currentThemeData
-                                                  .colorScheme.onPrimary)),
-                                  if (coinsViewModel.userCoins <
+                                  // Exibe o total de moedas calculado
+                                  Text(
+                                    '${coinsViewModel.totalUserCoins}',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      color: currentThemeData.appBarTheme
+                                              .titleTextStyle?.color ??
+                                          currentThemeData
+                                              .colorScheme.onPrimary,
+                                    ),
+                                  ),
+                                  // Lógica para mostrar o botão de ganhar moedas ou o ícone de "cheio"
+                                  if (coinsViewModel.totalUserCoins <
                                       MAX_COINS_LIMIT)
+                                    // Se ainda não atingiu o limite, mostra o timer/botão para ganhar mais
                                     const RewardCooldownTimer()
                                   else
+                                    // Se atingiu o limite, mostra o ícone de check
                                     Padding(
                                       padding: const EdgeInsets.only(left: 8.0),
-                                      child: Icon(Icons.check_circle,
-                                          color: currentThemeData
-                                              .colorScheme.primary
-                                              .withOpacity(0.7),
-                                          size: 22),
+                                      child: Icon(
+                                        Icons.check_circle,
+                                        color: currentThemeData
+                                            .colorScheme.primary
+                                            .withOpacity(0.7),
+                                        size: 22,
+                                      ),
                                     ),
                                 ],
                               ),
