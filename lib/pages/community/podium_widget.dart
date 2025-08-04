@@ -198,6 +198,15 @@ class PodiumWidget extends StatelessWidget {
                 fontSize: 16,
               ),
             ),
+            const SizedBox(height: 2),
+            Text(
+              "Total: ${user.lifetimeScore.toStringAsFixed(0)}",
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                fontSize: 11, // Fonte menor
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

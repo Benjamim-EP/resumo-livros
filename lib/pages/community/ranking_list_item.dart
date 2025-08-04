@@ -94,19 +94,20 @@ class RankingListItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Score: ${user.rankingScore.toStringAsFixed(0)}',
+                        'Score Semanal: ${user.rankingScore.toStringAsFixed(0)}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.textTheme.bodyMedium?.color
                               ?.withOpacity(0.7),
+                        ),
+                      ),
+
+                      // ✅ ADICIONE ESTE TEXTO PARA O SCORE TOTAL
+                      Text(
+                        'Score Total: ${user.lifetimeScore.toStringAsFixed(0)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11, // Fonte menor
+                          color: theme.textTheme.bodySmall?.color
+                              ?.withOpacity(0.6),
                         ),
                       ),
                     ],

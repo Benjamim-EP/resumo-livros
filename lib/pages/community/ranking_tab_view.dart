@@ -20,8 +20,9 @@ class RankingUser {
   final String id;
   final String name;
   final String? photoURL;
-  final double rankingScore;
+  final double rankingScore; // Score da semana
   final int? previousRank;
+  final double lifetimeScore; // ✅ ADICIONE ESTA LINHA (Score total)
 
   RankingUser({
     required this.id,
@@ -29,6 +30,7 @@ class RankingUser {
     this.photoURL,
     required this.rankingScore,
     this.previousRank,
+    required this.lifetimeScore, // ✅ ADICIONE AO CONSTRUTOR
   });
 
   factory RankingUser.fromFirestore(
@@ -41,6 +43,13 @@ class RankingUser {
       photoURL: userData['photoURL'],
       rankingScore: (progressData['rankingScore'] as num?)?.toDouble() ?? 0.0,
       previousRank: userData['previousRank'] as int?,
+      // ✅ ADICIONE ESTA LÓGICA PARA BUSCAR O NOVO CAMPO
+      // Ele usa lifetimeRankingScore, mas se não existir, usa lifetimeReadingTime como fallback,
+      // e 0.0 se nenhum dos dois existir. Isso torna a migração segura.
+      lifetimeScore:
+          (progressData['lifetimeRankingScore'] as num?)?.toDouble() ??
+              (progressData['lifetimeReadingTime'] as num?)?.toDouble() ??
+              0.0,
     );
   }
 }
