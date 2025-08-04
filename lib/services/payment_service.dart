@@ -4,6 +4,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/redux/actions/payment_actions.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -20,22 +21,56 @@ abstract class IPaymentService {
 // 2. Implementação Falsa/Vazia (para a versão da Play Store por enquanto)
 //    Isso nos permite compilar a versão da Play Store sem ter a lógica do Google ainda.
 class GooglePlayPaymentService implements IPaymentService {
+  final InAppPurchase _iapConnection = InAppPurchase.instance;
+
   @override
   Future<void> initiatePurchase(String productId) async {
-    // A lógica real do Google Play Billing virá aqui no futuro.
     print(
-        "GooglePlayPaymentService: Compra iniciada para $productId (ainda não implementado).");
-    // Lançar um erro ou mostrar um aviso pode ser útil.
-    throw UnimplementedError(
-        'Google Play Billing não está configurado para este build.');
+        "GooglePlayPaymentService: Iniciando fluxo de compra real para $productId");
+
+    // 1. Verifica se a loja está disponível
+    final bool isAvailable = await _iapConnection.isAvailable();
+    if (!isAvailable) {
+      throw Exception(
+          'A loja de aplicativos (Google Play) não está disponível.');
+    }
+
+    // 2. Busca os detalhes do produto na loja para garantir que ele existe
+    final ProductDetailsResponse productDetailResponse =
+        await _iapConnection.queryProductDetails({productId});
+
+    if (productDetailResponse.error != null) {
+      throw Exception(
+          'Erro ao buscar detalhes do produto: ${productDetailResponse.error!.message}');
+    }
+
+    if (productDetailResponse.productDetails.isEmpty) {
+      throw Exception(
+          'Produto "$productId" não encontrado na Google Play Store. Verifique o ID e o status no console.');
+    }
+
+    // 3. Inicia o fluxo de compra
+    final ProductDetails productDetails =
+        productDetailResponse.productDetails.first;
+    final PurchaseParam purchaseParam =
+        PurchaseParam(productDetails: productDetails);
+
+    // O resultado desta chamada (sucesso, falha, cancelamento) será capturado
+    // pelo listener `purchaseStream` que já configuramos no seu `payment_middleware.dart`.
+    // Por isso, não precisamos de um `await` aqui.
+    _iapConnection.buyNonConsumable(purchaseParam: purchaseParam);
   }
 
   @override
   Future<void> restorePurchases() async {
-    print(
-        "GooglePlayPaymentService: Restaurando compras (ainda não implementado).");
-    throw UnimplementedError(
-        'Restauração do Google Play Billing não está configurada.');
+    print("GooglePlayPaymentService: Iniciando restauração de compras...");
+    final bool isAvailable = await _iapConnection.isAvailable();
+    if (!isAvailable) {
+      throw Exception(
+          'A loja de aplicativos (Google Play) não está disponível para restaurar compras.');
+    }
+    // A restauração também envia os resultados para o `purchaseStream` no middleware.
+    await _iapConnection.restorePurchases();
   }
 }
 

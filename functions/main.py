@@ -12,6 +12,11 @@ from firebase_admin.firestore import transactional
 from datetime import datetime, time, timezone, timedelta
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
+#from google.cloud.firestore import Timestamp
+#from google.cloud import firestore_v1
+from google.protobuf.timestamp_pb2 import Timestamp
+from google.cloud.firestore_v1.field_path import FieldPath
+
 
 import asyncio
 import httpx
@@ -569,7 +574,7 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
                 end_date_aware = None
                 if isinstance(subscription_end_date, datetime):
                     end_date_aware = subscription_end_date.replace(tzinfo=timezone.utc)
-                elif isinstance(subscription_end_date, firestore.firestore.Timestamp):
+                elif isinstance(subscription_end_date, firestore_v1.types.Timestamp):
                     end_date_aware = subscription_end_date.to_datetime().replace(tzinfo=timezone.utc)
                 
                 if end_date_aware and end_date_aware > datetime.now(timezone.utc):
@@ -587,7 +592,7 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
                 expiration_dt_aware = None
                 if isinstance(reward_expiration_raw, datetime):
                     expiration_dt_aware = reward_expiration_raw.replace(tzinfo=timezone.utc)
-                elif isinstance(reward_expiration_raw, firestore.firestore.Timestamp):
+                elif isinstance(reward_expiration_raw, firestore_v1.types.Timestamp):
                     expiration_dt_aware = reward_expiration_raw.to_datetime().replace(tzinfo=timezone.utc)
                 
                 if expiration_dt_aware and expiration_dt_aware > datetime.now(timezone.utc):
@@ -642,7 +647,7 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
 def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
     db = get_db()
     
-    # 1. Validação de Autenticação e Parâmetros
+    # 1. Validação
     if not request.auth or not request.auth.uid:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Você precisa estar logado para usar o chat.')
     
@@ -651,33 +656,41 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
     user_query = data.get("query")
     chat_history = data.get("history")
     book_abbrev = data.get("bookAbbrev")
-    chapter_number = data.get("chapterNumber")
+    chapter_number_raw = data.get("chapterNumber")
     verses_range_str = data.get("versesRangeStr")
     use_strongs = data.get("useStrongsKnowledge", False)
 
-    if not all([user_query, book_abbrev, chapter_number, verses_range_str]):
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Parâmetros essenciais da seção bíblica estão faltando.")
+    # Conversão de capítulo
+    chapter_number = 0
+    if isinstance(chapter_number_raw, dict) and 'value' in chapter_number_raw:
+        try:
+            chapter_number = int(chapter_number_raw['value'])
+        except (ValueError, TypeError):
+             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Valor de 'chapterNumber' inválido.")
+    elif isinstance(chapter_number_raw, int):
+        chapter_number = chapter_number_raw
+
+    if not all([user_query, book_abbrev, chapter_number > 0, verses_range_str]):
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="Parâmetros essenciais da seção bíblica estão faltando ou são inválidos.")
 
     print(f"Handler chatWithBibleSection chamado por User ID: {user_id} para {book_abbrev} {chapter_number}:{verses_range_str}")
     
     try:
-        # 2. Lógica de Custo e Verificação de Assinatura
+        # 2. Lógica de custo
         user_ref = db.collection('users').document(user_id)
         user_doc = user_ref.get()
 
         if not user_doc.exists:
-             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Dados do usuário não encontrados.")
         
         user_data = user_doc.to_dict()
         subscription_status = user_data.get('subscriptionStatus', 'inactive')
         
-        # Lógica para verificar se a assinatura está ativa
         is_premium = False
         if subscription_status == 'active':
             subscription_end_date = user_data.get('subscriptionEndDate')
-            if subscription_end_date:
-                # Converte para datetime com timezone para comparação segura
-                end_date_aware = subscription_end_date.replace(tzinfo=timezone.utc)
+            if subscription_end_date and isinstance(subscription_end_date, Timestamp):  # ✅ Corrigido
+                end_date_aware = subscription_end_date.to_datetime().replace(tzinfo=timezone.utc)
                 if end_date_aware > datetime.now(timezone.utc):
                     is_premium = True
 
@@ -690,14 +703,13 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
         if not is_premium:
             print(f"Usuário {user_id} não é Premium. Verificando moedas.")
             
-            # --- INÍCIO DA LÓGICA DE CUSTO ATUALIZADA ---
             reward_coins = user_data.get('weeklyRewardCoins', 0)
-            reward_expiration = user_data.get('rewardExpiration') # Pode ser Timestamp
+            reward_expiration = user_data.get('rewardExpiration')
             
             has_valid_reward = False
-            if reward_expiration and isinstance(reward_expiration, firestore.firestore.Timestamp):
-                 if reward_expiration.to_datetime().replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
-                     has_valid_reward = True
+            if reward_expiration and isinstance(reward_expiration, Timestamp):  # ✅ Corrigido
+                if reward_expiration.to_datetime().replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
+                    has_valid_reward = True
 
             if has_valid_reward and reward_coins >= CHAT_COST:
                 print(f"Usando moedas de recompensa. Saldo: {reward_coins}. Custo: {CHAT_COST}")
@@ -716,11 +728,10 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
                 print(f"Deduzindo {CHAT_COST} moedas normais de {user_id}.")
                 new_coin_total = current_coins - CHAT_COST
                 user_ref.update({'userCoins': new_coin_total})
-            # --- FIM DA LÓGICA DE CUSTO ATUALIZADA ---
         else:
             print(f"Usuário {user_id} é Premium. Chat da Bíblia gratuito.")
         
-        # 3. Execução da Lógica Principal do Chat
+        # 3. Execução da lógica principal
         if bible_chat_service is None:
             raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno do servidor (módulo de chat da Bíblia indisponível).")
 
@@ -746,7 +757,8 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
     except Exception as e:
         print(f"Erro inesperado em chatWithBibleSection (main.py): {e}")
         traceback.print_exc()
-        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")   
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message=f"Erro interno ao processar o chat: {str(e)}")
+    
 # --- NOVA CLOUD FUNCTION PARA ATUALIZAR TEMPO DE LEITURA ---
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
@@ -1048,24 +1060,19 @@ def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
         now = datetime.now(timezone.utc)
         expiration_date = now + timedelta(days=7)
         
-        # <<< INÍCIO DA CORREÇÃO >>>
-        # Pega todos os IDs dos usuários do ranking para verificar sua existência
         user_ids_in_ranking = [doc.id for doc in weekly_ranking_docs]
         
-        # Busca todos os documentos correspondentes na coleção 'users' de uma só vez
         users_ref = db.collection('users')
-        users_snapshot = users_ref.where(firestore.firestore.FieldPath.document_id(), 'in', user_ids_in_ranking).get()
+        # ✅ A CORREÇÃO ESTÁ AQUI
+        users_snapshot = users_ref.where(FieldPath.document_id(), 'in', user_ids_in_ranking).get()
         
-        # Cria um conjunto (Set) com os IDs dos usuários que REALMENTE existem
         existing_user_ids = {doc.id for doc in users_snapshot}
         print(f"Verificação de existência concluída. {len(existing_user_ids)} usuários válidos encontrados na coleção 'users'.")
-        # <<< FIM DA CORREÇÃO >>>
 
         for i, progress_doc in enumerate(weekly_ranking_docs):
             rank = i + 1
             user_id = progress_doc.id
 
-            # <<< CORREÇÃO AQUI: Verifica se o usuário existe antes de tentar atualizar >>>
             if user_id in existing_user_ids:
                 user_ref = db.collection('users').document(user_id)
                 
@@ -1079,14 +1086,12 @@ def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
                     })
                     print(f"Recompensa de {reward_amount} moedas preparada para o usuário {user_id} (Rank {rank}).")
             else:
-                # Se o usuário não existe, apenas loga um aviso e continua para o próximo
                 print(f"AVISO: O usuário {user_id} (Rank {rank}) existe em 'userBibleProgress', mas não na coleção 'users'. A atualização foi pulada.")
         
         batch.commit()
         print("Recompensas e posições anteriores ('previousRank') salvas com sucesso para usuários válidos.")
 
-        # --- ETAPA 2: Resetar o tempo de leitura de TODOS os usuários ---
-        # (Esta parte do código já está correta e não precisa de alterações)
+        # --- ETAPA 2: Resetar o tempo de leitura ---
         
         print("Iniciando reset do 'rawReadingTime' e 'rankingScore'...")
         all_users_progress_ref = db.collection('userBibleProgress')
