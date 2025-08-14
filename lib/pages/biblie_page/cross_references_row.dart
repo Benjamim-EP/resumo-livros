@@ -27,12 +27,23 @@ class CrossReferencesRow extends StatelessWidget {
     required this.verse,
   });
 
+  String _reverseFormatReferenceForFetching(String displayRef) {
+    // A verificação é case-insensitive para garantir que funcione sempre.
+    if (displayRef.toLowerCase().startsWith('jó ')) {
+      // Substitui a primeira ocorrência de 'JÓ' (ignorando o caso) por 'Job'.
+      return displayRef.replaceFirst(
+          RegExp(r'^jó', caseSensitive: false), 'Job');
+    }
+    // Se não for 'JÓ', retorna a referência como está.
+    return displayRef;
+  }
+
   // ==========================================================
   // <<< INÍCIO DA MODIFICAÇÃO 1/3: MAPA DE TRADUÇÃO >>>
   // ==========================================================
   // Este mapa corrige as abreviações da fonte de dados para o padrão de exibição do seu app.
   static const Map<String, String> _displayAbbreviationMap = {
-    'job': 'jó',
+    'job': 'job',
     // Adicione outras correções aqui se necessário no futuro. Ex:
     // '1sam': '1Sm',
   };
@@ -113,19 +124,33 @@ class CrossReferencesRow extends StatelessWidget {
                 .map((item) => CrossReference.fromJson(item))
                 .toList();
 
-        const int displayLimit = 5;
+        const int displayLimit = 7; // Voltado para 7 conforme o original
         final bool hasMore = allReferences.length > displayLimit;
         final topReferences = allReferences.take(displayLimit).toList();
 
         List<Widget> referenceWidgets = topReferences.map((ref) {
           final formattedRef = _formatReferenceForDisplay(ref.ref);
-          // Cada referência é um Padding(child: TextButton)
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: TextButton(
+              // ==========================================================
+              // <<< A CORREÇÃO ESTÁ AQUI DENTRO >>>
+              // ==========================================================
               onPressed: () {
-                CrossReferenceService.showVerseInModal(context, formattedRef);
+                // 1. Pega a referência formatada para exibição (ex: "JÓ 1:1")
+                final displayReference = _formatReferenceForDisplay(ref.ref);
+
+                // 2. USA A NOVA FUNÇÃO PARA TRADUZIR DE VOLTA (ex: "Job 1:1")
+                final fetchableReference =
+                    _reverseFormatReferenceForFetching(displayReference);
+
+                // 3. Chama o serviço com a referência corrigida e sem ambiguidade
+                CrossReferenceService.showVerseInModal(
+                    context, fetchableReference);
               },
+              // ==========================================================
+              // <<< FIM DA CORREÇÃO >>>
+              // ==========================================================
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 backgroundColor: theme.colorScheme.surface.withOpacity(0.5),
@@ -135,7 +160,7 @@ class CrossReferencesRow extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
               ),
               child: Text(
-                formattedRef,
+                formattedRef, // A UI continua mostrando "JÓ 1:1"
                 style: TextStyle(
                   fontSize: 12,
                   color: theme.colorScheme.primary,
@@ -146,12 +171,9 @@ class CrossReferencesRow extends StatelessWidget {
         }).toList();
 
         if (hasMore) {
-          // ==========================================================
-          // <<< A CORREÇÃO ESTÁ AQUI >>>
-          // Envolvemos o TextButton em um Padding para consistência.
-          // ==========================================================
           referenceWidgets.add(
             Padding(
+              // Corrigido para adicionar Padding
               padding: const EdgeInsets.only(right: 8.0),
               child: TextButton(
                 onPressed: () =>
