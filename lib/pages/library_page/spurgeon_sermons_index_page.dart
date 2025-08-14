@@ -28,22 +28,43 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class _SermonsViewModel {
   final bool isPremium;
   final SermonSearchState sermonSearchState;
-  final SermonState
-      sermonState; // <<< ADICIONADO: Estado com favoritos e progresso
+  final SermonState sermonState;
 
   _SermonsViewModel({
     required this.isPremium,
     required this.sermonSearchState,
-    required this.sermonState, // <<< ADICIONADO
+    required this.sermonState,
   });
 
   static _SermonsViewModel fromStore(Store<AppState> store) {
-    // ... (sua lógica existente para isPremium pode permanecer aqui)
+    // --- INÍCIO DA LÓGICA CORRIGIDA E COMPLETA ---
+    bool premiumStatus = false;
+
+    // 1. Verifica o estado da assinatura no Redux primeiro (feedback rápido pós-compra)
+    if (store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive) {
+      premiumStatus = true;
+    } else {
+      // 2. Como fallback, verifica a fonte de verdade do Firestore (userDetails)
+      final userDetails = store.state.userState.userDetails;
+      if (userDetails != null) {
+        final statusString = userDetails['subscriptionStatus'] as String?;
+        final endDate =
+            (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+
+        if (statusString == 'active' &&
+            endDate != null &&
+            endDate.isAfter(DateTime.now())) {
+          premiumStatus = true;
+        }
+      }
+    }
+    // --- FIM DA LÓGICA CORRIGIDA ---
+
     return _SermonsViewModel(
-      isPremium: store.state.subscriptionState.status ==
-          SubscriptionStatus.premiumActive,
+      isPremium: premiumStatus, // Usa a variável calculada
       sermonSearchState: store.state.sermonSearchState,
-      sermonState: store.state.sermonState, // <<< ADICIONADO
+      sermonState: store.state.sermonState,
     );
   }
 }
@@ -497,8 +518,10 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
           body: TabBarView(
             controller: _tabController,
             children: [
-              // Cada child corresponde a uma aba
-              _buildExplorarTab(theme, viewModel),
+              // <<< CORREÇÃO AQUI: Lógica condicional para a primeira aba >>>
+              _isSemanticSearchModeActive
+                  ? _buildSemanticSearchUI(theme, viewModel.sermonSearchState)
+                  : _buildExplorarTab(theme, viewModel),
               _buildFavoritosTab(theme, viewModel),
               _buildContinuarLendoTab(theme, viewModel),
             ],
@@ -506,9 +529,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
               final store = StoreProvider.of<AppState>(context, listen: false);
-              final bool isGuest = store.state.userState.isGuestUser;
-
-              if (isGuest) {
+              if (store.state.userState.isGuestUser) {
                 showLoginRequiredDialog(context,
                     featureName: "o chat com Spurgeon AI");
               } else {
@@ -535,62 +556,60 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
     }
     if (_errorPreload != null) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            _errorPreload!,
+          child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(_errorPreload!,
             style: TextStyle(color: theme.colorScheme.error, fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-    if (_displayedSermonsFromPreload.isEmpty) {
-      String message = "Nenhum sermão para exibir.";
-      if (_localTitleSearchTerm.isNotEmpty ||
-          _selectedBookFilterLocal != null) {
-        message = "Nenhum sermão encontrado para os filtros aplicados.";
-      }
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            message,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
+            textAlign: TextAlign.center),
+      ));
     }
 
-    return ListView.builder(
-      controller: _preloadScrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      itemCount:
-          _displayedSermonsFromPreload.length + (_isLoadingMorePreload ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _displayedSermonsFromPreload.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+    return Column(
+      children: [
+        // A barra de filtros é o primeiro widget da coluna
+        _buildFilterBarForPreload(theme, viewModel.isPremium),
 
-        final sermonItem = _displayedSermonsFromPreload[index];
-        final progressData =
-            viewModel.sermonState.sermonProgress[sermonItem.generatedId];
+        // O Expanded garante que a lista ocupe o resto do espaço
+        Expanded(
+          child: _displayedSermonsFromPreload.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      "Nenhum sermão encontrado para os filtros aplicados.",
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  controller: _preloadScrollController,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 4.0),
+                  itemCount: _displayedSermonsFromPreload.length +
+                      (_isLoadingMorePreload ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _displayedSermonsFromPreload.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final sermonItem = _displayedSermonsFromPreload[index];
+                    final progressData = viewModel
+                        .sermonState.sermonProgress[sermonItem.generatedId];
 
-        return SermonCard(
-          title: sermonItem.title,
-          reference:
-              "${_bibleBooksMap?[sermonItem.bookAbbrev]?['nome'] ?? ''} ${sermonItem.chapterNum}",
-          progress: progressData?.progressPercent ?? 0.0,
-          onTap: () =>
-              _navigateToSermonDetail(sermonItem.generatedId, sermonItem.title),
-        );
-      },
+                    return SermonCard(
+                      title: sermonItem.title,
+                      reference:
+                          "${_bibleBooksMap?[sermonItem.bookAbbrev]?['nome'] ?? ''} ${sermonItem.chapterNum}",
+                      progress: progressData?.progressPercent ?? 0.0,
+                      onTap: () => _navigateToSermonDetail(
+                          sermonItem.generatedId, sermonItem.title),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
@@ -706,6 +725,95 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
   Widget _buildFilterBarForPreload(ThemeData theme, bool isPremium) {
     final Color premiumFeatureColor = Colors.amber.shade700;
 
+    final Widget filterBarContent = Row(
+      children: <Widget>[
+        if (!isPremium)
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Icon(Icons.lock,
+                size: 18, color: premiumFeatureColor.withOpacity(0.7)),
+          ),
+        Expanded(
+          flex: 2,
+          child: UtilsBiblePage.buildBookDropdown(
+            context: context,
+            selectedBook: _selectedBookFilterLocal,
+            booksMap: _bibleBooksMap,
+            // ==========================================================
+            // <<< CORREÇÃO 1 AQUI >>>
+            // ==========================================================
+            onChanged: (String? newValue) {
+              if (!isPremium) return; // Guarda de segurança
+              setState(() {
+                _selectedBookFilterLocal = newValue;
+                _selectedChapterFilterLocal = null;
+                _applyLocalFiltersAndDisplayPreloadedSermons();
+              });
+            },
+            // ==========================================================
+            // <<< FIM DA CORREÇÃO 1 >>>
+            // ==========================================================
+            backgroundColor:
+                (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
+                    .withOpacity(0.4),
+            textColor: isPremium
+                ? theme.textTheme.bodySmall?.color
+                : Colors.grey.withOpacity(0.5),
+            iconColor: isPremium
+                ? theme.iconTheme.color?.withOpacity(0.6)
+                : Colors.grey.withOpacity(0.5),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 1,
+          child: UtilsBiblePage.buildChapterDropdown(
+            context: context,
+            selectedChapter: _selectedChapterFilterLocal,
+            booksMap: _bibleBooksMap,
+            selectedBook: _selectedBookFilterLocal,
+            // ==========================================================
+            // <<< CORREÇÃO 2 AQUI >>>
+            // ==========================================================
+            onChanged: (int? newValue) {
+              if (!isPremium) return; // Guarda de segurança
+              setState(() {
+                _selectedChapterFilterLocal = newValue;
+                _applyLocalFiltersAndDisplayPreloadedSermons();
+              });
+            },
+            // ==========================================================
+            // <<< FIM DA CORREÇÃO 2 >>>
+            // ==========================================================
+            backgroundColor:
+                (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
+                    .withOpacity(0.4),
+            textColor: isPremium
+                ? theme.textTheme.bodySmall?.color
+                : Colors.grey.withOpacity(0.5),
+            iconColor: isPremium
+                ? theme.iconTheme.color?.withOpacity(0.6)
+                : Colors.grey.withOpacity(0.5),
+          ),
+        ),
+        IconButton(
+          icon: Icon(Icons.filter_list_off_outlined,
+              color: theme.iconTheme.color?.withOpacity(0.6), size: 22),
+          tooltip: "Limpar Filtros Livro/Cap.",
+          onPressed: () {
+            _localTitleSearchController.clear();
+            setState(() {
+              _localTitleSearchTerm = "";
+              _selectedBookFilterLocal = null;
+              _selectedChapterFilterLocal = null;
+              _applyLocalFiltersAndDisplayPreloadedSermons();
+            });
+          },
+          splashRadius: 20,
+        ),
+      ],
+    );
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
       decoration: BoxDecoration(
@@ -714,90 +822,14 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
             bottom: BorderSide(
                 color: theme.dividerColor.withOpacity(0.2), width: 1)),
       ),
-      child: AbsorbPointer(
-        absorbing: !isPremium,
-        child: GestureDetector(
-          onTap: () {
-            if (!isPremium) _showPremiumFilterDialog();
-          },
-          child: Row(
-            children: <Widget>[
-              if (!isPremium)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Icon(Icons.lock,
-                      size: 18, color: premiumFeatureColor.withOpacity(0.7)),
-                ),
-              Expanded(
-                flex: 2,
-                child: UtilsBiblePage.buildBookDropdown(
-                  context: context,
-                  selectedBook: _selectedBookFilterLocal,
-                  booksMap: _bibleBooksMap,
-                  onChanged: (String? newValue) {
-                    if (!isPremium) return;
-                    setState(() {
-                      _selectedBookFilterLocal = newValue;
-                      _selectedChapterFilterLocal = null;
-                      _applyLocalFiltersAndDisplayPreloadedSermons();
-                    });
-                  },
-                  backgroundColor:
-                      (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
-                          .withOpacity(0.4),
-                  textColor: isPremium
-                      ? theme.textTheme.bodySmall?.color
-                      : Colors.grey.withOpacity(0.5),
-                  iconColor: isPremium
-                      ? theme.iconTheme.color?.withOpacity(0.6)
-                      : Colors.grey.withOpacity(0.5),
-                ),
+      child: isPremium
+          ? filterBarContent
+          : GestureDetector(
+              onTap: _showPremiumFilterDialog,
+              child: AbsorbPointer(
+                child: filterBarContent,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 1,
-                child: UtilsBiblePage.buildChapterDropdown(
-                  context: context,
-                  selectedChapter: _selectedChapterFilterLocal,
-                  booksMap: _bibleBooksMap,
-                  selectedBook: _selectedBookFilterLocal,
-                  onChanged: (int? newValue) {
-                    if (!isPremium) return;
-                    setState(() {
-                      _selectedChapterFilterLocal = newValue;
-                      _applyLocalFiltersAndDisplayPreloadedSermons();
-                    });
-                  },
-                  backgroundColor:
-                      (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
-                          .withOpacity(0.4),
-                  textColor: isPremium
-                      ? theme.textTheme.bodySmall?.color
-                      : Colors.grey.withOpacity(0.5),
-                  iconColor: isPremium
-                      ? theme.iconTheme.color?.withOpacity(0.6)
-                      : Colors.grey.withOpacity(0.5),
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.filter_list_off_outlined,
-                    color: theme.iconTheme.color?.withOpacity(0.6), size: 22),
-                tooltip: "Limpar Filtros Livro/Cap.",
-                onPressed: () {
-                  _localTitleSearchController.clear();
-                  setState(() {
-                    _localTitleSearchTerm = "";
-                    _selectedBookFilterLocal = null;
-                    _selectedChapterFilterLocal = null;
-                    _applyLocalFiltersAndDisplayPreloadedSermons();
-                  });
-                },
-                splashRadius: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
