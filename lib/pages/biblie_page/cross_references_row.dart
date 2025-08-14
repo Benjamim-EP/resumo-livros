@@ -1,9 +1,10 @@
 // lib/pages/biblie_page/cross_references_row.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/redux/reducers/cross_reference_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/services/cross_reference_service.dart'; // Apenas para o modal
+import 'package:septima_biblia/services/cross_reference_service.dart';
 
 // Modelo para um resultado de referência
 class CrossReference {
@@ -26,7 +27,20 @@ class CrossReferencesRow extends StatelessWidget {
     required this.verse,
   });
 
-  /// Formata 'ex.20.11' para 'Ex 20:11' e lida com ranges.
+  // ==========================================================
+  // <<< INÍCIO DA MODIFICAÇÃO 1/3: MAPA DE TRADUÇÃO >>>
+  // ==========================================================
+  // Este mapa corrige as abreviações da fonte de dados para o padrão de exibição do seu app.
+  static const Map<String, String> _displayAbbreviationMap = {
+    'job': 'jó',
+    // Adicione outras correções aqui se necessário no futuro. Ex:
+    // '1sam': '1Sm',
+  };
+  // ==========================================================
+  // <<< FIM DA MODIFICAÇÃO 1/3 >>>
+  // ==========================================================
+
+  /// Formata 'ex.20.11' para 'EX 20:11' e lida com ranges.
   String _formatReferenceForDisplay(String rawRef) {
     // Lida com ranges como "jo.1.1-jo.1.3"
     if (rawRef.contains('-')) {
@@ -34,7 +48,6 @@ class CrossReferencesRow extends StatelessWidget {
       if (parts.length == 2) {
         final start = _formatSingleReference(parts[0]);
         final end = _formatSingleReference(parts[1]);
-        // Se o livro e capítulo forem os mesmos, formata como "João 1:1-3"
         final startParts = start.split(' ');
         final endParts = end.split(' ');
         if (startParts.length > 1 &&
@@ -54,16 +67,34 @@ class CrossReferencesRow extends StatelessWidget {
     return _formatSingleReference(rawRef);
   }
 
+  // ==========================================================
+  // <<< INÍCIO DA MODIFICAÇÃO 2/3: FUNÇÃO DE FORMATAÇÃO ATUALIZADA >>>
+  // ==========================================================
   String _formatSingleReference(String rawRef) {
     final parts = rawRef.split('.');
     if (parts.length == 3) {
-      final book = parts[0].toUpperCase();
+      final rawBookAbbrev = parts[0]; // Ex: 'job'
       final chapter = parts[1];
       final verse = parts[2];
-      return '$book $chapter:$verse';
+
+      // A MÁGICA ACONTECE AQUI:
+      // 1. Procura 'job' no nosso mapa de tradução.
+      // 2. Se encontrar, usa o valor ('jó').
+      // 3. Se não encontrar, usa o valor original (rawBookAbbrev).
+      // 4. Converte o resultado para maiúsculas.
+      final displayAbbrev =
+          (_displayAbbreviationMap[rawBookAbbrev] ?? rawBookAbbrev)
+              .toUpperCase();
+
+      return '$displayAbbrev $chapter:$verse';
     }
     return rawRef; // Fallback
   }
+  // ==========================================================
+  // <<< FIM DA MODIFICAÇÃO 2/3 >>>
+  // ==========================================================
+
+  // (O resto do arquivo permanece o mesmo, incluindo o método build e o modal)
 
   @override
   Widget build(BuildContext context) {
@@ -77,50 +108,145 @@ class CrossReferencesRow extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final List<CrossReference> references =
+        final List<CrossReference> allReferences =
             (state.data[key] as List<dynamic>)
                 .map((item) => CrossReference.fromJson(item))
                 .toList();
 
-        final topReferences = references.take(21).toList();
+        const int displayLimit = 5;
+        final bool hasMore = allReferences.length > displayLimit;
+        final topReferences = allReferences.take(displayLimit).toList();
+
+        List<Widget> referenceWidgets = topReferences.map((ref) {
+          final formattedRef = _formatReferenceForDisplay(ref.ref);
+          // Cada referência é um Padding(child: TextButton)
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: TextButton(
+              onPressed: () {
+                CrossReferenceService.showVerseInModal(context, formattedRef);
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                backgroundColor: theme.colorScheme.surface.withOpacity(0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(
+                formattedRef,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          );
+        }).toList();
+
+        if (hasMore) {
+          // ==========================================================
+          // <<< A CORREÇÃO ESTÁ AQUI >>>
+          // Envolvemos o TextButton em um Padding para consistência.
+          // ==========================================================
+          referenceWidgets.add(
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: TextButton(
+                onPressed: () =>
+                    _showAllReferencesModal(context, allReferences),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: Text(
+                  "[+${allReferences.length - displayLimit}]",
+                  style:
+                      TextStyle(fontSize: 12, color: theme.colorScheme.primary),
+                ),
+              ),
+            ),
+          );
+        }
 
         return SizedBox(
-          height: 30, // Altura fixa para a linha
-          child: ListView.builder(
+          height: 30,
+          child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(left: 20.0),
-            itemCount: topReferences.length,
-            itemBuilder: (context, index) {
-              final ref = topReferences[index];
-              final formattedRef = _formatReferenceForDisplay(ref.ref);
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: TextButton(
-                  onPressed: () {
-                    // Reutiliza o serviço antigo apenas para a lógica de UI do modal
-                    CrossReferenceService.showVerseInModal(
-                        context, formattedRef);
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    backgroundColor: theme.colorScheme.surface.withOpacity(0.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: Text(
-                    formattedRef,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              );
-            },
+            children: referenceWidgets,
           ),
+        );
+      },
+    );
+  }
+
+  // O método _showAllReferencesModal permanece o mesmo
+  void _showAllReferencesModal(
+      BuildContext context, List<CrossReference> allReferences) {
+    // ... (seu código para o modal continua aqui, sem alterações)
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (modalContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).dividerColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    "Todas as Referências",
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const Divider(height: 24),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: allReferences.length,
+                      itemBuilder: (ctx, index) {
+                        final ref = allReferences[index];
+                        final formattedRef =
+                            _formatReferenceForDisplay(ref.ref);
+                        return ListTile(
+                          title: Text(formattedRef),
+                          trailing: Text("Votos: ${ref.votes}",
+                              style: Theme.of(context).textTheme.bodySmall),
+                          onTap: () {
+                            Navigator.pop(modalContext);
+                            CrossReferenceService.showVerseInModal(
+                                context, formattedRef);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
