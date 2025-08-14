@@ -1,5 +1,6 @@
 // lib/pages/biblie_page/bible_navigation_controls.dart
 import 'package:flutter/material.dart';
+import 'package:septima_biblia/pages/biblie_page/book_selection_modal.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart'; // Importa o Utils que tem os dropdowns
 
 class BibleNavigationControls extends StatelessWidget {
@@ -26,10 +27,59 @@ class BibleNavigationControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // Widget customizado para o botão de seleção de livro
+    Widget bookSelectorButton = Expanded(
+      flex: 3,
+      child: Material(
+        color: theme.cardColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (ctx) => BookSelectionModal(
+                booksMap: booksMap!,
+                currentlySelectedBook: selectedBook,
+                onBookSelected: (newBookAbbrev) {
+                  // O callback onBookChanged já está aqui
+                  onBookChanged(newBookAbbrev);
+                },
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    booksMap?[selectedBook]?['nome'] ?? 'Selecionar Livro',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
       child: Row(
         children: [
+          // Botão de Capítulo Anterior
           IconButton(
             icon: Icon(Icons.chevron_left,
                 color: theme.colorScheme.onSurface.withOpacity(0.7), size: 32),
@@ -37,19 +87,13 @@ class BibleNavigationControls extends StatelessWidget {
             tooltip: "Capítulo Anterior",
             splashRadius: 24,
           ),
-          Expanded(
-            flex: 3,
-            child: UtilsBiblePage.buildBookDropdown(
-              context: context,
-              selectedBook: selectedBook,
-              booksMap: booksMap,
-              onChanged: onBookChanged,
-              iconColor: theme.colorScheme.onSurface.withOpacity(0.7),
-              textColor: theme.colorScheme.onSurface,
-              backgroundColor: theme.cardColor.withOpacity(0.15),
-            ),
-          ),
+
+          // O novo botão seletor de livro
+          bookSelectorButton,
+
           const SizedBox(width: 8),
+
+          // O Dropdown de Capítulo (permanece o mesmo)
           if (selectedBook != null)
             Expanded(
               flex: 2,
@@ -64,6 +108,8 @@ class BibleNavigationControls extends StatelessWidget {
                 backgroundColor: theme.cardColor.withOpacity(0.15),
               ),
             ),
+
+          // Botão de Próximo Capítulo
           IconButton(
             icon: Icon(Icons.chevron_right,
                 color: theme.colorScheme.onSurface.withOpacity(0.7), size: 32),
