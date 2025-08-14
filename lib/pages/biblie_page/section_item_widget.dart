@@ -5,6 +5,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_chat/section_chat_page.dart';
+import 'package:septima_biblia/pages/biblie_page/cross_references_row.dart';
 import 'package:septima_biblia/pages/biblie_page/summary_display_modal.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
@@ -13,6 +14,7 @@ import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
+import 'package:septima_biblia/services/cross_reference_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
@@ -479,7 +481,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                               _handlePlayRequest(TtsContentType.versesOnly),
                           splashRadius: 24,
                         ),
-                        // ✅ 6. Substitui o botão antigo pelo nosso novo botão dinâmico
                         _buildSummaryButton(theme),
                         const SizedBox(width: 8),
                         if (_isLoadingCommentary)
@@ -559,34 +560,47 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     }
 
                     if (mainTranslationVerseDataItem != null) {
-                      return BiblePageWidgets.buildVerseItem(
-                        key: ValueKey<String>(
-                            '${widget.bookAbbrev}_${widget.chapterNumber}_${verseNumber}'),
-                        verseNumber: verseNumber,
-                        verseData: mainTranslationVerseDataItem,
-                        selectedBook: widget.bookAbbrev,
-                        selectedChapter: widget.chapterNumber,
-                        context: context,
-                        userHighlights: widget.userHighlights,
-                        userNotes: widget.userNotes,
-                        allUserTags: allUserTags,
-                        isHebrew: widget.isHebrew,
-                        isGreekInterlinear: widget.isGreekInterlinear,
-                        showHebrewInterlinear:
-                            widget.showHebrewInterlinear && !widget.isHebrew,
-                        showGreekInterlinear: widget.showGreekInterlinear &&
-                            !widget.isGreekInterlinear,
-                        hebrewVerseData: hebrewDataForThisVerse,
-                        greekVerseData: greekDataForThisVerse,
-                        fontSizeMultiplier: widget.fontSizeMultiplier,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          BiblePageWidgets.buildVerseItem(
+                            key: ValueKey<String>(
+                                '${widget.bookAbbrev}_${widget.chapterNumber}_${verseNumber}'),
+                            verseNumber: verseNumber,
+                            verseData: mainTranslationVerseDataItem,
+                            selectedBook: widget.bookAbbrev,
+                            selectedChapter: widget.chapterNumber,
+                            context: context,
+                            userHighlights: widget.userHighlights,
+                            userNotes: widget.userNotes,
+                            allUserTags: allUserTags,
+                            isHebrew: widget.isHebrew,
+                            isGreekInterlinear: widget.isGreekInterlinear,
+                            showHebrewInterlinear:
+                                widget.showHebrewInterlinear &&
+                                    !widget.isHebrew,
+                            showGreekInterlinear: widget.showGreekInterlinear &&
+                                !widget.isGreekInterlinear,
+                            hebrewVerseData: hebrewDataForThisVerse,
+                            greekVerseData: greekDataForThisVerse,
+                            fontSizeMultiplier: widget.fontSizeMultiplier,
+                          ),
+                          // AQUI ESTÁ A ÚNICA MUDANÇA REAL NO BUILD DO VERSÍCULO
+                          CrossReferencesRow(
+                            bookAbbrev: widget.bookAbbrev,
+                            chapter: widget.chapterNumber,
+                            verse: verseNumber,
+                          ),
+                        ],
                       );
                     } else {
                       return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Text(
-                              'Erro: Verso $verseNumber não encontrado.',
-                              style:
-                                  TextStyle(color: theme.colorScheme.error)));
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Text(
+                          'Erro: Verso $verseNumber não encontrado.',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      );
                     }
                   },
                 ),
@@ -635,15 +649,16 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                           }
                         },
                         borderRadius: BorderRadius.circular(20),
-                        splashColor: theme.colorScheme.primary,
-                        highlightColor: theme.primaryColor,
+                        splashColor: theme.colorScheme.primary.withOpacity(0.2),
+                        highlightColor:
+                            theme.colorScheme.primary.withOpacity(0.1),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: theme.primaryColor,
+                              color: theme.colorScheme.primary,
                               width: 1.0,
                             ),
                           ),
@@ -651,12 +666,12 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.chat_bubble_outline_rounded,
-                                  size: 18, color: theme.primaryColor),
+                                  size: 18, color: theme.colorScheme.primary),
                               const SizedBox(width: 6),
                               Text(
                                 "Chat",
                                 style: TextStyle(
-                                  color: theme.primaryColor,
+                                  color: theme.colorScheme.primary,
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                 ),

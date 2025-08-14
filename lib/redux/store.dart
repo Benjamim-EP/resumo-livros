@@ -3,6 +3,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/middleware/book_club_middleware.dart';
+import 'package:septima_biblia/redux/middleware/cross_reference_middleware.dart';
+import 'package:septima_biblia/redux/reducers/cross_reference_reducer.dart';
 
 // Importa a interface e as implementações do serviço de pagamento
 import 'package:septima_biblia/services/payment_service.dart';
@@ -49,6 +51,7 @@ class AppState {
   final SubscriptionState subscriptionState;
   final SermonState sermonState;
   final CommunitySearchState communitySearchState;
+  final CrossReferenceState crossReferenceState;
 
   AppState({
     required this.booksState,
@@ -64,6 +67,7 @@ class AppState {
     required this.bookSearchState,
     required this.sermonState,
     required this.communitySearchState,
+    required this.crossReferenceState,
   });
 
   // copyWith (sem alterações)
@@ -81,6 +85,7 @@ class AppState {
     SubscriptionState? subscriptionState,
     MetadataState? metadataState,
     CommunitySearchState? communitySearchState,
+    CrossReferenceState? crossReferenceState,
   }) {
     return AppState(
         booksState: booksState ?? this.booksState,
@@ -95,8 +100,8 @@ class AppState {
         sermonSearchState: sermonSearchState ?? this.sermonSearchState,
         bookSearchState: bookSearchState ?? this.bookSearchState,
         sermonState: sermonState ?? this.sermonState,
-        communitySearchState:
-            communitySearchState ?? this.communitySearchState);
+        communitySearchState: communitySearchState ?? this.communitySearchState,
+        crossReferenceState: crossReferenceState ?? this.crossReferenceState);
   }
 }
 
@@ -116,6 +121,8 @@ AppState appReducer(AppState state, dynamic action) {
     sermonState: sermonReducer(state.sermonState, action),
     communitySearchState:
         communitySearchReducer(state.communitySearchState, action),
+    crossReferenceState:
+        crossReferenceReducer(state.crossReferenceState, action),
   );
 }
 
@@ -143,6 +150,7 @@ List<Middleware<AppState>> createAppMiddleware({
     ...createSermonDataMiddleware(),
     ...createCommunitySearchMiddleware(),
     ...createBookClubMiddleware(),
+    ...createCrossReferenceMiddleware(),
   ];
 
   if (useFakePayment) {
@@ -204,6 +212,7 @@ Store<AppState> createStore() {
       bookSearchState: BookSearchState(),
       sermonState: SermonState(),
       communitySearchState: CommunitySearchState(),
+      crossReferenceState: CrossReferenceState(),
     ),
     middleware: createAppMiddleware(
       paymentService: paymentService,

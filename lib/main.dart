@@ -42,6 +42,7 @@ void main() async {
   // A variável `store` importada de `store.dart` já está pronta para uso.
   store.dispatch(LoadSavedThemeAction());
   store.dispatch(LoadPendingBibleProgressAction());
+  store.dispatch(LoadCrossReferencesAction());
 
   // Inicia a aplicação Flutter.
   runApp(const MyApp());

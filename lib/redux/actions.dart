@@ -805,3 +805,15 @@ class ToggleBookClubReplyLikeAction {
     required this.isLiked,
   });
 }
+
+class LoadCrossReferencesAction {}
+
+class CrossReferencesLoadedAction {
+  final Map<String, dynamic> data;
+  CrossReferencesLoadedAction(this.data);
+}
+
+class CrossReferencesFailedAction {
+  final String error;
+  CrossReferencesFailedAction(this.error);
+}
