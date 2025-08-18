@@ -1056,24 +1056,46 @@ def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
 
         print(f"Encontrados {len(weekly_ranking_docs)} usuários no ranking para processamento.")
         
+        user_ids_in_ranking = [doc.id for doc in weekly_ranking_docs]
+        users_ref = db.collection('users')
+        
+        # =================================================================
+        # <<< INÍCIO DA CORREÇÃO: Lógica de Chunking >>>
+        # =================================================================
+        
+        # Dicionário para armazenar os documentos de usuário encontrados
+        user_docs_map = {}
+        chunk_size = 30 # O limite do Firestore
+        
+        print(f"Buscando detalhes de {len(user_ids_in_ranking)} usuários em lotes de {chunk_size}...")
+        
+        # Itera sobre a lista de IDs em pedaços de 30
+        for i in range(0, len(user_ids_in_ranking), chunk_size):
+            chunk_of_ids = user_ids_in_ranking[i:i + chunk_size]
+            
+            # Executa a consulta 'whereIn' apenas para o pedaço atual
+            chunk_query = users_ref.where(FieldPath.document_id(), 'in', chunk_of_ids).stream()
+            
+            # Adiciona os documentos encontrados ao nosso mapa
+            for user_doc in chunk_query:
+                user_docs_map[user_doc.id] = user_doc
+        
+        print(f"Verificação de existência concluída. {len(user_docs_map)} usuários válidos encontrados na coleção 'users'.")
+        
+        # =================================================================
+        # <<< FIM DA CORREÇÃO >>>
+        # =================================================================
+
         batch = db.batch()
         now = datetime.now(timezone.utc)
         expiration_date = now + timedelta(days=7)
-        
-        user_ids_in_ranking = [doc.id for doc in weekly_ranking_docs]
-        
-        users_ref = db.collection('users')
-        # ✅ A CORREÇÃO ESTÁ AQUI
-        users_snapshot = users_ref.where(FieldPath.document_id(), 'in', user_ids_in_ranking).get()
-        
-        existing_user_ids = {doc.id for doc in users_snapshot}
-        print(f"Verificação de existência concluída. {len(existing_user_ids)} usuários válidos encontrados na coleção 'users'.")
 
         for i, progress_doc in enumerate(weekly_ranking_docs):
             rank = i + 1
             user_id = progress_doc.id
 
-            if user_id in existing_user_ids:
+            # Agora, em vez de verificar um set, verificamos se o ID está no nosso mapa
+            if user_id in user_docs_map:
                 user_ref = db.collection('users').document(user_id)
                 
                 batch.update(user_ref, {'previousRank': rank})
@@ -1091,7 +1113,7 @@ def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
         batch.commit()
         print("Recompensas e posições anteriores ('previousRank') salvas com sucesso para usuários válidos.")
 
-        # --- ETAPA 2: Resetar o tempo de leitura ---
+        # --- ETAPA 2: Resetar o tempo de leitura (sem alterações) ---
         
         print("Iniciando reset do 'rawReadingTime' e 'rankingScore'...")
         all_users_progress_ref = db.collection('userBibleProgress')
