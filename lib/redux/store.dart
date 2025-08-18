@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/middleware/book_club_middleware.dart';
 import 'package:septima_biblia/redux/middleware/cross_reference_middleware.dart';
+import 'package:septima_biblia/redux/middleware/library_reference_middleware.dart';
 import 'package:septima_biblia/redux/reducers/cross_reference_reducer.dart';
+import 'package:septima_biblia/redux/reducers/library_reference_reducer.dart';
 
 // Importa a interface e as implementações do serviço de pagamento
 import 'package:septima_biblia/services/payment_service.dart';
@@ -52,6 +54,7 @@ class AppState {
   final SermonState sermonState;
   final CommunitySearchState communitySearchState;
   final CrossReferenceState crossReferenceState;
+  final LibraryReferenceState libraryReferenceState;
 
   AppState({
     required this.booksState,
@@ -68,6 +71,7 @@ class AppState {
     required this.sermonState,
     required this.communitySearchState,
     required this.crossReferenceState,
+    required this.libraryReferenceState,
   });
 
   // copyWith (sem alterações)
@@ -86,22 +90,26 @@ class AppState {
     MetadataState? metadataState,
     CommunitySearchState? communitySearchState,
     CrossReferenceState? crossReferenceState,
+    LibraryReferenceState? libraryReferenceState,
   }) {
     return AppState(
-        booksState: booksState ?? this.booksState,
-        userState: userState ?? this.userState,
-        authorState: authorState ?? this.authorState,
-        topicState: topicState ?? this.topicState,
-        chatState: chatState ?? this.chatState,
-        themeState: themeState ?? this.themeState,
-        bibleSearchState: bibleSearchState ?? this.bibleSearchState,
-        metadataState: metadataState ?? this.metadataState,
-        subscriptionState: subscriptionState ?? this.subscriptionState,
-        sermonSearchState: sermonSearchState ?? this.sermonSearchState,
-        bookSearchState: bookSearchState ?? this.bookSearchState,
-        sermonState: sermonState ?? this.sermonState,
-        communitySearchState: communitySearchState ?? this.communitySearchState,
-        crossReferenceState: crossReferenceState ?? this.crossReferenceState);
+      booksState: booksState ?? this.booksState,
+      userState: userState ?? this.userState,
+      authorState: authorState ?? this.authorState,
+      topicState: topicState ?? this.topicState,
+      chatState: chatState ?? this.chatState,
+      themeState: themeState ?? this.themeState,
+      bibleSearchState: bibleSearchState ?? this.bibleSearchState,
+      metadataState: metadataState ?? this.metadataState,
+      subscriptionState: subscriptionState ?? this.subscriptionState,
+      sermonSearchState: sermonSearchState ?? this.sermonSearchState,
+      bookSearchState: bookSearchState ?? this.bookSearchState,
+      sermonState: sermonState ?? this.sermonState,
+      communitySearchState: communitySearchState ?? this.communitySearchState,
+      crossReferenceState: crossReferenceState ?? this.crossReferenceState,
+      libraryReferenceState:
+          libraryReferenceState ?? this.libraryReferenceState,
+    );
   }
 }
 
@@ -123,6 +131,8 @@ AppState appReducer(AppState state, dynamic action) {
         communitySearchReducer(state.communitySearchState, action),
     crossReferenceState:
         crossReferenceReducer(state.crossReferenceState, action),
+    libraryReferenceState:
+        libraryReferenceReducer(state.libraryReferenceState, action),
   );
 }
 
@@ -151,6 +161,7 @@ List<Middleware<AppState>> createAppMiddleware({
     ...createCommunitySearchMiddleware(),
     ...createBookClubMiddleware(),
     ...createCrossReferenceMiddleware(),
+    ...createLibraryReferenceMiddleware(),
   ];
 
   if (useFakePayment) {
@@ -213,6 +224,7 @@ Store<AppState> createStore() {
       sermonState: SermonState(),
       communitySearchState: CommunitySearchState(),
       crossReferenceState: CrossReferenceState(),
+      libraryReferenceState: LibraryReferenceState(),
     ),
     middleware: createAppMiddleware(
       paymentService: paymentService,

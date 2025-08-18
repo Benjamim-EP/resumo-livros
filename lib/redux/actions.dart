@@ -817,3 +817,20 @@ class CrossReferencesFailedAction {
   final String error;
   CrossReferencesFailedAction(this.error);
 }
+
+class LoadCrossReferencesForSectionAction {
+  final String sectionId;
+  LoadCrossReferencesForSectionAction(this.sectionId);
+}
+
+class CrossReferencesForSectionLoadedAction {
+  final String sectionId;
+  final List<Map<String, dynamic>> recommendations;
+  CrossReferencesForSectionLoadedAction(this.sectionId, this.recommendations);
+}
+
+class CrossReferencesForSectionFailedAction {
+  final String sectionId;
+  final String error;
+  CrossReferencesForSectionFailedAction(this.sectionId, this.error);
+}

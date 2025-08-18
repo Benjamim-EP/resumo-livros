@@ -14,6 +14,7 @@ import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/store.dart'; // Apenas o import do store
 import 'package:septima_biblia/services/auth_check.dart';
 import 'package:septima_biblia/services/language_provider.dart';
+import 'package:septima_biblia/services/library_content_service.dart';
 // REMOVA O IMPORT DO PAYMENT SERVICE, NÃO É MAIS NECESSÁRIO AQUI
 // import 'package:septima_biblia/services/payment_service.dart';
 import './app_initialization.dart';
@@ -38,6 +39,7 @@ void main() async {
   await initializeDateFormatting('pt_BR');
   await AppInitialization.init();
   FirebaseInAppMessaging.instance.setMessagesSuppressed(false);
+  await LibraryContentService.instance.loadContent();
 
   // A variável `store` importada de `store.dart` já está pronta para uso.
   store.dispatch(LoadSavedThemeAction());

@@ -2,7 +2,8 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:septima_biblia/redux/reducers.dart'; // Para formatar datas
+import 'package:septima_biblia/redux/reducers.dart';
+import 'package:septima_biblia/redux/reducers/library_reference_reducer.dart'; // Para formatar datas
 
 class FirestoreService {
   final FirebaseFirestore _db;
@@ -1809,5 +1810,56 @@ class FirestoreService {
       print("FirestoreService: Erro ao remover promessa do diário: $e");
       rethrow;
     }
+  }
+
+  Future<Map<String, List<LibraryReference>>> fetchLibraryReferencesForSections(
+      List<String> sectionIds) async {
+    if (sectionIds.isEmpty) {
+      print(
+          "FirestoreService: Nenhum ID de seção fornecido para buscar referências da biblioteca.");
+      return {};
+    }
+
+    final Map<String, List<LibraryReference>> results = {};
+    // O Firestore tem um limite de 30 itens para a cláusula 'whereIn'
+    const chunkSize = 30;
+
+    // Processa os IDs em lotes para respeitar o limite
+    for (var i = 0; i < sectionIds.length; i += chunkSize) {
+      final chunk = sectionIds.sublist(
+          i,
+          i + chunkSize > sectionIds.length
+              ? sectionIds.length
+              : i + chunkSize);
+
+      try {
+        print(
+            "FirestoreService: Buscando referências para o lote de seções: $chunk");
+        final querySnapshot = await _db
+            .collection(
+                'cross_references_biblioteca_cursos') // <<< NOME CORRETO DA SUA COLEÇÃO
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (var doc in querySnapshot.docs) {
+          final recommendationsRaw =
+              doc.data()['recommendations'] as List<dynamic>? ?? [];
+          final recommendations = recommendationsRaw
+              .map((item) =>
+                  LibraryReference.fromJson(item as Map<String, dynamic>))
+              .toList();
+          results[doc.id] = recommendations;
+        }
+        print(
+            "FirestoreService: Lote processado com ${querySnapshot.docs.length} resultados.");
+      } catch (e) {
+        print(
+            "FirestoreService: ERRO ao buscar lote de referências da biblioteca: $e");
+        // Continua para o próximo lote em vez de falhar completamente
+      }
+    }
+    print(
+        "FirestoreService: Busca de referências da biblioteca concluída. Total de seções encontradas: ${results.length}");
+    return results;
   }
 }

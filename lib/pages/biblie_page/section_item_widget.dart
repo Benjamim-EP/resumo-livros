@@ -6,34 +6,46 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_chat/section_chat_page.dart';
 import 'package:septima_biblia/pages/biblie_page/cross_references_row.dart';
+import 'package:septima_biblia/pages/biblie_page/recommended_resources_row.dart';
 import 'package:septima_biblia/pages/biblie_page/summary_display_modal.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/reducers/library_reference_reducer.dart'; // <<< NOVO IMPORT
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
-import 'package:septima_biblia/services/cross_reference_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ViewModel para conectar o SectionItemWidget aos dados do Redux
+// ViewModel (sem alterações)
 class _SectionItemViewModel {
   final List<String> allUserTags;
   final bool isPremium;
+  // <<< NOVO CAMPO NO VIEWMODEL >>>
+  final List<LibraryReference> libraryReferences;
 
-  _SectionItemViewModel({required this.allUserTags, required this.isPremium});
+  _SectionItemViewModel({
+    required this.allUserTags,
+    required this.isPremium,
+    required this.libraryReferences,
+  });
 
-  static _SectionItemViewModel fromStore(Store<AppState> store) {
+  static _SectionItemViewModel fromStore(
+      Store<AppState> store, String sectionId) {
     bool premiumStatus = store.state.subscriptionState.status ==
         SubscriptionStatus.premiumActive;
     return _SectionItemViewModel(
       allUserTags: store.state.userState.allUserTags,
       isPremium: premiumStatus,
+      // <<< BUSCA AS REFERÊNCIAS ESPECÍFICAS PARA ESTA SEÇÃO >>>
+      libraryReferences:
+          store.state.libraryReferenceState.referencesBySection[sectionId] ??
+              [],
     );
   }
 }
@@ -98,10 +110,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     with AutomaticKeepAliveClientMixin {
   final FirestoreService _firestoreService = FirestoreService();
   bool _isLoadingCommentary = false;
-
-  // ✅ 1. Adicionar novas variáveis de estado para o resumo
   bool _isGeneratingSummary = false;
   bool _isSummaryUnlocked = false;
+  bool _showResources = false;
   static const String _unlockedSummariesPrefsKey = 'unlocked_bible_summaries';
 
   @override
@@ -110,25 +121,21 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   @override
   void initState() {
     super.initState();
-    // ✅ 2. Verificar o status do resumo quando o widget é construído
     _checkSummaryStatus();
   }
 
-  // ✅ 3. Nova função para verificar se o resumo já está desbloqueado
+  // --- SUAS FUNÇÕES EXISTENTES (SEM ALTERAÇÕES) ---
+  // A lógica delas está correta e não precisa mudar.
   Future<void> _checkSummaryStatus() async {
-    // Atraso mínimo para garantir que o contexto está disponível
     await Future.delayed(Duration.zero);
     if (!mounted) return;
-
     final store = StoreProvider.of<AppState>(context, listen: false);
     final isPremium = store.state.subscriptionState.status ==
         SubscriptionStatus.premiumActive;
-
     if (isPremium) {
       if (mounted) setState(() => _isSummaryUnlocked = true);
       return;
     }
-
     final prefs = await SharedPreferences.getInstance();
     final unlockedSummaries =
         prefs.getStringList(_unlockedSummariesPrefsKey) ?? [];
@@ -177,7 +184,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
       }
     } catch (e) {/* ignored */}
-
     if (mounted) {
       setState(() => _isLoadingCommentary = false);
       showModalBottomSheet(
@@ -206,13 +212,11 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     try {
       final prefs = await SharedPreferences.getInstance();
       final summaryContent = prefs.getString(sectionId);
-
       if (summaryContent == null) {
         CustomNotificationService.showError(
             context, 'Resumo não encontrado. Tente gerar novamente.');
         return;
       }
-
       if (mounted) {
         showModalBottomSheet(
           context: context,
@@ -232,20 +236,14 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     }
   }
 
-  // ✅ 4. Função _handleShowSummary agora gerencia o estado de loading
   Future<void> _handleShowSummary(String sectionId, String sectionTitle) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
-
-    // Se já está desbloqueado, apenas mostra
     if (_isSummaryUnlocked) {
       await _loadAndShowSummary(sectionId, sectionTitle);
       return;
     }
-
-    // Lógica de custo para não-premium
     const int summaryCost = 3;
     final currentUserCoins = store.state.userState.userCoins;
-
     if (currentUserCoins < summaryCost) {
       CustomNotificationService.showWarningWithAction(
         context: context,
@@ -255,7 +253,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       );
       return;
     }
-
     final bool? shouldProceed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -273,16 +270,10 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         ],
       ),
     );
-
     if (shouldProceed != true) return;
-
     store.dispatch(UpdateUserCoinsAction(currentUserCoins - summaryCost));
-
-    // Ativa o loading ANTES de chamar a função
     if (mounted) setState(() => _isGeneratingSummary = true);
-
     try {
-      // (Lógica de chamada da Cloud Function permanece a mesma)
       final commentaryData =
           await _firestoreService.getSectionCommentary(_commentaryDocId);
       final commentaryItems = (commentaryData?['commentary'] as List?)
@@ -291,12 +282,10 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
           [];
       if (commentaryItems.isEmpty)
         throw Exception("Comentário não encontrado.");
-
       final contextText = commentaryItems
           .map((item) => (item['traducao'] as String? ?? "").trim())
           .where((text) => text.isNotEmpty)
           .join("\n\n");
-
       final functions =
           FirebaseFunctions.instanceFor(region: "southamerica-east1");
       final callable = functions.httpsCallable('generateCommentarySummary');
@@ -305,17 +294,13 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       final summary = result.data['summary'] as String?;
       if (summary == null || summary.isEmpty)
         throw Exception("A IA não retornou um resumo válido.");
-
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(sectionId, summary);
-
-      // Desbloqueia permanentemente
       final unlockedSummaries =
           prefs.getStringList(_unlockedSummariesPrefsKey) ?? [];
       unlockedSummaries.add(sectionId);
       await prefs.setStringList(_unlockedSummariesPrefsKey, unlockedSummaries);
       if (mounted) setState(() => _isSummaryUnlocked = true);
-
       await _loadAndShowSummary(sectionId, sectionTitle);
     } catch (e) {
       if (mounted)
@@ -327,17 +312,14 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         CustomNotificationService.showSuccess(
             context, "Suas moedas foram devolvidas.");
     } finally {
-      // Desativa o loading, não importa se deu certo ou errado
       if (mounted) setState(() => _isGeneratingSummary = false);
     }
   }
 
-  // ✅ 5. Novo widget para construir o botão de resumo dinamicamente
   Widget _buildSummaryButton(ThemeData theme) {
-    // Estado de Geração (Loading)
     if (_isGeneratingSummary) {
       return TextButton(
-        onPressed: null, // Desabilitado
+        onPressed: null,
         style: TextButton.styleFrom(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -352,13 +334,11 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         ),
       );
     }
-
-    // Estado Desbloqueado/Gerado
     if (_isSummaryUnlocked) {
       return TextButton.icon(
         onPressed: () =>
             _handleShowSummary(_commentaryDocId, widget.sectionTitle),
-        icon: Icon(Icons.article_outlined, size: 20),
+        icon: const Icon(Icons.article_outlined, size: 20),
         label: const Text(
           "Resumo",
           style: TextStyle(
@@ -377,8 +357,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         ),
       );
     }
-
-    // Estado Padrão (Não gerado)
     return TextButton.icon(
       onPressed: () =>
           _handleShowSummary(_commentaryDocId, widget.sectionTitle),
@@ -400,6 +378,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       ),
     );
   }
+  // --- FIM DAS FUNÇÕES EXISTENTES ---
 
   @override
   Widget build(BuildContext context) {
@@ -432,7 +411,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     }
 
     return StoreConnector<AppState, _SectionItemViewModel>(
-      converter: (store) => _SectionItemViewModel.fromStore(store),
+      converter: (store) =>
+          _SectionItemViewModel.fromStore(store, _sectionIdForTracking),
       builder: (context, viewModel) {
         final allUserTags = viewModel.allUserTags;
 
@@ -454,77 +434,72 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // --- TÍTULO E BOTÕES DE AÇÃO SUPERIORES ---
+                Padding(
+                  padding:
+                      const EdgeInsets.only(bottom: 8.0, top: 4.0, right: 8.0),
+                  child: Text(
+                    widget.sectionTitle,
+                    style: TextStyle(
+                        color: currentIsRead
+                            ? theme.primaryColor
+                            : theme.colorScheme.primary,
+                        fontSize: 18 * widget.fontSizeMultiplier,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          bottom: 8.0, top: 4.0, right: 8.0),
-                      child: Text(
-                        widget.sectionTitle,
-                        style: TextStyle(
-                            color: currentIsRead
-                                ? theme.primaryColor
-                                : theme.colorScheme.primary,
-                            fontSize: 18 * widget.fontSizeMultiplier,
-                            fontWeight: FontWeight.bold),
-                      ),
+                    IconButton(
+                      icon: Icon(versesIcon, color: versesIconColor, size: 26),
+                      tooltip: versesTooltip,
+                      onPressed: () =>
+                          _handlePlayRequest(TtsContentType.versesOnly),
+                      splashRadius: 24,
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          icon: Icon(versesIcon,
-                              color: versesIconColor, size: 26),
-                          tooltip: versesTooltip,
-                          onPressed: () =>
-                              _handlePlayRequest(TtsContentType.versesOnly),
-                          splashRadius: 24,
-                        ),
-                        _buildSummaryButton(theme),
-                        const SizedBox(width: 8),
-                        if (_isLoadingCommentary)
-                          const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(10.0),
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            ),
-                          )
-                        else
-                          TextButton.icon(
-                            onPressed: () => _showCommentary(context),
-                            icon: const Icon(Icons.school_outlined, size: 20),
-                            label: const Text(
-                              "Estudo",
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: theme.colorScheme.primary,
-                              backgroundColor:
-                                  theme.colorScheme.primary.withOpacity(0.1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              visualDensity: VisualDensity.compact,
-                            ),
+                    _buildSummaryButton(theme),
+                    const SizedBox(width: 8),
+                    if (_isLoadingCommentary)
+                      const SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(10.0),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                      ],
-                    ),
+                        ),
+                      )
+                    else
+                      TextButton.icon(
+                        onPressed: () => _showCommentary(context),
+                        icon: const Icon(Icons.school_outlined, size: 20),
+                        label: const Text(
+                          "Estudo",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme.colorScheme.primary,
+                          backgroundColor:
+                              theme.colorScheme.primary.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
                   ],
                 ),
-                Divider(color: theme.dividerColor.withOpacity(0.5)),
-                const SizedBox(height: 8),
+                const Divider(color: Colors.transparent, height: 4),
+
+                // --- LISTA DE VERSÍCULOS ---
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -535,7 +510,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     dynamic mainTranslationVerseDataItem;
                     List<Map<String, String>>? hebrewDataForThisVerse;
                     List<Map<String, String>>? greekDataForThisVerse;
-
                     if (widget.allVerseDataInChapter is List &&
                         verseNumber > 0 &&
                         verseNumber <=
@@ -543,7 +517,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       mainTranslationVerseDataItem = (widget
                           .allVerseDataInChapter as List)[verseNumber - 1];
                     }
-
                     if (widget.showHebrewInterlinear &&
                         widget.hebrewInterlinearSectionData != null &&
                         indexInSecao <
@@ -558,7 +531,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       greekDataForThisVerse =
                           widget.greekInterlinearSectionData![indexInSecao];
                     }
-
                     if (mainTranslationVerseDataItem != null) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,7 +557,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             greekVerseData: greekDataForThisVerse,
                             fontSizeMultiplier: widget.fontSizeMultiplier,
                           ),
-                          // AQUI ESTÁ A ÚNICA MUDANÇA REAL NO BUILD DO VERSÍCULO
                           CrossReferencesRow(
                             bookAbbrev: widget.bookAbbrev,
                             chapter: widget.chapterNumber,
@@ -604,131 +575,176 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     }
                   },
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          final store = StoreProvider.of<AppState>(context,
-                              listen: false);
-                          final bool isGuest =
-                              store.state.userState.isGuestUser;
 
-                          if (isGuest) {
-                            showLoginRequiredDialog(context,
-                                featureName: "o chat com a IA");
-                          } else {
-                            final List<String> verseTexts =
-                                widget.verseNumbersInSection.map((vNum) {
-                              if (widget.allVerseDataInChapter is List &&
-                                  vNum > 0 &&
-                                  vNum <=
-                                      (widget.allVerseDataInChapter as List)
-                                          .length) {
-                                return (widget.allVerseDataInChapter
-                                        as List)[vNum - 1]
-                                    .toString();
-                              }
-                              return "[Texto do versículo $vNum indisponível]";
-                            }).toList();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SectionChatPage(
-                                  bookAbbrev: widget.bookAbbrev,
-                                  chapterNumber: widget.chapterNumber,
-                                  versesRangeStr: widget.versesRangeStr,
-                                  sectionTitle: widget.sectionTitle,
-                                  sectionVerseTexts: verseTexts,
-                                ),
+                // <<< INÍCIO DA NOVA SEÇÃO DE RECURSOS >>>
+                // Este widget cuidará da animação e do conteúdo.
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: _showResources
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Divider(height: 24),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4.0),
+                              child: Text(
+                                "Recursos de Estudo",
+                                style: theme.textTheme.titleMedium,
                               ),
-                            );
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        splashColor: theme.colorScheme.primary.withOpacity(0.2),
-                        highlightColor:
-                            theme.colorScheme.primary.withOpacity(0.1),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: theme.colorScheme.primary,
-                              width: 1.0,
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.chat_bubble_outline_rounded,
-                                  size: 18, color: theme.colorScheme.primary),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Chat",
-                                style: TextStyle(
-                                  color: theme.colorScheme.primary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                            RecommendedResourcesRow(
+                                sectionId: _sectionIdForTracking),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                const Divider(height: 20),
+                // <<< FIM DA NOVA SEÇÃO DE RECURSOS >>>
+
+                // --- RODAPÉ COM BOTÕES DE CHAT E MARCAR COMO LIDO ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // <<< BOTÃO DE RECURSOS NO ESTILO DO DEVOCIONAL >>>
+                    IconButton(
+                      icon: AnimatedRotation(
+                        turns: _showResources ? 0.5 : 0.0, // Gira 180 graus
+                        duration: const Duration(milliseconds: 250),
+                        child: const Icon(Icons.expand_more),
                       ),
+                      tooltip: _showResources
+                          ? "Ocultar Recursos"
+                          : "Ver Recursos de Estudo",
+                      onPressed: () =>
+                          setState(() => _showResources = !_showResources),
                     ),
-                    const SizedBox(width: 8),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          StoreProvider.of<AppState>(context, listen: false)
-                              .dispatch(
-                            ToggleSectionReadStatusAction(
-                              bookAbbrev: widget.bookAbbrev,
-                              sectionId: _sectionIdForTracking,
-                              markAsRead: !currentIsRead,
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                currentIsRead
-                                    ? Icons.check_circle
-                                    : Icons.check_circle_outline,
-                                color: currentIsRead
-                                    ? theme.primaryColor
-                                    : theme.iconTheme.color?.withOpacity(0.8),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                currentIsRead ? "Lido" : "Marcar como Lido",
-                                style: TextStyle(
-                                  color: currentIsRead
-                                      ? theme.primaryColor
-                                      : theme.textTheme.bodyMedium?.color
-                                          ?.withOpacity(0.9),
-                                  fontSize: 13,
-                                  fontWeight: currentIsRead
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+
+                    Row(
+                      children: [
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              final store = StoreProvider.of<AppState>(context,
+                                  listen: false);
+                              if (store.state.userState.isGuestUser) {
+                                showLoginRequiredDialog(context,
+                                    featureName: "o chat com a IA");
+                              } else {
+                                final List<String> verseTexts =
+                                    widget.verseNumbersInSection.map((vNum) {
+                                  if (widget.allVerseDataInChapter is List &&
+                                      vNum > 0 &&
+                                      vNum <=
+                                          (widget.allVerseDataInChapter as List)
+                                              .length) {
+                                    return (widget.allVerseDataInChapter
+                                            as List)[vNum - 1]
+                                        .toString();
+                                  }
+                                  return "[Texto do versículo $vNum indisponível]";
+                                }).toList();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SectionChatPage(
+                                      bookAbbrev: widget.bookAbbrev,
+                                      chapterNumber: widget.chapterNumber,
+                                      versesRangeStr: widget.versesRangeStr,
+                                      sectionTitle: widget.sectionTitle,
+                                      sectionVerseTexts: verseTexts,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            splashColor:
+                                theme.colorScheme.primary.withOpacity(0.2),
+                            highlightColor:
+                                theme.colorScheme.primary.withOpacity(0.1),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: theme.colorScheme.primary,
+                                  width: 1.0,
                                 ),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline_rounded,
+                                      size: 18,
+                                      color: theme.colorScheme.primary),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "Chat",
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              StoreProvider.of<AppState>(context, listen: false)
+                                  .dispatch(
+                                ToggleSectionReadStatusAction(
+                                  bookAbbrev: widget.bookAbbrev,
+                                  sectionId: _sectionIdForTracking,
+                                  markAsRead: !currentIsRead,
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    currentIsRead
+                                        ? Icons.check_circle
+                                        : Icons.check_circle_outline,
+                                    color: currentIsRead
+                                        ? theme.primaryColor
+                                        : theme.iconTheme.color
+                                            ?.withOpacity(0.8),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    currentIsRead ? "Lido" : "Marcar como Lido",
+                                    style: TextStyle(
+                                      color: currentIsRead
+                                          ? theme.primaryColor
+                                          : theme.textTheme.bodyMedium?.color
+                                              ?.withOpacity(0.9),
+                                      fontSize: 13,
+                                      fontWeight: currentIsRead
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 )

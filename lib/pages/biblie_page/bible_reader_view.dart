@@ -7,6 +7,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
+import 'package:septima_biblia/redux/actions/library_reference_actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:flutter/foundation.dart';
@@ -133,6 +134,14 @@ class _BibleReaderViewState extends State<BibleReaderView> {
         widget.selectedTranslation1,
         widget.isCompareMode ? widget.selectedTranslation2 : null,
       );
+
+      print(
+          "BibleReaderView: Despachando LoadLibraryReferencesForChapterAction para ${widget.selectedBook} cap. ${widget.selectedChapter}");
+      // Despacha a ação para carregar as referências da biblioteca para este capítulo
+      StoreProvider.of<AppState>(context, listen: false).dispatch(
+          LoadLibraryReferencesForChapterAction(
+              bookAbbrev: widget.selectedBook,
+              chapter: widget.selectedChapter));
     });
   }
 
