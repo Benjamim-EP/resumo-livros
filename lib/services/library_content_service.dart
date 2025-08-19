@@ -1,75 +1,97 @@
 // lib/services/library_content_service.dart
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Modelo para uma unidade de conteúdo padronizada
-class ContentUnit {
+// Modelo para uma unidade de conteúdo SEM o texto completo
+class ContentUnitPreview {
   final String contentId;
   final String title;
   final List<String> path;
-  final String content;
   final String preview;
-  final String sourceTitle; // Título da obra (ex: "Institutas de Turretin")
+  final String sourceTitle;
 
-  ContentUnit({
+  ContentUnitPreview({
     required this.contentId,
     required this.title,
     required this.path,
-    required this.content,
     required this.preview,
     required this.sourceTitle,
   });
 }
 
-// Serviço Singleton para gerenciar o conteúdo da biblioteca
 class LibraryContentService {
-  // Padrão Singleton
   LibraryContentService._privateConstructor();
   static final LibraryContentService instance =
       LibraryContentService._privateConstructor();
 
-  Map<String, ContentUnit> _contentMap = {};
-  bool _isLoaded = false;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final Map<String, ContentUnitPreview> _previewCache = {};
+  final Map<String, String> _fullContentCache = {};
 
-  /// Carrega e processa o arquivo JSON da biblioteca. Deve ser chamado na inicialização do app.
-  Future<void> loadContent() async {
-    if (_isLoaded) return;
+  /// Busca os dados de PREVIEW de uma unidade de conteúdo.
+  /// Primeiro, verifica o cache. Se não encontrar, busca no Firestore.
+  Future<ContentUnitPreview?> getContentUnitPreview(String contentId) async {
+    if (_previewCache.containsKey(contentId)) {
+      return _previewCache[contentId];
+    }
+
     try {
       print(
-          "LibraryContentService: Carregando standardized_library_content.json...");
-      final String jsonString = await rootBundle
-          .loadString('assets/data/standardized_library_content.json');
-      final List<dynamic> sources = json.decode(jsonString);
+          "LibraryContentService: Buscando PREVIEW de '${contentId}' no Firestore...");
+      // Seleciona todos os campos EXCETO 'content' para economizar dados
+      final docSnapshot =
+          await _db.collection('libraryContent').doc(contentId).get();
 
-      final Map<String, ContentUnit> tempMap = {};
-      for (var source in sources) {
-        final sourceTitle = source['sourceTitle'] ?? 'Fonte Desconhecida';
-        final List<dynamic> units = source['contentUnits'] ?? [];
-        for (var unit in units) {
-          final contentId = unit['contentId'] as String?;
-          if (contentId != null) {
-            tempMap[contentId] = ContentUnit(
-              contentId: contentId,
-              title: unit['title'] ?? 'Sem Título',
-              path: List<String>.from(unit['path'] ?? []),
-              content: unit['content'] ?? 'Conteúdo indisponível.',
-              preview: unit['preview'] ?? '',
-              sourceTitle: sourceTitle,
-            );
-          }
-        }
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data()!;
+        final preview = ContentUnitPreview(
+          contentId: contentId,
+          title: data['title'] ?? 'Sem Título',
+          path: List<String>.from(data['path'] ?? []),
+          preview: data['preview'] ?? '',
+          sourceTitle: data['sourceTitle'] ?? 'Fonte Desconhecida',
+        );
+        _previewCache[contentId] = preview;
+        return preview;
+      } else {
+        print(
+            "LibraryContentService: Documento (preview) '${contentId}' não encontrado.");
+        return null;
       }
-      _contentMap = tempMap;
-      _isLoaded = true;
-      print(
-          "LibraryContentService: Carregamento concluído. ${_contentMap.length} unidades de conteúdo disponíveis.");
     } catch (e) {
-      print("ERRO CRÍTICO ao carregar LibraryContentService: $e");
+      print(
+          "ERRO no LibraryContentService ao buscar preview de '${contentId}': $e");
+      return null;
     }
   }
 
-  /// Retorna os detalhes de uma unidade de conteúdo específica pelo seu ID.
-  ContentUnit? getContentUnit(String contentId) {
-    return _contentMap[contentId];
+  /// Busca o CONTEÚDO COMPLETO de uma unidade.
+  /// Primeiro, verifica o cache. Se não encontrar, busca no Firestore.
+  Future<String?> getFullContent(String contentId) async {
+    if (_fullContentCache.containsKey(contentId)) {
+      return _fullContentCache[contentId];
+    }
+    try {
+      print(
+          "LibraryContentService: Buscando CONTEÚDO COMPLETO de '${contentId}' no Firestore...");
+      final docSnapshot =
+          await _db.collection('libraryContent').doc(contentId).get();
+
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data()!;
+        final contentList = data['content'] as List<dynamic>? ?? [];
+        final fullContent = contentList.cast<String>().join('\n\n');
+
+        _fullContentCache[contentId] = fullContent;
+        return fullContent;
+      } else {
+        print(
+            "LibraryContentService: Documento (conteúdo completo) '${contentId}' não encontrado.");
+        return null;
+      }
+    } catch (e) {
+      print(
+          "ERRO no LibraryContentService ao buscar conteúdo completo de '${contentId}': $e");
+      return null;
+    }
   }
 }

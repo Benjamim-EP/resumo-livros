@@ -585,7 +585,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Divider(height: 24),
+                            const Divider(height: 16),
                             Padding(
                               padding: const EdgeInsets.only(left: 4.0),
                               child: Text(

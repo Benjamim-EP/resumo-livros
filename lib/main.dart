@@ -39,7 +39,6 @@ void main() async {
   await initializeDateFormatting('pt_BR');
   await AppInitialization.init();
   FirebaseInAppMessaging.instance.setMessagesSuppressed(false);
-  await LibraryContentService.instance.loadContent();
 
   // A variável `store` importada de `store.dart` já está pronta para uso.
   store.dispatch(LoadSavedThemeAction());
