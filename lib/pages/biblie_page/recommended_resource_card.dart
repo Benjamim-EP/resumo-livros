@@ -1,7 +1,6 @@
 // lib/pages/biblie_page/recommended_resource_card.dart
 import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/biblie_page/library_resource_viewer_modal.dart';
-import 'package:septima_biblia/services/library_content_service.dart';
 
 class RecommendedResourceCard extends StatelessWidget {
   final String contentId;
@@ -13,6 +12,7 @@ class RecommendedResourceCard extends StatelessWidget {
     required this.reason,
   });
 
+  // Função para decodificar o ID (local e síncrona)
   Map<String, String> _decodeContentId(String id) {
     String sourceTitle = "Biblioteca";
     if (id.startsWith("turretin-elenctic-theology")) {
@@ -32,49 +32,6 @@ class RecommendedResourceCard extends StatelessWidget {
     };
   }
 
-  Future<void> _handleTap(BuildContext context) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) => const Center(child: CircularProgressIndicator()),
-    );
-    try {
-      final contentUnitPreview =
-          await LibraryContentService.instance.getContentUnitPreview(contentId);
-      if (contentUnitPreview == null) {
-        throw Exception("Dados do recurso não encontrados no banco de dados.");
-      }
-      final fullContent =
-          await LibraryContentService.instance.getFullContent(contentId);
-      if (context.mounted) Navigator.pop(context);
-      if (fullContent != null && context.mounted) {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => LibraryResourceViewerModal(
-            title: contentUnitPreview.title,
-            path: contentUnitPreview.path,
-            content: fullContent,
-          ),
-        );
-      } else if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text('Não foi possível carregar o conteúdo deste recurso.')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao carregar recurso: $e')),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -88,15 +45,22 @@ class RecommendedResourceCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12.0, top: 4.0, bottom: 4.0),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => _handleTap(context),
+          // <<< O TAP AGORA É MUITO MAIS SIMPLES >>>
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => LibraryResourceViewerModal(
+                contentId: contentId, // Apenas passa o ID
+              ),
+            );
+          },
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // <<< INÍCIO DA CORREÇÃO DEFINITIVA DE OVERFLOW >>>
-
-                // 1. Título da Fonte (ocupa apenas o espaço que precisa)
                 Text(
                   sourceTitle,
                   style: theme.textTheme.labelSmall
@@ -105,23 +69,15 @@ class RecommendedResourceCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-
-                // 2. Título da Unidade (envolvido em Expanded)
-                // Este widget agora é flexível e preencherá o espaço vertical
-                // disponível entre o título da fonte e a seção da razão.
                 Expanded(
                   child: Text(
                     title,
                     style: theme.textTheme.titleSmall
                         ?.copyWith(fontWeight: FontWeight.bold),
-                    maxLines: 3, // Continua truncando se o texto for enorme
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-
-                // O Spacer foi removido.
-
-                // 3. Seção da Razão (ocupa apenas o espaço que precisa no final)
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,12 +87,11 @@ class RecommendedResourceCard extends StatelessWidget {
                       reason,
                       style: theme.textTheme.bodySmall
                           ?.copyWith(fontStyle: FontStyle.italic),
-                      maxLines: 2, // Garante que a razão também não exploda
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-                // <<< FIM DA CORREÇÃO DE OVERFLOW >>>
               ],
             ),
           ),

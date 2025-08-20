@@ -1,19 +1,62 @@
 // lib/pages/biblie_page/library_resource_viewer_modal.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:septima_biblia/services/library_content_service.dart';
 
-// O modal agora é mais simples e recebe os dados prontos
-class LibraryResourceViewerModal extends StatelessWidget {
-  final String title;
-  final List<String> path;
-  final String content;
+class LibraryResourceViewerModal extends StatefulWidget {
+  final String contentId;
 
   const LibraryResourceViewerModal({
     super.key,
-    required this.title,
-    required this.path,
-    required this.content,
+    required this.contentId,
   });
+
+  @override
+  State<LibraryResourceViewerModal> createState() =>
+      _LibraryResourceViewerModalState();
+}
+
+class _LibraryResourceViewerModalState
+    extends State<LibraryResourceViewerModal> {
+  // Estado para controlar o carregamento e os dados
+  bool _isLoading = true;
+  ContentUnitPreview? _contentPreview;
+  String? _fullContent;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContent();
+  }
+
+  Future<void> _loadContent() async {
+    try {
+      // Busca os dois conjuntos de dados em paralelo para mais eficiência
+      final results = await Future.wait([
+        LibraryContentService.instance.getContentUnitPreview(widget.contentId),
+        LibraryContentService.instance.getFullContent(widget.contentId),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _contentPreview = results[0] as ContentUnitPreview?;
+          _fullContent = results[1] as String?;
+          _isLoading = false;
+          if (_contentPreview == null || _fullContent == null) {
+            _error = "Não foi possível carregar o conteúdo do recurso.";
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = "Ocorreu um erro ao carregar o recurso.";
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,34 +83,55 @@ class LibraryResourceViewerModal extends StatelessWidget {
                         color: theme.dividerColor,
                         borderRadius: BorderRadius.circular(10))),
               ),
+              // Cabeçalho - mostra os dados de preview quando disponíveis
               Padding(
                 padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 8.0),
                 child: Column(
                   children: [
-                    Text(title,
-                        style: theme.textTheme.headlineSmall,
-                        textAlign: TextAlign.center),
-                    const SizedBox(height: 4),
-                    Text(path.join(' > '),
-                        style: theme.textTheme.bodySmall,
-                        textAlign: TextAlign.center),
+                    Text(
+                      _contentPreview?.title ??
+                          (_isLoading ? "Carregando..." : "Erro"),
+                      style: theme.textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_contentPreview != null) ...[
+                      const SizedBox(height: 4),
+                      Text(_contentPreview!.path,
+                          style: theme.textTheme.bodySmall,
+                          textAlign: TextAlign.center),
+                    ]
                   ],
                 ),
               ),
               const Divider(height: 1),
+
+              // Corpo - mostra o conteúdo ou o estado de loading/erro
               Expanded(
-                child: Markdown(
-                  controller: scrollController,
-                  data: content,
-                  padding: const EdgeInsets.all(20.0),
-                  styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                      p: theme.textTheme.bodyLarge?.copyWith(height: 1.6)),
-                ),
+                child: _buildBodyContent(scrollController),
               ),
             ],
           ),
         );
       },
     );
+  }
+
+  Widget _buildBodyContent(ScrollController scrollController) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(child: Text(_error!));
+    }
+    if (_fullContent != null) {
+      return Markdown(
+        controller: scrollController,
+        data: _fullContent!,
+        padding: const EdgeInsets.all(20.0),
+        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+            p: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6)),
+      );
+    }
+    return const Center(child: Text("Conteúdo não disponível."));
   }
 }

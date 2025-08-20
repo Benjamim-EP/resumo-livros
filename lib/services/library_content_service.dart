@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ContentUnitPreview {
   final String contentId;
   final String title;
-  final List<String> path;
+  final String path;
   final String preview;
   final String sourceTitle;
 
@@ -46,7 +46,7 @@ class LibraryContentService {
         final preview = ContentUnitPreview(
           contentId: contentId,
           title: data['title'] ?? 'Sem Título',
-          path: List<String>.from(data['path'] ?? []),
+          path: data['path'] as String? ?? '',
           preview: data['preview'] ?? '',
           sourceTitle: data['sourceTitle'] ?? 'Fonte Desconhecida',
         );
