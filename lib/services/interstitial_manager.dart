@@ -26,21 +26,15 @@ class InterstitialManager {
   }
 
   Future<void> tryShowInterstitial({String? fromScreen}) async {
-    // Adicionado fromScreen para logging
     if (await _canShowInterstitial()) {
       print(
-          "InterstitialManager: Cooldown permite. Tentando mostrar intersticial (chamado de: ${fromScreen ?? 'desconhecido'}).");
-      bool shown = await _adHelper.showInterstitialAd();
-      if (shown) {
-        print("InterstitialManager: Intersticial exibido com sucesso.");
-        await _recordInterstitialShown();
-      } else {
-        print(
-            "InterstitialManager: AdHelper reportou que o intersticial não pôde ser exibido.");
-      }
+          "InterstitialManager: Cooldown permite. Tentando mostrar intersticial (AdMob) de '$fromScreen'.");
+      await _adHelper.showInterstitialAd();
+      // O AdHelper já cuida de recarregar, então só precisamos registrar que foi mostrado.
+      await _recordInterstitialShown();
     } else {
       print(
-          "InterstitialManager: Cooldown do intersticial ainda ativo. Não mostrando (chamado de: ${fromScreen ?? 'desconhecido'}).");
+          "InterstitialManager: Cooldown do intersticial ainda ativo para '$fromScreen'.");
     }
   }
 }
