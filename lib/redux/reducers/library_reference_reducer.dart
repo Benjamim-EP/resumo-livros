@@ -5,13 +5,19 @@ import 'package:septima_biblia/redux/actions/library_reference_actions.dart';
 class LibraryReference {
   final String contentId;
   final String reason;
+  final String title;
 
-  LibraryReference({required this.contentId, required this.reason});
+  LibraryReference({
+    required this.contentId,
+    required this.reason,
+    required this.title,
+  });
 
   factory LibraryReference.fromJson(Map<String, dynamic> json) {
     return LibraryReference(
       contentId: json['contentId'] ?? '',
       reason: json['reason'] ?? 'Recomendação relacionada.',
+      title: json['title'] ?? 'Título indisponível',
     );
   }
 }

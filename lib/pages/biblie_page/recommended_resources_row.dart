@@ -28,11 +28,9 @@ class RecommendedResourcesRow extends StatelessWidget {
             itemCount: references.length,
             itemBuilder: (context, index) {
               final reference = references[index];
-
-              // <<< CORREÇÃO AQUI: Removemos o FutureBuilder >>>
-              // Agora, passamos os dados diretamente para o card, que se tornará Stateful.
               return RecommendedResourceCard(
                 contentId: reference.contentId,
+                title: reference.title, // <<< PASSA O NOVO CAMPO
                 reason: reference.reason,
               );
             },
