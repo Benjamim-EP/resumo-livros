@@ -190,6 +190,31 @@ class BiblePageWidgets {
           }),
     ];
 
+    final List<Map<String, String>> firestoreVersions = [
+      {'key': 'ARA', 'label': 'ARA'},
+      {'key': 'ARC', 'label': 'ARC'},
+      {'key': 'AS21', 'label': 'AS21'},
+      {'key': 'JFAA', 'label': 'JFAA'},
+      {'key': 'NAA', 'label': 'NAA'},
+      {'key': 'NBV', 'label': 'NBV'},
+      {'key': 'NTLH', 'label': 'NTLH'},
+      {'key': 'NVT', 'label': 'NVT'},
+    ];
+
+    for (var version in firestoreVersions) {
+      translationButtons.add(
+        buildTranslationButton(
+          context: context,
+          translationKey: version['key']!, // O ID que o helper usará
+          translationLabel: version['label']!, // O texto no botão
+          selectedTranslation: selectedTranslation,
+          onPressed: () {
+            onTranslationSelected(version['key']!);
+            Navigator.pop(context);
+          },
+        ),
+      );
+    }
     if (isOldTestament) {
       translationButtons.add(buildTranslationButton(
         context: context,
@@ -224,25 +249,28 @@ class BiblePageWidgets {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (BuildContext modalContext) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Escolha a Tradução",
-                  style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                alignment: WrapAlignment.center,
-                children: translationButtons,
-              ),
-              const SizedBox(height: 10),
-            ],
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize
+                  .min, // Essencial para o SingleChildScrollView funcionar bem aqui
+              children: [
+                Text("Escolha a Tradução",
+                    style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  alignment: WrapAlignment.center,
+                  children: translationButtons,
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
           ),
         );
       },

@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Classe utilitária com métodos estáticos para carregar e processar dados da Bíblia a partir dos assets.
 ///
 /// Esta classe foi refatorada para usar injeção de dependência do AssetBundle,
@@ -14,6 +16,18 @@ class BiblePageHelper {
   static Map<String, dynamic>? _hebrewStrongsLexicon;
   static Map<String, dynamic>? _greekStrongsLexicon;
   static Map<String, dynamic>? _booksMapCache;
+  static final Map<String, List<dynamic>> _firestoreChapterCache = {};
+
+  static const List<String> _firestoreTranslations = [
+    'ARA',
+    'ARC',
+    'AS21',
+    'JFAA',
+    'NAA',
+    'NBV',
+    'NTLH',
+    'NVT'
+  ];
 
   /// Limpa os caches estáticos. Usado principalmente para garantir o isolamento em testes de unidade.
   @visibleForTesting
@@ -398,38 +412,111 @@ class BiblePageHelper {
       String bookAbbrev, int chapter, String translation,
       {AssetBundle? bundle}) async {
     final assetBundle = bundle ?? rootBundle;
-    String verseDataPath;
-    if (translation == 'hebrew_original') {
-      verseDataPath =
-          'assets/Biblia/completa_traducoes/hebrew_original/$bookAbbrev/$chapter.json';
-    } else if (translation == 'greek_interlinear') {
-      verseDataPath =
-          'assets/Biblia/completa_traducoes/greek_original/$bookAbbrev/$chapter.json';
-    } else {
-      verseDataPath =
-          'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
-    }
-    final String verseDataString = await assetBundle.loadString(verseDataPath);
-    final decodedVerseData = json.decode(verseDataString);
-    if (translation == 'hebrew_original' ||
-        translation == 'greek_interlinear') {
-      if (decodedVerseData is List) {
-        return List<List<Map<String, String>>>.from(decodedVerseData.map(
-            (verse) => (verse is List)
-                ? List<Map<String, String>>.from(verse
-                    .map((wordData) => (wordData is Map)
-                        ? Map<String, String>.from(wordData.map((key, value) =>
-                            MapEntry(key.toString(), value.toString())))
-                        : <String, String>{})
-                    .where((map) => map.isNotEmpty))
-                : <List<Map<String, String>>>[]));
+
+    // --- LÓGICA DE DECISÃO ---
+
+    // 1. Verifica se a tradução solicitada está na lista das que vêm do Firestore
+    if (_firestoreTranslations.contains(translation.toUpperCase())) {
+      // Cria uma chave única para o cache em memória
+      final cacheKey = '${translation.toUpperCase()}_${bookAbbrev}_$chapter';
+
+      // Se já estiver no cache, retorna imediatamente para máxima performance
+      if (_firestoreChapterCache.containsKey(cacheKey)) {
+        print(
+            "BiblePageHelper: Carregando '${cacheKey}' do cache do Firestore.");
+        return _firestoreChapterCache[cacheKey];
       }
-    } else {
-      if (decodedVerseData is List)
-        return List<String>.from(
-            decodedVerseData.map((item) => item.toString()));
+
+      // Se não estiver no cache, busca no Firestore
+      print("BiblePageHelper: Buscando '${cacheKey}' no Firestore...");
+      try {
+        // Monta o ID do documento como ele está no Firestore (ex: "ARA_gn")
+        final docId = '${translation.toUpperCase()}_$bookAbbrev';
+        final docSnapshot = await FirebaseFirestore.instance
+            .collection('Bible') // Nome da sua coleção principal
+            .doc(docId)
+            .get();
+
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data();
+          // O campo 'chapters' é um mapa onde a chave é o número do capítulo como String
+          final chapters = data?['chapters'] as Map<String, dynamic>? ?? {};
+          // Acessa o capítulo específico e garante que é uma lista
+          final verseList =
+              chapters[chapter.toString()] as List<dynamic>? ?? [];
+
+          // Salva o resultado no cache em memória para futuras solicitações
+          _firestoreChapterCache[cacheKey] = verseList;
+          print(
+              "BiblePageHelper: '${cacheKey}' carregado do Firestore e salvo no cache.");
+          return verseList;
+        } else {
+          print(
+              "BiblePageHelper: Documento '$docId' não encontrado no Firestore.");
+          _firestoreChapterCache[cacheKey] =
+              []; // Salva um resultado vazio no cache para não buscar de novo
+          return []; // Retorna lista vazia se não encontrar
+        }
+      } catch (e) {
+        print(
+            "BiblePageHelper: ERRO ao buscar capítulo do Firestore para '$cacheKey': $e");
+        return []; // Retorna lista vazia em caso de erro de rede, etc.
+      }
     }
-    return [];
+
+    // 2. Se a tradução NÃO está na lista do Firestore, executa a lógica antiga de buscar dos assets locais
+    else {
+      print(
+          "BiblePageHelper: Carregando tradução '$translation' dos assets locais...");
+      String verseDataPath;
+
+      if (translation == 'hebrew_original') {
+        verseDataPath =
+            'assets/Biblia/completa_traducoes/hebrew_original/$bookAbbrev/$chapter.json';
+      } else if (translation == 'greek_interlinear') {
+        verseDataPath =
+            'assets/Biblia/completa_traducoes/greek_original/$bookAbbrev/$chapter.json';
+      } else {
+        // Para NVI, ACF, KJF, etc.
+        verseDataPath =
+            'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
+      }
+
+      try {
+        final String verseDataString =
+            await assetBundle.loadString(verseDataPath);
+        final decodedVerseData = json.decode(verseDataString);
+
+        // A lógica de parsing para os tipos especiais (interlinear) permanece a mesma
+        if (translation == 'hebrew_original' ||
+            translation == 'greek_interlinear') {
+          if (decodedVerseData is List) {
+            return List<List<Map<String, String>>>.from(decodedVerseData.map(
+                (verse) => (verse is List)
+                    ? List<Map<String, String>>.from(verse
+                        .map((wordData) => (wordData is Map)
+                            ? Map<String, String>.from(wordData.map(
+                                (key, value) =>
+                                    MapEntry(key.toString(), value.toString())))
+                            : <String, String>{})
+                        .where((map) => map.isNotEmpty))
+                    : <List<Map<String, String>>>[]));
+          }
+        } else {
+          // Para traduções normais, apenas retorna a lista de strings
+          if (decodedVerseData is List) {
+            return List<String>.from(
+                decodedVerseData.map((item) => item.toString()));
+          }
+        }
+        // Se o formato não for uma lista, retorna uma lista vazia
+        return [];
+      } catch (e) {
+        print(
+            "BiblePageHelper: ERRO ao carregar tradução local '$translation' para $bookAbbrev $chapter: $e");
+        return []; // Retorna lista vazia se o arquivo não for encontrado
+      }
+    }
   }
 
   static Future<String> loadSingleVerseText(String verseId, String translation,
