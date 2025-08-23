@@ -133,6 +133,7 @@ flutter:
     - test.env
     
     - assets/metadata/bible_sections_count.json 
+    - assets/metadata/bible_versions_meta.json
     - assets/Biblia/rotas_biblia/profeciasdesuavinda.json
     - assets/Biblia/rotas_biblia/palavrasdofimdostempos.json
     - assets/Biblia/rotas_biblia/eventosvidadeJesus.json

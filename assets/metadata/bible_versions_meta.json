@@ -1,0 +1,93 @@
+[
+  {
+    "id": "NVI",
+    "fullName": "Nova Versão Internacional",
+    "year": "2011",
+    "description": "Tradução contemporânea que busca um equilíbrio entre a fidelidade aos originais e a clareza na linguagem moderna.",
+    "source": "Local"
+  },
+  {
+    "id": "KJF",
+    "fullName": "King James Fiel 1611",
+    "year": "2011 (revisão)",
+    "description": "Baseada na King James Version, utiliza o Texto Recebido (Textus Receptus) como base para o Novo Testamento.",
+    "source": "Local"
+  },
+  {
+    "id": "KJA",
+    "fullName": "King James Atualizada",
+    "year": "2012",
+    "description": "Tradução que busca manter a majestade da versão King James original, mas com uma linguagem atualizada para o leitor contemporâneo.",
+    "source": "Local"
+  },
+  {
+    "id": "ACF",
+    "fullName": "Almeida Corrigida Fiel",
+    "year": "2007 (revisão)",
+    "description": "Revisão da tradução de João Ferreira de Almeida, conhecida por sua abordagem de tradução literal e base no Texto Recebido.",
+    "source": "Local"
+  },
+  {
+    "id": "AA",
+    "fullName": "Almeida Atualizada",
+    "year": "1993",
+    "description": "Uma revisão da tradução de Almeida que atualiza a linguagem para um português mais moderno, sem abandonar a estrutura clássica.",
+    "source": "Local"
+  },
+  {
+    "id": "ARA",
+    "fullName": "Almeida Revista e Atualizada",
+    "year": "1993",
+    "description": "Uma das versões mais populares no Brasil, conhecida por sua erudição e equilíbrio entre formalidade e clareza.",
+    "source": "Online"
+  },
+  {
+    "id": "ARC",
+    "fullName": "Almeida Revista e Corrigida",
+    "year": "1995 (revisão)",
+    "description": "Versão clássica e tradicional da tradução de Almeida, amplamente utilizada em igrejas históricas.",
+    "source": "Online"
+  },
+  {
+    "id": "AS21",
+    "fullName": "Almeida Século 21",
+    "year": "2011",
+    "description": "Uma tradução moderna da Bíblia baseada nos textos originais, com linguagem contemporânea e acessível.",
+    "source": "Online"
+  },
+  {
+    "id": "JFAA",
+    "fullName": "João Ferreira de Almeida Atualizada",
+    "year": "N/A",
+    "description": "Uma versão da tradução de João Ferreira de Almeida que busca atualizar o vocabulário para facilitar a compreensão.",
+    "source": "Online"
+  },
+  {
+    "id": "NAA",
+    "fullName": "Nova Almeida Atualizada",
+    "year": "2017",
+    "description": "A mais recente revisão da ARA, com linguagem ainda mais atualizada, mantendo a fidelidade ao texto original.",
+    "source": "Online"
+  },
+  {
+    "id": "NBV",
+    "fullName": "Nova Bíblia Viva",
+    "year": "2007",
+    "description": "Uma revisão da Bíblia Viva, é uma paráfrase que busca transmitir o pensamento do autor original em linguagem clara.",
+    "source": "Online"
+  },
+  {
+    "id": "NTLH",
+    "fullName": "Nova Tradução na Linguagem de Hoje",
+    "year": "2000",
+    "description": "Tradução de equivalência dinâmica, ideal para evangelismo e para quem tem o primeiro contato com a Bíblia.",
+    "source": "Online"
+  },
+  {
+    "id": "NVT",
+    "fullName": "Nova Versão Transformadora",
+    "year": "2016",
+    "description": "Busca comunicar o significado dos textos originais de forma clara e relevante para os leitores de hoje.",
+    "source": "Online"
+  }
+]

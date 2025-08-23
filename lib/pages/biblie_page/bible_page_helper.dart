@@ -466,6 +466,7 @@ class BiblePageHelper {
 
     // 2. Se a tradução NÃO está na lista do Firestore, executa a lógica antiga de buscar dos assets locais
     else {
+      final String localTranslationId = translation.toLowerCase();
       print(
           "BiblePageHelper: Carregando tradução '$translation' dos assets locais...");
       String verseDataPath;
@@ -479,7 +480,7 @@ class BiblePageHelper {
       } else {
         // Para NVI, ACF, KJF, etc.
         verseDataPath =
-            'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapter.json';
+            'assets/Biblia/completa_traducoes/$localTranslationId/$bookAbbrev/$chapter.json';
       }
 
       try {

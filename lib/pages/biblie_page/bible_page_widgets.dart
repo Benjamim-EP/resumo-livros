@@ -11,6 +11,7 @@ import 'package:septima_biblia/pages/biblie_page/note_editor_modal.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
+import 'package:septima_biblia/services/bible_version_service.dart';
 
 class BiblePageWidgets {
   // >>> INÍCIO DA CORREÇÃO 2/4: Adicionando os parâmetros que faltavam <<<
@@ -127,184 +128,20 @@ class BiblePageWidgets {
     required bool isPremium,
     required VoidCallback onToggleCompareMode,
   }) {
-    final theme = Theme.of(context);
-    bool isOldTestament = false;
-    bool isNewTestament = false;
-
-    if (currentSelectedBookAbbrev != null &&
-        booksMap != null &&
-        booksMap.containsKey(currentSelectedBookAbbrev)) {
-      final bookData =
-          booksMap[currentSelectedBookAbbrev] as Map<String, dynamic>?;
-      if (bookData != null) {
-        if (bookData['testament'] == 'Antigo')
-          isOldTestament = true;
-        else if (bookData['testament'] == 'Novo') isNewTestament = true;
-      }
-    }
-
-    List<Widget> translationButtons = [
-      buildTranslationButton(
-          context: context,
-          translationKey: 'nvi',
-          translationLabel: 'NVI',
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected('nvi');
-            Navigator.pop(context);
-          }),
-      buildTranslationButton(
-          context: context,
-          translationKey: 'aa',
-          translationLabel: 'AA',
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected('aa');
-            Navigator.pop(context);
-          }),
-      buildTranslationButton(
-          context: context,
-          translationKey: 'acf',
-          translationLabel: 'ACF',
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected('acf');
-            Navigator.pop(context);
-          }),
-      buildTranslationButton(
-          context: context,
-          translationKey: 'kja', // <<< ID da pasta
-          translationLabel: 'KJA', // <<< Texto que aparece no botão
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected('kja');
-            Navigator.pop(context);
-          }),
-      buildTranslationButton(
-          context: context,
-          translationKey: 'kjf', // <<< ID da pasta
-          translationLabel: 'KJF', // <<< Texto que aparece no botão
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected('kjf');
-            Navigator.pop(context);
-          }),
-    ];
-
-    final List<Map<String, String>> firestoreVersions = [
-      {'key': 'ARA', 'label': 'ARA'},
-      {'key': 'ARC', 'label': 'ARC'},
-      {'key': 'AS21', 'label': 'AS21'},
-      {'key': 'JFAA', 'label': 'JFAA'},
-      {'key': 'NAA', 'label': 'NAA'},
-      {'key': 'NBV', 'label': 'NBV'},
-      {'key': 'NTLH', 'label': 'NTLH'},
-      {'key': 'NVT', 'label': 'NVT'},
-    ];
-
-    for (var version in firestoreVersions) {
-      translationButtons.add(
-        buildTranslationButton(
-          context: context,
-          translationKey: version['key']!, // O ID que o helper usará
-          translationLabel: version['label']!, // O texto no botão
-          selectedTranslation: selectedTranslation,
-          onPressed: () {
-            onTranslationSelected(version['key']!);
-            Navigator.pop(context);
-          },
-        ),
-      );
-    }
-    if (isOldTestament) {
-      translationButtons.add(buildTranslationButton(
-        context: context,
-        translationKey: 'hebrew_original',
-        translationLabel: 'Hebraico (Orig.)',
-        selectedTranslation: selectedTranslation,
-        onPressed: () => isPremium
-            ? onTranslationSelected('hebrew_original')
-            : _showPremiumDialog(context),
-        isPremiumFeature: true,
-        isPremiumUser: isPremium,
-      ));
-    }
-
-    if (isNewTestament) {
-      translationButtons.add(buildTranslationButton(
-        context: context,
-        translationKey: 'greek_interlinear',
-        translationLabel: 'Grego (Interlinear)',
-        selectedTranslation: selectedTranslation,
-        onPressed: () => isPremium
-            ? onTranslationSelected('greek_interlinear')
-            : _showPremiumDialog(context),
-        isPremiumFeature: true,
-        isPremiumUser: isPremium,
-      ));
-    }
-
     showModalBottomSheet(
       context: context,
-      backgroundColor: theme.dialogBackgroundColor,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      // <<< INÍCIO DA CORREÇÃO >>>
-      // isScrollControlled: true permite que o modal ocupe mais da metade da tela se necessário
       isScrollControlled: true,
-      builder: (BuildContext modalContext) {
-        // DraggableScrollableSheet é a melhor maneira de ter um conteúdo rolável
-        // dentro de um BottomSheet com altura flexível.
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6, // Começa com 60% da altura da tela
-          minChildSize: 0.4, // Mínimo de 40%
-          maxChildSize: 0.8, // Máximo de 80%
-          expand: false,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.dialogBackgroundColor,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: ListView(
-                // ListView é inerentemente rolável
-                controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
-                children: [
-                  // Botão "Comparar Versões" no topo
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.compare_arrows_outlined),
-                    label: const Text("Comparar Versões"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.primary,
-                      side: BorderSide(
-                          color: theme.colorScheme.primary.withOpacity(0.5)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onToggleCompareMode();
-                    },
-                  ),
-                  const Divider(height: 24),
-
-                  // Grade de botões
-                  Wrap(
-                    spacing: 8.0,
-                    runSpacing: 8.0,
-                    alignment: WrapAlignment.center,
-                    children: translationButtons,
-                  ),
-                ],
-              ),
-            );
-          },
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        // <<< O builder agora retorna nosso novo widget Stateful >>>
+        return _TranslationSelectionModalContent(
+          selectedTranslation: selectedTranslation,
+          onTranslationSelected: onTranslationSelected,
+          currentSelectedBookAbbrev: currentSelectedBookAbbrev,
+          booksMap: booksMap,
+          isPremium: isPremium,
+          onToggleCompareMode: onToggleCompareMode,
         );
-        // <<< FIM DA CORREÇÃO >>>
       },
     );
   }
@@ -1580,4 +1417,232 @@ extension StringExtension on String {
       .map((str) =>
           str.isEmpty ? "" : '${str[0].toUpperCase()}${str.substring(1)}')
       .join(" ");
+}
+
+class _TranslationSelectionModalContent extends StatefulWidget {
+  final String selectedTranslation;
+  final Function(String) onTranslationSelected;
+  final String? currentSelectedBookAbbrev;
+  final Map<String, dynamic>? booksMap;
+  final bool isPremium;
+  final VoidCallback onToggleCompareMode;
+
+  const _TranslationSelectionModalContent({
+    required this.selectedTranslation,
+    required this.onTranslationSelected,
+    this.currentSelectedBookAbbrev,
+    this.booksMap,
+    required this.isPremium,
+    required this.onToggleCompareMode,
+  });
+
+  @override
+  State<_TranslationSelectionModalContent> createState() =>
+      __TranslationSelectionModalContentState();
+}
+
+class __TranslationSelectionModalContentState
+    extends State<_TranslationSelectionModalContent> {
+  bool _isDetailedView = false;
+  late Future<List<BibleVersionMeta>> _versionsMetaFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _versionsMetaFuture = BibleVersionService.instance.getVersions();
+  }
+
+  Widget _buildDetailedVersionTile(
+      BibleVersionMeta meta, bool isSelected, ThemeData theme) {
+    return InkWell(
+      onTap: () {
+        widget.onTranslationSelected(meta.id);
+        Navigator.pop(context);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Ícone de check para a versão selecionada
+            Padding(
+              padding: const EdgeInsets.only(top: 2.0),
+              child: Icon(
+                isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.disabledColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Conteúdo principal
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Linha com Nome Completo e Ano
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          meta.fullName,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.textTheme.bodyLarge?.color,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        "Ano: ${meta.year}",
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Descrição
+                  Text(
+                    meta.description,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color:
+                          theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.dialogBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // --- Barra Superior com Ações ---
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.compare_arrows_outlined, size: 20),
+                      label: const Text("Comparar"),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onToggleCompareMode();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.textTheme.bodyLarge?.color,
+                        side: BorderSide(color: theme.dividerColor),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(_isDetailedView
+                          ? Icons.grid_view_outlined
+                          : Icons.view_list_outlined),
+                      tooltip: _isDetailedView
+                          ? "Visão Compacta"
+                          : "Visão Detalhada",
+                      onPressed: () {
+                        setState(() {
+                          _isDetailedView = !_isDetailedView;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // --- Corpo do Modal (Lista ou Grade) ---
+              Expanded(
+                child: FutureBuilder<List<BibleVersionMeta>>(
+                  future: _versionsMetaFuture,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final versionsMeta = snapshot.data!;
+
+                    if (_isDetailedView) {
+                      // --- VISÃO DETALHADA (LISTA) ---
+                      return ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        itemCount: versionsMeta.length,
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1, indent: 24, endIndent: 24),
+                        itemBuilder: (context, index) {
+                          final meta = versionsMeta[index];
+                          final isSelected = meta.id.toUpperCase() ==
+                              widget.selectedTranslation.toUpperCase();
+                          // <<< USA O NOVO WIDGET AQUI >>>
+                          return _buildDetailedVersionTile(
+                              meta, isSelected, theme);
+                        },
+                      );
+                    } else {
+                      // --- VISÃO COMPACTA (GRADE) ---
+                      return SingleChildScrollView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(24), // Mais espaçamento
+                        child: Wrap(
+                          spacing: 12.0, // Espaçamento horizontal
+                          runSpacing: 12.0, // Espaçamento vertical
+                          alignment: WrapAlignment.center,
+                          children: versionsMeta.map((meta) {
+                            return BiblePageWidgets.buildTranslationButton(
+                              context: context,
+                              translationKey: meta.id,
+                              translationLabel: meta.id,
+                              selectedTranslation: widget.selectedTranslation,
+                              onPressed: () {
+                                widget.onTranslationSelected(meta.id);
+                                Navigator.pop(context);
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
