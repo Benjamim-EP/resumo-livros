@@ -1,15 +1,19 @@
 // lib/services/interstitial_manager.dart
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:septima_biblia/services/AdHelperStartIo.dart'; // Seu helper
+// <<< 1. MUDE O IMPORT AQUI >>>
+import 'package:septima_biblia/services/ad_helper_admob.dart'; // Importe o helper do AdMob
 
 class InterstitialManager {
   static const _lastInterstitialShownKey = 'last_interstitial_shown_timestamp';
-  // Escolha um cooldown que faça sentido para você, ex: 3 a 5 minutos
   static const _interstitialCooldown = Duration(minutes: 7);
 
-  final AdHelperStartIo _adHelper;
+  // <<< 2. MUDE O TIPO DA VARIÁVEL AQUI >>>
+  final AdHelperAdMob _adHelper;
 
-  InterstitialManager(this._adHelper);
+  InterstitialManager(this._adHelper) {
+    // Pré-carrega o primeiro anúncio intersticial na inicialização
+    _adHelper.loadInterstitialAd();
+  }
 
   Future<bool> _canShowInterstitial() async {
     final prefs = await SharedPreferences.getInstance();
@@ -28,17 +32,20 @@ class InterstitialManager {
   Future<void> tryShowInterstitial({String? fromScreen}) async {
     if (await _canShowInterstitial()) {
       print(
-          "InterstitialManager: Cooldown permite. Tentando mostrar intersticial (AdMob) de '$fromScreen'.");
+          "InterstitialManager: Cooldown permite. Tentando mostrar intersticial (AdMob) de: ${fromScreen ?? 'desconhecido'}.");
+
+      // A chamada para `showInterstitialAd` já está correta, pois o método tem o mesmo nome
       await _adHelper.showInterstitialAd();
-      // O AdHelper já cuida de recarregar, então só precisamos registrar que foi mostrado.
+
+      // A lógica de gravar o timestamp também está correta
       await _recordInterstitialShown();
     } else {
       print(
-          "InterstitialManager: Cooldown do intersticial ainda ativo para '$fromScreen'.");
+          "InterstitialManager: Cooldown do intersticial ainda ativo (chamado de: ${fromScreen ?? 'desconhecido'}).");
     }
   }
 }
 
-// Instância global
+// <<< 3. ATUALIZE A INSTÂNCIA GLOBAL AQUI >>>
 final InterstitialManager interstitialManager =
-    InterstitialManager(AdHelperStartIo());
+    InterstitialManager(AdHelperAdMob());

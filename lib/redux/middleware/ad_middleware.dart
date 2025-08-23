@@ -4,8 +4,6 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/consts.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
-import 'package:septima_biblia/services/AdHelperStartIo.dart';
-import 'package:septima_biblia/services/ad_helper.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/main.dart';
