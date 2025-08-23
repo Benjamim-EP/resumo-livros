@@ -21,6 +21,7 @@ class BookSelectionModal extends StatefulWidget {
 class _BookSelectionModalState extends State<BookSelectionModal>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isDetailedView = true; // Começa na visão detalhada por padrão
 
   @override
   void initState() {
@@ -47,7 +48,7 @@ class _BookSelectionModalState extends State<BookSelectionModal>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return DraggableScrollableSheet(
-      initialChildSize: 0.85, // Um pouco maior para caber as descrições
+      initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
@@ -59,16 +60,41 @@ class _BookSelectionModalState extends State<BookSelectionModal>
           ),
           child: Column(
             children: [
-              // "Handle" e Abas
+              // --- Barra Superior com "Handle" e Botão de Alternância ---
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                child: Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                        color: theme.dividerColor,
-                        borderRadius: BorderRadius.circular(10))),
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                              color: theme.dividerColor,
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(_isDetailedView
+                          ? Icons.grid_view_outlined
+                          : Icons.view_list_outlined),
+                      tooltip: _isDetailedView
+                          ? "Visão Compacta"
+                          : "Visão Detalhada",
+                      onPressed: () {
+                        setState(() {
+                          _isDetailedView = !_isDetailedView;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
+
+              // --- Abas (Antigo vs. Novo Testamento) ---
               TabBar(
                 controller: _tabController,
                 tabs: [
@@ -76,7 +102,8 @@ class _BookSelectionModalState extends State<BookSelectionModal>
                   Tab(text: NEW_TESTAMENT_STRUCTURE.title),
                 ],
               ),
-              // Conteúdo
+
+              // --- Conteúdo Principal ---
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
@@ -95,91 +122,105 @@ class _BookSelectionModalState extends State<BookSelectionModal>
     );
   }
 
-  // Novo widget para construir a visualização de um testamento inteiro
+  // Widget para construir a visualização de um testamento
   Widget _buildTestamentView(BuildContext context, Testament testament,
+      ScrollController scrollController) {
+    if (_isDetailedView) {
+      // --- Visão Detalhada (com categorias) ---
+      return _buildDetailedTestamentView(context, testament, scrollController);
+    } else {
+      // --- Visão Compacta (grade de botões) ---
+      return _buildCompactTestamentView(context, testament, scrollController);
+    }
+  }
+
+  // Constrói a lista com seções e descrições
+  Widget _buildDetailedTestamentView(BuildContext context, Testament testament,
       ScrollController scrollController) {
     final theme = Theme.of(context);
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.all(16.0),
-      itemCount: testament.sections.length + 1, // +1 para o cabeçalho
+      itemCount: testament.sections.length,
       itemBuilder: (context, index) {
-        // O primeiro item é o cabeçalho descritivo do testamento
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child:
-                Text(testament.description, style: theme.textTheme.bodyMedium),
-          );
-        }
-
-        // Os itens seguintes são as seções (Pentateuco, etc.)
-        final section = testament.sections[index - 1];
-        return _buildSectionWidget(context, section);
+        final section = testament.sections[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(section.title,
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(section.description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                      color:
+                          theme.textTheme.bodySmall?.color?.withOpacity(0.7))),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: section.bookAbbrevs.map((bookAbbrev) {
+                  return _buildBookButton(context, bookAbbrev);
+                }).toList(),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
-  // Novo widget para construir uma seção de livros (ex: Pentateuco)
-  Widget _buildSectionWidget(BuildContext context, BibleSection section) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(section.title,
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(section.description,
-              style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7))),
-          const SizedBox(height: 12),
-          // Grid de livros para esta seção
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3, // 3 livros por linha
-              crossAxisSpacing: 10.0,
-              mainAxisSpacing: 10.0,
-              childAspectRatio: 2.5, // Botões mais largos
-            ),
-            itemCount: section.bookAbbrevs.length,
-            itemBuilder: (context, index) {
-              final bookAbbrev = section.bookAbbrevs[index];
-              final bookName = widget.booksMap[bookAbbrev]?['nome'] ??
-                  bookAbbrev.toUpperCase();
-              final isSelected = bookAbbrev == widget.currentlySelectedBook;
+  // Constrói a grade simples com todos os botões
+  Widget _buildCompactTestamentView(BuildContext context, Testament testament,
+      ScrollController scrollController) {
+    // Pega todos os livros do testamento em uma única lista
+    final allBookAbbrevs =
+        testament.sections.expand((s) => s.bookAbbrevs).toList();
 
-              return FilledButton(
-                onPressed: () {
-                  widget.onBookSelected(bookAbbrev);
-                  Navigator.pop(context);
-                },
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  backgroundColor: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.surfaceVariant,
-                  foregroundColor: isSelected
-                      ? theme.colorScheme.onPrimary
-                      : theme.colorScheme.onSurfaceVariant,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  bookName,
-                  textAlign: TextAlign.center,
-                  style:
-                      const TextStyle(fontSize: 11.5), // Fonte menor para caber
-                ),
-              );
-            },
-          ),
-        ],
+    return GridView.builder(
+      controller: scrollController,
+      padding: const EdgeInsets.all(16.0),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0,
+        childAspectRatio: 2.5,
+      ),
+      itemCount: allBookAbbrevs.length,
+      itemBuilder: (context, index) {
+        return _buildBookButton(context, allBookAbbrevs[index]);
+      },
+    );
+  }
+
+  // Widget reutilizável para o botão de cada livro
+  Widget _buildBookButton(BuildContext context, String bookAbbrev) {
+    final theme = Theme.of(context);
+    final bookName =
+        widget.booksMap[bookAbbrev]?['nome'] ?? bookAbbrev.toUpperCase();
+    final isSelected = bookAbbrev == widget.currentlySelectedBook;
+
+    return FilledButton(
+      onPressed: () {
+        widget.onBookSelected(bookAbbrev);
+        Navigator.pop(context);
+      },
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        backgroundColor: isSelected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.surfaceVariant,
+        foregroundColor: isSelected
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onSurfaceVariant,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: Text(
+        bookName,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 11.5),
       ),
     );
   }
