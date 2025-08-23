@@ -23,6 +23,7 @@ class BibleNavigationControls extends StatelessWidget {
   final String selectedTranslation1;
   // <<< NOVO PARÂMETRO >>>
   final ValueChanged<String> onTranslation1Changed;
+  final VoidCallback onToggleCompareMode;
 
   const BibleNavigationControls({
     super.key,
@@ -35,6 +36,7 @@ class BibleNavigationControls extends StatelessWidget {
     required this.onChapterChanged,
     required this.selectedTranslation1, // <<< NOVO PARÂMETRO
     required this.onTranslation1Changed, // <<< NOVO PARÂMETRO
+    required this.onToggleCompareMode,
   });
 
   @override
@@ -109,6 +111,7 @@ class BibleNavigationControls extends StatelessWidget {
                   currentSelectedBookAbbrev: selectedBook,
                   booksMap: booksMap,
                   isPremium: isPremium,
+                  onToggleCompareMode: onToggleCompareMode,
                 );
               },
               borderRadius: BorderRadius.circular(8),

@@ -1605,18 +1605,6 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         onSelected: (value) {
           String? featureName;
           switch (value) {
-            case 'version':
-              featureName = 'change_translation';
-              BiblePageWidgets.showTranslationSelection(
-                context: context,
-                selectedTranslation: selectedTranslation1,
-                onTranslationSelected: (newVal) =>
-                    setState(() => selectedTranslation1 = newVal),
-                currentSelectedBookAbbrev: selectedBook,
-                booksMap: booksMap,
-                isPremium: isPremium,
-              );
-              break;
             case 'focus':
               featureName = 'toggle_focus_mode';
               store.dispatch(EnterFocusModeAction());
@@ -1698,17 +1686,6 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               child: ListTile(
                 leading: const Icon(Icons.lightbulb_outline),
                 title: const Text("Modo Foco"),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'compare',
-              child: ListTile(
-                leading: Icon(_isCompareModeActive
-                    ? Icons.swap_horiz
-                    : Icons.swap_horizontal_circle_outlined),
-                title: Text(_isCompareModeActive
-                    ? "Ver Versão Única"
-                    : "Comparar Versões"),
               ),
             ),
             if (canShowHebrew || canShowGreek) const PopupMenuDivider(),
@@ -1922,6 +1899,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                         selectedTranslation1: selectedTranslation1,
                         onTranslation1Changed: (newVal) =>
                             setState(() => selectedTranslation1 = newVal),
+                        onToggleCompareMode: () =>
+                            setState(() => _isCompareModeActive = true),
                       ),
                 ],
               ),
@@ -1948,6 +1927,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
           onPressed: () {
+            // <<< INÍCIO DA CORREÇÃO >>>
             BiblePageWidgets.showTranslationSelection(
               context: context,
               selectedTranslation: currentTranslation,
@@ -1955,7 +1935,11 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               currentSelectedBookAbbrev: selectedBook,
               booksMap: booksMap,
               isPremium: isPremium,
+              // Passamos uma função vazia, pois não precisamos ativar
+              // o modo de comparação quando já estamos nele.
+              onToggleCompareMode: () {},
             );
+            // <<< FIM DA CORREÇÃO >>>
           },
           child: Text(
             currentTranslation.toUpperCase(),
@@ -1968,6 +1952,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
       );
     }
 
+    // O layout da barra de comparação que você já tinha.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       decoration: BoxDecoration(
@@ -1979,7 +1964,6 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
           _buildSelectorButton(
             selectedTranslation1,
             (newVersion) {
-              // Garante que a nova versão não seja igual à do outro lado
               if (newVersion != selectedTranslation2) {
                 setState(() {
                   selectedTranslation1 = newVersion;
@@ -1994,9 +1978,15 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
             },
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Icon(Icons.compare_arrows_rounded,
-                color: theme.iconTheme.color),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: IconButton(
+              // Ícone alterado para representar "limpar camadas" ou "visão única"
+              icon: const Icon(Icons.layers_clear_outlined),
+              tooltip: "Ver Versão Única",
+              onPressed: () {
+                setState(() => _isCompareModeActive = false);
+              },
+            ),
           ),
           _buildSelectorButton(
             selectedTranslation2 ?? '...',

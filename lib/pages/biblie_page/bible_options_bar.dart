@@ -100,15 +100,11 @@ class BibleOptionsBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final Color premiumIconColor = const Color.fromRGBO(255, 178, 44, 1);
-
     bool canShowHebrewToggle =
         booksMap?[selectedBook]?['testament'] == 'Antigo' &&
-            selectedTranslation1 != 'hebrew_original' &&
             !isCompareModeActive;
-
-    bool canShowGreekToggle = booksMap?[selectedBook]?['testament'] == 'Novo' &&
-        selectedTranslation1 != 'greek_interlinear' &&
-        !isCompareModeActive;
+    bool canShowGreekToggle =
+        booksMap?[selectedBook]?['testament'] == 'Novo' && !isCompareModeActive;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
@@ -117,13 +113,11 @@ class BibleOptionsBar extends StatelessWidget {
         border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
       child: Row(
-        // Usamos uma Row para alinhar os botões principais
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           // BOTÃO 1: SELEÇÃO DE TRADUÇÃO (Principal)
           ElevatedButton.icon(
-            icon: const Icon(Icons.translate,
-                size: 18), // Ícone mantido para clareza
+            icon: const Icon(Icons.translate, size: 18),
             label: Text(
                 isCompareModeActive
                     ? '${selectedTranslation1.toUpperCase()} / ${selectedTranslation2?.toUpperCase() ?? '...'}'
@@ -131,6 +125,7 @@ class BibleOptionsBar extends StatelessWidget {
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             onPressed: () {
+              // <<< INÍCIO DA CORREÇÃO >>>
               BiblePageWidgets.showTranslationSelection(
                 context: context,
                 selectedTranslation: selectedTranslation1,
@@ -138,7 +133,10 @@ class BibleOptionsBar extends StatelessWidget {
                 currentSelectedBookAbbrev: selectedBook,
                 booksMap: booksMap,
                 isPremium: isPremium,
+                onToggleCompareMode:
+                    onToggleCompareMode, // Adiciona o parâmetro que faltava
               );
+              // <<< FIM DA CORREÇÃO >>>
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
@@ -156,33 +154,29 @@ class BibleOptionsBar extends StatelessWidget {
             tooltip: "Ferramentas de Visualização",
             onSelected: (value) {
               switch (value) {
+                // <<< REMOVA O CASE 'compare' DAQUI >>>
+                // case 'compare':
+                //   onToggleCompareMode();
+                //   break;
                 case 'focus':
                   onToggleFocusMode();
-                  break;
-                case 'compare':
-                  onToggleCompareMode();
                   break;
                 case 'fontSize':
                   _showFontSizeDialog(context);
                   break;
                 case 'hebrew':
-                  if (isPremium) {
-                    onToggleHebrewInterlinear();
-                  } else {
-                    _showPremiumDialog(context);
-                  }
+                  isPremium
+                      ? onToggleHebrewInterlinear()
+                      : _showPremiumDialog(context);
                   break;
                 case 'greek':
-                  if (isPremium) {
-                    onToggleGreekInterlinear();
-                  } else {
-                    _showPremiumDialog(context);
-                  }
+                  isPremium
+                      ? onToggleGreekInterlinear()
+                      : _showPremiumDialog(context);
                   break;
               }
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              // Opção Modo Foco
               PopupMenuItem<String>(
                 value: 'focus',
                 child: ListTile(
@@ -193,19 +187,8 @@ class BibleOptionsBar extends StatelessWidget {
                       isFocusModeActive ? "Sair do Modo Foco" : "Modo Leitura"),
                 ),
               ),
-              // Opção Modo Comparação
-              PopupMenuItem<String>(
-                value: 'compare',
-                child: ListTile(
-                  leading: Icon(isCompareModeActive
-                      ? Icons.compare_arrows
-                      : Icons.compare_arrows_outlined),
-                  title: Text(isCompareModeActive
-                      ? "Desativar Comparação"
-                      : "Comparar Traduções"),
-                ),
-              ),
-              // Opção Ajuste de Fonte
+              // <<< REMOVA O ITEM DO MENU DE COMPARAÇÃO DAQUI >>>
+              // PopupMenuItem<String>(value: 'compare', child: ListTile(...),),
               const PopupMenuItem<String>(
                 value: 'fontSize',
                 child: ListTile(
@@ -213,11 +196,8 @@ class BibleOptionsBar extends StatelessWidget {
                   title: Text('Ajustar Fonte'),
                 ),
               ),
-              // Separador
               if (canShowHebrewToggle || canShowGreekToggle)
                 const PopupMenuDivider(),
-
-              // Opções Premium
               if (canShowHebrewToggle)
                 PopupMenuItem<String>(
                   value: 'hebrew',

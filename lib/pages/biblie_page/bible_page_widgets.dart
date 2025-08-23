@@ -125,6 +125,7 @@ class BiblePageWidgets {
     required String? currentSelectedBookAbbrev,
     required Map<String, dynamic>? booksMap,
     required bool isPremium,
+    required VoidCallback onToggleCompareMode,
   }) {
     final theme = Theme.of(context);
     bool isOldTestament = false;
@@ -247,32 +248,63 @@ class BiblePageWidgets {
       context: context,
       backgroundColor: theme.dialogBackgroundColor,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      // <<< INÍCIO DA CORREÇÃO >>>
+      // isScrollControlled: true permite que o modal ocupe mais da metade da tela se necessário
+      isScrollControlled: true,
       builder: (BuildContext modalContext) {
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize
-                  .min, // Essencial para o SingleChildScrollView funcionar bem aqui
-              children: [
-                Text("Escolha a Tradução",
-                    style: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8.0,
-                  runSpacing: 8.0,
-                  alignment: WrapAlignment.center,
-                  children: translationButtons,
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
+        // DraggableScrollableSheet é a melhor maneira de ter um conteúdo rolável
+        // dentro de um BottomSheet com altura flexível.
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6, // Começa com 60% da altura da tela
+          minChildSize: 0.4, // Mínimo de 40%
+          maxChildSize: 0.8, // Máximo de 80%
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: theme.dialogBackgroundColor,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: ListView(
+                // ListView é inerentemente rolável
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
+                children: [
+                  // Botão "Comparar Versões" no topo
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.compare_arrows_outlined),
+                    label: const Text("Comparar Versões"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                      side: BorderSide(
+                          color: theme.colorScheme.primary.withOpacity(0.5)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      onToggleCompareMode();
+                    },
+                  ),
+                  const Divider(height: 24),
+
+                  // Grade de botões
+                  Wrap(
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    alignment: WrapAlignment.center,
+                    children: translationButtons,
+                  ),
+                ],
+              ),
+            );
+          },
         );
+        // <<< FIM DA CORREÇÃO >>>
       },
     );
   }
