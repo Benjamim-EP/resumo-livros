@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:septima_biblia/pages/biblie_page/book_selection_modal.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart'; // Importa o Utils que tem os dropdowns
 
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:septima_biblia/redux/store.dart';
+
+import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
+
 class BibleNavigationControls extends StatelessWidget {
   final String? selectedBook;
   final int? selectedChapter;
@@ -11,6 +18,11 @@ class BibleNavigationControls extends StatelessWidget {
   final VoidCallback onNextChapter;
   final ValueChanged<String?> onBookChanged;
   final ValueChanged<int?> onChapterChanged;
+
+  // <<< NOVO PARÂMETRO >>>
+  final String selectedTranslation1;
+  // <<< NOVO PARÂMETRO >>>
+  final ValueChanged<String> onTranslation1Changed;
 
   const BibleNavigationControls({
     super.key,
@@ -21,6 +33,8 @@ class BibleNavigationControls extends StatelessWidget {
     required this.onNextChapter,
     required this.onBookChanged,
     required this.onChapterChanged,
+    required this.selectedTranslation1, // <<< NOVO PARÂMETRO
+    required this.onTranslation1Changed, // <<< NOVO PARÂMETRO
   });
 
   @override
@@ -75,6 +89,49 @@ class BibleNavigationControls extends StatelessWidget {
       ),
     );
 
+    // <<< NOVO WIDGET PARA O SELETOR DE VERSÃO >>>
+    Widget versionSelectorButton = StoreConnector<AppState, bool>(
+      converter: (store) =>
+          store.state.subscriptionState.status ==
+          SubscriptionStatus.premiumActive,
+      builder: (context, isPremium) {
+        return Expanded(
+          flex: 2, // Flex menor para a sigla da versão
+          child: Material(
+            color: theme.cardColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () {
+                BiblePageWidgets.showTranslationSelection(
+                  context: context,
+                  selectedTranslation: selectedTranslation1,
+                  onTranslationSelected: onTranslation1Changed,
+                  currentSelectedBookAbbrev: selectedBook,
+                  booksMap: booksMap,
+                  isPremium: isPremium,
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                alignment: Alignment.center,
+                child: Text(
+                  selectedTranslation1.toUpperCase(),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
       child: Row(
@@ -89,14 +146,15 @@ class BibleNavigationControls extends StatelessWidget {
           ),
 
           // O novo botão seletor de livro
+          // <<< INÍCIO DA MUDANÇA NO LAYOUT >>>
+          // Agora são 3 botões expandidos no centro
           bookSelectorButton,
-
           const SizedBox(width: 8),
-
-          // O Dropdown de Capítulo (permanece o mesmo)
+          versionSelectorButton, // Novo botão de versão
+          const SizedBox(width: 8),
           if (selectedBook != null)
             Expanded(
-              flex: 2,
+              flex: 2, // Flex menor para o número do capítulo
               child: UtilsBiblePage.buildChapterDropdown(
                 context: context,
                 selectedChapter: selectedChapter,
@@ -108,7 +166,6 @@ class BibleNavigationControls extends StatelessWidget {
                 backgroundColor: theme.cardColor.withOpacity(0.15),
               ),
             ),
-
           // Botão de Próximo Capítulo
           IconButton(
             icon: Icon(Icons.chevron_right,

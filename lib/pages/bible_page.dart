@@ -1918,6 +1918,10 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                             _navigateToChapter(selectedBook!, value);
                           }
                         },
+                        // <<< ADICIONE ESTES DOIS PARÂMETROS >>>
+                        selectedTranslation1: selectedTranslation1,
+                        onTranslation1Changed: (newVal) =>
+                            setState(() => selectedTranslation1 = newVal),
                       ),
                 ],
               ),
