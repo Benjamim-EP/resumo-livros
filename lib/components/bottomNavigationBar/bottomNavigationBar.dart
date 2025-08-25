@@ -505,9 +505,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     actions: [
                       _tutorialService.buildShowcase(
                         key: _tutorialService.keyMudarTema,
-                        title: 'Mudar Tema',
-                        description:
-                            'Toque aqui para alternar entre os temas de cores do aplicativo.',
+                        title: l10n.showcaseChangeThemeTitle,
+                        description: l10n
+                            .showcaseChangeThemeDesc, // Corrigido de "Description" para "Desc"
                         child: IconButton(
                           icon:
                               Icon(_getThemeIcon(currentThemeOptionFromRedux)),

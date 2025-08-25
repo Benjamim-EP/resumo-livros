@@ -270,8 +270,8 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
-    final l10n =
-        AppLocalizations.of(context)!; // Para pegar os nomes dos idiomas
+    final l10n = AppLocalizations.of(context)!; // Instância de localização
+
     return StoreConnector<AppState, _DrawerViewModel>(
       converter: (store) => _DrawerViewModel.fromStore(store),
       builder: (context, viewModel) {
@@ -283,11 +283,9 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
               StoreConnector<AppState, bool>(
                 converter: (store) => store.state.userState.hasBeenReferred,
                 builder: (context, hasBeenReferred) {
-                  // Se o usuário já foi indicado, não mostra nada.
                   if (hasBeenReferred) {
                     return const SizedBox.shrink();
                   }
-                  // Senão, mostra a seção de input e um divisor.
                   return const Column(
                     children: [
                       _ReferralInputSection(),
@@ -298,7 +296,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
               ),
               _buildDrawerItem(
                 leadingWidget: const Icon(Icons.people_alt_outlined),
-                text: 'Amigos',
+                text: l10n.drawerFriends, // <-- Usando l10n
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/friends');
@@ -306,7 +304,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
               ),
               _buildDrawerItem(
                 leadingWidget: const Icon(Icons.notifications_outlined),
-                text: 'Notificações',
+                text: l10n.drawerNotifications, // <-- Usando l10n
                 badgeCount: viewModel.unreadCount,
                 onTap: () {
                   Navigator.pop(context);
@@ -315,16 +313,16 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
               ),
               _buildDrawerItem(
                 leadingWidget: const Icon(Icons.edit_note_outlined),
-                text: 'Diário Devocional',
+                text: l10n.drawerDevotionalDiary, // <-- Usando l10n
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/diary');
                 },
               ),
               _isLoadingPreference
-                  ? const ListTile(title: Text("Carregando configuração..."))
+                  ? ListTile(title: Text("Carregando configuração..."))
                   : SwitchListTile(
-                      title: const Text("Lembretes Diários"),
+                      title: Text(l10n.drawerDailyReminders), // <-- Usando l10n
                       value: _notificationsEnabled,
                       onChanged: _updateNotificationPreference,
                       secondary: Icon(
@@ -336,7 +334,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
               const Divider(),
               _buildDrawerItem(
                 leadingWidget: const Icon(Icons.settings_outlined),
-                text: 'Configurações e Perfil',
+                text: l10n.drawerSettingsAndProfile, // <-- Usando l10n
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/userSettings');
@@ -344,39 +342,34 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
               ),
               _buildDrawerItem(
                 leadingWidget: const Icon(Icons.logout),
-                text: 'Sair',
+                text: l10n.drawerLogout, // <-- Usando l10n
                 onTap: () => _showLogoutConfirmationDialog(context),
               ),
               _buildLanguageSelector(context, languageProvider, l10n),
-              const Divider(height: 1), // Adiciona um separador visual
-
+              const Divider(height: 1),
               ListTile(
                 title: Text(
-                  'Suporte',
+                  l10n.drawerSupport, // <-- Usando l10n
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodySmall?.color,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-
               _buildDrawerItem(
                 leadingWidget: const Icon(Icons.email_outlined),
-                text: 'Contato por E-mail',
-                onTap: _launchEmailSupport, // Chama a nova função
+                text: l10n.drawerContactEmail, // <-- Usando l10n
+                onTap: _launchEmailSupport,
               ),
-
               _buildDrawerItem(
                 leadingWidget: Image.asset(
                   'assets/icon/whatsapp.png',
-                  width: 24, // Tamanho padrão de um ícone de ListTile
+                  width: 24,
                   height: 24,
                 ),
-                text: 'Contato por WhatsApp',
-                onTap: _launchWhatsAppSupport, // Chama a nova função
+                text: l10n.drawerContactWhatsapp, // <-- Usando l10n
+                onTap: _launchWhatsAppSupport,
               ),
-              // <<< FIM DA NOVA SEÇÃO DE SUPORTE >>>
-
               const Divider(),
             ],
           ),
@@ -400,7 +393,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
 
     return ListTile(
       leading: const Icon(Icons.language_outlined),
-      title: const Text('Idioma'),
+      title: Text(l10n.drawerLanguage),
       trailing: DropdownButton<String>(
         value: supportedLanguages.containsKey(currentLangCode)
             ? currentLangCode
@@ -518,34 +511,27 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
   }
 
   Future<void> _showLogoutConfirmationDialog(BuildContext context) async {
-    final store = StoreProvider.of<AppState>(context,
-        listen: false); // Pega a store antes
+    final l10n =
+        AppLocalizations.of(context)!; // Pega a instância de localização
+    final store = StoreProvider.of<AppState>(context, listen: false);
 
     return showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Confirmar Saída'),
-          content: const Text('Você tem certeza que deseja sair?'),
+          title: Text(l10n.logoutConfirmTitle), // <-- Usando l10n
+          content: Text(l10n.logoutConfirmContent), // <-- Usando l10n
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancelar'),
+              child: Text(l10n.cancel), // <-- Usando l10n
               onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
-              child:
-                  const Text('Sair', style: TextStyle(color: Colors.redAccent)),
-              // ✅ 1. TRANSFORME O onPressed EM 'async'
+              child: Text(l10n.drawerLogout, // <-- Usando l10n
+                  style: const TextStyle(color: Colors.redAccent)),
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // Fecha o diálogo
-
-                // ✅ 2. ADICIONE A CHAMADA PARA O FIREBASE AUTH SIGNOUT
-                // Esta é a linha que faltava e que corrige o bug permanentemente.
+                Navigator.of(dialogContext).pop();
                 await FirebaseAuth.instance.signOut();
-
-                // ✅ 3. DESPACHE A AÇÃO DO REDUX PARA LIMPAR A UI
-                // A chamada para Navigator.pop(context) não é mais necessária,
-                // pois o AuthCheck cuidará de reconstruir a árvore de widgets.
                 store.dispatch(UserLoggedOutAction());
               },
             ),
@@ -568,10 +554,11 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
   bool _isLoading = false;
 
   void _submitCode() {
+    final l10n = AppLocalizations.of(context)!; // Pega a instância aqui
     final code = _referralController.text.trim();
     if (code.isEmpty || !code.contains('#')) {
       CustomNotificationService.showError(
-          context, "Por favor, insira um ID válido (ex: nome#1234).");
+          context, l10n.referralInvalidIdError); // <-- Usando l10n
       return;
     }
 
@@ -598,13 +585,15 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Foi indicado por um amigo?",
+            l10n.referralQuestion, // <-- Usando l10n
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface.withOpacity(0.9),
@@ -612,7 +601,7 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
           ),
           const SizedBox(height: 4),
           Text(
-            "Insira o ID Septima dele para ganhar 1000 Pontos no Ranking!",
+            l10n.referralDescription, // <-- Usando l10n
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
@@ -623,10 +612,10 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
               Expanded(
                 child: TextField(
                   controller: _referralController,
-                  decoration: const InputDecoration(
-                    hintText: "nome#1234",
+                  decoration: InputDecoration(
+                    hintText: l10n.referralIdHint,
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   onSubmitted: (_) => _submitCode(),
                 ),
@@ -641,7 +630,7 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.send),
-                tooltip: "Validar Código",
+                tooltip: l10n.referralValidateCode,
               ),
             ],
           ),
