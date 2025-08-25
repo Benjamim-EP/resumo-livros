@@ -16,7 +16,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// ViewModel para buscar os dados do usuário para o cabeçalho do Drawer
+// ViewModel (sem alterações)
 class _DrawerViewModel {
   final String? photoUrl;
   final String name;
@@ -66,44 +66,29 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    // Adiciona este widget como um observador do ciclo de vida do app
     WidgetsBinding.instance.addObserver(this);
-    // Faz a verificação inicial ao construir o widget
     _syncNotificationStatus();
   }
 
   @override
   void dispose() {
-    // Remove o observador para evitar memory leaks
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  /// Observa as mudanças no ciclo de vida do aplicativo.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Se o app voltou para o primeiro plano (ex: voltando das configurações do Android)
     if (state == AppLifecycleState.resumed) {
-      print(
-          "Drawer: App voltou para o primeiro plano. Sincronizando status da notificação.");
-      // Sincroniza o estado do switch com a permissão real do sistema
       _syncNotificationStatus();
     }
   }
 
-  /// Sincroniza o estado do switch com a permissão real do sistema E o SharedPreferences.
   Future<void> _syncNotificationStatus() async {
-    // 1. Pega a permissão REAL do sistema operacional
     final status = await Permission.notification.status;
     final bool permissionGranted = status.isGranted;
-
-    // 2. Pega a preferência SALVA pelo usuário no app
     final prefs = await SharedPreferences.getInstance();
     final bool userPreference =
         prefs.getBool(NotificationService.notificationsEnabledKey) ?? true;
-
-    // 3. O estado final do switch é a combinação dos dois:
-    //    Só deve estar "ligado" se o usuário QUER (preferência) E PODE (permissão).
     final bool finalStatus = userPreference && permissionGranted;
 
     if (mounted) {
@@ -112,24 +97,20 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
         _isLoadingPreference = false;
       });
     }
-
-    // 4. Se houver uma discrepância, corrige o SharedPreferences para refletir a realidade.
     if (userPreference != finalStatus) {
       await prefs.setBool(
           NotificationService.notificationsEnabledKey, finalStatus);
     }
   }
 
-  /// Lida com a interação do usuário com o switch.
   Future<void> _updateNotificationPreference(bool newValue) async {
     final prefs = await SharedPreferences.getInstance();
+    final l10n = AppLocalizations.of(context)!;
 
     if (newValue == true) {
-      // O usuário está TENTANDO ATIVAR as notificações.
       var status = await Permission.notification.status;
 
       if (status.isGranted) {
-        print("Drawer: Permissão já concedida. Ativando lembretes.");
         setState(() => _notificationsEnabled = true);
         await prefs.setBool(NotificationService.notificationsEnabledKey, true);
         await _notificationService.scheduleDailyDevotionals();
@@ -140,22 +121,19 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
       }
 
       if (status.isPermanentlyDenied || status.isRestricted) {
-        print(
-            "Drawer: Permissão negada permanentemente. Abrindo diálogo de configurações.");
         if (mounted) {
           showDialog(
             context: context,
             builder: (dialogContext) => AlertDialog(
-              title: const Text("Permissão Necessária"),
-              content: const Text(
-                  "Para ativar os lembretes, você precisa permitir as notificações manualmente nas configurações do seu dispositivo para este aplicativo."),
+              title: Text(l10n.permissionRequiredTitle),
+              content: Text(l10n.permissionRequiredContent),
               actions: [
                 TextButton(
-                  child: const Text("Cancelar"),
+                  child: Text(l10n.cancel),
                   onPressed: () => Navigator.of(dialogContext).pop(),
                 ),
                 TextButton(
-                  child: const Text("Abrir Configurações"),
+                  child: Text(l10n.openSettings),
                   onPressed: () {
                     openAppSettings();
                     Navigator.of(dialogContext).pop();
@@ -170,12 +148,9 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
       }
 
       if (status.isDenied) {
-        print(
-            "Drawer: Permissão foi negada anteriormente. Solicitando novamente...");
         final newStatus = await Permission.notification.request();
 
         if (newStatus.isGranted) {
-          print("Drawer: Permissão agora concedida. Agendando lembretes.");
           setState(() => _notificationsEnabled = true);
           await prefs.setBool(
               NotificationService.notificationsEnabledKey, true);
@@ -184,7 +159,6 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
             CustomNotificationService.showSuccess(
                 context, "Lembretes diários ativados!");
         } else {
-          print("Drawer: Usuário negou a permissão novamente.");
           if (mounted)
             CustomNotificationService.showError(
                 context, "Permissão de notificação negada.");
@@ -192,9 +166,6 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
         }
       }
     } else {
-      // O usuário está DESATIVANDO as notificações.
-      print(
-          "Drawer: Desativando lembretes e cancelando notificações agendadas.");
       setState(() {
         _notificationsEnabled = false;
       });
@@ -207,11 +178,10 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
     }
   }
 
-  /// Abre o cliente de e-mail padrão do usuário com informações pré-preenchidas.
   Future<void> _launchEmailSupport() async {
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
-      path: 'sep7imadev@gmail.com', // <<< SUBSTITUA PELO SEU E-MAIL
+      path: 'sep7imadev@gmail.com',
       queryParameters: {
         'subject': 'Suporte App Septima Bíblia',
         'body':
@@ -223,7 +193,6 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
       if (await canLaunchUrl(emailLaunchUri)) {
         await launchUrl(emailLaunchUri);
       } else {
-        // Fallback para caso o dispositivo não tenha um cliente de e-mail configurado
         _showLaunchError('Não foi possível abrir o cliente de e-mail.');
       }
     } catch (e) {
@@ -231,23 +200,16 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
     }
   }
 
-  /// Abre uma conversa no WhatsApp com o número de suporte.
   Future<void> _launchWhatsAppSupport() async {
-    // IMPORTANTE: Use o número completo com o código do país, sem o '+' e sem espaços/hífens.
-    const String phoneNumber = '5598989064247'; // <<< SUBSTITUA PELO SEU NÚMERO
+    const String phoneNumber = '5598981809156';
     const String message =
         'Olá! Preciso de ajuda com o aplicativo Septima Bíblia.';
-
-    // Codifica a mensagem para ser usada na URL
     final String encodedMessage = Uri.encodeComponent(message);
-
-    // A URL universal do WhatsApp que funciona em Android e iOS
     final Uri whatsappUrl =
         Uri.parse("https://wa.me/$phoneNumber?text=$encodedMessage");
 
     try {
       if (await canLaunchUrl(whatsappUrl)) {
-        // `externalApplication` garante que abrirá o app do WhatsApp, e não um navegador interno.
         await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
       } else {
         _showLaunchError(
@@ -258,7 +220,6 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
     }
   }
 
-  /// Mostra uma SnackBar de erro se não for possível abrir o link.
   void _showLaunchError(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -270,109 +231,114 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
-    final l10n = AppLocalizations.of(context)!; // Instância de localização
+    final l10n = AppLocalizations.of(context)!;
 
     return StoreConnector<AppState, _DrawerViewModel>(
       converter: (store) => _DrawerViewModel.fromStore(store),
       builder: (context, viewModel) {
         return Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              _buildDrawerHeader(context, viewModel),
-              StoreConnector<AppState, bool>(
-                converter: (store) => store.state.userState.hasBeenReferred,
-                builder: (context, hasBeenReferred) {
-                  if (hasBeenReferred) {
-                    return const SizedBox.shrink();
-                  }
-                  return const Column(
-                    children: [
-                      _ReferralInputSection(),
-                      Divider(),
-                    ],
-                  );
-                },
-              ),
-              _buildDrawerItem(
-                leadingWidget: const Icon(Icons.people_alt_outlined),
-                text: l10n.drawerFriends, // <-- Usando l10n
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/friends');
-                },
-              ),
-              _buildDrawerItem(
-                leadingWidget: const Icon(Icons.notifications_outlined),
-                text: l10n.drawerNotifications, // <-- Usando l10n
-                badgeCount: viewModel.unreadCount,
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/notifications');
-                },
-              ),
-              _buildDrawerItem(
-                leadingWidget: const Icon(Icons.edit_note_outlined),
-                text: l10n.drawerDevotionalDiary, // <-- Usando l10n
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/diary');
-                },
-              ),
-              _isLoadingPreference
-                  ? ListTile(title: Text("Carregando configuração..."))
-                  : SwitchListTile(
-                      title: Text(l10n.drawerDailyReminders), // <-- Usando l10n
-                      value: _notificationsEnabled,
-                      onChanged: _updateNotificationPreference,
-                      secondary: Icon(
-                        _notificationsEnabled
-                            ? Icons.notifications_active_outlined
-                            : Icons.notifications_off_outlined,
+          // <<< INÍCIO DA CORREÇÃO >>>
+          child: SafeArea(
+            // Envolve a ListView com SafeArea para evitar a UI do sistema
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: <Widget>[
+                _buildDrawerHeader(context, viewModel),
+                StoreConnector<AppState, bool>(
+                  converter: (store) => store.state.userState.hasBeenReferred,
+                  builder: (context, hasBeenReferred) {
+                    if (hasBeenReferred) {
+                      return const SizedBox.shrink();
+                    }
+                    return const Column(
+                      children: [
+                        _ReferralInputSection(),
+                        Divider(),
+                      ],
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  leadingWidget: const Icon(Icons.people_alt_outlined),
+                  text: l10n.drawerFriends,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/friends');
+                  },
+                ),
+                _buildDrawerItem(
+                  leadingWidget: const Icon(Icons.notifications_outlined),
+                  text: l10n.drawerNotifications,
+                  badgeCount: viewModel.unreadCount,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/notifications');
+                  },
+                ),
+                _buildDrawerItem(
+                  leadingWidget: const Icon(Icons.edit_note_outlined),
+                  text: l10n.drawerDevotionalDiary,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/diary');
+                  },
+                ),
+                _isLoadingPreference
+                    ? const ListTile(title: Text("Carregando configuração..."))
+                    : SwitchListTile(
+                        title: Text(l10n.drawerDailyReminders),
+                        value: _notificationsEnabled,
+                        onChanged: _updateNotificationPreference,
+                        secondary: Icon(
+                          _notificationsEnabled
+                              ? Icons.notifications_active_outlined
+                              : Icons.notifications_off_outlined,
+                        ),
                       ),
+                const Divider(),
+                _buildDrawerItem(
+                  leadingWidget: const Icon(Icons.settings_outlined),
+                  text: l10n.drawerSettingsAndProfile,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/userSettings');
+                  },
+                ),
+                _buildDrawerItem(
+                  leadingWidget: const Icon(Icons.logout),
+                  text: l10n.drawerLogout,
+                  onTap: () => _showLogoutConfirmationDialog(context),
+                ),
+                _buildLanguageSelector(context, languageProvider, l10n),
+                const Divider(height: 1),
+                ListTile(
+                  title: Text(
+                    l10n.drawerSupport,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                      fontWeight: FontWeight.bold,
                     ),
-              const Divider(),
-              _buildDrawerItem(
-                leadingWidget: const Icon(Icons.settings_outlined),
-                text: l10n.drawerSettingsAndProfile, // <-- Usando l10n
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/userSettings');
-                },
-              ),
-              _buildDrawerItem(
-                leadingWidget: const Icon(Icons.logout),
-                text: l10n.drawerLogout, // <-- Usando l10n
-                onTap: () => _showLogoutConfirmationDialog(context),
-              ),
-              _buildLanguageSelector(context, languageProvider, l10n),
-              const Divider(height: 1),
-              ListTile(
-                title: Text(
-                  l10n.drawerSupport, // <-- Usando l10n
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodySmall?.color,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-              _buildDrawerItem(
-                leadingWidget: const Icon(Icons.email_outlined),
-                text: l10n.drawerContactEmail, // <-- Usando l10n
-                onTap: _launchEmailSupport,
-              ),
-              _buildDrawerItem(
-                leadingWidget: Image.asset(
-                  'assets/icon/whatsapp.png',
-                  width: 24,
-                  height: 24,
+                _buildDrawerItem(
+                  leadingWidget: const Icon(Icons.email_outlined),
+                  text: l10n.drawerContactEmail,
+                  onTap: _launchEmailSupport,
                 ),
-                text: l10n.drawerContactWhatsapp, // <-- Usando l10n
-                onTap: _launchWhatsAppSupport,
-              ),
-              const Divider(),
-            ],
+                _buildDrawerItem(
+                  leadingWidget: Image.asset(
+                    'assets/icon/whatsapp.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  text: l10n.drawerContactWhatsapp,
+                  onTap: _launchWhatsAppSupport,
+                ),
+                const Divider(),
+              ],
+            ),
           ),
+          // <<< FIM DA CORREÇÃO >>>
         );
       },
     );
@@ -380,25 +346,20 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
 
   Widget _buildLanguageSelector(
       BuildContext context, LanguageProvider provider, AppLocalizations l10n) {
-    // Define os idiomas que você suporta
     final supportedLanguages = {
       'pt': 'Português',
       'en': 'English',
     };
-
-    // Determina o código do idioma atual (ex: 'pt', 'en')
-    // Se appLocale for nulo, ele usa o idioma do dispositivo.
     final currentLangCode = provider.appLocale?.languageCode ??
         Localizations.localeOf(context).languageCode;
-
     return ListTile(
       leading: const Icon(Icons.language_outlined),
       title: Text(l10n.drawerLanguage),
       trailing: DropdownButton<String>(
         value: supportedLanguages.containsKey(currentLangCode)
             ? currentLangCode
-            : 'pt', // Valor padrão 'pt'
-        underline: const SizedBox(), // Remove a linha de baixo
+            : 'pt',
+        underline: const SizedBox(),
         items: supportedLanguages.entries.map((entry) {
           return DropdownMenuItem<String>(
             value: entry.key,
@@ -407,7 +368,6 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
         }).toList(),
         onChanged: (String? newLanguageCode) {
           if (newLanguageCode != null) {
-            // Chama o método no provider para mudar o idioma
             provider.changeLocale(newLanguageCode);
           }
         },
@@ -493,7 +453,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
   }
 
   Widget _buildDrawerItem({
-    required Widget leadingWidget, // <<< Agora espera um Widget completo
+    required Widget leadingWidget,
     required String text,
     required GestureTapCallback onTap,
     int badgeCount = 0,
@@ -502,32 +462,31 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
       leading: badgeCount > 0
           ? Badge(
               label: Text('$badgeCount'),
-              child: leadingWidget, // <<< Usa o Widget diretamente
+              child: leadingWidget,
             )
-          : leadingWidget, // <<< Usa o Widget diretamente
+          : leadingWidget,
       title: Text(text),
       onTap: onTap,
     );
   }
 
   Future<void> _showLogoutConfirmationDialog(BuildContext context) async {
-    final l10n =
-        AppLocalizations.of(context)!; // Pega a instância de localização
+    final l10n = AppLocalizations.of(context)!;
     final store = StoreProvider.of<AppState>(context, listen: false);
 
     return showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text(l10n.logoutConfirmTitle), // <-- Usando l10n
-          content: Text(l10n.logoutConfirmContent), // <-- Usando l10n
+          title: Text(l10n.logoutConfirmTitle),
+          content: Text(l10n.logoutConfirmContent),
           actions: <Widget>[
             TextButton(
-              child: Text(l10n.cancel), // <-- Usando l10n
+              child: Text(l10n.cancel),
               onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
-              child: Text(l10n.drawerLogout, // <-- Usando l10n
+              child: Text(l10n.drawerLogout,
                   style: const TextStyle(color: Colors.redAccent)),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
@@ -554,18 +513,15 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
   bool _isLoading = false;
 
   void _submitCode() {
-    final l10n = AppLocalizations.of(context)!; // Pega a instância aqui
+    final l10n = AppLocalizations.of(context)!;
     final code = _referralController.text.trim();
     if (code.isEmpty || !code.contains('#')) {
-      CustomNotificationService.showError(
-          context, l10n.referralInvalidIdError); // <-- Usando l10n
+      CustomNotificationService.showError(context, l10n.referralInvalidIdError);
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // A ação do Redux cuidará da chamada da Cloud Function
-    // e o Future.whenComplete vai garantir que o loading pare.
     StoreProvider.of<AppState>(context, listen: false)
         .dispatch(SubmitReferralCodeAction(code))
         .whenComplete(() {
@@ -593,7 +549,7 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.referralQuestion, // <-- Usando l10n
+            l10n.referralQuestion,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface.withOpacity(0.9),
@@ -601,7 +557,7 @@ class _ReferralInputSectionState extends State<_ReferralInputSection> {
           ),
           const SizedBox(height: 4),
           Text(
-            l10n.referralDescription, // <-- Usando l10n
+            l10n.referralDescription,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
