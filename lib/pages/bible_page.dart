@@ -1972,11 +1972,169 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                         ),
                       ),
                     ),
+                  _buildFloatingActionButtons(context),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButtons(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPremium = _isUserPremium(_store!);
+
+    // Condições de visibilidade
+    final bool canShowHebrew =
+        booksMap?[selectedBook]?['testament'] == 'Antigo' &&
+            !_isCompareModeActive;
+    final bool canShowGreek = booksMap?[selectedBook]?['testament'] == 'Novo' &&
+        !_isCompareModeActive;
+
+    final bool shouldShowAnyButton =
+        (_hasMapData || canShowHebrew || canShowGreek) &&
+            !_isSemanticSearchActive &&
+            !store.state.userState.isFocusMode;
+
+    if (!shouldShowAnyButton) {
+      return const SizedBox
+          .shrink(); // Não mostra nada se nenhuma condição for atendida
+    }
+
+    // Botão circular customizado
+    Widget buildCircleButton({
+      required VoidCallback onTap,
+      required Widget icon,
+      required String tooltip,
+      bool isActive = false,
+    }) {
+      return Material(
+        color: isActive
+            ? theme.colorScheme.primary.withOpacity(0.3)
+            : theme.colorScheme.surface,
+        elevation: 4.0,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Tooltip(
+            message: tooltip,
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: icon,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Positioned(
+      bottom: 70.0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.cardColor.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_hasMapData)
+              buildCircleButton(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BibleMapPage(
+                        chapterId: "${selectedBook}_${selectedChapter}",
+                        chapterTitle:
+                            "${booksMap?[selectedBook]?['nome']} $selectedChapter",
+                      ),
+                    ),
+                  );
+                },
+                icon: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Image.asset('assets/icon/maps.png'),
+                ),
+                tooltip: "Ver Mapa do Capítulo",
+              ),
+            if (_hasMapData && (canShowHebrew || canShowGreek))
+              const SizedBox(width: 12),
+            if (canShowHebrew)
+              buildCircleButton(
+                isActive: _showHebrewInterlinear,
+                onTap: () {
+                  if (isPremium) {
+                    setState(() {
+                      _showHebrewInterlinear = !_showHebrewInterlinear;
+                      if (_showHebrewInterlinear) {
+                        _showGreekInterlinear = false;
+                        _loadCurrentChapterHebrewDataIfNeeded();
+                      } else {
+                        _currentChapterHebrewData = null;
+                      }
+                    });
+                  } else {
+                    _showPremiumDialog(context);
+                  }
+                },
+                icon: SvgPicture.asset(
+                  'assets/icons/interlinear_icon.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    _showHebrewInterlinear
+                        ? theme.colorScheme.primary
+                        : theme.iconTheme.color!,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                tooltip: "Hebraico Interlinear",
+              ),
+            if (canShowGreek)
+              buildCircleButton(
+                isActive: _showGreekInterlinear,
+                onTap: () {
+                  if (isPremium) {
+                    setState(() {
+                      _showGreekInterlinear = !_showGreekInterlinear;
+                      if (_showGreekInterlinear) {
+                        _showHebrewInterlinear = false;
+                        _loadCurrentChapterGreekDataIfNeeded();
+                      } else {
+                        _currentChapterGreekData = null;
+                      }
+                    });
+                  } else {
+                    _showPremiumDialog(context);
+                  }
+                },
+                icon: SvgPicture.asset(
+                  'assets/icons/interlinear_icon.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    _showGreekInterlinear
+                        ? theme.colorScheme.primary
+                        : theme.iconTheme.color!,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                tooltip: "Grego Interlinear",
+              ),
+          ],
+        ),
       ),
     );
   }
