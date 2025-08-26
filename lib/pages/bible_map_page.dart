@@ -14,13 +14,14 @@ class MapPlace {
   final String style;
   final List<LatLng> coordinates;
   final List<int> verses;
-
+  final int confidence;
   MapPlace({
     required this.name,
     required this.type,
     required this.style,
     required this.coordinates,
     required this.verses,
+    required this.confidence,
   });
 
   factory MapPlace.fromFirestore(Map<String, dynamic> data) {
@@ -37,6 +38,7 @@ class MapPlace {
       style: data['style'] ?? '',
       coordinates: coordsList,
       verses: (data['verses'] as List<dynamic>? ?? []).cast<int>().toList(),
+      confidence: data['confidence'] as int? ?? 100,
     );
   }
 }
@@ -368,8 +370,7 @@ class _BibleMapPageState extends State<BibleMapPage> {
                     dense: true,
                     leading: Icon(_getIconForStyle(place.style),
                         color: _getColorForStyle(place.style), size: 20),
-                    title: Text(place.name,
-                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                    title: Text(place.name), // O nome já vem formatado do KML
                     subtitle: Text("V: ${place.verses.join(', ')}",
                         style: theme.textTheme.bodySmall),
                     onTap: () => _moveToLocation(place),
