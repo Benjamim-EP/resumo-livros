@@ -1862,4 +1862,31 @@ class FirestoreService {
         "FirestoreService: Busca de referências da biblioteca concluída. Total de seções encontradas: ${results.length}");
     return results;
   }
+
+  Future<List<Map<String, dynamic>>?> getChapterMapData(
+      String chapterId) async {
+    try {
+      final docSnapshot =
+          await _db.collection('bibleChapterMaps').doc(chapterId).get();
+
+      if (docSnapshot.exists) {
+        // Se o documento existe, retorna o array 'places' dentro dele.
+        // Usamos 'cast' para garantir a tipagem correta.
+        final data = docSnapshot.data();
+        return (data?['places'] as List<dynamic>?)
+            ?.map((place) => Map<String, dynamic>.from(place))
+            .toList();
+      } else {
+        // Se o documento não existe, significa que não há dados de mapa para este capítulo.
+        print(
+            "FirestoreService: Nenhum dado de mapa encontrado para o capítulo: $chapterId");
+        return null;
+      }
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao buscar dados do mapa para o capítulo $chapterId: $e");
+      // Em caso de erro, também retornamos nulo.
+      return null;
+    }
+  }
 }

@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:septima_biblia/consts.dart';
 import 'package:septima_biblia/consts/consts.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_navigation_controls.dart';
-import 'package:septima_biblia/pages/biblie_page/bible_options_bar.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_reader_view.dart';
@@ -28,13 +27,14 @@ import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
-import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/pdf_generation_service.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 import 'package:septima_biblia/services/reading_time_tracker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:septima_biblia/pages/bible_map_page.dart';
 
 class _BiblePageViewModel {
   final String? initialBook;
@@ -120,6 +120,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
   static const String _unlockedSummariesPrefsKey = 'unlocked_bible_summaries';
 
+  bool _hasMapData = false;
+
   @override
   void initState() {
     _loadFontSizePreference();
@@ -156,6 +158,23 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         startReadingTracker(scrollController: _scrollController1);
       }
     });
+  }
+
+  Future<void> _checkIfMapDataExists() async {
+    if (selectedBook == null || selectedChapter == null) {
+      if (mounted) setState(() => _hasMapData = false);
+      return;
+    }
+
+    final chapterId = "${selectedBook}_${selectedChapter}";
+    final data = await _firestoreService.getChapterMapData(chapterId);
+
+    // Atualiza o estado da UI com base na resposta do Firestore
+    if (mounted) {
+      setState(() {
+        _hasMapData = (data != null && data.isNotEmpty);
+      });
+    }
   }
 
   Future<Set<String>> _getUnlockedSummaries() async {
@@ -774,6 +793,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         }
       });
       _checkIfPdfExists();
+      _checkIfMapDataExists();
     }
 
     if (bookOrChapterChanged || forceKeyUpdate) {
@@ -1556,7 +1576,23 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
             _handleGeneratePdf();
           },
         ),
-
+      if (_hasMapData)
+        IconButton(
+          icon: Icon(Icons.map_outlined, color: defaultIconColor, size: 26),
+          tooltip: "Ver Mapa do Capítulo",
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BibleMapPage(
+                  chapterId: "${selectedBook}_${selectedChapter}",
+                  chapterTitle:
+                      "${booksMap?[selectedBook]?['nome']} $selectedChapter",
+                ),
+              ),
+            );
+          },
+        ),
       // --- MENU AGRUPADO DE BUSCA ---
       PopupMenuButton<String>(
         icon: Icon(Icons.search, color: defaultIconColor, size: 26),
