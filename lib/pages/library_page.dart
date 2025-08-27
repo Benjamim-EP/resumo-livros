@@ -13,6 +13,7 @@ import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.da
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
 import 'package:septima_biblia/pages/library_page/turretin_elenctic_theology/turretin_index_page.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
+import 'package:septima_biblia/pages/themed_maps_list_page.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
@@ -259,6 +260,18 @@ class _LibraryPageState extends State<LibraryPage> {
   };
   // A lista de itens da biblioteca
   List<Map<String, dynamic>> get libraryItems => [
+        {
+          'title': "Mapas Temáticos",
+          'description':
+              "Explore as jornadas dos apóstolos e outros eventos bíblicos visualmente.",
+          'author': 'Septima',
+          'pageCount': '4 Viagens',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
+          'coverImagePath':
+              'assets/covers/themed_maps_cover.webp', // Você precisará de uma imagem de capa
+          'destinationPage': const ThemedMapsListPage(),
+        },
         {
           'title': "Sermões de C.H. Spurgeon",
           'description':

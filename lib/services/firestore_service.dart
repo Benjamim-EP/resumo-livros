@@ -1889,4 +1889,20 @@ class FirestoreService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> getThemedMapsData(String documentId) async {
+    try {
+      final docSnapshot =
+          await _db.collection('themedMaps').doc(documentId).get();
+      if (docSnapshot.exists) {
+        return docSnapshot.data();
+      }
+      print(
+          "FirestoreService: Documento de mapa temático não encontrado: $documentId");
+      return null;
+    } catch (e) {
+      print("FirestoreService: Erro ao buscar mapa temático $documentId: $e");
+      return null;
+    }
+  }
 }

@@ -3,11 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:septima_biblia/models/themed_map_model.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:septima_biblia/utils/polygon_contains.dart'; // Import the new utility file
+import 'package:septima_biblia/utils/polygon_contains.dart';
 
-// Modelo de dados (sem alterações)
+// Modelo de dados unificado para qualquer item geográfico na página do mapa
 class MapPlace {
   final String name;
   final String type;
@@ -15,6 +16,8 @@ class MapPlace {
   final List<LatLng> coordinates;
   final List<int> verses;
   final int confidence;
+  final String? description;
+
   MapPlace({
     required this.name,
     required this.type,
@@ -22,8 +25,10 @@ class MapPlace {
     required this.coordinates,
     required this.verses,
     required this.confidence,
+    this.description,
   });
 
+  // Construtor para dados vindos do Firestore (mapas por capítulo)
   factory MapPlace.fromFirestore(Map<String, dynamic> data) {
     final coordsList = (data['coordinates'] as List<dynamic>? ?? [])
         .map((coordMap) => LatLng(
@@ -39,19 +44,36 @@ class MapPlace {
       coordinates: coordsList,
       verses: (data['verses'] as List<dynamic>? ?? []).cast<int>().toList(),
       confidence: data['confidence'] as int? ?? 100,
+      description: null, // Descrições vêm de mapas temáticos
+    );
+  }
+
+  // Construtor para dados vindos de um mapa temático (viagens)
+  factory MapPlace.fromJourneyLocation(JourneyLocation loc) {
+    return MapPlace(
+      name: loc.name,
+      type: 'point', // Locais de viagem são sempre pontos
+      style: 'path', // Estilo padrão para rotas
+      coordinates: [loc.point],
+      verses: [], // Rotas não são filtradas por versículo
+      confidence: 100,
+      description: loc.description,
     );
   }
 }
 
 class BibleMapPage extends StatefulWidget {
-  final String chapterId;
-  final String chapterTitle;
+  final String? chapterId;
+  final String? chapterTitle;
+  final ThemedJourney? themedJourney;
 
   const BibleMapPage({
     super.key,
-    required this.chapterId,
-    required this.chapterTitle,
-  });
+    this.chapterId,
+    this.chapterTitle,
+    this.themedJourney,
+  }) : assert(chapterId != null || themedJourney != null,
+            "É necessário fornecer um chapterId ou uma themedJourney.");
 
   @override
   State<BibleMapPage> createState() => _BibleMapPageState();
@@ -59,7 +81,7 @@ class BibleMapPage extends StatefulWidget {
 
 class _BibleMapPageState extends State<BibleMapPage> {
   final FirestoreService _firestoreService = FirestoreService();
-  late Future<List<MapPlace>?> _mapDataFuture;
+  late Future<List<MapPlace>> _mapDataFuture;
   final MapController _mapController = MapController();
 
   Set<String> _activeFilters = {'point', 'polygon', 'linestring'};
@@ -72,15 +94,18 @@ class _BibleMapPageState extends State<BibleMapPage> {
     _mapDataFuture = _loadMapData();
   }
 
-  Future<List<MapPlace>?> _loadMapData() async {
-    final rawData = await _firestoreService.getChapterMapData(widget.chapterId);
-    if (rawData == null) return null;
-    return rawData
-        .map((placeData) => MapPlace.fromFirestore(placeData))
-        .toList();
+  Future<List<MapPlace>> _loadMapData() async {
+    if (widget.themedJourney != null) {
+      return widget.themedJourney!.locations
+          .map((loc) => MapPlace.fromJourneyLocation(loc))
+          .toList();
+    } else {
+      final rawData =
+          await _firestoreService.getChapterMapData(widget.chapterId!);
+      if (rawData == null) return [];
+      return rawData.map((data) => MapPlace.fromFirestore(data)).toList();
+    }
   }
-
-  // --- Funções de Construção ---
 
   List<Marker> _buildMarkers(List<MapPlace> places) {
     return places
@@ -104,7 +129,6 @@ class _BibleMapPageState extends State<BibleMapPage> {
     }).toList();
   }
 
-  // <<< INÍCIO DA CORREÇÃO >>>
   List<Polygon> _buildPolygons(List<MapPlace> places) {
     return places
         .where((p) =>
@@ -119,13 +143,40 @@ class _BibleMapPageState extends State<BibleMapPage> {
         borderColor: _getColorForStyle(place.style),
         borderStrokeWidth: 2,
         isFilled: true,
-        // O parâmetro 'isTapable' foi removido.
       );
     }).toList();
   }
-  // <<< FIM DA CORREÇÃO >>>
 
   List<Polyline> _buildPolylines(List<MapPlace> places) {
+    // --- CENÁRIO 1: É UM MAPA TEMÁTICO (VIAGEM) ---
+    if (widget.themedJourney != null) {
+      // Sua lógica correta para a v7
+      StrokePattern pattern;
+
+      switch (widget.themedJourney!.style) {
+        case 'dotted':
+          pattern = const StrokePattern.dotted(spacingFactor: 2.0);
+          break;
+        case 'dashed':
+          pattern = StrokePattern.dashed(segments: [12.0, 8.0]);
+          break;
+        default:
+          pattern = const StrokePattern.solid();
+      }
+
+      return [
+        Polyline(
+          points: places.map((p) => p.coordinates.first).toList(),
+          color: widget.themedJourney!.color,
+          strokeWidth: 4,
+          pattern: pattern,
+        ),
+      ];
+    }
+
+    // --- CENÁRIO 2: É UM MAPA DE CAPÍTULO (LÓGICA ORIGINAL RESTAURADA) ---
+    // Se não for um mapa temático, executa a lógica de filtrar e desenhar
+    // as linhas individuais do capítulo (rios, estradas, etc.).
     return places
         .where((p) =>
             p.type == 'linestring' &&
@@ -133,6 +184,7 @@ class _BibleMapPageState extends State<BibleMapPage> {
             _activeFilters.contains('linestring') &&
             (_selectedVerse == null || p.verses.contains(_selectedVerse)))
         .map((place) {
+      // As linhas de capítulo serão sempre sólidas por padrão.
       return Polyline(
         points: place.coordinates,
         color: _getColorForStyle(place.style),
@@ -140,8 +192,6 @@ class _BibleMapPageState extends State<BibleMapPage> {
       );
     }).toList();
   }
-
-  // O resto do arquivo permanece o mesmo...
 
   Color _getColorForStyle(String style) {
     if (style.contains('water')) return Colors.blue.shade700;
@@ -159,15 +209,30 @@ class _BibleMapPageState extends State<BibleMapPage> {
   void _showPlaceDetails(BuildContext context, MapPlace place) {
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20.0),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24.0),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(place.name, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 10),
-            Text("Mencionada nos versículos: ${place.verses.join(', ')}"),
+            const SizedBox(height: 12),
+            if (place.description != null && place.description!.isNotEmpty)
+              Text(place.description!,
+                  style: Theme.of(context).textTheme.bodyLarge),
+            if (place.verses.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                    "Mencionada nos versículos: ${place.verses.join(', ')}",
+                    style: Theme.of(context).textTheme.bodyMedium),
+              ),
             const SizedBox(height: 10),
           ],
         ),
@@ -192,7 +257,7 @@ class _BibleMapPageState extends State<BibleMapPage> {
 
   void _moveToLocation(MapPlace place) {
     if (place.coordinates.isEmpty) return;
-    if (place.type == 'point') {
+    if (place.type == 'point' || place.type == 'linestring') {
       _mapController.move(place.coordinates.first, 10.0);
     } else {
       final bounds = _calculateBounds([place]);
@@ -207,20 +272,16 @@ class _BibleMapPageState extends State<BibleMapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Mapa: ${widget.chapterTitle}"),
+        title:
+            Text(widget.themedJourney?.title ?? "Mapa: ${widget.chapterTitle}"),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _showLegend = !_showLegend;
-          });
-        },
+        onPressed: () => setState(() => _showLegend = !_showLegend),
         tooltip: _showLegend ? "Esconder Legenda" : "Mostrar Legenda",
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) {
-            return ScaleTransition(scale: animation, child: child);
-          },
+          transitionBuilder: (child, animation) =>
+              ScaleTransition(scale: animation, child: child),
           child: Icon(
             _showLegend
                 ? Icons.visibility_off_outlined
@@ -229,8 +290,8 @@ class _BibleMapPageState extends State<BibleMapPage> {
           ),
         ),
       ),
-      body: FutureBuilder<List<MapPlace>?>(
-        future: _mapDataFuture,
+      body: FutureBuilder<List<MapPlace>>(
+        future: _mapDataFuture.then((value) => value ?? []),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -240,12 +301,9 @@ class _BibleMapPageState extends State<BibleMapPage> {
                 child:
                     Text("Erro ao carregar dados do mapa: ${snapshot.error}"));
           }
-          if (!snapshot.hasData ||
-              snapshot.data == null ||
-              snapshot.data!.isEmpty) {
+          if (snapshot.data!.isEmpty) {
             return const Center(
-                child: Text(
-                    "Nenhum dado geográfico encontrado para este capítulo."));
+                child: Text("Nenhum dado geográfico encontrado."));
           }
 
           final places = snapshot.data!;
@@ -263,23 +321,18 @@ class _BibleMapPageState extends State<BibleMapPage> {
                     bounds: bounds,
                     padding: const EdgeInsets.all(50.0),
                   ),
-                  // <<< INÍCIO DA CORREÇÃO >>>
                   onTap: (tapPosition, point) {
-                    // Itera sobre os polígonos visíveis (começando pelo que está no topo)
-                    for (var p in polygons.reversed) {
-                      // Verifica se o ponto do toque está dentro do polígono
+                    final polygonsToTest = _buildPolygons(
+                        places); // Pega os polígonos atualmente visíveis
+                    for (var p in polygonsToTest.reversed) {
                       if (PolygonUtil.contains(point, p.points)) {
                         final placeData = places.firstWhere(
-                            (place) => place.coordinates == p.points,
-                            orElse: () =>
-                                places.first // Fallback, shouldn't happen
-                            );
+                            (place) => place.coordinates == p.points);
                         _showPlaceDetails(context, placeData);
-                        break; // Para no primeiro polígono que encontrar
+                        break;
                       }
                     }
                   },
-                  // <<< FIM DA CORREÇÃO >>>
                 ),
                 children: [
                   TileLayer(
@@ -338,27 +391,30 @@ class _BibleMapPageState extends State<BibleMapPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (hasPoints)
-                      _buildFilterChip('point', Icons.location_on, "Locais"),
-                    if (hasPolygons) const SizedBox(width: 8),
-                    if (hasPolygons)
-                      _buildFilterChip('polygon', Icons.layers, "Áreas"),
-                    if (hasLinestrings) const SizedBox(width: 8),
-                    if (hasLinestrings)
-                      _buildFilterChip(
-                          'linestring', Icons.timeline, "Rios/Rotas"),
-                  ],
+            if (widget.chapterId !=
+                null) // Só mostra filtros se for mapa de capítulo
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (hasPoints)
+                        _buildFilterChip('point', Icons.location_on, "Locais"),
+                      if (hasPolygons) const SizedBox(width: 8),
+                      if (hasPolygons)
+                        _buildFilterChip('polygon', Icons.layers, "Áreas"),
+                      if (hasLinestrings) const SizedBox(width: 8),
+                      if (hasLinestrings)
+                        _buildFilterChip(
+                            'linestring', Icons.timeline, "Rios/Rotas"),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            if (sortedVerses.length > 1) _buildVerseFilter(sortedVerses, theme),
+            if (widget.chapterId != null && sortedVerses.length > 1)
+              _buildVerseFilter(sortedVerses, theme),
             const Divider(height: 1),
             Flexible(
               child: ListView.builder(
@@ -370,9 +426,12 @@ class _BibleMapPageState extends State<BibleMapPage> {
                     dense: true,
                     leading: Icon(_getIconForStyle(place.style),
                         color: _getColorForStyle(place.style), size: 20),
-                    title: Text(place.name), // O nome já vem formatado do KML
-                    subtitle: Text("V: ${place.verses.join(', ')}",
-                        style: theme.textTheme.bodySmall),
+                    title: Text(place.name,
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: place.verses.isNotEmpty
+                        ? Text("V: ${place.verses.join(', ')}",
+                            style: theme.textTheme.bodySmall)
+                        : null,
                     onTap: () => _moveToLocation(place),
                   );
                 },
@@ -398,11 +457,7 @@ class _BibleMapPageState extends State<BibleMapPage> {
               child: ChoiceChip(
                 label: const Text("Todos"),
                 selected: _selectedVerse == null,
-                onSelected: (selected) {
-                  setState(() {
-                    _selectedVerse = null;
-                  });
-                },
+                onSelected: (selected) => setState(() => _selectedVerse = null),
               ),
             );
           }
@@ -412,11 +467,8 @@ class _BibleMapPageState extends State<BibleMapPage> {
             child: ChoiceChip(
               label: Text("V. $verseNum"),
               selected: _selectedVerse == verseNum,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedVerse = selected ? verseNum : null;
-                });
-              },
+              onSelected: (selected) =>
+                  setState(() => _selectedVerse = selected ? verseNum : null),
             ),
           );
         },
@@ -463,45 +515,3 @@ class _BibleMapPageState extends State<BibleMapPage> {
     );
   }
 }
-
-// <<< INÍCIO DA CORREÇÃO: ARQUIVO SEPARADO PARA A LÓGICA DE DETECÇÃO DE PONTO >>>
-// Crie um novo arquivo em `lib/utils/polygon_contains.dart` e cole este código.
-
-class PolygonUtil {
-  // Converte um objeto LatLng para um Point simples para cálculo.
-  static _Point _latLngToPoint(_Point p) => _Point(p.x, p.y);
-
-  /// Verifica se um ponto [p] está dentro de um polígono [polygon].
-  static bool contains(LatLng p, List<LatLng> polygon) {
-    if (polygon.isEmpty) {
-      return false;
-    }
-
-    // Converte a lista de LatLng para uma lista de _Point
-    final List<_Point> points =
-        polygon.map((e) => _Point(e.latitude, e.longitude)).toList();
-    final _Point point = _Point(p.latitude, p.longitude);
-
-    int i, j = polygon.length - 1;
-    bool c = false;
-    for (i = 0; i < polygon.length; j = i++) {
-      if (((points[i].y > point.y) != (points[j].y > point.y)) &&
-          (point.x <
-              (points[j].x - points[i].x) *
-                      (point.y - points[i].y) /
-                      (points[j].y - points[i].y) +
-                  points[i].x)) {
-        c = !c;
-      }
-    }
-    return c;
-  }
-}
-
-// Classe auxiliar para os cálculos matemáticos.
-class _Point {
-  final double x;
-  final double y;
-  const _Point(this.x, this.y);
-}
-// <<< FIM DA CORREÇÃO >>>
