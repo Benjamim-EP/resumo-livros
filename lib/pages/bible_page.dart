@@ -1687,13 +1687,13 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                   !_isCompareModeActive;
 
           return <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'version',
-              child: ListTile(
-                leading: Icon(Icons.translate_outlined),
-                title: Text('Alterar Versão'),
-              ),
-            ),
+            // const PopupMenuItem<String>(
+            //   value: 'version',
+            //   child: ListTile(
+            //     leading: Icon(Icons.translate_outlined),
+            //     title: Text('Alterar Versão'),
+            //   ),
+            // ),
             const PopupMenuItem<String>(
               value: 'fontSize',
               child: ListTile(
@@ -1702,13 +1702,13 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               ),
             ),
             const PopupMenuDivider(),
-            PopupMenuItem<String>(
-              value: 'focus',
-              child: ListTile(
-                leading: const Icon(Icons.lightbulb_outline),
-                title: const Text("Modo Foco"),
-              ),
-            ),
+            // PopupMenuItem<String>(
+            //   value: 'focus',
+            //   child: ListTile(
+            //     leading: const Icon(Icons.lightbulb_outline),
+            //     title: const Text("Modo Foco"),
+            //   ),
+            // ),
             if (canShowHebrew || canShowGreek) const PopupMenuDivider(),
             if (canShowHebrew)
               PopupMenuItem<String>(

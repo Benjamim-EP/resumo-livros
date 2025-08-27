@@ -7,29 +7,23 @@ class RecommendedResourceCard extends StatelessWidget {
   final String contentId;
   final String title;
   final String reason;
-  // <<< NOVO PARÂMETRO OPCIONAL >>>
-  final String? sourceTitle; // Para não precisar decodificar
+  final String? sourceTitle;
 
   const RecommendedResourceCard({
     super.key,
     required this.contentId,
     required this.title,
     required this.reason,
-    this.sourceTitle, // Opcional
+    this.sourceTitle,
   });
 
-  // <<< FUNÇÃO HELPER REMOVIDA >>>
-  // A função _decodeContentId foi removida pois não é mais necessária.
-
-  // A função onTap agora é mais simples e está dentro do build.
-  // Ela apenas precisa abrir o modal, que fará o trabalho pesado.
   void _handleTap(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => LibraryResourceViewerModal(
-        contentId: contentId, // O modal só precisa do ID para buscar tudo.
+        contentId: contentId,
       ),
     );
   }
@@ -37,9 +31,6 @@ class RecommendedResourceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // <<< LÓGICA DE TÍTULO SIMPLIFICADA >>>
-    // Tenta usar o sourceTitle se ele for fornecido, senão usa um padrão.
     final String displaySourceTitle = sourceTitle ?? "Biblioteca";
 
     return SizedBox(
@@ -55,35 +46,39 @@ class RecommendedResourceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  displaySourceTitle, // Usa a variável local
+                  displaySourceTitle,
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: theme.colorScheme.primary),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Expanded(
+
+                // <<< INÍCIO DA CORREÇÃO >>>
+                // Usamos Flexible para que o título use o espaço que precisa,
+                // mas não force os outros widgets para fora.
+                Flexible(
                   child: Text(
-                    title, // Usa o title recebido diretamente
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        height: 1.3), // Melhora o espaçamento entre linhas
+                    // maxLines e overflow garantem que textos muito longos sejam cortados elegantemente.
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Divider(height: 8, thickness: 0.5),
-                    Text(
-                      reason,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(fontStyle: FontStyle.italic),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                // <<< FIM DA CORREÇÃO >>>
+
+                const Spacer(), // O Spacer empurra o conteúdo abaixo para o final do card.
+
+                const Divider(height: 8, thickness: 0.5),
+                Text(
+                  reason,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(fontStyle: FontStyle.italic, height: 1.3),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -92,14 +87,4 @@ class RecommendedResourceCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// A extensão capitalizeFirstOfEach não é mais usada aqui, mas pode deixar
-// no arquivo se outros widgets a utilizarem.
-extension StringExtension on String {
-  String get capitalizeFirstOfEach => this
-      .split(" ")
-      .map((str) =>
-          str.isEmpty ? "" : '${str[0].toUpperCase()}${str.substring(1)}')
-      .join(" ");
 }

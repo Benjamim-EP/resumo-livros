@@ -606,20 +606,23 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // <<< BOTÃO DE RECURSOS NO ESTILO DO DEVOCIONAL >>>
-                    IconButton(
+                    // <<< INÍCIO DA CORREÇÃO >>>
+                    // Substituímos o IconButton por um TextButton estilizado
+                    TextButton.icon(
                       icon: AnimatedRotation(
                         turns: _showResources ? 0.5 : 0.0, // Gira 180 graus
                         duration: const Duration(milliseconds: 250),
-                        child: const Icon(Icons.expand_more),
+                        child: const Icon(Icons.expand_more, size: 20),
                       ),
-                      tooltip: _showResources
-                          ? "Ocultar Recursos"
-                          : "Ver Recursos de Estudo",
+                      label: const Text("Mais Estudos"),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.textTheme.bodySmall?.color,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
                       onPressed: () =>
                           setState(() => _showResources = !_showResources),
                     ),
-
                     Row(
                       children: [
                         Material(
