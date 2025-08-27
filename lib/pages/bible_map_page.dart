@@ -107,23 +107,62 @@ class _BibleMapPageState extends State<BibleMapPage> {
     }
   }
 
+  // <<< INÍCIO DA MUDANÇA 1: _buildMarkers agora aceita o índice >>>
   List<Marker> _buildMarkers(List<MapPlace> places) {
-    return places
+    final filteredPlaces = places
         .where((p) =>
             p.type == 'point' &&
             _activeFilters.contains('point') &&
             (_selectedVerse == null || p.verses.contains(_selectedVerse)))
-        .map((place) {
+        .toList();
+
+    return filteredPlaces.asMap().entries.map((entry) {
+      int index = entry.key;
+      MapPlace place = entry.value;
+
+      final String? stopNumber =
+          widget.themedJourney != null ? '${index + 1}' : null;
+
+      // O Marker agora tem um anchor para centralizar o ícone corretamente.
       return Marker(
-        width: 40.0,
-        height: 40.0,
+        width: 45.0,
+        height: 45.0,
         point: place.coordinates.first,
-        child: IconButton(
-          icon: Icon(_getIconForStyle(place.style),
-              color: _getColorForStyle(place.style),
-              size: 30,
-              shadows: const [Shadow(blurRadius: 4, color: Colors.black54)]),
-          onPressed: () => _showPlaceDetails(context, place),
+        child: GestureDetector(
+          onTap: () => _showPlaceDetails(context, place),
+          // Usamos um Stack para garantir que o número fique sempre por cima.
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Ícone do local
+              Icon(
+                _getIconForStyle(place.style),
+                color: _getColorForStyle(place.style),
+                size: 35,
+                shadows: const [Shadow(blurRadius: 5, color: Colors.black87)],
+              ),
+              // Círculo com o número (se for uma jornada)
+              if (stopNumber != null)
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.black54, width: 1.5)),
+                  child: Center(
+                    child: Text(
+                      stopNumber,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     }).toList();
@@ -367,6 +406,7 @@ class _BibleMapPageState extends State<BibleMapPage> {
 
   Widget _buildLegendWidget(List<MapPlace> allPlaces) {
     final theme = Theme.of(context);
+
     final filteredPlaces = allPlaces.where((place) {
       return _activeFilters.contains(place.type) &&
           (_selectedVerse == null || place.verses.contains(_selectedVerse));
@@ -419,14 +459,25 @@ class _BibleMapPageState extends State<BibleMapPage> {
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
+                // O itemCount agora usa a lista filtrada
                 itemCount: filteredPlaces.length,
                 itemBuilder: (context, index) {
                   final place = filteredPlaces[index];
+
+                  // Verifica se estamos em um mapa temático para obter o número da parada
+                  String titleText = place.name;
+                  if (widget.themedJourney != null) {
+                    // Encontra o índice original do local na lista não filtrada para obter o número correto
+                    final originalIndex = allPlaces.indexOf(place);
+                    titleText = "${originalIndex + 1}. ${place.name}";
+                  }
+
                   return ListTile(
                     dense: true,
                     leading: Icon(_getIconForStyle(place.style),
                         color: _getColorForStyle(place.style), size: 20),
-                    title: Text(place.name,
+                    // Usa o novo titleText com o número
+                    title: Text(titleText,
                         maxLines: 2, overflow: TextOverflow.ellipsis),
                     subtitle: place.verses.isNotEmpty
                         ? Text("V: ${place.verses.join(', ')}",
