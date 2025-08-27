@@ -13,21 +13,29 @@ class ThemedMapsListPage extends StatefulWidget {
 }
 
 class _ThemedMapsListPageState extends State<ThemedMapsListPage> {
-  late Future<List<ThemedJourney>> _journeysFuture;
+  // O Future agora busca uma lista de categorias de mapa
+  late Future<List<ThemedMapCategory>> _categoriesFuture;
   final FirestoreService _firestoreService = FirestoreService();
 
   @override
   void initState() {
     super.initState();
-    _journeysFuture = _loadJourneys();
+    _categoriesFuture = _loadMapCategories();
   }
 
-  Future<List<ThemedJourney>> _loadJourneys() async {
-    final data = await _firestoreService.getThemedMapsData("pauls_journeys");
-    if (data == null) return [];
+  // A função agora busca as categorias
+  Future<List<ThemedMapCategory>> _loadMapCategories() async {
+    // Por enquanto, buscamos apenas um documento, mas a estrutura suporta mais
+    final paulsJourneyData =
+        await _firestoreService.getThemedMapCategory("pauls_journeys");
 
-    final List<dynamic> journeysList = data['journeys'] ?? [];
-    return journeysList.map((j) => ThemedJourney.fromJson(j)).toList();
+    final List<ThemedMapCategory> categories = [];
+    if (paulsJourneyData != null) {
+      categories.add(ThemedMapCategory.fromFirestore(paulsJourneyData));
+    }
+    // No futuro, você poderia buscar outros documentos aqui e adicionar à lista.
+
+    return categories;
   }
 
   @override
@@ -37,48 +45,55 @@ class _ThemedMapsListPageState extends State<ThemedMapsListPage> {
       appBar: AppBar(
         title: const Text("Mapas Temáticos"),
       ),
-      body: FutureBuilder<List<ThemedJourney>>(
-        future: _journeysFuture,
+      body: FutureBuilder<List<ThemedMapCategory>>(
+        future: _categoriesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError ||
-              !snapshot.hasData ||
-              snapshot.data!.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text("Nenhum mapa encontrado."));
           }
 
-          final journeys = snapshot.data!;
+          final categories = snapshot.data!;
+
+          // O ListView agora constrói ExpansionTiles para cada categoria
           return ListView.builder(
             padding: const EdgeInsets.all(12.0),
-            itemCount: journeys.length,
+            itemCount: categories.length,
             itemBuilder: (context, index) {
-              final journey = journeys[index];
+              final category = categories[index];
               return Card(
                 elevation: 3,
                 margin: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: journey.color,
-                    child: const Icon(Icons.route, color: Colors.white),
-                  ),
+                child: ExpansionTile(
+                  // Começa expandido por padrão
+                  initiallyExpanded: true,
                   title:
-                      Text(journey.title, style: theme.textTheme.titleMedium),
-                  subtitle: Text(journey.description,
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BibleMapPage(
-                          // Passamos a jornada completa em vez de um chapterId
-                          themedJourney: journey,
-                        ),
+                      Text(category.title, style: theme.textTheme.titleLarge),
+                  children: category.journeys.map((journey) {
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: journey.color.withOpacity(0.2),
+                        child: Icon(Icons.route, color: journey.color),
                       ),
+                      title: Text(journey.title,
+                          style: theme.textTheme.titleMedium),
+                      subtitle: Text(journey.description,
+                          maxLines: 2, overflow: TextOverflow.ellipsis),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BibleMapPage(
+                              themedJourney: journey,
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  },
+                  }).toList(),
                 ),
               );
             },
