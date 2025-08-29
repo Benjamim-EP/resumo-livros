@@ -625,79 +625,79 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     ),
                     Row(
                       children: [
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              final store = StoreProvider.of<AppState>(context,
-                                  listen: false);
-                              if (store.state.userState.isGuestUser) {
-                                showLoginRequiredDialog(context,
-                                    featureName: "o chat com a IA");
-                              } else {
-                                final List<String> verseTexts =
-                                    widget.verseNumbersInSection.map((vNum) {
-                                  if (widget.allVerseDataInChapter is List &&
-                                      vNum > 0 &&
-                                      vNum <=
-                                          (widget.allVerseDataInChapter as List)
-                                              .length) {
-                                    return (widget.allVerseDataInChapter
-                                            as List)[vNum - 1]
-                                        .toString();
-                                  }
-                                  return "[Texto do versículo $vNum indisponível]";
-                                }).toList();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SectionChatPage(
-                                      bookAbbrev: widget.bookAbbrev,
-                                      chapterNumber: widget.chapterNumber,
-                                      versesRangeStr: widget.versesRangeStr,
-                                      sectionTitle: widget.sectionTitle,
-                                      sectionVerseTexts: verseTexts,
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            splashColor:
-                                theme.colorScheme.primary.withOpacity(0.2),
-                            highlightColor:
-                                theme.colorScheme.primary.withOpacity(0.1),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: theme.colorScheme.primary,
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.chat_bubble_outline_rounded,
-                                      size: 18,
-                                      color: theme.colorScheme.primary),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    "Chat",
-                                    style: TextStyle(
-                                      color: theme.colorScheme.primary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
+                        // Material(
+                        //   color: Colors.transparent,
+                        //   child: InkWell(
+                        //     onTap: () {
+                        //       final store = StoreProvider.of<AppState>(context,
+                        //           listen: false);
+                        //       if (store.state.userState.isGuestUser) {
+                        //         showLoginRequiredDialog(context,
+                        //             featureName: "o chat com a IA");
+                        //       } else {
+                        //         final List<String> verseTexts =
+                        //             widget.verseNumbersInSection.map((vNum) {
+                        //           if (widget.allVerseDataInChapter is List &&
+                        //               vNum > 0 &&
+                        //               vNum <=
+                        //                   (widget.allVerseDataInChapter as List)
+                        //                       .length) {
+                        //             return (widget.allVerseDataInChapter
+                        //                     as List)[vNum - 1]
+                        //                 .toString();
+                        //           }
+                        //           return "[Texto do versículo $vNum indisponível]";
+                        //         }).toList();
+                        //         Navigator.push(
+                        //           context,
+                        //           MaterialPageRoute(
+                        //             builder: (context) => SectionChatPage(
+                        //               bookAbbrev: widget.bookAbbrev,
+                        //               chapterNumber: widget.chapterNumber,
+                        //               versesRangeStr: widget.versesRangeStr,
+                        //               sectionTitle: widget.sectionTitle,
+                        //               sectionVerseTexts: verseTexts,
+                        //             ),
+                        //           ),
+                        //         );
+                        //       }
+                        //     },
+                        //     borderRadius: BorderRadius.circular(20),
+                        //     splashColor:
+                        //         theme.colorScheme.primary.withOpacity(0.2),
+                        //     highlightColor:
+                        //         theme.colorScheme.primary.withOpacity(0.1),
+                        //     child: Container(
+                        //       padding: const EdgeInsets.symmetric(
+                        //           horizontal: 12, vertical: 6),
+                        //       decoration: BoxDecoration(
+                        //         borderRadius: BorderRadius.circular(20),
+                        //         border: Border.all(
+                        //           color: theme.colorScheme.primary,
+                        //           width: 1.0,
+                        //         ),
+                        //       ),
+                        //       child: Row(
+                        //         mainAxisSize: MainAxisSize.min,
+                        //         children: [
+                        //           Icon(Icons.chat_bubble_outline_rounded,
+                        //               size: 18,
+                        //               color: theme.colorScheme.primary),
+                        //           const SizedBox(width: 6),
+                        //           Text(
+                        //             "Chat",
+                        //             style: TextStyle(
+                        //               color: theme.colorScheme.primary,
+                        //               fontSize: 13,
+                        //               fontWeight: FontWeight.bold,
+                        //             ),
+                        //           ),
+                        //         ],
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
+                        // const SizedBox(width: 8),
                         Material(
                           color: Colors.transparent,
                           child: InkWell(

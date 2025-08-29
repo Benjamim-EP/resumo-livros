@@ -605,18 +605,23 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
                           "${_bibleBooksMap?[sermonItem.bookAbbrev]?['nome'] ?? ''} ${sermonItem.chapterNum}",
                       progress: progressData?.progressPercent ?? 0.0,
                       onTap: () {
-                        // Primeiro, tenta mostrar o anúncio.
-                        interstitialManager
-                            .tryShowInterstitial(
-                                fromScreen: "SermonList_to_SermonDetail")
-                            .then((_) {
-                          // DEPOIS que o anúncio for fechado (ou se não for mostrado),
-                          // navega para a página do sermão.
-                          if (mounted) {
-                            _navigateToSermonDetail(
-                                sermonItem.generatedId, sermonItem.title);
-                          }
-                        });
+                        // AQUI ESTÁ A VERIFICAÇÃO CRÍTICA
+                        if (!viewModel.isPremium) {
+                          // Se NÃO for premium, mostra o anúncio e depois navega.
+                          interstitialManager
+                              .tryShowInterstitial(
+                                  fromScreen: "SermonList_to_SermonDetail")
+                              .then((_) {
+                            if (mounted) {
+                              _navigateToSermonDetail(
+                                  sermonItem.generatedId, sermonItem.title);
+                            }
+                          });
+                        } else {
+                          // Se FOR premium, apenas navega diretamente.
+                          _navigateToSermonDetail(
+                              sermonItem.generatedId, sermonItem.title);
+                        }
                       },
                     );
                   },

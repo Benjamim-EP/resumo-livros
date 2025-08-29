@@ -1702,13 +1702,13 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               ),
             ),
             const PopupMenuDivider(),
-            // PopupMenuItem<String>(
-            //   value: 'focus',
-            //   child: ListTile(
-            //     leading: const Icon(Icons.lightbulb_outline),
-            //     title: const Text("Modo Foco"),
-            //   ),
-            // ),
+            const PopupMenuItem<String>(
+              value: 'focus',
+              child: ListTile(
+                leading: Icon(Icons.lightbulb_outline),
+                title: Text("Modo Foco"),
+              ),
+            ),
             if (canShowHebrew || canShowGreek) const PopupMenuDivider(),
             if (canShowHebrew)
               PopupMenuItem<String>(
