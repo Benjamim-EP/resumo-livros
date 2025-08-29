@@ -209,12 +209,12 @@ class _MainAppScreenState extends State<MainAppScreen> {
     int newInitialIndex = 0;
     if (isGuest) {
       newInitialIndex =
-          (initialTargetIndexFromRedux != -1) ? initialTargetIndexFromRedux : 1;
+          (initialTargetIndexFromRedux != -1) ? initialTargetIndexFromRedux : 2;
     } else if (initialTargetIndexFromRedux != -1) {
       newInitialIndex = initialTargetIndexFromRedux;
     }
     if (newInitialIndex < 0 || newInitialIndex >= _pages.length) {
-      newInitialIndex = isGuest ? 1 : 0;
+      newInitialIndex = isGuest ? 2 : 0;
     }
     if (newInitialIndex != _selectedIndex) {
       setState(() => _selectedIndex = newInitialIndex);
@@ -476,28 +476,29 @@ class _MainAppScreenState extends State<MainAppScreen> {
         final AppThemeOption currentThemeOptionFromRedux =
             mainScreenViewModel.activeThemeOption;
 
+        final bool isGuest = storeInstance.state.userState.isGuestUser;
+
         return WillPopScope(
           onWillPop: _onWillPop,
           child: Scaffold(
-            drawer: const AppDrawer(),
+            drawer: isGuest ? null : const AppDrawer(),
             appBar: mainScreenViewModel.isFocusMode
                 ? null
                 : AppBar(
-                    // ✅ 1. REMOVIDO o `title` original.
-                    // title: Text(_getAppBarTitle(_selectedIndex)),
-
-                    // ✅ 2. O NOVO TÍTULO agora é um widget dinâmico.
-                    leading: Builder(
-                      builder: (BuildContext context) {
-                        return IconButton(
-                          icon: const ProfileActionButton(
-                              avatarRadius:
-                                  20), // Seu botão de perfil existente
-                          onPressed: () => Scaffold.of(context).openDrawer(),
-                          tooltip: 'Abrir Menu',
-                        );
-                      },
-                    ),
+                    // ✅ Se for convidado, o botão do drawer é nulo
+                    leading: isGuest
+                        ? null
+                        : Builder(
+                            builder: (BuildContext context) {
+                              return IconButton(
+                                icon:
+                                    const ProfileActionButton(avatarRadius: 20),
+                                onPressed: () =>
+                                    Scaffold.of(context).openDrawer(),
+                                tooltip: 'Abrir Menu',
+                              );
+                            },
+                          ),
 
                     // Agora o título pode ser apenas um texto simples.
                     title: Text(_getAppBarTitle(_selectedIndex, context)),
