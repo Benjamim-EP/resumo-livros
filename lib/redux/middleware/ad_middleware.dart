@@ -13,11 +13,11 @@ import 'package:google_mobile_ads/google_mobile_ads.dart'
     hide AppState; // <<< Importe o pacote do AdMob
 
 const int COINS_PER_REWARDED_AD = 10;
-const int MAX_COINS_LIMIT = 100;
-const int MAX_ADS_PER_DAY = 12;
-const Duration ADS_COOLDOWN_DURATION = Duration(seconds: 60);
-const Duration SIX_HOUR_WINDOW_DURATION = Duration(hours: 6); // NOVO
-const int MAX_ADS_PER_SIX_HOUR_WINDOW = 3; // NOVO
+const int MAX_COINS_LIMIT = 1000;
+const int MAX_ADS_PER_DAY = 20;
+const Duration ADS_COOLDOWN_DURATION = Duration(seconds: 30);
+const Duration SIX_HOUR_WINDOW_DURATION = Duration(hours: 4); // NOVO
+const int MAX_ADS_PER_SIX_HOUR_WINDOW = 5; // NOVO
 
 const String _prefsGuestCoinsKey = 'guest_user_coins';
 const String _prefsGuestLastAdTimeKey = 'guest_last_ad_time';

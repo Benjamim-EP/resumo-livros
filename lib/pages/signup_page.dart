@@ -60,7 +60,7 @@ class _SignUpEmailPageState extends State<SignUpEmailPage> {
           'lastReadBookAbbrev': null,
           'lastReadChapter': null,
           'isPremium': {'status': 'inactive', 'expiration': null},
-          'userCoins': 100,
+          'userCoins': 20,
           'lastRewardedAdWatchTime': null,
           'rewardedAdsWatchedToday': 0,
           'stripeCustomerId': null,

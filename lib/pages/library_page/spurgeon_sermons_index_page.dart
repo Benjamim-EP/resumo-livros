@@ -21,6 +21,7 @@ import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/sermon_search_reducer.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 import 'package:redux/redux.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -603,8 +604,20 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
                       reference:
                           "${_bibleBooksMap?[sermonItem.bookAbbrev]?['nome'] ?? ''} ${sermonItem.chapterNum}",
                       progress: progressData?.progressPercent ?? 0.0,
-                      onTap: () => _navigateToSermonDetail(
-                          sermonItem.generatedId, sermonItem.title),
+                      onTap: () {
+                        // Primeiro, tenta mostrar o anúncio.
+                        interstitialManager
+                            .tryShowInterstitial(
+                                fromScreen: "SermonList_to_SermonDetail")
+                            .then((_) {
+                          // DEPOIS que o anúncio for fechado (ou se não for mostrado),
+                          // navega para a página do sermão.
+                          if (mounted) {
+                            _navigateToSermonDetail(
+                                sermonItem.generatedId, sermonItem.title);
+                          }
+                        });
+                      },
                     );
                   },
                 ),

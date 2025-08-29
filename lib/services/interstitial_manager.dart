@@ -5,7 +5,7 @@ import 'package:septima_biblia/services/ad_helper_admob.dart'; // Importe o help
 
 class InterstitialManager {
   static const _lastInterstitialShownKey = 'last_interstitial_shown_timestamp';
-  static const _interstitialCooldown = Duration(minutes: 7);
+  static const _interstitialCooldown = Duration(minutes: 3);
 
   // <<< 2. MUDE O TIPO DA VARIÁVEL AQUI >>>
   final AdHelperAdMob _adHelper;

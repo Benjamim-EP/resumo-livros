@@ -79,7 +79,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
           'lastReadBookAbbrev': null,
           'lastReadChapter': null,
           'isPremium': {'status': 'inactive', 'expiration': null},
-          'userCoins': 100,
+          'userCoins': 20,
           'lastRewardedAdWatchTime': null,
           'rewardedAdsWatchedToday': 0,
           'stripeCustomerId': null,
