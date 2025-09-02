@@ -77,6 +77,7 @@ class BibleReaderView extends StatefulWidget {
   final Map<String, dynamic>? currentChapterHebrewData;
   final Map<String, dynamic>? currentChapterGreekData;
   final Future<void> Function(String, String) onShowSummaryRequest;
+  final bool showMindMaps;
 
   const BibleReaderView({
     super.key,
@@ -99,6 +100,7 @@ class BibleReaderView extends StatefulWidget {
     this.currentChapterHebrewData,
     this.currentChapterGreekData,
     required this.onShowSummaryRequest,
+    required this.showMindMaps,
   });
 
   @override
@@ -352,6 +354,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 currentlyPlayingContentType: widget.currentlyPlayingContentType,
                 allUserTags: contentViewModel.allUserTags,
                 onShowSummaryRequest: widget.onShowSummaryRequest,
+                showMindMap: widget.showMindMaps,
               );
             }
             // Senão, renderiza versículo por versículo (fallback).

@@ -1907,4 +1907,19 @@ class FirestoreService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> getMindMap(String mapId) async {
+    try {
+      final docSnapshot = await _db.collection('mindMaps').doc(mapId).get();
+      if (docSnapshot.exists) {
+        return docSnapshot.data();
+      }
+      print(
+          "FirestoreService: Nenhum mapa mental encontrado para o ID: $mapId");
+      return null;
+    } catch (e) {
+      print("FirestoreService: Erro ao buscar mapa mental $mapId: $e");
+      return null;
+    }
+  }
 }

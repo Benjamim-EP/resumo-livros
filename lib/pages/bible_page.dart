@@ -121,6 +121,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   static const String _unlockedSummariesPrefsKey = 'unlocked_bible_summaries';
 
   bool _hasMapData = false;
+  bool _showMindMaps = false;
 
   @override
   void initState() {
@@ -1670,6 +1671,9 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                 _showPremiumDialog(context);
               }
               break;
+            case 'mindmap':
+              setState(() => _showMindMaps = !_showMindMaps);
+              break;
           }
           if (featureName != null) {
             AnalyticsService.instance.logEvent(
@@ -1754,6 +1758,20 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                           color: isPremium ? null : premiumIconColor)),
                 ),
               ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'mindmap', // Novo valor
+              child: ListTile(
+                leading: Icon(Icons.hub_outlined,
+                    color: _showMindMaps
+                        ? theme.colorScheme.primary
+                        : theme.iconTheme.color),
+                title: Text("Mapas Mentais",
+                    style: TextStyle(
+                        color:
+                            _showMindMaps ? theme.colorScheme.primary : null)),
+              ),
+            ),
           ];
         },
       ),
@@ -1897,6 +1915,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                                     currentChapterGreekData:
                                         _currentChapterGreekData,
                                     onShowSummaryRequest: _handleShowSummary,
+                                    showMindMaps: _showMindMaps,
                                   ),
                       ),
                       if (!store.state.userState.isFocusMode &&
