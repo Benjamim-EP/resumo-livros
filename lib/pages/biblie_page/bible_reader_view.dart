@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/components/mind_map_fullscreen_page.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
@@ -363,6 +364,8 @@ class _BibleReaderViewState extends State<BibleReaderView> {
 
   // ✅ NOVO MÉTODO HELPER: Constrói o Card do Mapa Mental.
   Widget _buildMindMapCard(ThemeData theme, String sectionId) {
+    final FirestoreService _firestoreService = FirestoreService();
+
     return FutureBuilder<Map<String, dynamic>?>(
       future: _firestoreService.getMindMap(sectionId),
       builder: (context, snapshot) {
@@ -378,22 +381,47 @@ class _BibleReaderViewState extends State<BibleReaderView> {
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mapData['title'] ?? 'Mapa Mental',
-                  style: theme.textTheme.titleMedium,
+          clipBehavior: Clip.antiAlias, // Importante para o Stack
+          child: Stack(
+            alignment: Alignment.topRight,
+            children: [
+              // O conteúdo do card que você já tinha
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mapData['title'] ?? 'Mapa Mental',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 400,
+                      child: MindMapView(mapData: mapData),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 400,
-                  child: MindMapView(mapData: mapData),
+              ),
+              // ✅ O NOVO BOTÃO DE TELA CHEIA
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: IconButton(
+                  icon: const Icon(Icons.fullscreen),
+                  tooltip: 'Ver em Tela Cheia',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        fullscreenDialog: true, // Abre como uma sobreposição
+                        builder: (context) => MindMapFullscreenPage(
+                          mapData: mapData,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

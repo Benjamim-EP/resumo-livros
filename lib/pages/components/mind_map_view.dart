@@ -58,19 +58,6 @@ class _MindMapViewState extends State<MindMapView> {
     _algorithm = SugiyamaAlgorithm(config);
   }
 
-  // --- FUNÇÕES DE CONTROLE (ZOOM E FOCO) ---
-  void _zoomIn() {
-    final currentMatrix = _transformationController.value;
-    final newMatrix = currentMatrix.clone()..scale(1.2);
-    _transformationController.value = newMatrix;
-  }
-
-  void _zoomOut() {
-    final currentMatrix = _transformationController.value;
-    final newMatrix = currentMatrix.clone()..scale(0.8);
-    _transformationController.value = newMatrix;
-  }
-
   void _centerOnNode(Node node) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = 400.0;
@@ -89,7 +76,6 @@ class _MindMapViewState extends State<MindMapView> {
     });
   }
 
-  // ✅✅✅ INÍCIO DA LÓGICA DE NAVEGAÇÃO CORRIGIDA E COMPLETA ✅✅✅
   void _navigateUp() {
     if (_focusedNode == null) return;
     final parentEdges = graph.getInEdges(_focusedNode!);
@@ -106,35 +92,22 @@ class _MindMapViewState extends State<MindMapView> {
     }
   }
 
-  void _navigateLeft() {
-    _navigateSibling(next: false);
-  }
-
-  void _navigateRight() {
-    _navigateSibling(next: true);
-  }
-
   void _navigateSibling({required bool next}) {
     if (_focusedNode == null) return;
     final parentEdges = graph.getInEdges(_focusedNode!);
-    if (parentEdges.isEmpty) return; // Nó raiz não tem irmãos
-
+    if (parentEdges.isEmpty) return;
     final parentNode = parentEdges.first.source;
     final siblings = graph.successorsOf(parentNode).toList();
-    if (siblings.length <= 1) return; // Não há irmãos para navegar
-
+    if (siblings.length <= 1) return;
     final currentIndex = siblings.indexOf(_focusedNode!);
-    int newIndex;
-    if (next) {
-      newIndex = (currentIndex + 1) % siblings.length;
-    } else {
-      newIndex = (currentIndex - 1 + siblings.length) % siblings.length;
-    }
+    int newIndex = next
+        ? (currentIndex + 1) % siblings.length
+        : (currentIndex - 1 + siblings.length) % siblings.length;
     _focusNode(siblings[newIndex]);
   }
-  // ✅✅✅ FIM DA LÓGICA DE NAVEGAÇÃO ✅✅✅
 
   Widget _buildNodeWidget(Node node) {
+    // ... (esta função permanece a mesma)
     final nodesJson = widget.mapData['nodes'] ?? [];
     var nodeId = node.key!.value;
     var nodeJson =
@@ -183,6 +156,7 @@ class _MindMapViewState extends State<MindMapView> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // O InteractiveViewer já permite o zoom por gestos (pinch-to-zoom)
         InteractiveViewer(
           transformationController: _transformationController,
           constrained: false,
@@ -194,44 +168,26 @@ class _MindMapViewState extends State<MindMapView> {
             algorithm: _algorithm,
             paint: Paint()
               ..color = Colors.grey
-              ..strokeWidth = 1.5
+              ..strokeWidth = 1
               ..style = PaintingStyle.stroke,
             builder: (Node node) {
               return _buildNodeWidget(node);
             },
           ),
         ),
-        // Botões de Zoom (direita)
-        Positioned(
-          bottom: 10,
-          right: 10,
-          child: Column(
-            children: [
-              FloatingActionButton.small(
-                  onPressed: _zoomIn,
-                  tooltip: 'Aproximar',
-                  child: const Icon(Icons.add)),
-              const SizedBox(height: 8),
-              FloatingActionButton.small(
-                  onPressed: _zoomOut,
-                  tooltip: 'Afastar',
-                  child: const Icon(Icons.remove)),
-            ],
-          ),
-        ),
-        // ✅✅✅ BOTÕES DE NAVEGAÇÃO CORRIGIDOS ✅✅✅
+        // ✅ BOTÕES DE ZOOM E CENTRALIZAR REMOVIDOS
+
+        // Botões de Navegação (esquerda)
         Positioned(
           bottom: 10,
           left: 10,
           child: Row(
             children: [
-              // Botão Esquerda
               FloatingActionButton.small(
-                  onPressed: _navigateLeft,
+                  onPressed: () => _navigateSibling(next: false),
                   tooltip: 'Irmão Anterior',
                   child: const Icon(Icons.arrow_back)),
               const SizedBox(width: 8),
-              // Coluna com Cima e Baixo
               Column(
                 children: [
                   FloatingActionButton.small(
@@ -246,27 +202,11 @@ class _MindMapViewState extends State<MindMapView> {
                 ],
               ),
               const SizedBox(width: 8),
-              // Botão Direita
               FloatingActionButton.small(
-                  onPressed: _navigateRight,
+                  onPressed: () => _navigateSibling(next: true),
                   tooltip: 'Próximo Irmão',
                   child: const Icon(Icons.arrow_forward)),
             ],
-          ),
-        ),
-        // Botão de Resetar Foco/Câmera (centro)
-        Positioned(
-          bottom: 10,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: FloatingActionButton.small(
-              onPressed: () {
-                if (graph.nodes.isNotEmpty) _focusNode(graph.nodes.first);
-              },
-              tooltip: 'Resetar Foco',
-              child: const Icon(Icons.center_focus_strong),
-            ),
           ),
         ),
       ],
