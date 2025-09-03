@@ -75,34 +75,33 @@ class SectionItemWidget extends StatefulWidget {
   final TtsContentType? currentlyPlayingContentType;
   final List<String> allUserTags;
   final Future<void> Function(String, String) onShowSummaryRequest;
-  final bool showMindMap;
 
-  const SectionItemWidget(
-      {super.key,
-      required this.sectionTitle,
-      required this.verseNumbersInSection,
-      required this.allVerseDataInChapter,
-      required this.bookSlug,
-      required this.bookAbbrev,
-      required this.chapterNumber,
-      required this.versesRangeStr,
-      required this.userHighlights,
-      required this.userNotes,
-      this.isHebrew = false,
-      this.isGreekInterlinear = false,
-      required this.isRead,
-      required this.showHebrewInterlinear,
-      required this.showGreekInterlinear,
-      this.hebrewInterlinearSectionData,
-      this.greekInterlinearSectionData,
-      required this.fontSizeMultiplier,
-      required this.onPlayRequest,
-      required this.currentPlayerState,
-      this.currentlyPlayingSectionId,
-      this.currentlyPlayingContentType,
-      required this.allUserTags,
-      required this.onShowSummaryRequest,
-      required this.showMindMap});
+  const SectionItemWidget({
+    super.key,
+    required this.sectionTitle,
+    required this.verseNumbersInSection,
+    required this.allVerseDataInChapter,
+    required this.bookSlug,
+    required this.bookAbbrev,
+    required this.chapterNumber,
+    required this.versesRangeStr,
+    required this.userHighlights,
+    required this.userNotes,
+    this.isHebrew = false,
+    this.isGreekInterlinear = false,
+    required this.isRead,
+    required this.showHebrewInterlinear,
+    required this.showGreekInterlinear,
+    this.hebrewInterlinearSectionData,
+    this.greekInterlinearSectionData,
+    required this.fontSizeMultiplier,
+    required this.onPlayRequest,
+    required this.currentPlayerState,
+    this.currentlyPlayingSectionId,
+    this.currentlyPlayingContentType,
+    required this.allUserTags,
+    required this.onShowSummaryRequest,
+  });
 
   @override
   State<SectionItemWidget> createState() => _SectionItemWidgetState();
@@ -564,49 +563,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             chapter: widget.chapterNumber,
                             verse: verseNumber,
                           ),
-                          if (widget.showMindMap)
-                            FutureBuilder<Map<String, dynamic>?>(
-                              future: _firestoreService
-                                  .getMindMap(_sectionIdForTracking),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(vertical: 8.0),
-                                    child: Center(
-                                        child: LinearProgressIndicator()),
-                                  );
-                                }
-                                if (!snapshot.hasData ||
-                                    snapshot.data == null) {
-                                  return const SizedBox
-                                      .shrink(); // Não mostra nada se não houver mapa
-                                }
-
-                                final mapData = snapshot.data!;
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Divider(height: 24),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 4.0),
-                                      child: Text(
-                                        mapData['title'] ?? 'Mapa Mental',
-                                        style: theme.textTheme.titleMedium,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    SizedBox(
-                                      height:
-                                          400, // Aumente a altura para dar mais espaço ao mapa
-                                      child: MindMapView(mapData: mapData),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          const Divider(height: 20),
                         ],
                       );
                     } else {

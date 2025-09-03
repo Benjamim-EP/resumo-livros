@@ -6,12 +6,14 @@ import 'package:redux/redux.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
+import 'package:septima_biblia/pages/components/mind_map_view.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/actions/library_reference_actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
-import 'package:flutter/foundation.dart';
 
+// ViewModel permanece o mesmo, pois já está otimizado.
 class _BibleContentViewModel {
   final Map<String, Map<String, dynamic>> userHighlights;
   final List<Map<String, dynamic>> userNotes;
@@ -57,6 +59,7 @@ class _BibleContentViewModel {
       allUserTags.hashCode;
 }
 
+// O construtor e os parâmetros do StatefulWidget permanecem os mesmos.
 class BibleReaderView extends StatefulWidget {
   final String selectedBook;
   final int selectedChapter;
@@ -109,6 +112,8 @@ class BibleReaderView extends StatefulWidget {
 
 class _BibleReaderViewState extends State<BibleReaderView> {
   late Future<Map<String, dynamic>> _chapterDataFuture;
+  // ✅ ADICIONADO: Instância do FirestoreService para ser usada no widget.
+  final FirestoreService _firestoreService = FirestoreService();
 
   @override
   void initState() {
@@ -137,20 +142,19 @@ class _BibleReaderViewState extends State<BibleReaderView> {
         widget.isCompareMode ? widget.selectedTranslation2 : null,
       );
 
-      print(
-          "BibleReaderView: Despachando LoadLibraryReferencesForChapterAction para ${widget.selectedBook} cap. ${widget.selectedChapter}");
-      // Despacha a ação para carregar as referências da biblioteca para este capítulo
-      StoreProvider.of<AppState>(context, listen: false).dispatch(
-          LoadLibraryReferencesForChapterAction(
-              bookAbbrev: widget.selectedBook,
-              chapter: widget.selectedChapter));
+      if (mounted) {
+        StoreProvider.of<AppState>(context, listen: false).dispatch(
+            LoadLibraryReferencesForChapterAction(
+                bookAbbrev: widget.selectedBook,
+                chapter: widget.selectedChapter));
+      }
     });
   }
 
+  // A função build() principal agora delega a construção da UI para os métodos auxiliares.
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return FutureBuilder<Map<String, dynamic>>(
       future: _chapterDataFuture,
       builder: (context, snapshot) {
@@ -159,7 +163,6 @@ class _BibleReaderViewState extends State<BibleReaderView> {
               child:
                   CircularProgressIndicator(color: theme.colorScheme.primary));
         }
-
         if (snapshot.hasError) {
           return Center(
             child: Padding(
@@ -172,7 +175,6 @@ class _BibleReaderViewState extends State<BibleReaderView> {
             ),
           );
         }
-
         if (!snapshot.hasData ||
             snapshot.data == null ||
             snapshot.data!.isEmpty) {
@@ -182,74 +184,37 @@ class _BibleReaderViewState extends State<BibleReaderView> {
         }
 
         final chapterData = snapshot.data!;
-        final List<Map<String, dynamic>> sections =
-            List<Map<String, dynamic>>.from(
-                chapterData['sectionStructure'] ?? []);
-        final Map<String, dynamic> verseDataMap =
+        final sections = List<Map<String, dynamic>>.from(
+            chapterData['sectionStructure'] ?? []);
+        final verseDataMap =
             Map<String, dynamic>.from(chapterData['verseData'] ?? {});
-        final dynamic primaryTranslationVerseData =
-            verseDataMap[widget.selectedTranslation1];
+        final primaryVerseData = verseDataMap[widget.selectedTranslation1];
 
-        if (primaryTranslationVerseData == null ||
-            (primaryTranslationVerseData is List &&
-                primaryTranslationVerseData.isEmpty)) {
+        if (primaryVerseData == null ||
+            (primaryVerseData is List && primaryVerseData.isEmpty)) {
           return Center(
               child: Text(
-                  'Conteúdo do capítulo não encontrado para a tradução ${widget.selectedTranslation1}.'));
+                  'Conteúdo não encontrado para a tradução ${widget.selectedTranslation1}.'));
         }
 
         if (!widget.isCompareMode) {
-          return _buildSingleViewContent(
-              theme, sections, primaryTranslationVerseData);
+          return _buildSingleViewContent(theme, sections, primaryVerseData);
         } else {
-          final dynamic comparisonVerseData =
-              verseDataMap[widget.selectedTranslation2];
+          final comparisonVerseData = verseDataMap[widget.selectedTranslation2];
           if (comparisonVerseData == null ||
               (comparisonVerseData is List && comparisonVerseData.isEmpty)) {
             return Center(
                 child: Text(
-                    'Tradução de comparação "${widget.selectedTranslation2}" não encontrada.'));
+                    'Tradução "${widget.selectedTranslation2}" não encontrada.'));
           }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildComparisonColumn(
-                  context,
-                  sections,
-                  primaryTranslationVerseData as List,
-                  widget.scrollController1,
-                  widget.selectedTranslation1,
-                  isHebrew: widget.selectedTranslation1 == 'hebrew_original',
-                  isGreek: widget.selectedTranslation1 == 'greek_interlinear',
-                  listViewKey: PageStorageKey<String>(
-                      '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation1}-compareView'),
-                ),
-              ),
-              VerticalDivider(
-                  width: 1,
-                  color: theme.dividerColor.withOpacity(0.5),
-                  thickness: 0.5),
-              Expanded(
-                child: _buildComparisonColumn(
-                  context,
-                  sections,
-                  comparisonVerseData as List,
-                  widget.scrollController2,
-                  widget.selectedTranslation2!,
-                  isHebrew: widget.selectedTranslation2 == 'hebrew_original',
-                  isGreek: widget.selectedTranslation2 == 'greek_interlinear',
-                  listViewKey: PageStorageKey<String>(
-                      '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation2}-compareView'),
-                ),
-              ),
-            ],
-          );
+          return _buildCompareViewContent(
+              theme, sections, primaryVerseData, comparisonVerseData);
         }
       },
     );
   }
 
+  // ✅ NOVO MÉTODO: Lógica de construção da visão única, agora mais limpa.
   Widget _buildSingleViewContent(
     ThemeData theme,
     List<Map<String, dynamic>> sections,
@@ -260,93 +225,34 @@ class _BibleReaderViewState extends State<BibleReaderView> {
           _BibleContentViewModel.fromStore(store, widget.selectedBook),
       distinct: true,
       builder: (context, contentViewModel) {
-        // Aumenta o itemCount em 1 para dar espaço ao rodapé.
-        // Se a lista de seções estiver vazia, usa o número de versículos.
-        final bool hasSections = sections.isNotEmpty;
-        final int contentCount = hasSections
-            ? sections.length
-            : (primaryTranslationVerseData as List?)?.length ?? 0;
-        final int itemCount = contentCount + 1;
+        // 1. Constrói a lista de widgets de forma dinâmica
+        List<Widget> contentWidgets = [];
 
-        return ListView.builder(
-          controller: widget.scrollController1,
-          key: PageStorageKey<String>(
-              '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation1}-singleView-${widget.showHebrewInterlinear}-${widget.showGreekInterlinear}-${widget.fontSizeMultiplier}'),
-          padding: EdgeInsets.only(
-              left: 16.0,
-              right: 16.0,
-              bottom: 16.0,
-              top: widget.isFocusMode ? 8.0 : 0.0),
-          itemCount: itemCount,
-          itemBuilder: (context, index) {
-            // Se for o último item da lista, renderiza o rodapé.
-            if (index == contentCount) {
-              return _buildChapterFooter(
-                  context, theme, contentViewModel, sections);
-            }
+        if (sections.isNotEmpty) {
+          for (var sectionData in sections) {
+            final sectionId = _getSectionIdFromData(sectionData);
 
-            // Se o JSON tiver uma estrutura de seções, renderiza por seção.
-            if (hasSections) {
-              final section = sections[index];
-              final List<int> verseNumbersInSection =
-                  (section['verses'] as List?)?.cast<int>() ?? [];
-              final String versesRangeStrInSection = verseNumbersInSection
-                      .isNotEmpty
-                  ? (verseNumbersInSection.length == 1
-                      ? verseNumbersInSection.first.toString()
-                      : "${verseNumbersInSection.first}-${verseNumbersInSection.last}")
-                  : "all_verses_in_section_${index}";
-
-              List<List<Map<String, String>>>? hebrewDataForThisSection;
-              if (widget.showHebrewInterlinear &&
-                  !(widget.selectedTranslation1 == 'hebrew_original') &&
-                  widget.currentChapterHebrewData != null) {
-                final allHebrewVerses =
-                    widget.currentChapterHebrewData!['data'] as List?;
-                if (allHebrewVerses != null) {
-                  hebrewDataForThisSection = verseNumbersInSection
-                      .where(
-                          (vNum) => allHebrewVerses.length >= vNum && vNum > 0)
-                      .map((vNum) => List<Map<String, String>>.from(
-                          allHebrewVerses[vNum - 1]))
-                      .toList();
-                }
-              }
-
-              List<List<Map<String, String>>>? greekDataForThisSection;
-              if (widget.showGreekInterlinear &&
-                  !(widget.selectedTranslation1 == 'greek_interlinear') &&
-                  widget.currentChapterGreekData != null) {
-                final allGreekVerses =
-                    widget.currentChapterGreekData!['data'] as List?;
-                if (allGreekVerses != null) {
-                  greekDataForThisSection = verseNumbersInSection
-                      .where(
-                          (vNum) => allGreekVerses.length >= vNum && vNum > 0)
-                      .map((vNum) => List<Map<String, String>>.from(
-                          allGreekVerses[vNum - 1]))
-                      .toList();
-                }
-              }
-
-              return SectionItemWidget(
-                sectionTitle: section['title'] ?? 'Seção Desconhecida',
-                verseNumbersInSection: verseNumbersInSection,
+            // Adiciona o Card da seção de versículos
+            contentWidgets.add(
+              SectionItemWidget(
+                sectionTitle: sectionData['title'] ?? 'Seção Desconhecida',
+                verseNumbersInSection:
+                    (sectionData['verses'] as List?)?.cast<int>() ?? [],
                 allVerseDataInChapter: primaryTranslationVerseData,
                 bookSlug: widget.bookSlug!,
                 bookAbbrev: widget.selectedBook,
                 chapterNumber: widget.selectedChapter,
-                versesRangeStr: versesRangeStrInSection,
+                versesRangeStr: _getVersesRangeFromData(sectionData),
                 userHighlights: contentViewModel.userHighlights,
                 userNotes: contentViewModel.userNotes,
-                isRead: contentViewModel.readSectionsForCurrentBook.contains(
-                    "${widget.selectedBook}_c${widget.selectedChapter}_v$versesRangeStrInSection"),
-                showHebrewInterlinear: widget.showHebrewInterlinear &&
-                    !(widget.selectedTranslation1 == 'hebrew_original'),
-                showGreekInterlinear: widget.showGreekInterlinear &&
-                    !(widget.selectedTranslation1 == 'greek_interlinear'),
-                hebrewInterlinearSectionData: hebrewDataForThisSection,
-                greekInterlinearSectionData: greekDataForThisSection,
+                isRead: contentViewModel.readSectionsForCurrentBook
+                    .contains(sectionId),
+                showHebrewInterlinear: widget.showHebrewInterlinear,
+                showGreekInterlinear: widget.showGreekInterlinear,
+                hebrewInterlinearSectionData:
+                    _getHebrewDataForSection(sectionData),
+                greekInterlinearSectionData:
+                    _getGreekDataForSection(sectionData),
                 fontSizeMultiplier: widget.fontSizeMultiplier,
                 onPlayRequest: widget.onPlayRequest,
                 currentPlayerState: widget.currentPlayerState,
@@ -354,17 +260,24 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 currentlyPlayingContentType: widget.currentlyPlayingContentType,
                 allUserTags: contentViewModel.allUserTags,
                 onShowSummaryRequest: widget.onShowSummaryRequest,
-                showMindMap: widget.showMindMaps,
-              );
+              ),
+            );
+
+            // 2. Se a opção estiver ativa, ADICIONA o Card do Mapa Mental
+            if (widget.showMindMaps) {
+              contentWidgets.add(_buildMindMapCard(theme, sectionId));
             }
-            // Senão, renderiza versículo por versículo (fallback).
-            else {
-              final verseNumber = index + 1;
-              return BiblePageWidgets.buildVerseItem(
+          }
+        } else {
+          // Fallback para renderizar versículo por versículo
+          final verseList = (primaryTranslationVerseData as List?) ?? [];
+          for (int i = 0; i < verseList.length; i++) {
+            contentWidgets.add(
+              BiblePageWidgets.buildVerseItem(
                 key: ValueKey(
-                    '${widget.selectedBook}-${widget.selectedChapter}-$verseNumber-single'),
-                verseNumber: verseNumber,
-                verseData: (primaryTranslationVerseData as List)[index],
+                    '${widget.selectedBook}-${widget.selectedChapter}-${i + 1}-single'),
+                verseNumber: i + 1,
+                verseData: verseList[i],
                 selectedBook: widget.selectedBook,
                 selectedChapter: widget.selectedChapter,
                 context: context,
@@ -375,15 +288,180 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 isHebrew: widget.selectedTranslation1 == 'hebrew_original',
                 isGreekInterlinear:
                     widget.selectedTranslation1 == 'greek_interlinear',
-                showHebrewInterlinear: false,
-                showGreekInterlinear: false,
-              );
-            }
+              ),
+            );
+          }
+        }
+
+        // 3. Adiciona o rodapé no final da lista
+        contentWidgets.add(
+            _buildChapterFooter(context, theme, contentViewModel, sections));
+
+        // 4. Renderiza a lista de widgets construída
+        return ListView.builder(
+          controller: widget.scrollController1,
+          key: PageStorageKey<String>(
+              '${widget.selectedBook}-${widget.selectedChapter}-singleView-${widget.showMindMaps}'),
+          padding: EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            bottom: 16.0,
+            top: widget.isFocusMode ? 8.0 : 0.0,
+          ),
+          itemCount: contentWidgets.length,
+          itemBuilder: (context, index) {
+            return contentWidgets[index];
           },
         );
       },
     );
   }
+
+  // ✅ NOVO MÉTODO: Lógica de construção da visão de comparação.
+  Widget _buildCompareViewContent(
+    ThemeData theme,
+    List<Map<String, dynamic>> sections,
+    dynamic primaryVerseData,
+    dynamic comparisonVerseData,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _buildComparisonColumn(
+            context,
+            sections,
+            primaryVerseData as List,
+            widget.scrollController1,
+            widget.selectedTranslation1,
+            isHebrew: widget.selectedTranslation1 == 'hebrew_original',
+            isGreek: widget.selectedTranslation1 == 'greek_interlinear',
+            listViewKey: PageStorageKey<String>(
+                '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation1}-compareView'),
+          ),
+        ),
+        VerticalDivider(
+            width: 1,
+            color: theme.dividerColor.withOpacity(0.5),
+            thickness: 0.5),
+        Expanded(
+          child: _buildComparisonColumn(
+            context,
+            sections,
+            comparisonVerseData as List,
+            widget.scrollController2,
+            widget.selectedTranslation2!,
+            isHebrew: widget.selectedTranslation2 == 'hebrew_original',
+            isGreek: widget.selectedTranslation2 == 'greek_interlinear',
+            listViewKey: PageStorageKey<String>(
+                '${widget.selectedBook}-${widget.selectedChapter}-${widget.selectedTranslation2}-compareView'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ NOVO MÉTODO HELPER: Constrói o Card do Mapa Mental.
+  Widget _buildMindMapCard(ThemeData theme, String sectionId) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _firestoreService.getMindMap(sectionId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            !snapshot.hasData ||
+            snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final mapData = snapshot.data!;
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mapData['title'] ?? 'Mapa Mental',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 400,
+                  child: MindMapView(mapData: mapData),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ✅ NOVO MÉTODO HELPER: Extrai o ID da seção dos dados.
+  String _getSectionIdFromData(Map<String, dynamic> sectionData) {
+    final verseNumbers = (sectionData['verses'] as List?)?.cast<int>() ?? [];
+    final range = verseNumbers.isNotEmpty
+        ? (verseNumbers.length == 1
+            ? verseNumbers.first.toString()
+            : "${verseNumbers.first}-${verseNumbers.last}")
+        : "unknown";
+    return "${widget.selectedBook}_c${widget.selectedChapter}_v$range";
+  }
+
+  // ✅ NOVO MÉTODO HELPER: Extrai a string de range dos dados.
+  String _getVersesRangeFromData(Map<String, dynamic> sectionData) {
+    final verseNumbers = (sectionData['verses'] as List?)?.cast<int>() ?? [];
+    return verseNumbers.isNotEmpty
+        ? (verseNumbers.length == 1
+            ? verseNumbers.first.toString()
+            : "${verseNumbers.first}-${verseNumbers.last}")
+        : "unknown_range";
+  }
+
+  // ✅ NOVO MÉTODO HELPER: Extrai dados do interlinear para uma seção.
+  List<List<Map<String, String>>>? _getHebrewDataForSection(
+      Map<String, dynamic> sectionData) {
+    if (!widget.showHebrewInterlinear ||
+        widget.selectedTranslation1 == 'hebrew_original' ||
+        widget.currentChapterHebrewData == null) {
+      return null;
+    }
+    final allHebrewVerses = widget.currentChapterHebrewData!['data'] as List?;
+    if (allHebrewVerses == null) return null;
+
+    final verseNumbersInSection =
+        (sectionData['verses'] as List?)?.cast<int>() ?? [];
+    return verseNumbersInSection
+        .where((vNum) => allHebrewVerses.length >= vNum && vNum > 0)
+        .map(
+            (vNum) => List<Map<String, String>>.from(allHebrewVerses[vNum - 1]))
+        .toList();
+  }
+
+  // ✅ NOVO MÉTODO HELPER: Extrai dados do interlinear para uma seção.
+  List<List<Map<String, String>>>? _getGreekDataForSection(
+      Map<String, dynamic> sectionData) {
+    if (!widget.showGreekInterlinear ||
+        widget.selectedTranslation1 == 'greek_interlinear' ||
+        widget.currentChapterGreekData == null) {
+      return null;
+    }
+    final allGreekVerses = widget.currentChapterGreekData!['data'] as List?;
+    if (allGreekVerses == null) return null;
+
+    final verseNumbersInSection =
+        (sectionData['verses'] as List?)?.cast<int>() ?? [];
+    return verseNumbersInSection
+        .where((vNum) => allGreekVerses.length >= vNum && vNum > 0)
+        .map((vNum) => List<Map<String, String>>.from(allGreekVerses[vNum - 1]))
+        .toList();
+  }
+
+  // O resto dos seus métodos (_buildComparisonColumn, _buildChapterFooter) permanecem os mesmos.
+  // Cole-os aqui, sem alterações.
 
   Widget _buildComparisonColumn(
       BuildContext context,
@@ -461,21 +539,11 @@ class _BibleReaderViewState extends State<BibleReaderView> {
       ThemeData theme,
       _BibleContentViewModel contentViewModel,
       List<Map<String, dynamic>> sections) {
-    // Obtém todos os IDs de seção para o capítulo atual
     final allSectionIdsInChapter = sections
-        .map((section) {
-          final List<int> verseNumbers =
-              (section['verses'] as List?)?.cast<int>() ?? [];
-          if (verseNumbers.isEmpty) return null;
-          final String versesRangeStr = verseNumbers.length == 1
-              ? verseNumbers.first.toString()
-              : "${verseNumbers.first}-${verseNumbers.last}";
-          return "${widget.selectedBook}_c${widget.selectedChapter}_v$versesRangeStr";
-        })
-        .whereType<String>()
+        .map((section) => _getSectionIdFromData(section))
+        .where((id) => !id.contains("unknown"))
         .toSet();
 
-    // Verifica se TODAS as seções deste capítulo já foram lidas
     final bool isChapterComplete = allSectionIdsInChapter.isNotEmpty &&
         contentViewModel.readSectionsForCurrentBook
             .containsAll(allSectionIdsInChapter);
@@ -508,7 +576,6 @@ class _BibleReaderViewState extends State<BibleReaderView> {
             textStyle:
                 const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          // Se o capítulo já está completo, o botão é desabilitado
           onPressed: isChapterComplete
               ? null
               : () {
@@ -519,7 +586,6 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                       sectionIdsInChapter: allSectionIdsInChapter.toList(),
                     ),
                   );
-                  // Opcional: Mostrar um feedback imediato
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text(
