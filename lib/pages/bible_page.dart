@@ -668,7 +668,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   Future<void> _loadCurrentChapterHebrewDataIfNeeded() async {
     final isPremium = _isUserPremium(_store!);
 
-    if (!isPremium) {
+    if (!true) {
+      //<<< DESATIVADO TEMPORARIAMENTE >>>>
       // Se não for premium, zera os dados e não faz nada.
       if (mounted) setState(() => _currentChapterHebrewData = null);
       return;
@@ -699,7 +700,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
   Future<void> _loadCurrentChapterGreekDataIfNeeded() async {
     final isPremium = _isUserPremium(_store!);
-    if (!isPremium) {
+    if (!true) {
+      //<<< DESATIVADO TEMPORARIAMENTE >>>>
       if (mounted) setState(() => _currentChapterGreekData = null);
       return;
     }
@@ -1641,7 +1643,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               break;
             case 'hebrew':
               featureName = 'use_interlinear_hebrew';
-              if (isPremium) {
+              if (true) {
+                // isPremium
                 setState(() {
                   _showHebrewInterlinear = !_showHebrewInterlinear;
                   if (_showHebrewInterlinear) {
@@ -1657,7 +1660,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               break;
             case 'greek':
               featureName = 'use_interlinear_greek';
-              if (isPremium) {
+              if (true) {
+                // isPremium
                 setState(() {
                   _showGreekInterlinear = !_showGreekInterlinear;
                   if (_showGreekInterlinear) {
@@ -1745,17 +1749,17 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                     width: 24,
                     height: 24,
                     colorFilter: ColorFilter.mode(
-                      isPremium
-                          ? (_showGreekInterlinear
-                              ? premiumIconColor
-                              : theme.iconTheme.color!)
-                          : premiumIconColor,
+                      _showGreekInterlinear
+                          ? theme.colorScheme.primary
+                          : theme.iconTheme.color!,
                       BlendMode.srcIn,
                     ),
                   ),
                   title: Text('Grego Interlinear',
                       style: TextStyle(
-                          color: isPremium ? null : premiumIconColor)),
+                          color: _showGreekInterlinear
+                              ? theme.colorScheme.primary
+                              : null)),
                 ),
               ),
             const PopupMenuDivider(),
@@ -2094,7 +2098,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               buildCircleButton(
                 isActive: _showHebrewInterlinear,
                 onTap: () {
-                  if (isPremium) {
+                  if (true) {
                     setState(() {
                       _showHebrewInterlinear = !_showHebrewInterlinear;
                       if (_showHebrewInterlinear) {
@@ -2125,7 +2129,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
               buildCircleButton(
                 isActive: _showGreekInterlinear,
                 onTap: () {
-                  if (isPremium) {
+                  if (true) {
                     setState(() {
                       _showGreekInterlinear = !_showGreekInterlinear;
                       if (_showGreekInterlinear) {
