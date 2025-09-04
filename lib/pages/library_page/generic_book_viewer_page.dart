@@ -1,8 +1,59 @@
 // lib/pages/library_page/generic_book_viewer_page.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
+import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
+import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
+import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
+import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+
+// ViewModel para buscar destaques e status premium do Redux
+class _BookViewerViewModel {
+  final List<Map<String, dynamic>> highlights;
+  final bool isPremium;
+  final List<String> allUserTags;
+
+  _BookViewerViewModel({
+    required this.highlights,
+    required this.isPremium,
+    required this.allUserTags,
+  });
+
+  static _BookViewerViewModel fromStore(Store<AppState> store, String bookId) {
+    // Filtra para pegar apenas os destaques deste livro específico
+    final relevantHighlights = store.state.userState.userCommentHighlights
+        .where((h) => h['sourceId'] == bookId)
+        .toList();
+
+    // Lógica robusta para verificar o status premium
+    bool premiumStatus = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    if (!premiumStatus) {
+      final userDetails = store.state.userState.userDetails;
+      if (userDetails != null) {
+        final status = userDetails['subscriptionStatus'] as String?;
+        final endDate =
+            (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+        if (status == 'active' &&
+            endDate != null &&
+            endDate.isAfter(DateTime.now())) {
+          premiumStatus = true;
+        }
+      }
+    }
+
+    return _BookViewerViewModel(
+      highlights: relevantHighlights,
+      isPremium: premiumStatus,
+      allUserTags: store.state.userState.allUserTags,
+    );
+  }
+}
 
 class GenericBookViewerPage extends StatefulWidget {
   final String bookId;
@@ -30,6 +81,11 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
     super.initState();
     _chaptersFuture = _firestoreService.getBookChapters(widget.bookId);
     _loadLastReadPage();
+    // Garante que as tags do usuário estejam carregadas ao entrar na tela
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      StoreProvider.of<AppState>(context, listen: false)
+          .dispatch(LoadUserTagsAction());
+    });
   }
 
   Future<void> _loadLastReadPage() async {
@@ -111,6 +167,123 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
     );
   }
 
+  void _showPremiumRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recurso Premium 👑'),
+        content: const Text(
+            'A marcação de trechos na biblioteca é exclusiva para assinantes Premium.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Entendi')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SubscriptionSelectionPage()));
+            },
+            child: const Text('Ver Planos'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleHighlight(
+    BuildContext context,
+    String fullParagraph,
+    String chapterTitle,
+    EditableTextState editableTextState,
+    _BookViewerViewModel viewModel,
+  ) async {
+    editableTextState.hideToolbar();
+    if (!viewModel.isPremium) {
+      _showPremiumRequiredDialog();
+      return;
+    }
+
+    final selection = editableTextState.textEditingValue.selection;
+    if (selection.isCollapsed) return;
+
+    final selectedSnippet =
+        fullParagraph.substring(selection.start, selection.end);
+
+    final result = await showDialog<HighlightResult?>(
+      context: context,
+      builder: (_) => HighlightEditorDialog(
+        initialColor: "#90EE90",
+        initialTags: const [],
+        allUserTags: viewModel.allUserTags,
+      ),
+    );
+
+    if (result == null || result.colorHex == null) return;
+
+    final highlightData = {
+      'selectedSnippet': selectedSnippet,
+      'fullContext': fullParagraph,
+      'sourceType': 'book',
+      'sourceTitle': chapterTitle,
+      'sourceParentTitle': widget.bookTitle,
+      'sourceId': widget.bookId,
+      'color': result.colorHex,
+      'tags': result.tags,
+    };
+
+    StoreProvider.of<AppState>(context, listen: false)
+        .dispatch(AddCommentHighlightAction(highlightData));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Destaque salvo!")));
+  }
+
+  List<TextSpan> _buildHighlightedParagraph(String paragraph,
+      List<Map<String, dynamic>> highlights, ThemeData theme) {
+    if (highlights.isEmpty) {
+      return [TextSpan(text: paragraph)];
+    }
+
+    List<TextSpan> spans = [];
+    int lastEnd = 0;
+
+    highlights.sort((a, b) {
+      final int aStart = paragraph.indexOf(a['selectedSnippet']);
+      final int bStart = paragraph.indexOf(b['selectedSnippet']);
+      return aStart.compareTo(bStart);
+    });
+
+    for (var highlight in highlights) {
+      String snippet = highlight['selectedSnippet'] ?? '';
+      if (snippet.isEmpty) continue;
+
+      int startIndex = paragraph.indexOf(snippet, lastEnd);
+      if (startIndex == -1) continue;
+
+      if (startIndex > lastEnd) {
+        spans.add(TextSpan(text: paragraph.substring(lastEnd, startIndex)));
+      }
+
+      spans.add(TextSpan(
+        text: snippet,
+        style: TextStyle(
+          backgroundColor: Color(int.parse(
+                  (highlight['color'] as String).replaceFirst('#', '0xff')))
+              .withOpacity(0.35),
+        ),
+      ));
+      lastEnd = startIndex + snippet.length;
+    }
+
+    if (lastEnd < paragraph.length) {
+      spans.add(TextSpan(text: paragraph.substring(lastEnd)));
+    }
+
+    return spans.isEmpty ? [TextSpan(text: paragraph)] : spans;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -128,91 +301,122 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
         elevation: 0,
         backgroundColor: theme.scaffoldBackgroundColor,
       ),
-      // ✅✅✅ A LÓGICA AGORA FICA DENTRO DE UMA COLUMN ✅✅✅
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _chaptersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-                child: Text("Não foi possível carregar os capítulos."));
-          }
+      body: StoreConnector<AppState, _BookViewerViewModel>(
+        converter: (store) =>
+            _BookViewerViewModel.fromStore(store, widget.bookId),
+        builder: (context, viewModel) {
+          return FutureBuilder<List<Map<String, dynamic>>>(
+            future: _chaptersFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(
+                    child: Text("Não foi possível carregar os capítulos."));
+              }
 
-          final chapters = snapshot.data!;
-          final totalChapters = chapters.length;
-          final double progress =
-              totalChapters > 1 ? (_currentPage + 1) / totalChapters : 1.0;
+              final chapters = snapshot.data!;
+              final totalChapters = chapters.length;
+              final double progress =
+                  totalChapters > 1 ? (_currentPage + 1) / totalChapters : 1.0;
 
-          return Column(
-            children: [
-              // 1. BARRA DE PROGRESSO (AGORA NO CORPO, NÃO NA BOTTOMBAR)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: LinearPercentIndicator(
-                  percent: progress,
-                  lineHeight: 5.0,
-                  barRadius: const Radius.circular(5),
-                  padding: EdgeInsets.zero,
-                  backgroundColor: theme.dividerColor.withOpacity(0.2),
-                  progressColor: theme.colorScheme.primary,
-                  animateFromLastPercent: true,
-                  animation: true,
-                ),
-              ),
-              // 2. PageView OCUPA O RESTANTE DO ESPAÇO
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: totalChapters,
-                  onPageChanged: (index) {
-                    setState(() => _currentPage = index);
-                    _saveCurrentPage(index);
-                  },
-                  itemBuilder: (context, index) {
-                    final chapter = chapters[index];
-                    final title = chapter['title'] ?? 'Capítulo';
-                    final paragraphs =
-                        List<String>.from(chapter['paragraphs'] ?? []);
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: LinearPercentIndicator(
+                      percent: progress,
+                      lineHeight: 5.0,
+                      barRadius: const Radius.circular(5),
+                      padding: EdgeInsets.zero,
+                      backgroundColor: theme.dividerColor.withOpacity(0.2),
+                      progressColor: theme.colorScheme.primary,
+                      animateFromLastPercent: true,
+                      animation: true,
+                    ),
+                  ),
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: totalChapters,
+                      onPageChanged: (index) {
+                        setState(() => _currentPage = index);
+                        _saveCurrentPage(index);
+                      },
+                      itemBuilder: (context, index) {
+                        final chapter = chapters[index];
+                        final title = chapter['title'] ?? 'Capítulo';
+                        final paragraphs =
+                            List<String>.from(chapter['paragraphs'] ?? []);
+                        final chapterHighlights = viewModel.highlights
+                            .where((h) => h['sourceTitle'] == title)
+                            .toList();
 
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24.0, vertical: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ...paragraphs.map((p) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16.0),
-                                child: Text(
-                                  p,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontSize: 17,
-                                    height: 1.6,
-                                  ),
-                                  textAlign: TextAlign.justify,
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0, vertical: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              )),
-                          const SizedBox(height: 80),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                              ),
+                              const SizedBox(height: 24),
+                              ...paragraphs.map((p) => Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 16.0),
+                                    child: SelectableText.rich(
+                                      TextSpan(
+                                        style: theme.textTheme.bodyLarge
+                                            ?.copyWith(
+                                                fontSize: 17, height: 1.6),
+                                        children: _buildHighlightedParagraph(
+                                            p, chapterHighlights, theme),
+                                      ),
+                                      textAlign: TextAlign.justify,
+                                      contextMenuBuilder:
+                                          (context, editableTextState) {
+                                        return AdaptiveTextSelectionToolbar
+                                            .buttonItems(
+                                          anchors: editableTextState
+                                              .contextMenuAnchors,
+                                          buttonItems: [
+                                            ...editableTextState
+                                                .contextMenuButtonItems,
+                                            ContextMenuButtonItem(
+                                              label: 'Destacar',
+                                              onPressed: () {
+                                                _handleHighlight(
+                                                    context,
+                                                    p,
+                                                    title,
+                                                    editableTextState,
+                                                    viewModel);
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  )),
+                              const SizedBox(height: 80),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
-      // ✅✅✅ BOTTOM APP BAR SIMPLIFICADA ✅✅✅
       bottomNavigationBar: FutureBuilder<List<Map<String, dynamic>>>(
         future: _chaptersFuture,
         builder: (context, snapshot) {
@@ -223,9 +427,8 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
 
           return BottomAppBar(
             elevation: 8,
-            // Usamos um SizedBox para garantir uma altura fixa e evitar overflow
             child: SizedBox(
-              height: 56.0, // Altura padrão de uma barra de navegação
+              height: 56.0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

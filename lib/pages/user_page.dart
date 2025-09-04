@@ -1422,12 +1422,17 @@ class _HighlightsViewModel {
           commentData['sourceType'] as String? ?? 'literature';
       final String sourceTitle =
           commentData['sourceTitle'] as String? ?? 'Fonte desconhecida';
+      final String parentTitle =
+          commentData['sourceParentTitle'] as String? ?? '';
 
       switch (sourceType) {
         case 'sermon':
           // Limita o tamanho do título para não quebrar a UI
           referenceText =
               "Sermão: ${sourceTitle.length > 40 ? sourceTitle.substring(0, 40) + '...' : sourceTitle}";
+          break;
+        case 'book':
+          referenceText = "$parentTitle: $sourceTitle";
           break;
         case 'church_history':
           referenceText = "Hist. da Igreja: $sourceTitle";

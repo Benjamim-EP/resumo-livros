@@ -238,6 +238,62 @@ class LibraryPage extends StatelessWidget {
             bookTitle: "Gravidade e Graça",
           ),
         },
+        {
+          'title': "O Enraizamento",
+          'description':
+              "A obediência é uma necessidade vital da alma humana. Ela é de duas espécies: obediência a regras estabelecidas e obediência a seres humanos considerad...",
+          'author': 'Simone Weil',
+          'pageCount': '15 capítulos',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
+          'coverImagePath': 'assets/covers/enraizamento.webp',
+          'destinationPage': const GenericBookViewerPage(
+            bookId: 'o-enraizamento',
+            bookTitle: "O Enraizamento",
+          ),
+        },
+        {
+          'title': "Ortodoxia",
+          'description':
+              "A única desculpa possível para este livro é que ele é uma resposta a um desafio. Mesmo um mau atirador é digno quando aceita um duelo.",
+          'author': 'G.K. Chesterton',
+          'pageCount': '9 capítulos',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
+          'coverImagePath': 'assets/covers/ortodoxia.webp',
+          'destinationPage': const GenericBookViewerPage(
+            bookId: 'ortodoxia',
+            bookTitle: "Ortodoxia",
+          ),
+        },
+        {
+          'title': "Hereges",
+          'description':
+              "É tolo, de modo geral, que um filósofo ateie fogo a outro filósofo no Mercado de Smithfield porque não concordam em sua teoria do universo.",
+          'author': 'G.K. Chesterton',
+          'pageCount': '20 capítulos',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
+          'coverImagePath': 'assets/covers/hereges.webp',
+          'destinationPage': const GenericBookViewerPage(
+            bookId: 'hereges',
+            bookTitle: "Hereges",
+          ),
+        },
+        {
+          'title': "Carta a um Religioso",
+          'description':
+              "...quando leio o catecismo do Concílio de Trento, tenho a impressão de que não tenho nada em comum com a religião que nele se expõe.",
+          'author': 'Simone Weil',
+          'pageCount': '1 capítulo', // Corrigido para o singular
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
+          'coverImagePath': 'assets/covers/cartas_a_um_religioso.webp',
+          'destinationPage': const GenericBookViewerPage(
+            bookId: 'carta-a-um-religioso',
+            bookTitle: "Carta a um Religioso",
+          ),
+        },
         // Adicione aqui os metadados de outros livros do Firestore
         // {
         //   'title': "Heréticos",
