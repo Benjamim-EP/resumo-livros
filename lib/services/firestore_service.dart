@@ -1922,4 +1922,30 @@ class FirestoreService {
       return null;
     }
   }
+
+  Future<List<Map<String, dynamic>>> getBookChapters(String bookId) async {
+    try {
+      final snapshot = await _db
+          .collection('Books')
+          .doc(bookId)
+          .collection('chapters')
+          .orderBy(FieldPath
+              .documentId) // Ordena pelo ID do documento (que é o 'play_order')
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print(
+            "FirestoreService: Nenhum capítulo encontrado para o livro ID: $bookId");
+        return [];
+      }
+
+      // Mapeia cada documento para um mapa de dados
+      return snapshot.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      print(
+          "FirestoreService: Erro ao buscar capítulos para o livro $bookId: $e");
+      // Retorna uma lista vazia em caso de erro para não quebrar a UI
+      return [];
+    }
+  }
 }

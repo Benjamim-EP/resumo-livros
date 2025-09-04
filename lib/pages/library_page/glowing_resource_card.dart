@@ -27,7 +27,7 @@ class _GlowingResourceCardState extends State<GlowingResourceCard>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true); // A animação vai e volta continuamente
+    )..repeat(reverse: true);
   }
 
   @override
@@ -39,22 +39,28 @@ class _GlowingResourceCardState extends State<GlowingResourceCard>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Cores para o efeito neon. Você pode ajustar para combinar com seu tema.
     final Color color1 = theme.colorScheme.primary;
     final Color color2 = theme.colorScheme.secondary.withOpacity(0.8);
+
+    // ✅✅✅ INÍCIO DA CORREÇÃO ✅✅✅
+    // Pega o caminho da imagem dos dados do item
+    final String coverPath = widget.itemData['coverImagePath'] ?? '';
+    // Cria o ImageProvider a partir do caminho
+    final ImageProvider? coverImageProvider =
+        coverPath.isNotEmpty ? AssetImage(coverPath) : null;
+    // ✅✅✅ FIM DA CORREÇÃO ✅✅✅
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return Container(
-          // O Container externo cria o brilho
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15), // Mesmas bordas do card
+            borderRadius: BorderRadius.circular(15),
             boxShadow: [
               BoxShadow(
                 color: Color.lerp(color1, color2, _controller.value)!
                     .withOpacity(0.7),
-                blurRadius: 10.0, // O "blur" cria o efeito de brilho
+                blurRadius: 10.0,
                 spreadRadius: 2.0,
               ),
             ],
@@ -62,15 +68,15 @@ class _GlowingResourceCardState extends State<GlowingResourceCard>
           child: child,
         );
       },
-      // O child é o ResourceCard original, que não precisa saber da animação
       child: ResourceCard(
         title: widget.itemData['title'],
         description: widget.itemData['description'],
         author: widget.itemData['author'],
         pageCount: widget.itemData['pageCount'],
-        coverImagePath: widget.itemData['coverImagePath'],
+        // ✅✅✅ CORREÇÃO APLICADA AQUI ✅✅✅
+        // Passa o ImageProvider em vez do String path
+        coverImage: coverImageProvider,
         onTap: widget.onTap,
-        // Força a borda do ResourceCard a ser mais visível ou de uma cor específica
         hasPremiumFeature: true,
       ),
     );

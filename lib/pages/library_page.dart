@@ -6,6 +6,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
 import 'package:septima_biblia/pages/library_page/book_search_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
+import 'package:septima_biblia/pages/library_page/generic_book_viewer_page.dart';
 import 'package:septima_biblia/pages/library_page/glowing_resource_card.dart';
 import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
@@ -17,7 +18,7 @@ import 'package:septima_biblia/pages/themed_maps_list_page.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
-import 'package:septima_biblia/services/custom_page_route.dart'; // Importa a rota customizada
+import 'package:septima_biblia/services/custom_page_route.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:redux/redux.dart';
 
@@ -48,13 +49,14 @@ class _LibraryViewModel {
   }
 }
 
-// <<< O ResourceCard AGORA É UM STATEFULWIDGET >>>
+// O ResourceCard agora é um StatefulWidget para a animação de toque
 class ResourceCard extends StatefulWidget {
   final String title;
   final String description;
   final String author;
   final String pageCount;
-  final String? coverImagePath;
+  final ImageProvider?
+      coverImage; // Aceita qualquer ImageProvider (Asset ou Network)
   final VoidCallback onTap;
   final bool isFullyPremium;
   final bool hasPremiumFeature;
@@ -65,7 +67,7 @@ class ResourceCard extends StatefulWidget {
     required this.description,
     required this.author,
     required this.pageCount,
-    this.coverImagePath,
+    this.coverImage,
     required this.onTap,
     this.isFullyPremium = false,
     this.hasPremiumFeature = false,
@@ -76,22 +78,12 @@ class ResourceCard extends StatefulWidget {
 }
 
 class _ResourceCardState extends State<ResourceCard> {
-  bool _isPressed = false; // Estado para controlar se o card está pressionado
+  bool _isPressed = false;
 
-  // Funções para atualizar o estado no início e fim do toque
-  void _onTapDown(TapDownDetails details) {
-    setState(() => _isPressed = true);
-  }
+  void _onTapDown(TapDownDetails details) => setState(() => _isPressed = true);
+  void _onTapUp(TapUpDetails details) => setState(() => _isPressed = false);
+  void _onTapCancel() => setState(() => _isPressed = false);
 
-  void _onTapUp(TapUpDetails details) {
-    setState(() => _isPressed = false);
-  }
-
-  void _onTapCancel() {
-    setState(() => _isPressed = false);
-  }
-
-  // Widget auxiliar para as linhas de informação
   Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
     final theme = Theme.of(context);
     return Row(
@@ -116,17 +108,13 @@ class _ResourceCardState extends State<ResourceCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bool hasCoverImage =
-        widget.coverImagePath != null && widget.coverImagePath!.isNotEmpty;
-
-    // Define a escala com base no estado _isPressed
     final double scale = _isPressed ? 0.96 : 1.0;
 
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
-      onTap: widget.onTap, // A ação de clique original passada como parâmetro
+      onTap: widget.onTap,
       child: AnimatedScale(
         scale: scale,
         duration: const Duration(milliseconds: 150),
@@ -144,51 +132,18 @@ class _ResourceCardState extends State<ResourceCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 3,
+              // ✅ 1. ÁREA DA IMAGEM: USA FLEXIBLE EM VEZ DE EXPANDED
+              // Flexible ocupa o espaço restante após a área de texto ter sua altura fixa.
+              Flexible(
+                flex:
+                    1, // O flex aqui ainda é útil para manter a proporção se a altura total mudar
                 child: Stack(
-                  alignment: Alignment.bottomLeft,
                   children: [
                     Positioned.fill(
-                      child: hasCoverImage
-                          ? Image.asset(widget.coverImagePath!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                  color: theme
-                                      .colorScheme.surfaceContainerHighest))
+                      child: widget.coverImage != null
+                          ? Image(image: widget.coverImage!, fit: BoxFit.cover)
                           : Container(
-                              color: theme.colorScheme.primaryContainer),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.black.withOpacity(0.85),
-                            Colors.transparent
-                          ],
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          stops: const [0.0, 0.8],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 10,
-                      left: 12,
-                      right: 12,
-                      child: Text(
-                        widget.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          shadows: [
-                            const Shadow(blurRadius: 3.0, color: Colors.black87)
-                          ],
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                              color: theme.colorScheme.surfaceContainerHighest),
                     ),
                     if (widget.isFullyPremium || widget.hasPremiumFeature)
                       Positioned(
@@ -206,22 +161,34 @@ class _ResourceCardState extends State<ResourceCard> {
                   ],
                 ),
               ),
-              Expanded(
-                flex: 2,
+              // ✅ 2. ÁREA DE INFORMAÇÕES: USA SIZEDBOX COM ALTURA FIXA
+              SizedBox(
+                height: 120, // <--- AJUSTE ESTE VALOR CONFORME NECESSÁRIO
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      Text(
+                        widget.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
                       Text(widget.description,
                           style:
                               theme.textTheme.bodySmall?.copyWith(height: 1.3),
-                          maxLines: 3,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis),
-                      const Divider(height: 12, thickness: 0.5),
+                      const Spacer(),
                       _buildInfoRow(
                           context, Icons.person_outline, widget.author),
+                      const SizedBox(height: 4),
                       _buildInfoRow(
                           context, Icons.menu_book_outlined, widget.pageCount),
                     ],
@@ -236,30 +203,57 @@ class _ResourceCardState extends State<ResourceCard> {
   }
 }
 
-// A página principal da Biblioteca
-class LibraryPage extends StatefulWidget {
+// A página principal da Biblioteca agora é StatelessWidget
+class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
 
-  @override
-  State<LibraryPage> createState() => _LibraryPageState();
-}
-
-class _LibraryPageState extends State<LibraryPage> {
-  final Map<String, dynamic> _bookSearchCardData = {
-    'title': "Recomendação de Livros",
-    'description':
-        "Encontre o livro perfeito para o seu momento, dúvida ou sentimento.",
-    'author': 'Septima AI',
-    'pageCount': '70+ Livros / 7+ Autores',
-    'isFullyPremium': false,
-    'hasPremiumFeature': false,
-    'coverImagePath':
-        'assets/covers/book_recommendation_cover.webp', // Crie ou use uma imagem de capa
-    'destinationPage': const BookSearchPage(),
-    'isSpecial': true, // Flag para identificar nosso card especial
-  };
-  // A lista de itens da biblioteca
+  // Lista estática com os metadados de todos os recursos da biblioteca
   List<Map<String, dynamic>> get libraryItems => [
+        // Card Especial de IA
+        // {
+        //   'title': "Recomendação de Livros",
+        //   'description':
+        //       "Encontre o livro perfeito para o seu momento, dúvida ou sentimento.",
+        //   'author': 'Septima AI',
+        //   'pageCount': '70+ Livros / 7+ Autores',
+        //   'isFullyPremium': false,
+        //   'hasPremiumFeature': false,
+        //   'coverImagePath': 'assets/covers/book_recommendation_cover.webp',
+        //   'destinationPage': const BookSearchPage(),
+        //   'isSpecial': true,
+        // },
+        // Livros do Firestore
+        {
+          'title': "Gravidade e Graça",
+          'description':
+              "Todos os movimentos naturais da alma são regidos por leis análogas às da gravidade física. A graça é a única exceção.",
+          'author': 'Simone Weil',
+          'pageCount': '39 capítulos',
+          'isFullyPremium': false,
+          'hasPremiumFeature': false,
+          'coverImagePath':
+              'assets/covers/gravidade_e_graca_cover.webp', // Capa nos assets
+          'destinationPage': const GenericBookViewerPage(
+            bookId: 'gravidade-e-graca', // ID do documento no Firestore
+            bookTitle: "Gravidade e Graça",
+          ),
+        },
+        // Adicione aqui os metadados de outros livros do Firestore
+        // {
+        //   'title': "Heréticos",
+        //   'description': "Uma defesa da ortodoxia e uma crítica às filosofias modernas.",
+        //   'author': 'G.K. Chesterton',
+        //   'pageCount': '20 capítulos',
+        //   'isFullyPremium': false,
+        //   'hasPremiumFeature': false,
+        //   'coverImagePath': 'assets/covers/hereticos_cover.webp',
+        //   'destinationPage': const GenericBookViewerPage(
+        //     bookId: 'heretics', // ID do documento no Firestore
+        //     bookTitle: "Heréticos",
+        //   ),
+        // },
+
+        // Recursos Estáticos do App
         {
           'title': "Mapas Temáticos",
           'description':
@@ -268,28 +262,26 @@ class _LibraryPageState extends State<LibraryPage> {
           'pageCount': '4 Viagens',
           'isFullyPremium': false,
           'hasPremiumFeature': false,
-          'coverImagePath':
-              'assets/covers/themed_maps_cover.webp', // Você precisará de uma imagem de capa
+          'coverImagePath': 'assets/covers/themed_maps_cover.webp',
           'destinationPage': const ThemedMapsListPage(),
         },
         {
-          'title': "Sermões de C.H. Spurgeon",
+          'title': "Sermões de Spurgeon",
           'description':
               "Uma vasta coleção dos sermões do 'Príncipe dos Pregadores'.",
           'author': 'C.H. Spurgeon',
-          'pageCount': '+3000 sermões / +20000 páginas',
+          'pageCount': '+3000 sermões',
           'isFullyPremium': false,
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/spurgeon_cover.webp',
           'destinationPage': const SpurgeonSermonsIndexPage(),
         },
-        // _bookSearchCardData,
         {
-          'title': "A Palavra de Deus às Mulheres",
+          'title': "A Palavra às Mulheres",
           'description':
-              "Uma análise profunda das escrituras sobre o papel da mulher na igreja e na sociedade.",
-          'author': 'Katharine C. Bushnell',
-          'pageCount': '100 Lições / +500 páginas',
+              "Uma análise profunda das escrituras sobre o papel da mulher.",
+          'author': 'K. C. Bushnell',
+          'pageCount': '+500 páginas',
           'isFullyPremium': false,
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/gods_word_to_women_cover.webp',
@@ -300,7 +292,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'description':
               "Um compêndio de promessas divinas organizadas por tema.",
           'author': 'Samuel Clarke',
-          'pageCount': '+1500 promessas / 180 tópicos',
+          'pageCount': '+1500 promessas',
           'isFullyPremium': false,
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/promessas_cover.webp',
@@ -311,17 +303,17 @@ class _LibraryPageState extends State<LibraryPage> {
           'description':
               "A jornada da igreja cristã desde os apóstolos até a era moderna.",
           'author': 'Philip Schaff',
-          'pageCount': '8 volumes / +5000 páginas',
-          'isFullyPremium': true,
+          'pageCount': '+5000 páginas',
+          'isFullyPremium': false,
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/historia_igreja.webp',
           'destinationPage': const ChurchHistoryIndexPage(),
         },
         {
-          'title': "Compêndio de Teologia Apologética",
+          'title': "Teologia Apologética",
           'description': "A obra monumental da teologia sistemática reformada.",
           'author': 'Francis Turretin',
-          'pageCount': '3 volumes / +2000 páginas',
+          'pageCount': '+2000 páginas',
           'isFullyPremium': false,
           'hasPremiumFeature': false,
           'coverImagePath': 'assets/covers/turretin_cover.webp',
@@ -339,7 +331,7 @@ class _LibraryPageState extends State<LibraryPage> {
           'destinationPage': const StudyHubPage(),
         },
         {
-          'title': "Linha do Tempo Bíblica",
+          'title': "Linha do Tempo",
           'description':
               "Contextualize os eventos bíblicos com a história mundial.",
           'author': 'Septima',
@@ -351,7 +343,6 @@ class _LibraryPageState extends State<LibraryPage> {
         },
       ];
 
-  // Função para mostrar o diálogo de assinatura premium
   void _showPremiumDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -396,6 +387,7 @@ class _LibraryPageState extends State<LibraryPage> {
             itemBuilder: (context, index) {
               final itemData = libraryItems[index];
               final bool isFullyPremium = itemData['isFullyPremium'];
+              final String coverPath = itemData['coverImagePath'] ?? '';
 
               VoidCallback onTapAction = () {
                 AnalyticsService.instance
@@ -407,15 +399,13 @@ class _LibraryPageState extends State<LibraryPage> {
                     interstitialManager.tryShowInterstitial(
                         fromScreen: "Library_To_${itemData['title']}");
                   }
-                  // <<< Usa a nova rota customizada para a transição >>>
                   Navigator.push(
                     context,
                     FadeScalePageRoute(page: itemData['destinationPage']),
                   );
                 }
               };
-              // ✅ 4. LÓGICA DE RENDERIZAÇÃO CONDICIONAL
-              // Se for o card especial, usa o GlowingResourceCard
+
               if (itemData['isSpecial'] == true) {
                 return GlowingResourceCard(
                   itemData: itemData,
@@ -425,25 +415,21 @@ class _LibraryPageState extends State<LibraryPage> {
                     .fadeIn(duration: 600.ms)
                     .scaleXY(begin: 0.9, curve: Curves.easeOutBack);
               }
+
               return ResourceCard(
                 title: itemData['title'],
                 description: itemData['description'],
                 author: itemData['author'],
                 pageCount: itemData['pageCount'],
-                coverImagePath: itemData['coverImagePath'],
+                coverImage: coverPath.isNotEmpty ? AssetImage(coverPath) : null,
                 isFullyPremium: isFullyPremium,
                 hasPremiumFeature:
                     itemData['hasPremiumFeature'] as bool? ?? false,
                 onTap: onTapAction,
               )
                   .animate()
-                  .fadeIn(
-                      duration: 600.ms,
-                      delay: (150 * (index % 2))
-                          .ms) // Delay diferente para cada coluna
-                  .scaleXY(
-                      begin: 0.9,
-                      curve: Curves.easeOutBack); // Efeito de escala e "pulo";
+                  .fadeIn(duration: 600.ms, delay: (150 * (index % 2)).ms)
+                  .scaleXY(begin: 0.9, curve: Curves.easeOutBack);
             },
           );
         },
