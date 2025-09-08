@@ -1730,65 +1730,6 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                 title: Text("Modo Foco"),
               ),
             ),
-            if (canShowHebrew || canShowGreek) const PopupMenuDivider(),
-            if (canShowHebrew)
-              PopupMenuItem<String>(
-                value: 'hebrew',
-                child: ListTile(
-                  leading: SvgPicture.asset(
-                    'assets/icons/interlinear_icon.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: ColorFilter.mode(
-                      isPremium
-                          ? (_showHebrewInterlinear
-                              ? premiumIconColor
-                              : theme.iconTheme.color!)
-                          : premiumIconColor,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  title: Text('Hebraico Interlinear',
-                      style: TextStyle(
-                          color: isPremium ? null : premiumIconColor)),
-                ),
-              ),
-            if (canShowGreek)
-              PopupMenuItem<String>(
-                value: 'greek',
-                child: ListTile(
-                  leading: SvgPicture.asset(
-                    'assets/icons/interlinear_icon.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: ColorFilter.mode(
-                      _showGreekInterlinear
-                          ? theme.colorScheme.primary
-                          : theme.iconTheme.color!,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  title: Text('Grego Interlinear',
-                      style: TextStyle(
-                          color: _showGreekInterlinear
-                              ? theme.colorScheme.primary
-                              : null)),
-                ),
-              ),
-            // const PopupMenuDivider(),
-            // PopupMenuItem<String>(
-            //   value: 'mindmap', // Novo valor
-            //   child: ListTile(
-            //     leading: Icon(Icons.hub_outlined,
-            //         color: _showMindMaps
-            //             ? theme.colorScheme.primary
-            //             : theme.iconTheme.color),
-            //     title: Text("Mapas Mentais",
-            //         style: TextStyle(
-            //             color:
-            //                 _showMindMaps ? theme.colorScheme.primary : null)),
-            //   ),
-            // ),
           ];
         },
       ),
@@ -1966,6 +1907,35 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                                 setState(() => _isCompareModeActive = true),
                             isStudyModeActive: _isStudyModeActive,
                             onToggleStudyMode: _toggleStudyMode,
+                            showHebrewInterlinear: _showHebrewInterlinear,
+                            showGreekInterlinear: _showGreekInterlinear,
+                            onToggleHebrewInterlinear: () {
+                              // A lógica que estava no 'onSelected' do PopupMenuButton agora vem para cá
+                              setState(() {
+                                _showHebrewInterlinear =
+                                    !_showHebrewInterlinear;
+                                if (_showHebrewInterlinear) {
+                                  _showGreekInterlinear =
+                                      false; // Desativa o outro modo
+                                  _loadCurrentChapterHebrewDataIfNeeded();
+                                } else {
+                                  _currentChapterHebrewData = null;
+                                }
+                              });
+                            },
+                            onToggleGreekInterlinear: () {
+                              // A lógica que estava no 'onSelected' do PopupMenuButton agora vem para cá
+                              setState(() {
+                                _showGreekInterlinear = !_showGreekInterlinear;
+                                if (_showGreekInterlinear) {
+                                  _showHebrewInterlinear =
+                                      false; // Desativa o outro modo
+                                  _loadCurrentChapterGreekDataIfNeeded();
+                                } else {
+                                  _currentChapterGreekData = null;
+                                }
+                              });
+                            },
                           ),
                     ],
                   ),
@@ -2023,36 +1993,27 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
   Widget _buildFloatingActionButtons(BuildContext context) {
     final theme = Theme.of(context);
-    final isPremium = _isUserPremium(_store!);
 
-    // Condições de visibilidade
-    final bool canShowHebrew =
-        booksMap?[selectedBook]?['testament'] == 'Antigo' &&
-            !_isCompareModeActive;
-    final bool canShowGreek = booksMap?[selectedBook]?['testament'] == 'Novo' &&
-        !_isCompareModeActive;
+    // ✅ 1. CONDIÇÃO DE VISIBILIDADE SIMPLIFICADA
+    // O container de botões agora só aparece se houver dados de mapa.
+    final bool shouldShowButton = _hasMapData &&
+        !_isSemanticSearchActive &&
+        !store.state.userState.isFocusMode;
 
-    final bool shouldShowAnyButton =
-        (_hasMapData || canShowHebrew || canShowGreek) &&
-            !_isSemanticSearchActive &&
-            !store.state.userState.isFocusMode;
-
-    if (!shouldShowAnyButton) {
-      return const SizedBox
-          .shrink(); // Não mostra nada se nenhuma condição for atendida
+    if (!shouldShowButton) {
+      return const SizedBox.shrink();
     }
 
-    // Botão circular customizado
+    // A função auxiliar 'buildCircleButton' permanece a mesma
     Widget buildCircleButton({
       required VoidCallback onTap,
       required Widget icon,
       required String tooltip,
-      bool isActive = false,
+      bool isActive =
+          false, // Não será mais usado, mas mantemos para consistência
     }) {
       return Material(
-        color: isActive
-            ? theme.colorScheme.primary.withOpacity(0.3)
-            : theme.colorScheme.surface,
+        color: theme.colorScheme.surface,
         elevation: 4.0,
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
@@ -2071,109 +2032,36 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
     }
 
     return Positioned(
+      // ✅ 2. AJUSTE DE POSIÇÃO
+      // Centraliza o botão se ele for o único. Pode ajustar para 'right' se preferir.
       bottom: 70.0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: theme.cardColor.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_hasMapData)
-              buildCircleButton(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BibleMapPage(
-                        chapterId: "${selectedBook}_${selectedChapter}",
-                        chapterTitle:
-                            "${booksMap?[selectedBook]?['nome']} $selectedChapter",
-                      ),
-                    ),
-                  );
-                },
-                icon: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Image.asset('assets/icon/maps.png'),
-                ),
-                tooltip: "Ver Mapa do Capítulo",
-              ),
-            if (_hasMapData && (canShowHebrew || canShowGreek))
-              const SizedBox(width: 12),
-            if (canShowHebrew)
-              buildCircleButton(
-                isActive: _showHebrewInterlinear,
-                onTap: () {
-                  if (true) {
-                    setState(() {
-                      _showHebrewInterlinear = !_showHebrewInterlinear;
-                      if (_showHebrewInterlinear) {
-                        _showGreekInterlinear = false;
-                        _loadCurrentChapterHebrewDataIfNeeded();
-                      } else {
-                        _currentChapterHebrewData = null;
-                      }
-                    });
-                  } else {
-                    _showPremiumDialog(context);
-                  }
-                },
-                icon: SvgPicture.asset(
-                  'assets/icons/interlinear_icon.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    _showHebrewInterlinear
-                        ? theme.colorScheme.primary
-                        : theme.iconTheme.color!,
-                    BlendMode.srcIn,
+      left: 0,
+      right: 0,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center, // Centraliza o botão
+        children: [
+          // ✅ 3. RENDERIZA APENAS O BOTÃO DE MAPAS
+          buildCircleButton(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BibleMapPage(
+                    chapterId: "${selectedBook}_${selectedChapter}",
+                    chapterTitle:
+                        "${booksMap?[selectedBook]?['nome']} $selectedChapter",
                   ),
                 ),
-                tooltip: "Hebraico Interlinear",
-              ),
-            if (canShowGreek)
-              buildCircleButton(
-                isActive: _showGreekInterlinear,
-                onTap: () {
-                  if (true) {
-                    setState(() {
-                      _showGreekInterlinear = !_showGreekInterlinear;
-                      if (_showGreekInterlinear) {
-                        _showHebrewInterlinear = false;
-                        _loadCurrentChapterGreekDataIfNeeded();
-                      } else {
-                        _currentChapterGreekData = null;
-                      }
-                    });
-                  } else {
-                    _showPremiumDialog(context);
-                  }
-                },
-                icon: SvgPicture.asset(
-                  'assets/icons/interlinear_icon.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    _showGreekInterlinear
-                        ? theme.colorScheme.primary
-                        : theme.iconTheme.color!,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                tooltip: "Grego Interlinear",
-              ),
-          ],
-        ),
+              );
+            },
+            icon: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Image.asset('assets/icon/maps.png'),
+            ),
+            tooltip: "Ver Mapa do Capítulo",
+          ),
+          // ❌ 4. BOTÕES DE HEBRAICO E GREGO REMOVIDOS DESTA LISTA
+        ],
       ),
     );
   }

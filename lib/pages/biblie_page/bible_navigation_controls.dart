@@ -28,6 +28,11 @@ class BibleNavigationControls extends StatelessWidget {
   final bool isStudyModeActive;
   final VoidCallback onToggleStudyMode;
 
+  final bool showHebrewInterlinear;
+  final bool showGreekInterlinear;
+  final VoidCallback onToggleHebrewInterlinear;
+  final VoidCallback onToggleGreekInterlinear;
+
   const BibleNavigationControls({
     super.key,
     required this.selectedBook,
@@ -42,11 +47,49 @@ class BibleNavigationControls extends StatelessWidget {
     required this.onToggleCompareMode,
     required this.isStudyModeActive,
     required this.onToggleStudyMode,
+    required this.showHebrewInterlinear,
+    required this.showGreekInterlinear,
+    required this.onToggleHebrewInterlinear,
+    required this.onToggleGreekInterlinear,
   });
+
+  Widget _buildIconButton({
+    required BuildContext context,
+    required VoidCallback onPressed,
+    required IconData icon,
+    required bool isActive,
+  }) {
+    final theme = Theme.of(context);
+    return Material(
+      color: isActive
+          ? theme.colorScheme.primary.withOpacity(0.15)
+          : theme.cardColor.withOpacity(0.15),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          // Padding reduzido para um botão mais compacto
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Icon(
+            icon,
+            size: 22, // Ícone um pouco menor
+            color: isActive
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final bool canShowHebrew =
+        booksMap?[selectedBook]?['testament'] == 'Antigo';
+    final bool canShowGreek = booksMap?[selectedBook]?['testament'] == 'Novo';
 
     // Widget customizado para o botão de seleção de livro
     Widget bookSelectorButton = Expanded(
@@ -63,10 +106,7 @@ class BibleNavigationControls extends StatelessWidget {
               builder: (ctx) => BookSelectionModal(
                 booksMap: booksMap!,
                 currentlySelectedBook: selectedBook,
-                onBookSelected: (newBookAbbrev) {
-                  // O callback onBookChanged já está aqui
-                  onBookChanged(newBookAbbrev);
-                },
+                onBookSelected: onBookChanged,
               ),
             );
           },
@@ -78,7 +118,8 @@ class BibleNavigationControls extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    booksMap?[selectedBook]?['nome'] ?? 'Selecionar Livro',
+                    // Usa a abreviação em maiúsculas
+                    selectedBook?.toUpperCase() ?? 'Livro',
                     style: TextStyle(
                       color: theme.colorScheme.onSurface,
                       fontSize: 14,
@@ -141,51 +182,56 @@ class BibleNavigationControls extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+      // Padding vertical reduzido
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
       child: Row(
         children: [
-          // Botão de Capítulo Anterior
           IconButton(
             icon: Icon(Icons.chevron_left,
-                color: theme.colorScheme.onSurface.withOpacity(0.7), size: 32),
+                color: theme.colorScheme.onSurface.withOpacity(0.7), size: 30),
             onPressed: onPreviousChapter,
             tooltip: "Capítulo Anterior",
-            splashRadius: 24,
+            splashRadius: 22, // Raio do splash menor
           ),
 
-          // O novo botão seletor de livro
-          // <<< INÍCIO DA MUDANÇA NO LAYOUT >>>
-          // Agora são 3 botões expandidos no centro
           bookSelectorButton,
-          const SizedBox(width: 8),
-          versionSelectorButton, // Novo botão de versão
-          const SizedBox(width: 8),
-          Material(
-            color: isStudyModeActive
-                ? theme.colorScheme.primary
-                    .withOpacity(0.15) // Cor quando ativo
-                : theme.cardColor.withOpacity(0.15), // Cor quando inativo
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
-              onTap: onToggleStudyMode, // Chama a função que veio por parâmetro
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                child: Icon(
-                  Icons.school_outlined,
-                  color: isStudyModeActive
-                      ? theme.colorScheme.primary // Cor do ícone quando ativo
-                      : theme.colorScheme.onSurface
-                          .withOpacity(0.7), // Cor quando inativo
-                ),
-              ),
-            ),
+          const SizedBox(width: 6), // Espaçamento reduzido
+
+          versionSelectorButton,
+          const SizedBox(width: 6), // Espaçamento reduzido
+
+          _buildIconButton(
+            context: context,
+            onPressed: onToggleStudyMode,
+            icon: Icons.school_outlined,
+            isActive: isStudyModeActive,
           ),
-          const SizedBox(width: 8),
+
+          if (canShowHebrew) ...[
+            const SizedBox(width: 6), // Espaçamento reduzido
+            _buildIconButton(
+              context: context,
+              onPressed: onToggleHebrewInterlinear,
+              icon: Icons.translate_rounded,
+              isActive: showHebrewInterlinear,
+            ),
+          ],
+
+          if (canShowGreek) ...[
+            const SizedBox(width: 6), // Espaçamento reduzido
+            _buildIconButton(
+              context: context,
+              onPressed: onToggleGreekInterlinear,
+              icon: Icons.translate_rounded,
+              isActive: showGreekInterlinear,
+            ),
+          ],
+
+          const SizedBox(width: 6), // Espaçamento reduzido
+
           if (selectedBook != null)
             Expanded(
-              flex: 2, // Flex menor para o número do capítulo
+              flex: 2,
               child: UtilsBiblePage.buildChapterDropdown(
                 context: context,
                 selectedChapter: selectedChapter,
@@ -197,13 +243,13 @@ class BibleNavigationControls extends StatelessWidget {
                 backgroundColor: theme.cardColor.withOpacity(0.15),
               ),
             ),
-          // Botão de Próximo Capítulo
+
           IconButton(
             icon: Icon(Icons.chevron_right,
-                color: theme.colorScheme.onSurface.withOpacity(0.7), size: 32),
+                color: theme.colorScheme.onSurface.withOpacity(0.7), size: 30),
             onPressed: onNextChapter,
             tooltip: "Próximo Capítulo",
-            splashRadius: 24,
+            splashRadius: 22, // Raio do splash menor
           ),
         ],
       ),
