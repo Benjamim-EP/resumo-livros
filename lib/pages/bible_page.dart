@@ -1762,20 +1762,20 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                               : null)),
                 ),
               ),
-            const PopupMenuDivider(),
-            PopupMenuItem<String>(
-              value: 'mindmap', // Novo valor
-              child: ListTile(
-                leading: Icon(Icons.hub_outlined,
-                    color: _showMindMaps
-                        ? theme.colorScheme.primary
-                        : theme.iconTheme.color),
-                title: Text("Mapas Mentais",
-                    style: TextStyle(
-                        color:
-                            _showMindMaps ? theme.colorScheme.primary : null)),
-              ),
-            ),
+            // const PopupMenuDivider(),
+            // PopupMenuItem<String>(
+            //   value: 'mindmap', // Novo valor
+            //   child: ListTile(
+            //     leading: Icon(Icons.hub_outlined,
+            //         color: _showMindMaps
+            //             ? theme.colorScheme.primary
+            //             : theme.iconTheme.color),
+            //     title: Text("Mapas Mentais",
+            //         style: TextStyle(
+            //             color:
+            //                 _showMindMaps ? theme.colorScheme.primary : null)),
+            //   ),
+            // ),
           ];
         },
       ),
