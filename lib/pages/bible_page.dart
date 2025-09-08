@@ -123,6 +123,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   bool _hasMapData = false;
   bool _showMindMaps = false;
 
+  bool _isStudyModeActive = false;
+
   @override
   void initState() {
     _loadFontSizePreference();
@@ -176,6 +178,17 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         _hasMapData = (data != null && data.isNotEmpty);
       });
     }
+  }
+
+  void _toggleStudyMode() {
+    setState(() {
+      _isStudyModeActive = !_isStudyModeActive;
+    });
+    // Opcional: Adicionar um log de analytics para saber quando os usuários usam este modo
+    AnalyticsService.instance.logEvent(
+      name: 'study_mode_toggled',
+      parameters: {'is_active': _isStudyModeActive},
+    );
   }
 
   Future<Set<String>> _getUnlockedSummaries() async {
@@ -1920,6 +1933,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                                         _currentChapterGreekData,
                                     onShowSummaryRequest: _handleShowSummary,
                                     showMindMaps: _showMindMaps,
+                                    isStudyModeActive: _isStudyModeActive,
                                   ),
                       ),
                       if (!store.state.userState.isFocusMode &&
@@ -1950,6 +1964,8 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
                                 setState(() => selectedTranslation1 = newVal),
                             onToggleCompareMode: () =>
                                 setState(() => _isCompareModeActive = true),
+                            isStudyModeActive: _isStudyModeActive,
+                            onToggleStudyMode: _toggleStudyMode,
                           ),
                     ],
                   ),

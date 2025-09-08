@@ -25,6 +25,9 @@ class BibleNavigationControls extends StatelessWidget {
   final ValueChanged<String> onTranslation1Changed;
   final VoidCallback onToggleCompareMode;
 
+  final bool isStudyModeActive;
+  final VoidCallback onToggleStudyMode;
+
   const BibleNavigationControls({
     super.key,
     required this.selectedBook,
@@ -37,6 +40,8 @@ class BibleNavigationControls extends StatelessWidget {
     required this.selectedTranslation1, // <<< NOVO PARÂMETRO
     required this.onTranslation1Changed, // <<< NOVO PARÂMETRO
     required this.onToggleCompareMode,
+    required this.isStudyModeActive,
+    required this.onToggleStudyMode,
   });
 
   @override
@@ -154,6 +159,29 @@ class BibleNavigationControls extends StatelessWidget {
           bookSelectorButton,
           const SizedBox(width: 8),
           versionSelectorButton, // Novo botão de versão
+          const SizedBox(width: 8),
+          Material(
+            color: isStudyModeActive
+                ? theme.colorScheme.primary
+                    .withOpacity(0.15) // Cor quando ativo
+                : theme.cardColor.withOpacity(0.15), // Cor quando inativo
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: onToggleStudyMode, // Chama a função que veio por parâmetro
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                child: Icon(
+                  Icons.school_outlined,
+                  color: isStudyModeActive
+                      ? theme.colorScheme.primary // Cor do ícone quando ativo
+                      : theme.colorScheme.onSurface
+                          .withOpacity(0.7), // Cor quando inativo
+                ),
+              ),
+            ),
+          ),
           const SizedBox(width: 8),
           if (selectedBook != null)
             Expanded(

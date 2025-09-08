@@ -75,6 +75,7 @@ class SectionItemWidget extends StatefulWidget {
   final TtsContentType? currentlyPlayingContentType;
   final List<String> allUserTags;
   final Future<void> Function(String, String) onShowSummaryRequest;
+  final bool isStudyModeActive;
 
   const SectionItemWidget({
     super.key,
@@ -101,6 +102,7 @@ class SectionItemWidget extends StatefulWidget {
     this.currentlyPlayingContentType,
     required this.allUserTags,
     required this.onShowSummaryRequest,
+    required this.isStudyModeActive,
   });
 
   @override
@@ -381,9 +383,79 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
   }
   // --- FIM DAS FUNÇÕES EXISTENTES ---
 
+  Widget _buildStudyCard(ThemeData theme) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _firestoreService.getSectionCommentary(_commentaryDocId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: LinearProgressIndicator(),
+          );
+        }
+        // Não mostra nada se não houver comentário para esta seção
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final commentaryData = snapshot.data!;
+        final commentaryItems = (commentaryData['commentary'] as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
+
+        if (commentaryItems.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Card(
+          margin: const EdgeInsets.only(top: 20.0),
+          elevation: 0,
+          color: theme.colorScheme.surface.withOpacity(0.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabeçalho do Card de Estudo
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Estudo da Seção", style: theme.textTheme.titleMedium),
+                    // O botão de Resumo agora fica aqui dentro
+                    _buildSummaryButton(theme),
+                  ],
+                ),
+                const Divider(height: 16),
+                // Conteúdo do comentário
+                ...commentaryItems.map((item) {
+                  final text = (item['traducao'] as String?)?.trim() ?? '';
+                  if (text.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(text,
+                        style:
+                            theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                        textAlign: TextAlign.justify),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Chamada necessária para o AutomaticKeepAliveClientMixin, que preserva o estado do widget na lista
     super.build(context);
+
     final theme = Theme.of(context);
     final bool currentIsRead = widget.isRead;
     final bool isThisSectionTheCurrentOne =
@@ -394,6 +466,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
     final Color activeIconColor = theme.colorScheme.primary.withOpacity(0.8);
 
+    // Lógica para determinar o ícone e tooltip do botão de áudio
     IconData versesIcon = Icons.play_circle_outline;
     Color versesIconColor = defaultIconColor;
     String versesTooltip = "Ouvir Versículos";
@@ -435,23 +508,24 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- TÍTULO E BOTÕES DE AÇÃO SUPERIORES ---
-                Padding(
-                  padding:
-                      const EdgeInsets.only(bottom: 8.0, top: 4.0, right: 8.0),
-                  child: Text(
-                    widget.sectionTitle,
-                    style: TextStyle(
-                        color: currentIsRead
-                            ? theme.primaryColor
-                            : theme.colorScheme.primary,
-                        fontSize: 18 * widget.fontSizeMultiplier,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
+                // --- TÍTULO E BOTÃO DE PLAY ---
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+                        child: Text(
+                          widget.sectionTitle,
+                          style: TextStyle(
+                              color: currentIsRead
+                                  ? theme.primaryColor
+                                  : theme.colorScheme.primary,
+                              fontSize: 18 * widget.fontSizeMultiplier,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
                     IconButton(
                       icon: Icon(versesIcon, color: versesIconColor, size: 26),
                       tooltip: versesTooltip,
@@ -459,43 +533,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                           _handlePlayRequest(TtsContentType.versesOnly),
                       splashRadius: 24,
                     ),
-                    _buildSummaryButton(theme),
-                    const SizedBox(width: 8),
-                    if (_isLoadingCommentary)
-                      const SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(10.0),
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      )
-                    else
-                      TextButton.icon(
-                        onPressed: () => _showCommentary(context),
-                        icon: const Icon(Icons.school_outlined, size: 20),
-                        label: const Text(
-                          "Estudo",
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: theme.colorScheme.primary,
-                          backgroundColor:
-                              theme.colorScheme.primary.withOpacity(0.1),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
                   ],
                 ),
                 const Divider(color: Colors.transparent, height: 4),
@@ -577,8 +614,125 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   },
                 ),
 
-                // <<< INÍCIO DA NOVA SEÇÃO DE RECURSOS >>>
-                // Este widget cuidará da animação e do conteúdo.
+                // --- CARD DE ESTUDO CONDICIONAL ---
+                if (widget.isStudyModeActive) _buildStudyCard(theme),
+
+                // // --- MAPA MENTAL CONDICIONAL ---
+                // if (widget.showMindMap)
+                //   FutureBuilder<Map<String, dynamic>?>(
+                //     future: _firestoreService.getMindMap(_sectionIdForTracking),
+                //     builder: (context, snapshot) {
+                //       if (snapshot.connectionState == ConnectionState.waiting ||
+                //           !snapshot.hasData ||
+                //           snapshot.data == null) {
+                //         return const SizedBox.shrink();
+                //       }
+                //       final mapData = snapshot.data!;
+                //       return Card(
+                //         margin: const EdgeInsets.only(top: 16.0),
+                //         child: Padding(
+                //           padding: const EdgeInsets.all(12.0),
+                //           child: Column(
+                //             crossAxisAlignment: CrossAxisAlignment.start,
+                //             children: [
+                //               Row(
+                //                 mainAxisAlignment:
+                //                     MainAxisAlignment.spaceBetween,
+                //                 children: [
+                //                   Text(mapData['title'] ?? 'Mapa Mental',
+                //                       style: theme.textTheme.titleMedium),
+                //                   IconButton(
+                //                     icon: const Icon(Icons.fullscreen),
+                //                     onPressed: () {
+                //                       /* Lógica para tela cheia */
+                //                     },
+                //                   ),
+                //                 ],
+                //               ),
+                //               const SizedBox(height: 8),
+                //               SizedBox(
+                //                 height: 400,
+                //                 child: MindMapView(mapData: mapData),
+                //               ),
+                //             ],
+                //           ),
+                //         ),
+                //       );
+                //     },
+                //   ),
+
+                const Divider(height: 20),
+
+                // --- RODAPÉ COM BOTÕES DE AÇÃO ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      icon: AnimatedRotation(
+                        turns: _showResources ? 0.5 : 0.0,
+                        duration: const Duration(milliseconds: 250),
+                        child: const Icon(Icons.expand_more, size: 20),
+                      ),
+                      label: const Text("Mais Estudos"),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.textTheme.bodySmall?.color,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                      onPressed: () =>
+                          setState(() => _showResources = !_showResources),
+                    ),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          StoreProvider.of<AppState>(context, listen: false)
+                              .dispatch(
+                            ToggleSectionReadStatusAction(
+                              bookAbbrev: widget.bookAbbrev,
+                              sectionId: _sectionIdForTracking,
+                              markAsRead: !currentIsRead,
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                currentIsRead
+                                    ? Icons.check_circle
+                                    : Icons.check_circle_outline,
+                                color: currentIsRead
+                                    ? theme.primaryColor
+                                    : theme.iconTheme.color?.withOpacity(0.8),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                currentIsRead ? "Lido" : "Marcar como Lido",
+                                style: TextStyle(
+                                  color: currentIsRead
+                                      ? theme.primaryColor
+                                      : theme.textTheme.bodyMedium?.color
+                                          ?.withOpacity(0.9),
+                                  fontSize: 13,
+                                  fontWeight: currentIsRead
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Card de Recursos Recomendados (expansível)
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
@@ -600,158 +754,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         )
                       : const SizedBox.shrink(),
                 ),
-                const Divider(height: 20),
-                // <<< FIM DA NOVA SEÇÃO DE RECURSOS >>>
-
-                // --- RODAPÉ COM BOTÕES DE CHAT E MARCAR COMO LIDO ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // <<< INÍCIO DA CORREÇÃO >>>
-                    // Substituímos o IconButton por um TextButton estilizado
-                    TextButton.icon(
-                      icon: AnimatedRotation(
-                        turns: _showResources ? 0.5 : 0.0, // Gira 180 graus
-                        duration: const Duration(milliseconds: 250),
-                        child: const Icon(Icons.expand_more, size: 20),
-                      ),
-                      label: const Text("Mais Estudos"),
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.textTheme.bodySmall?.color,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                      ),
-                      onPressed: () =>
-                          setState(() => _showResources = !_showResources),
-                    ),
-                    Row(
-                      children: [
-                        // Material(
-                        //   color: Colors.transparent,
-                        //   child: InkWell(
-                        //     onTap: () {
-                        //       final store = StoreProvider.of<AppState>(context,
-                        //           listen: false);
-                        //       if (store.state.userState.isGuestUser) {
-                        //         showLoginRequiredDialog(context,
-                        //             featureName: "o chat com a IA");
-                        //       } else {
-                        //         final List<String> verseTexts =
-                        //             widget.verseNumbersInSection.map((vNum) {
-                        //           if (widget.allVerseDataInChapter is List &&
-                        //               vNum > 0 &&
-                        //               vNum <=
-                        //                   (widget.allVerseDataInChapter as List)
-                        //                       .length) {
-                        //             return (widget.allVerseDataInChapter
-                        //                     as List)[vNum - 1]
-                        //                 .toString();
-                        //           }
-                        //           return "[Texto do versículo $vNum indisponível]";
-                        //         }).toList();
-                        //         Navigator.push(
-                        //           context,
-                        //           MaterialPageRoute(
-                        //             builder: (context) => SectionChatPage(
-                        //               bookAbbrev: widget.bookAbbrev,
-                        //               chapterNumber: widget.chapterNumber,
-                        //               versesRangeStr: widget.versesRangeStr,
-                        //               sectionTitle: widget.sectionTitle,
-                        //               sectionVerseTexts: verseTexts,
-                        //             ),
-                        //           ),
-                        //         );
-                        //       }
-                        //     },
-                        //     borderRadius: BorderRadius.circular(20),
-                        //     splashColor:
-                        //         theme.colorScheme.primary.withOpacity(0.2),
-                        //     highlightColor:
-                        //         theme.colorScheme.primary.withOpacity(0.1),
-                        //     child: Container(
-                        //       padding: const EdgeInsets.symmetric(
-                        //           horizontal: 12, vertical: 6),
-                        //       decoration: BoxDecoration(
-                        //         borderRadius: BorderRadius.circular(20),
-                        //         border: Border.all(
-                        //           color: theme.colorScheme.primary,
-                        //           width: 1.0,
-                        //         ),
-                        //       ),
-                        //       child: Row(
-                        //         mainAxisSize: MainAxisSize.min,
-                        //         children: [
-                        //           Icon(Icons.chat_bubble_outline_rounded,
-                        //               size: 18,
-                        //               color: theme.colorScheme.primary),
-                        //           const SizedBox(width: 6),
-                        //           Text(
-                        //             "Chat",
-                        //             style: TextStyle(
-                        //               color: theme.colorScheme.primary,
-                        //               fontSize: 13,
-                        //               fontWeight: FontWeight.bold,
-                        //             ),
-                        //           ),
-                        //         ],
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                        // const SizedBox(width: 8),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              StoreProvider.of<AppState>(context, listen: false)
-                                  .dispatch(
-                                ToggleSectionReadStatusAction(
-                                  bookAbbrev: widget.bookAbbrev,
-                                  sectionId: _sectionIdForTracking,
-                                  markAsRead: !currentIsRead,
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    currentIsRead
-                                        ? Icons.check_circle
-                                        : Icons.check_circle_outline,
-                                    color: currentIsRead
-                                        ? theme.primaryColor
-                                        : theme.iconTheme.color
-                                            ?.withOpacity(0.8),
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    currentIsRead ? "Lido" : "Marcar como Lido",
-                                    style: TextStyle(
-                                      color: currentIsRead
-                                          ? theme.primaryColor
-                                          : theme.textTheme.bodyMedium?.color
-                                              ?.withOpacity(0.9),
-                                      fontSize: 13,
-                                      fontWeight: currentIsRead
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
               ],
             ),
           ),
