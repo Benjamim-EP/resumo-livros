@@ -1,16 +1,20 @@
 // lib/pages/library_page/glowing_resource_card.dart
-
 import 'package:flutter/material.dart';
-import 'package:septima_biblia/pages/library_page.dart'; // Para reutilizar o ResourceCard
+// ✅ 1. IMPORTA O NOVO CARD COMPACTO
+import 'package:septima_biblia/pages/library_page/compact_resource_card.dart';
+import 'package:septima_biblia/pages/library_page/resource_detail_modal.dart';
+import 'package:septima_biblia/services/custom_page_route.dart';
 
 class GlowingResourceCard extends StatefulWidget {
-  final Map<String, dynamic> itemData; // Recebe os dados do card
-  final VoidCallback onTap;
+  final Map<String, dynamic> itemData;
+  final VoidCallback onCardTap; // Renomeado para clareza
+  final VoidCallback onExpandTap; // Renomeado para clareza
 
   const GlowingResourceCard({
     super.key,
     required this.itemData,
-    required this.onTap,
+    required this.onCardTap,
+    required this.onExpandTap,
   });
 
   @override
@@ -42,20 +46,12 @@ class _GlowingResourceCardState extends State<GlowingResourceCard>
     final Color color1 = theme.colorScheme.primary;
     final Color color2 = theme.colorScheme.secondary.withOpacity(0.8);
 
-    // ✅✅✅ INÍCIO DA CORREÇÃO ✅✅✅
-    // Pega o caminho da imagem dos dados do item
-    final String coverPath = widget.itemData['coverImagePath'] ?? '';
-    // Cria o ImageProvider a partir do caminho
-    final ImageProvider? coverImageProvider =
-        coverPath.isNotEmpty ? AssetImage(coverPath) : null;
-    // ✅✅✅ FIM DA CORREÇÃO ✅✅✅
-
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(12), // Borda consistente
             boxShadow: [
               BoxShadow(
                 color: Color.lerp(color1, color2, _controller.value)!
@@ -68,16 +64,12 @@ class _GlowingResourceCardState extends State<GlowingResourceCard>
           child: child,
         );
       },
-      child: ResourceCard(
+      // ✅ 2. O CHILD AGORA É O CompactResourceCard
+      child: CompactResourceCard(
         title: widget.itemData['title'],
-        description: widget.itemData['description'],
         author: widget.itemData['author'],
-        pageCount: widget.itemData['pageCount'],
-        // ✅✅✅ CORREÇÃO APLICADA AQUI ✅✅✅
-        // Passa o ImageProvider em vez do String path
-        coverImage: coverImageProvider,
-        onTap: widget.onTap,
-        hasPremiumFeature: true,
+        onCardTap: widget.onCardTap,
+        onExpandTap: widget.onExpandTap,
       ),
     );
   }
