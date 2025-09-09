@@ -3045,3 +3045,130 @@ def mercadoPagoWebhook(req: https_fn.Request) -> https_fn.Response:
 
     # Se o tópico não for 'payment' ou se faltar o ID, apenas confirme o recebimento.
     return https_fn.Response(status=200)
+
+
+@https_fn.on_call(
+    secrets=["openai-api-key"], # Garante que a chave da API da OpenAI esteja disponível
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=60
+)
+def recommendLibraryBooks(req: https_fn.CallableRequest) -> dict:
+    """
+    Recebe a necessidade de um usuário e recomenda livros da biblioteca estática
+    usando a IA da OpenAI para análise e justificativa.
+    """
+    # 1. Validação de Autenticação e Parâmetros de Entrada
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='Você precisa estar logado para usar este recurso.'
+        )
+
+    user_query = req.data.get("user_query")
+    if not user_query or not isinstance(user_query, str):
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'user_query' (string) é obrigatório."
+        )
+
+    # 2. Lista da Biblioteca (A FONTE DE DADOS PARA A IA)
+    library_items_json = """
+    [
+        {"bookId": "gravidade-e-graca", "title": "Gravidade e Graça", "author": "Simone Weil", "description": "Todos os movimentos naturais da alma são regidos por leis análogas às da gravidade física. A graça é a única exceção.", "coverImagePath": "assets/covers/gravidade_e_graca_cover.webp"},
+        {"bookId": "o-enraizamento", "title": "O Enraizamento", "author": "Simone Weil", "description": "A obediência é uma necessidade vital da alma humana. Ela é de duas espécies: obediência a regras estabelecidas e obediência a seres humanos.", "coverImagePath": "assets/covers/enraizamento.webp"},
+        {"bookId": "ortodoxia", "title": "Ortodoxia", "author": "G.K. Chesterton", "description": "A única desculpa possível para este livro é que ele é uma resposta a um desafio. Mesmo um mau atirador é digno quando aceita um duelo.", "coverImagePath": "assets/covers/ortodoxia.webp"},
+        {"bookId": "hereges", "title": "Hereges", "author": "G.K. Chesterton", "description": "É tolo, de modo geral, que um filósofo ateie fogo a outro filósofo porque não concordam em sua teoria do universo.", "coverImagePath": "assets/covers/hereges.webp"},
+        {"bookId": "carta-a-um-religioso", "title": "Carta a um Religioso", "author": "Simone Weil", "description": "Quando leio o catecismo do Concílio de Trento, tenho a impressão de que não tenho nada em comum com a religião que nele se expõe.", "coverImagePath": "assets/covers/cartas_a_um_religioso.webp"},
+        {"bookId": "spurgeon_sermons", "title": "Sermões de Spurgeon", "author": "C.H. Spurgeon", "description": "Uma vasta coleção dos sermões do 'Príncipe dos Pregadores', abordando praticamente todos os temas da vida cristã.", "coverImagePath": "assets/covers/spurgeon_cover.webp"},
+        {"bookId": "gods_word_to_women", "title": "A Palavra às Mulheres", "author": "K. C. Bushnell", "description": "Uma análise profunda das escrituras sobre o papel e a interpretação de passagens relacionadas às mulheres.", "coverImagePath": "assets/covers/gods_word_to_women_cover.webp"},
+        {"bookId": "bible_promises", "title": "Promessas da Bíblia", "author": "Samuel Clarke", "description": "Um compêndio de promessas divinas organizadas por tema para encorajamento e oração.", "coverImagePath": "assets/covers/promessas_cover.webp"},
+        {"bookId": "church_history", "title": "História da Igreja", "author": "Philip Schaff", "description": "A jornada completa da igreja cristã desde os apóstolos até a era moderna, cobrindo doutrinas, concílios e eventos.", "coverImagePath": "assets/covers/historia_igreja.webp"},
+        {"bookId": "turretin_theology", "title": "Teologia Apologética", "author": "Francis Turretin", "description": "Uma obra monumental da teologia sistemática reformada, defendendo a fé com rigor lógico.", "coverImagePath": "assets/covers/turretin_cover.webp"}
+    ]
+    """
+
+    # 3. Montagem do Prompt para a OpenAI
+    system_prompt = f"""
+Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é analisar a necessidade do usuário e recomendar até 3 livros da lista fornecida.
+
+# INSTRUÇÕES:
+1.  Analise a "NECESSIDADE DO USUÁRIO".
+2.  Compare a necessidade com o título, autor e descrição de cada livro na "LISTA DE LIVROS".
+3.  Selecione de 1 a 3 livros que melhor respondem à necessidade do usuário.
+4.  Para CADA livro selecionado, escreva uma "justificativa" curta e pessoal (1-2 frases) explicando por que aquele livro é uma boa recomendação.
+5.  Retorne sua resposta ESTRITAMENTE no formato JSON de uma lista de objetos, usando a chave "books" para a lista, incluindo os campos 'bookId', 'title', 'author', 'coverImagePath' e 'justificativa'.
+
+# LISTA DE LIVROS DISPONÍVEIS:
+{library_items_json}
+
+# EXEMPLO DE SAÍDA JSON ESPERADA:
+{{
+  "books": [
+    {{
+      "bookId": "id-do-livro-1",
+      "title": "Título do Livro 1",
+      "author": "Autor do Livro 1",
+      "coverImagePath": "caminho/para/capa1.webp",
+      "justificativa": "Sua justificativa para o livro 1 aqui."
+    }}
+  ]
+}}
+"""
+    
+    user_prompt = f"NECESSIDADE DO USUÁRIO: \"{user_query}\""
+
+    # 4. Chamada à API da OpenAI
+    try:
+        openai_api_key = os.environ.get("openai-api-key")
+        if not openai_api_key: raise ValueError("Secret 'openai-api-key' não encontrado.")
+        client = OpenAI(api_key=openai_api_key)
+
+        print(f"Enviando prompt para a OpenAI para a query: {user_query}")
+        
+        chat_completion = client.chat.completions.create(
+            model="gpt-4.1-nano",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+
+        response_content = chat_completion.choices[0].message.content
+        print(f"Resposta bruta da OpenAI: {response_content}")
+
+        recommendations = []
+        if response_content:
+            try:
+                response_data = json.loads(response_content)
+
+                # Estratégia 1: Procura pela chave "recommendations"
+                if isinstance(response_data, dict) and "recommendations" in response_data and isinstance(response_data["recommendations"], list):
+                    recommendations = response_data["recommendations"]
+                
+                # Estratégia 2: Procura pela chave "books"
+                elif isinstance(response_data, dict) and "books" in response_data and isinstance(response_data["books"], list):
+                    recommendations = response_data["books"]
+
+                # Estratégia 3: Verifica se a resposta já é a própria lista
+                elif isinstance(response_data, list):
+                    recommendations = response_data
+                
+                else:
+                    raise TypeError("A resposta da IA não continha uma lista de recomendações no formato esperado.")
+
+            except (json.JSONDecodeError, TypeError) as e:
+                print(f"Erro ao processar o JSON da OpenAI: {e}")
+                raise TypeError("A resposta da IA não foi uma lista de recomendações.")
+        
+        print(f"Recomendações extraídas com sucesso: {recommendations}")
+        return {"status": "success", "recommendations": recommendations}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em recommendLibraryBooks: {e}")
+        traceback.print_exc()
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL,
+            message=f"Ocorreu um erro ao gerar as recomendações: {e}"
+        )

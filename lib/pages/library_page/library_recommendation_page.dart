@@ -1,0 +1,178 @@
+// lib/pages/library_page/library_recommendation_page.dart
+import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:septima_biblia/pages/library_page/ai_recommendation_card.dart';
+import 'package:septima_biblia/services/custom_page_route.dart';
+import 'package:septima_biblia/pages/library_page.dart'; // Importa para acessar a lista estática
+
+class LibraryRecommendationPage extends StatefulWidget {
+  const LibraryRecommendationPage({super.key});
+  @override
+  State<LibraryRecommendationPage> createState() =>
+      _LibraryRecommendationPageState();
+}
+
+class _LibraryRecommendationPageState extends State<LibraryRecommendationPage> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>>? _recommendations;
+  bool _isLoading = false;
+  String? _error;
+
+  // Mapa de consulta para encontrar a página de destino de forma eficiente
+  late final Map<String, Widget> _destinationPageMap;
+
+  @override
+  void initState() {
+    super.initState();
+    // Preenche o mapa de consulta uma vez, usando a lista estática da LibraryPage
+    _destinationPageMap = {
+      for (var item in allLibraryItems) // Acessa a lista estática diretamente
+        (item['title'] as String): (item['destinationPage'] as Widget)
+    };
+  }
+
+  /// Chama a Cloud Function para obter recomendações
+  Future<void> _getRecommendations() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _recommendations = null;
+    });
+
+    try {
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('recommendLibraryBooks');
+      final result =
+          await callable.call<Map<String, dynamic>>({'user_query': query});
+
+      final data = result.data;
+      if (data == null) {
+        throw Exception("A resposta do servidor estava vazia.");
+      }
+
+      final recommendationsListRaw = data['recommendations'];
+
+      if (data['status'] == 'success' && recommendationsListRaw is List) {
+        // Converte os tipos de forma segura para evitar o erro de 'subtype'
+        final List<Map<String, dynamic>> typedRecommendations =
+            recommendationsListRaw
+                .map((item) => Map<String, dynamic>.from(item as Map))
+                .toList();
+
+        setState(() {
+          _recommendations = typedRecommendations;
+        });
+      } else {
+        throw Exception(
+            "A resposta do servidor não continha recomendações válidas.");
+      }
+    } on FirebaseFunctionsException catch (e) {
+      setState(() => _error = e.message ?? "Ocorreu um erro no servidor.");
+    } catch (e) {
+      setState(() => _error = "Falha na conexão. Tente novamente.");
+      print("Erro em _getRecommendations: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Recomendações da Biblioteca"),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _getRecommendations(),
+              decoration: InputDecoration(
+                hintText: "Estou buscando um livro sobre...",
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  onPressed: _isLoading ? null : _getRecommendations,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _buildBodyContent(theme),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Constrói o corpo da página com base no estado atual (loading, erro, resultado, inicial)
+  Widget _buildBodyContent(ThemeData theme) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+          child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Text(_error!,
+            style: TextStyle(color: theme.colorScheme.error),
+            textAlign: TextAlign.center),
+      ));
+    }
+    if (_recommendations != null) {
+      if (_recommendations!.isEmpty) {
+        return const Center(
+            child: Text("Nenhuma recomendação encontrada para sua busca."));
+      }
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+        itemCount: _recommendations!.length,
+        itemBuilder: (context, index) {
+          final item = _recommendations![index];
+          final String title = item['title'] ?? '';
+
+          // Usa o mapa de consulta para encontrar a página de destino correta
+          final Widget destinationPage = _destinationPageMap[title] ??
+              const Scaffold(
+                  body: Center(child: Text("Página não encontrada")));
+
+          return AiRecommendationCard(
+            recommendation: item,
+            onTap: () {
+              // Navega para a página correta do livro
+              Navigator.push(
+                context,
+                FadeScalePageRoute(page: destinationPage),
+              );
+            },
+          ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: -0.2);
+        },
+      );
+    }
+    // Estado inicial
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24.0),
+        child: Text(
+          "Descreva o que você sente ou procura, e a IA encontrará o livro ideal para você.",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+}
