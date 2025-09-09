@@ -7,6 +7,7 @@ import 'package:septima_biblia/components/login_required.dart';
 import 'package:septima_biblia/pages/bible_chat/section_chat_page.dart';
 import 'package:septima_biblia/pages/biblie_page/cross_references_row.dart';
 import 'package:septima_biblia/pages/biblie_page/recommended_resources_row.dart';
+import 'package:septima_biblia/pages/biblie_page/study_card_widget.dart';
 import 'package:septima_biblia/pages/biblie_page/summary_display_modal.dart';
 import 'package:septima_biblia/pages/components/mind_map_view.dart';
 import 'package:septima_biblia/redux/actions.dart';
@@ -615,7 +616,15 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                 ),
 
                 // --- CARD DE ESTUDO CONDICIONAL ---
-                if (widget.isStudyModeActive) _buildStudyCard(theme),
+                if (widget.isStudyModeActive)
+                  StudyCardWidget(
+                    commentaryDocId: _commentaryDocId,
+                    onGenerateSummary: () {
+                      // Passa a função de gerar resumo para o novo widget
+                      widget.onShowSummaryRequest(
+                          _commentaryDocId, widget.sectionTitle);
+                    },
+                  ),
 
                 // // --- MAPA MENTAL CONDICIONAL ---
                 // if (widget.showMindMap)
