@@ -203,25 +203,57 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
   void _initializeScreenState() {
     final storeInstance = StoreProvider.of<AppState>(context, listen: false);
-    int initialTargetIndexFromRedux =
+
+    // Pega os dados necessários do estado
+    int targetIndexFromAction =
         storeInstance.state.userState.targetBottomNavIndex ?? -1;
     final bool isGuest = storeInstance.state.userState.isGuestUser;
-    int newInitialIndex = 0;
+
+    // Variável para o índice final
+    int finalIndex;
+
+    // --- INÍCIO DA LÓGICA HIERÁRQUICA CORRIGIDA ---
+
+    // 1. Prioridade Máxima: Verificar se é um convidado.
+    //    A regra do convidado sobrescreve qualquer outra coisa.
     if (isGuest) {
-      newInitialIndex =
-          (initialTargetIndexFromRedux != -1) ? initialTargetIndexFromRedux : 2;
-    } else if (initialTargetIndexFromRedux != -1) {
-      newInitialIndex = initialTargetIndexFromRedux;
+      // Para o convidado, usamos a ação se ela existir (ex: vindo da StartScreen),
+      // caso contrário, o padrão é SEMPRE 2 (Bíblia).
+      finalIndex = (targetIndexFromAction != -1) ? targetIndexFromAction : 2;
+      finalIndex = 2;
+      print(
+          "DEBUG: Modo CONVIDADO detectado. Índice final: $finalIndex (Ação: $targetIndexFromAction, Padrão: 2)");
     }
-    if (newInitialIndex < 0 || newInitialIndex >= _pages.length) {
-      newInitialIndex = isGuest ? 2 : 0;
+    // 2. Se NÃO for convidado, então verificamos as ações ou usamos o padrão para usuários logados.
+    else if (targetIndexFromAction != -1) {
+      // Usuário logado com uma ação de navegação específica.
+      finalIndex = targetIndexFromAction;
+      print("DEBUG: Usuário LOGADO com AÇÃO. Índice final: $finalIndex");
+    } else {
+      // Usuário logado sem nenhuma ação, vai para o perfil.
+      finalIndex = 0;
+      print(
+          "DEBUG: Usuário LOGADO com REGRA PADRÃO. Índice final: $finalIndex");
     }
-    if (newInitialIndex != _selectedIndex) {
-      setState(() => _selectedIndex = newInitialIndex);
+
+    // --- FIM DA LÓGICA HIERÁRQUICA CORRIGIDA ---
+
+    // 3. Validação final de segurança (sem alterações)
+    if (finalIndex < 0 || finalIndex >= _pages.length) {
+      finalIndex = isGuest ? 2 : 0;
     }
-    if (initialTargetIndexFromRedux != -1) {
+
+    // 4. Aplica o estado à UI (sem alterações)
+    if (finalIndex != _selectedIndex) {
+      setState(() => _selectedIndex = finalIndex);
+    }
+
+    // 5. Limpa a ação do Redux para que ela não seja usada novamente (sem alterações)
+    if (targetIndexFromAction != -1) {
       storeInstance.dispatch(ClearTargetBottomNavAction());
     }
+
+    // Carrega o status premium inicial (sem alterações)
     final initialViewModel = _UserCoinsViewModel.fromStore(storeInstance);
     _updatePremiumUI(initialViewModel.isPremium);
   }
@@ -452,18 +484,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
     return StoreConnector<AppState, _MainAppScreenViewModel>(
       converter: (store) => _MainAppScreenViewModel.fromStore(store),
       onDidChange: (previousViewModel, newViewModel) {
-        if (mounted &&
-            newViewModel != null &&
-            previousViewModel != newViewModel) {
+        // O onDidChange agora SÓ atualiza o status premium da UI,
+        // ele não mexe mais na navegação.
+        if (mounted && newViewModel != null) {
           _updatePremiumUI(newViewModel.isPremium);
-          if (newViewModel.targetBottomNavIndex != null) {
-            int targetIndex = newViewModel.targetBottomNavIndex!;
-            int actualNewIndex = _calculateActualIndexFromTarget(targetIndex);
-            if (actualNewIndex != _selectedIndex) {
-              setState(() => _selectedIndex = actualNewIndex);
-            }
-            storeInstance.dispatch(ClearTargetBottomNavAction());
-          }
         }
       },
       builder: (context, mainScreenViewModel) {
