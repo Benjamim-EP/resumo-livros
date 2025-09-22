@@ -41,6 +41,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'john-bunyan-o-peregrino', bookTitle: "O Peregrino"),
     'ficcao': true,
     'dificuldade': 4,
+    'isStudyGuide': false,
   },
   {
     'title': "A Divina Comédia",
@@ -56,6 +57,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookTitle: "A Divina Comédia"),
     'ficcao': true,
     'dificuldade': 7,
+    'isStudyGuide': false,
   },
   {
     'title': "Ben-Hur: Uma História de Cristo",
@@ -71,6 +73,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookTitle: "Ben-Hur: Uma História de Cristo"),
     'ficcao': true,
     'dificuldade': 4,
+    'isStudyGuide': false,
   },
   {
     'title': "Elogio da Loucura",
@@ -85,6 +88,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'erasmus-elogio-da-loucura', bookTitle: "Elogio da Loucura"),
     'ficcao': false,
     'dificuldade': 6,
+    'isStudyGuide': false,
   },
   {
     'title': "Anna Karenina",
@@ -99,6 +103,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'leo-tolstoy-anna-karenina', bookTitle: "Anna Karenina"),
     'ficcao': true,
     'dificuldade': 7,
+    'isStudyGuide': false,
   },
   {
     'title': "Lilith",
@@ -113,6 +118,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'george-macdonald-lilith', bookTitle: "Lilith"),
     'ficcao': true,
     'dificuldade': 6,
+    'isStudyGuide': false,
   },
   {
     'title': "Donal Grant",
@@ -127,6 +133,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'george-macdonald-donal-grant', bookTitle: "Donal Grant"),
     'ficcao': true,
     'dificuldade': 5,
+    'isStudyGuide': false,
   },
   {
     'title': "David Elginbrod",
@@ -142,6 +149,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookTitle: "David Elginbrod"),
     'ficcao': true,
     'dificuldade': 5,
+    'isStudyGuide': false,
   },
   // --- ITENS EXISTENTES ATUALIZADOS ---
   {
@@ -157,6 +165,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'gravidade-e-graca', bookTitle: "Gravidade e Graça"),
     'ficcao': false,
     'dificuldade': 6,
+    'isStudyGuide': false,
   },
   {
     'title': "O Enraizamento",
@@ -171,6 +180,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'o-enraizamento', bookTitle: "O Enraizamento"),
     'ficcao': false,
     'dificuldade': 6,
+    'isStudyGuide': false,
   },
   {
     'title': "Ortodoxia",
@@ -185,6 +195,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'ortodoxia', bookTitle: "Ortodoxia"),
     'ficcao': false,
     'dificuldade': 5,
+    'isStudyGuide': false,
   },
   {
     'title': "Hereges",
@@ -199,6 +210,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         const GenericBookViewerPage(bookId: 'hereges', bookTitle: "Hereges"),
     'ficcao': false,
     'dificuldade': 5,
+    'isStudyGuide': false,
   },
   {
     'title': "Carta a um Religioso",
@@ -213,6 +225,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         bookId: 'carta-a-um-religioso', bookTitle: "Carta a um Religioso"),
     'ficcao': false,
     'dificuldade': 6,
+    'isStudyGuide': false,
   },
   {
     'title': "Mapas Temáticos",
@@ -226,6 +239,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const ThemedMapsListPage(),
     'ficcao': false,
     'dificuldade': 2,
+    'isStudyGuide': false,
   },
   {
     'title': "Sermões de Spurgeon",
@@ -239,6 +253,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const SpurgeonSermonsIndexPage(),
     'ficcao': false,
     'dificuldade': 3,
+    'isStudyGuide': false,
   },
   {
     'title': "A Palavra às Mulheres",
@@ -252,6 +267,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const GodsWordToWomenIndexPage(),
     'ficcao': false,
     'dificuldade': 4,
+    'isStudyGuide': false,
   },
   {
     'title': "Promessas da Bíblia",
@@ -264,6 +280,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const PromisesPage(),
     'ficcao': false,
     'dificuldade': 2,
+    'isStudyGuide': false,
   },
   {
     'title': "História da Igreja",
@@ -277,6 +294,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const ChurchHistoryIndexPage(),
     'ficcao': false,
     'dificuldade': 6,
+    'isStudyGuide': false,
   },
   {
     'title': "Teologia Apologética",
@@ -289,6 +307,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const TurretinIndexPage(),
     'ficcao': false,
     'dificuldade': 7,
+    'isStudyGuide': false,
   },
   {
     'title': "Estudos Rápidos",
@@ -302,6 +321,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const StudyHubPage(),
     'ficcao': false,
     'dificuldade': 2,
+    'isStudyGuide': false,
   },
   {
     'title': "Linha do Tempo",
@@ -314,6 +334,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const BibleTimelinePage(),
     'ficcao': false,
     'dificuldade': 2,
+    'isStudyGuide': false,
   },
 ];
 
@@ -353,10 +374,24 @@ class _LibraryPageState extends State<LibraryPage> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _filteredLibraryItems = [];
 
+  // Variáveis de estado para gerenciar os filtros selecionados
+  bool _filterFiction = false;
+  bool _filterStudyGuide = false;
+  RangeValues _difficultyRange = const RangeValues(1, 7);
+
+  // Getter para verificar se algum filtro (incluindo a busca por texto) está ativo
+  bool get _isAnyFilterActive =>
+      _filterFiction ||
+      _filterStudyGuide ||
+      _difficultyRange.start != 1 ||
+      _difficultyRange.end != 7;
+
   @override
   void initState() {
     super.initState();
+    // Inicia a lista de exibição com todos os itens da biblioteca
     _filteredLibraryItems = allLibraryItems;
+    // Adiciona um listener para a barra de busca para filtrar em tempo real
     _searchController.addListener(_filterLibrary);
   }
 
@@ -367,6 +402,7 @@ class _LibraryPageState extends State<LibraryPage> {
     super.dispose();
   }
 
+  // Função para normalizar texto para busca (case-insensitive e sem acentos)
   String _normalize(String text) {
     return unorm
         .nfd(text)
@@ -374,26 +410,139 @@ class _LibraryPageState extends State<LibraryPage> {
         .toLowerCase();
   }
 
+  // Função central que aplica TODOS os filtros ativos à lista de livros
   void _filterLibrary() {
-    final query = _normalize(_searchController.text);
-    if (query.isEmpty) {
-      setState(() => _filteredLibraryItems = allLibraryItems);
-      return;
+    // Começa com a lista completa de livros a cada nova filtragem
+    List<Map<String, dynamic>> filtered = allLibraryItems;
+
+    // 1. Filtro de Ficção
+    if (_filterFiction) {
+      filtered = filtered.where((item) => item['ficcao'] == true).toList();
     }
-    final filtered = allLibraryItems.where((item) {
-      final title = _normalize(item['title'] ?? '');
-      final author = _normalize(item['author'] ?? '');
-      final description = _normalize(item['description'] ?? '');
-      return title.contains(query) ||
-          author.contains(query) ||
-          description.contains(query);
+
+    // 2. Filtro de Guia de Estudo
+    if (_filterStudyGuide) {
+      // Assumindo que você adicionou a flag 'isStudyGuide' aos itens relevantes
+      filtered =
+          filtered.where((item) => item['isStudyGuide'] == true).toList();
+    }
+
+    // 3. Filtro de Dificuldade (Range)
+    filtered = filtered.where((item) {
+      final difficulty = item['dificuldade'] as int? ?? 1; // Padrão 1 se nulo
+      return difficulty >= _difficultyRange.start &&
+          difficulty <= _difficultyRange.end;
     }).toList();
+
+    // 4. Filtro de Busca por Texto (aplicado por último)
+    final query = _normalize(_searchController.text);
+    if (query.isNotEmpty) {
+      filtered = filtered.where((item) {
+        final title = _normalize(item['title'] ?? '');
+        final author = _normalize(item['author'] ?? '');
+        final description = _normalize(item['description'] ?? '');
+        return title.contains(query) ||
+            author.contains(query) ||
+            description.contains(query);
+      }).toList();
+    }
+
+    // Atualiza o estado da UI com a lista final filtrada
     setState(() => _filteredLibraryItems = filtered);
   }
 
+  // Limpa apenas o texto da barra de busca
   void _clearSearch() {
     _searchController.clear();
     FocusScope.of(context).unfocus();
+  }
+
+  // Limpa TODOS os filtros e reseta a lista
+  void _clearAllFilters() {
+    setState(() {
+      _filterFiction = false;
+      _filterStudyGuide = false;
+      _difficultyRange = const RangeValues(1, 7);
+    });
+    _filterLibrary(); // Reaplica os filtros (agora zerados)
+  }
+
+  // Mostra o modal para selecionar o range de dificuldade
+  Future<void> _showDifficultyFilter() async {
+    // Usa uma variável temporária para que o usuário possa cancelar a alteração
+    RangeValues tempRange = _difficultyRange;
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        // StatefulBuilder permite que apenas o conteúdo do modal seja atualizado
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            // ✅ CORREÇÃO APLICADA AQUI
+            // Adiciona um Padding na parte inferior do modal que corresponde exatamente
+            // à altura da barra de navegação do sistema.
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).padding.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Filtrar por Dificuldade",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 20),
+                    RangeSlider(
+                      values: tempRange,
+                      min: 1,
+                      max: 7,
+                      divisions: 6, // 7 pontos - 1 = 6 divisões
+                      labels: RangeLabels(
+                        'Nível ${tempRange.start.round()}',
+                        'Nível ${tempRange.end.round()}',
+                      ),
+                      onChanged: (RangeValues values) {
+                        setModalState(() {
+                          tempRange = values;
+                        });
+                      },
+                    ),
+                    // Linha com os marcadores numéricos de 1 a 7
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(
+                            7,
+                            (index) => Text((index + 1).toString(),
+                                style: Theme.of(context).textTheme.bodySmall)),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Aplica o filtro selecionado e fecha o modal
+                        setState(() {
+                          _difficultyRange = tempRange;
+                        });
+                        _filterLibrary();
+                        Navigator.pop(context);
+                      },
+                      child: const Text("Aplicar Filtro"),
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showPremiumDialog(BuildContext context) {
@@ -428,6 +577,7 @@ class _LibraryPageState extends State<LibraryPage> {
     return Scaffold(
       body: Column(
         children: [
+          // Barra de Busca e Botão de IA no topo
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -436,7 +586,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   child: CustomSearchBar(
                     controller: _searchController,
                     hintText: "Buscar na biblioteca...",
-                    onChanged: (value) => _filterLibrary(),
+                    onChanged: (value) {}, // O listener já cuida disso
                     onClear: _clearSearch,
                   ),
                 ),
@@ -453,15 +603,12 @@ class _LibraryPageState extends State<LibraryPage> {
                               const LibraryRecommendationPage()),
                     );
                   },
-                  style: IconButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                    shape: const CircleBorder(),
-                    padding: const EdgeInsets.all(12),
-                  ),
                 ),
               ],
             ),
           ),
+
+          // Grid de Livros que ocupa o espaço restante
           Expanded(
             child: StoreConnector<AppState, _LibraryViewModel>(
               converter: (store) => _LibraryViewModel.fromStore(store),
@@ -469,15 +616,14 @@ class _LibraryPageState extends State<LibraryPage> {
                 if (_filteredLibraryItems.isEmpty) {
                   return const Center(child: Text("Nenhum item encontrado."));
                 }
-
                 return GridView.builder(
-                  padding: const EdgeInsets.all(12.0),
+                  // Adiciona padding na parte inferior para a barra de filtros não cobrir o último item
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 12.0,
                     mainAxisSpacing: 12.0,
-                    childAspectRatio:
-                        0.45, // Proporção mais "alta" para a imagem
+                    childAspectRatio: 0.45,
                   ),
                   itemCount: _filteredLibraryItems.length,
                   itemBuilder: (context, index) {
@@ -532,6 +678,160 @@ class _LibraryPageState extends State<LibraryPage> {
                 );
               },
             ),
+          ),
+
+          // Barra de Filtros Fixa na Parte Inferior, com o novo design
+          LibraryFilterBar(
+            filterFiction: _filterFiction,
+            filterStudyGuide: _filterStudyGuide,
+            difficultyRange: _difficultyRange,
+            isAnyFilterActive: _isAnyFilterActive,
+            onFictionToggle: (selected) {
+              setState(() {
+                _filterFiction = selected;
+                if (selected) _filterStudyGuide = false; // Desmarca o outro
+              });
+              _filterLibrary();
+            },
+            onStudyGuideToggle: (selected) {
+              setState(() {
+                _filterStudyGuide = selected;
+                if (selected) _filterFiction = false; // Desmarca o outro
+              });
+              _filterLibrary();
+            },
+            onDifficultyTap: _showDifficultyFilter,
+            onClearFilters: _clearAllFilters,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ✅ WIDGET DA BARRA DE FILTROS TOTALMENTE REDESENHADO
+class LibraryFilterBar extends StatelessWidget {
+  final bool filterFiction;
+  final bool filterStudyGuide;
+  final RangeValues difficultyRange;
+  final bool isAnyFilterActive;
+  final ValueChanged<bool> onFictionToggle;
+  final ValueChanged<bool> onStudyGuideToggle;
+  final VoidCallback onDifficultyTap;
+  final VoidCallback onClearFilters;
+
+  const LibraryFilterBar({
+    super.key,
+    required this.filterFiction,
+    required this.filterStudyGuide,
+    required this.difficultyRange,
+    required this.isAnyFilterActive,
+    required this.onFictionToggle,
+    required this.onStudyGuideToggle,
+    required this.onDifficultyTap,
+    required this.onClearFilters,
+  });
+
+  // Helper para construir os botões customizados no estilo da BiblePage
+  Widget _buildFilterButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool isActive,
+    bool hasDropdown = false,
+  }) {
+    final theme = Theme.of(context);
+    // Cor ativa é a primária do tema, inativa é uma cor mais sutil
+    final color = isActive
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withOpacity(0.7);
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            // Fundo sutil para o botão ativo
+            decoration: BoxDecoration(
+              color: isActive
+                  ? theme.colorScheme.primary.withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 22),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (hasDropdown)
+                      Icon(Icons.arrow_drop_down, color: color, size: 16),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      // Fundo escuro e unificado
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildFilterButton(
+            context: context,
+            icon: Icons.auto_stories_outlined,
+            label: 'Ficção',
+            onTap: () => onFictionToggle(!filterFiction),
+            isActive: filterFiction,
+          ),
+          _buildFilterButton(
+            context: context,
+            icon: Icons.school_outlined,
+            label: 'Guias',
+            onTap: () => onStudyGuideToggle(!filterStudyGuide),
+            isActive: filterStudyGuide,
+          ),
+          _buildFilterButton(
+            context: context,
+            icon: Icons.stacked_line_chart,
+            label:
+                '${difficultyRange.start.round()}-${difficultyRange.end.round()}',
+            onTap: onDifficultyTap,
+            isActive: difficultyRange.start != 1 || difficultyRange.end != 7,
+            hasDropdown: true,
+          ),
+          _buildFilterButton(
+            context: context,
+            icon: Icons.tune,
+            label: 'Limpar',
+            onTap: onClearFilters,
+            isActive: isAnyFilterActive,
           ),
         ],
       ),
