@@ -709,7 +709,6 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 }
 
-// ✅ WIDGET DA BARRA DE FILTROS TOTALMENTE REDESENHADO
 class LibraryFilterBar extends StatelessWidget {
   final bool filterFiction;
   final bool filterStudyGuide;
@@ -740,48 +739,52 @@ class LibraryFilterBar extends StatelessWidget {
     required VoidCallback onTap,
     required bool isActive,
     bool hasDropdown = false,
+    int flex = 2,
   }) {
     final theme = Theme.of(context);
-    // Cor ativa é a primária do tema, inativa é uma cor mais sutil
-    final color = isActive
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurface.withOpacity(0.7);
-
     return Expanded(
+      flex: flex,
       child: Material(
-        color: Colors.transparent,
+        color: isActive
+            ? theme.colorScheme.primary.withOpacity(0.15)
+            : theme.cardColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-            // Fundo sutil para o botão ativo
-            decoration: BoxDecoration(
-              color: isActive
-                  ? theme.colorScheme.primary.withOpacity(0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: color, size: 22),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                          color: color,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (hasDropdown)
-                      Icon(Icons.arrow_drop_down, color: color, size: 16),
-                  ],
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isActive
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isActive
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (hasDropdown)
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
               ],
             ),
           ),
@@ -794,14 +797,13 @@ class LibraryFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
       // Fundo escuro e unificado
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: theme.scaffoldBackgroundColor,
         border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildFilterButton(
             context: context,
@@ -809,14 +811,18 @@ class LibraryFilterBar extends StatelessWidget {
             label: 'Ficção',
             onTap: () => onFictionToggle(!filterFiction),
             isActive: filterFiction,
+            flex: 2,
           ),
+          const SizedBox(width: 6),
           _buildFilterButton(
             context: context,
             icon: Icons.school_outlined,
             label: 'Guias',
             onTap: () => onStudyGuideToggle(!filterStudyGuide),
             isActive: filterStudyGuide,
+            flex: 2,
           ),
+          const SizedBox(width: 6),
           _buildFilterButton(
             context: context,
             icon: Icons.stacked_line_chart,
@@ -825,13 +831,29 @@ class LibraryFilterBar extends StatelessWidget {
             onTap: onDifficultyTap,
             isActive: difficultyRange.start != 1 || difficultyRange.end != 7,
             hasDropdown: true,
+            flex: 3,
           ),
-          _buildFilterButton(
-            context: context,
-            icon: Icons.tune,
-            label: 'Limpar',
-            onTap: onClearFilters,
-            isActive: isAnyFilterActive,
+          const SizedBox(width: 6),
+          Material(
+            color: isAnyFilterActive
+                ? theme.colorScheme.primary.withOpacity(0.15)
+                : theme.cardColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: onClearFilters,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                child: Icon(
+                  Icons.tune,
+                  size: 22,
+                  color: isAnyFilterActive
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ),
           ),
         ],
       ),
