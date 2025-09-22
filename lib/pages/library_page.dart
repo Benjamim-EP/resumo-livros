@@ -27,6 +27,123 @@ import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 // Lista estática e pública com os metadados de todos os recursos da biblioteca
 final List<Map<String, dynamic>> allLibraryItems = [
+  // --- LIVROS ADICIONADOS ---
+  {
+    'title': "O Peregrino",
+    'description':
+        "A jornada alegórica de Cristão da Cidade da Destruição à Cidade Celestial.",
+    'author': 'John Bunyan',
+    'pageCount': '2 partes',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/o-peregrino.webp', // ATUALIZADO
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'john-bunyan-o-peregrino', bookTitle: "O Peregrino"),
+    'ficcao': true,
+    'dificuldade': 4,
+  },
+  {
+    'title': "A Divina Comédia",
+    'description':
+        "Uma jornada épica através do Inferno, Purgatório e Paraíso, explorando a teologia e a moralidade medieval.",
+    'author': 'Dante Alighieri',
+    'pageCount': '100 cantos',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/a-divina-comedia.webp', // ATUALIZADO
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'dante-alighieri-a-divina-comedia',
+        bookTitle: "A Divina Comédia"),
+    'ficcao': true,
+    'dificuldade': 7,
+  },
+  {
+    'title': "Ben-Hur: Uma História de Cristo",
+    'description':
+        "A épica história de um nobre judeu que, após ser traído, encontra redenção e fé durante a época de Jesus Cristo.",
+    'author': 'Lew Wallace',
+    'pageCount': '8 partes',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/ben-hur.webp', // ATUALIZADO
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'lew-wallace-ben-hur',
+        bookTitle: "Ben-Hur: Uma História de Cristo"),
+    'ficcao': true,
+    'dificuldade': 4,
+  },
+  {
+    'title': "Elogio da Loucura",
+    'description':
+        "Uma sátira espirituosa da sociedade, costumes e religião do século XVI, narrada pela própria Loucura.",
+    'author': 'Desiderius Erasmus',
+    'pageCount': '68 seções',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/elogio-loucura.webp', // ATUALIZADO
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'erasmus-elogio-da-loucura', bookTitle: "Elogio da Loucura"),
+    'ficcao': false,
+    'dificuldade': 6,
+  },
+  {
+    'title': "Anna Karenina",
+    'description':
+        "Um retrato complexo da sociedade russa e das paixões humanas através da história de uma mulher que desafia as convenções.",
+    'author': 'Leo Tolstoy',
+    'pageCount': '239 capítulos',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/anna-karenina.webp', // ATUALIZADO
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'leo-tolstoy-anna-karenina', bookTitle: "Anna Karenina"),
+    'ficcao': true,
+    'dificuldade': 7,
+  },
+  {
+    'title': "Lilith",
+    'description':
+        "Uma fantasia sombria e alegórica sobre a vida, a morte e a redenção, explorando temas de egoísmo e sacrifício.",
+    'author': 'George MacDonald',
+    'pageCount': '47 capítulos',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/lilith.webp', // OK
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'george-macdonald-lilith', bookTitle: "Lilith"),
+    'ficcao': true,
+    'dificuldade': 6,
+  },
+  {
+    'title': "Donal Grant",
+    'description':
+        "A história de um jovem poeta e tutor que navega pelos desafios do amor, fé e mistério em um castelo escocês.",
+    'author': 'George MacDonald',
+    'pageCount': '78 capítulos',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/donal-grant.webp', // ATUALIZADO
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'george-macdonald-donal-grant', bookTitle: "Donal Grant"),
+    'ficcao': true,
+    'dificuldade': 5,
+  },
+  {
+    'title': "David Elginbrod",
+    'description':
+        "Um romance que explora a fé, o espiritismo e a natureza do bem e do mal através de seus personagens memoráveis.",
+    'author': 'George MacDonald',
+    'pageCount': '58 capítulos',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/david-elginbrod.webp', // ATUALIZADO
+    'destinationPage': const GenericBookViewerPage(
+        bookId: 'george-macdonald-david-elginbrod',
+        bookTitle: "David Elginbrod"),
+    'ficcao': true,
+    'dificuldade': 5,
+  },
+  // --- ITENS EXISTENTES ATUALIZADOS ---
   {
     'title': "Gravidade e Graça",
     'description':
@@ -35,9 +152,11 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '39 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/gravidade_e_graca_cover.webp',
+    'coverImagePath': 'assets/covers/gravidade_e_graca_cover.webp', // OK
     'destinationPage': const GenericBookViewerPage(
         bookId: 'gravidade-e-graca', bookTitle: "Gravidade e Graça"),
+    'ficcao': false,
+    'dificuldade': 6,
   },
   {
     'title': "O Enraizamento",
@@ -47,9 +166,11 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '15 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/enraizamento.webp',
+    'coverImagePath': 'assets/covers/enraizamento.webp', // OK
     'destinationPage': const GenericBookViewerPage(
         bookId: 'o-enraizamento', bookTitle: "O Enraizamento"),
+    'ficcao': false,
+    'dificuldade': 6,
   },
   {
     'title': "Ortodoxia",
@@ -59,9 +180,11 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '9 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/ortodoxia.webp',
+    'coverImagePath': 'assets/covers/ortodoxia.webp', // OK
     'destinationPage': const GenericBookViewerPage(
         bookId: 'ortodoxia', bookTitle: "Ortodoxia"),
+    'ficcao': false,
+    'dificuldade': 5,
   },
   {
     'title': "Hereges",
@@ -71,9 +194,11 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '20 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/hereges.webp',
+    'coverImagePath': 'assets/covers/hereges.webp', // OK
     'destinationPage':
         const GenericBookViewerPage(bookId: 'hereges', bookTitle: "Hereges"),
+    'ficcao': false,
+    'dificuldade': 5,
   },
   {
     'title': "Carta a um Religioso",
@@ -83,9 +208,11 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '1 capítulo',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/cartas_a_um_religioso.webp',
+    'coverImagePath': 'assets/covers/cartas_a_um_religioso.webp', // OK
     'destinationPage': const GenericBookViewerPage(
         bookId: 'carta-a-um-religioso', bookTitle: "Carta a um Religioso"),
+    'ficcao': false,
+    'dificuldade': 6,
   },
   {
     'title': "Mapas Temáticos",
@@ -97,6 +224,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/themed_maps_cover.webp',
     'destinationPage': const ThemedMapsListPage(),
+    'ficcao': false,
+    'dificuldade': 2,
   },
   {
     'title': "Sermões de Spurgeon",
@@ -108,6 +237,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/spurgeon_cover.webp',
     'destinationPage': const SpurgeonSermonsIndexPage(),
+    'ficcao': false,
+    'dificuldade': 3,
   },
   {
     'title': "A Palavra às Mulheres",
@@ -119,6 +250,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/gods_word_to_women_cover.webp',
     'destinationPage': const GodsWordToWomenIndexPage(),
+    'ficcao': false,
+    'dificuldade': 4,
   },
   {
     'title': "Promessas da Bíblia",
@@ -129,6 +262,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/promessas_cover.webp',
     'destinationPage': const PromisesPage(),
+    'ficcao': false,
+    'dificuldade': 2,
   },
   {
     'title': "História da Igreja",
@@ -140,6 +275,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/historia_igreja.webp',
     'destinationPage': const ChurchHistoryIndexPage(),
+    'ficcao': false,
+    'dificuldade': 6,
   },
   {
     'title': "Teologia Apologética",
@@ -150,6 +287,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/turretin_cover.webp',
     'destinationPage': const TurretinIndexPage(),
+    'ficcao': false,
+    'dificuldade': 7,
   },
   {
     'title': "Estudos Rápidos",
@@ -161,6 +300,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/estudos_tematicos_cover.webp',
     'destinationPage': const StudyHubPage(),
+    'ficcao': false,
+    'dificuldade': 2,
   },
   {
     'title': "Linha do Tempo",
@@ -171,6 +312,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'hasPremiumFeature': false,
     'coverImagePath': 'assets/covers/timeline_cover.webp',
     'destinationPage': const BibleTimelinePage(),
+    'ficcao': false,
+    'dificuldade': 2,
   },
 ];
 
