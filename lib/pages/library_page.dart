@@ -374,25 +374,29 @@ class _LibraryPageState extends State<LibraryPage> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _filteredLibraryItems = [];
 
-  // Variáveis de estado para gerenciar os filtros selecionados
-  bool _filterFiction = false;
-  bool _filterStudyGuide = false;
+  // Estado dos filtros
+  bool _showFiction = true; // Inicia como true para mostrar por padrão
+  bool _showStudyGuide = true; // Inicia como true para mostrar por padrão
   RangeValues _difficultyRange = const RangeValues(1, 7);
 
-  // Getter para verificar se algum filtro (incluindo a busca por texto) está ativo
+  // Nova variável para controlar o modo de filtro exclusivo (ativado com long press)
+  String? _exclusiveFilter; // Pode ser 'ficcao', 'isStudyGuide', ou null
+
+  // Getter para verificar se algum filtro está ativo
   bool get _isAnyFilterActive =>
-      _filterFiction ||
-      _filterStudyGuide ||
+      !_showFiction ||
+      !_showStudyGuide ||
+      _exclusiveFilter != null ||
       _difficultyRange.start != 1 ||
       _difficultyRange.end != 7;
 
   @override
   void initState() {
     super.initState();
-    // Inicia a lista de exibição com todos os itens da biblioteca
     _filteredLibraryItems = allLibraryItems;
-    // Adiciona um listener para a barra de busca para filtrar em tempo real
     _searchController.addListener(_filterLibrary);
+    // Chama o filtro uma vez no início para garantir que o estado inicial seja aplicado
+    _filterLibrary();
   }
 
   @override
@@ -410,31 +414,39 @@ class _LibraryPageState extends State<LibraryPage> {
         .toLowerCase();
   }
 
-  // Função central que aplica TODOS os filtros ativos à lista de livros
+  // Lógica de filtragem atualizada para lidar com os dois modos
   void _filterLibrary() {
-    // Começa com a lista completa de livros a cada nova filtragem
     List<Map<String, dynamic>> filtered = allLibraryItems;
 
-    // 1. Filtro de Ficção
-    if (_filterFiction) {
-      filtered = filtered.where((item) => item['ficcao'] == true).toList();
+    // --- Lógica Principal de Filtro (Ficção e Guias) ---
+    if (_exclusiveFilter != null) {
+      // MODO EXCLUSIVO: Mostra apenas o tipo selecionado
+      if (_exclusiveFilter == 'ficcao') {
+        filtered = filtered.where((item) => item['ficcao'] == true).toList();
+      } else if (_exclusiveFilter == 'isStudyGuide') {
+        filtered =
+            filtered.where((item) => item['isStudyGuide'] == true).toList();
+      }
+    } else {
+      // MODO NORMAL (EXCLUSÃO): Esconde os tipos desmarcados
+      if (!_showFiction) {
+        filtered = filtered.where((item) => item['ficcao'] != true).toList();
+      }
+      if (!_showStudyGuide) {
+        filtered =
+            filtered.where((item) => item['isStudyGuide'] != true).toList();
+      }
     }
 
-    // 2. Filtro de Guia de Estudo
-    if (_filterStudyGuide) {
-      // Assumindo que você adicionou a flag 'isStudyGuide' aos itens relevantes
-      filtered =
-          filtered.where((item) => item['isStudyGuide'] == true).toList();
-    }
-
-    // 3. Filtro de Dificuldade (Range)
+    // --- Filtros Adicionais (aplicados sobre o resultado anterior) ---
+    // Filtro de Dificuldade
     filtered = filtered.where((item) {
       final difficulty = item['dificuldade'] as int? ?? 1; // Padrão 1 se nulo
       return difficulty >= _difficultyRange.start &&
           difficulty <= _difficultyRange.end;
     }).toList();
 
-    // 4. Filtro de Busca por Texto (aplicado por último)
+    // Filtro de Busca por Texto
     final query = _normalize(_searchController.text);
     if (query.isNotEmpty) {
       filtered = filtered.where((item) {
@@ -460,8 +472,9 @@ class _LibraryPageState extends State<LibraryPage> {
   // Limpa TODOS os filtros e reseta a lista
   void _clearAllFilters() {
     setState(() {
-      _filterFiction = false;
-      _filterStudyGuide = false;
+      _showFiction = true;
+      _showStudyGuide = true;
+      _exclusiveFilter = null;
       _difficultyRange = const RangeValues(1, 7);
     });
     _filterLibrary(); // Reaplica os filtros (agora zerados)
@@ -469,9 +482,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   // Mostra o modal para selecionar o range de dificuldade
   Future<void> _showDifficultyFilter() async {
-    // Usa uma variável temporária para que o usuário possa cancelar a alteração
     RangeValues tempRange = _difficultyRange;
-
     await showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -479,12 +490,8 @@ class _LibraryPageState extends State<LibraryPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        // StatefulBuilder permite que apenas o conteúdo do modal seja atualizado
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            // ✅ CORREÇÃO APLICADA AQUI
-            // Adiciona um Padding na parte inferior do modal que corresponde exatamente
-            // à altura da barra de navegação do sistema.
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).padding.bottom,
@@ -501,7 +508,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       values: tempRange,
                       min: 1,
                       max: 7,
-                      divisions: 6, // 7 pontos - 1 = 6 divisões
+                      divisions: 6,
                       labels: RangeLabels(
                         'Nível ${tempRange.start.round()}',
                         'Nível ${tempRange.end.round()}',
@@ -512,7 +519,6 @@ class _LibraryPageState extends State<LibraryPage> {
                         });
                       },
                     ),
-                    // Linha com os marcadores numéricos de 1 a 7
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10.0),
                       child: Row(
@@ -526,7 +532,6 @@ class _LibraryPageState extends State<LibraryPage> {
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
-                        // Aplica o filtro selecionado e fecha o modal
                         setState(() {
                           _difficultyRange = tempRange;
                         });
@@ -577,7 +582,6 @@ class _LibraryPageState extends State<LibraryPage> {
     return Scaffold(
       body: Column(
         children: [
-          // Barra de Busca e Botão de IA no topo
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -607,8 +611,6 @@ class _LibraryPageState extends State<LibraryPage> {
               ],
             ),
           ),
-
-          // Grid de Livros que ocupa o espaço restante
           Expanded(
             child: StoreConnector<AppState, _LibraryViewModel>(
               converter: (store) => _LibraryViewModel.fromStore(store),
@@ -617,7 +619,6 @@ class _LibraryPageState extends State<LibraryPage> {
                   return const Center(child: Text("Nenhum item encontrado."));
                 }
                 return GridView.builder(
-                  // Adiciona padding na parte inferior para a barra de filtros não cobrir o último item
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
@@ -679,24 +680,44 @@ class _LibraryPageState extends State<LibraryPage> {
               },
             ),
           ),
-
-          // Barra de Filtros Fixa na Parte Inferior, com o novo design
           LibraryFilterBar(
-            filterFiction: _filterFiction,
-            filterStudyGuide: _filterStudyGuide,
+            showFiction: _showFiction,
+            showStudyGuide: _showStudyGuide,
+            exclusiveFilter: _exclusiveFilter,
             difficultyRange: _difficultyRange,
             isAnyFilterActive: _isAnyFilterActive,
-            onFictionToggle: (selected) {
+            onFictionTap: () {
               setState(() {
-                _filterFiction = selected;
-                if (selected) _filterStudyGuide = false; // Desmarca o outro
+                if (_exclusiveFilter == 'ficcao') {
+                  _exclusiveFilter = null; // Sai do modo exclusivo
+                } else {
+                  _exclusiveFilter =
+                      null; // Garante que sai de qualquer modo exclusivo
+                  _showFiction = !_showFiction;
+                }
               });
               _filterLibrary();
             },
-            onStudyGuideToggle: (selected) {
+            onFictionLongPress: () {
               setState(() {
-                _filterStudyGuide = selected;
-                if (selected) _filterFiction = false; // Desmarca o outro
+                _exclusiveFilter = 'ficcao';
+              });
+              _filterLibrary();
+            },
+            onStudyGuideTap: () {
+              setState(() {
+                if (_exclusiveFilter == 'isStudyGuide') {
+                  _exclusiveFilter = null;
+                } else {
+                  _exclusiveFilter = null;
+                  _showStudyGuide = !_showStudyGuide;
+                }
+              });
+              _filterLibrary();
+            },
+            onStudyGuideLongPress: () {
+              setState(() {
+                _exclusiveFilter = 'isStudyGuide';
               });
               _filterLibrary();
             },
@@ -709,34 +730,41 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 }
 
+// ✅ 6. WIDGET DA BARRA DE FILTROS ATUALIZADO PARA ACEITAR NOVOS PARÂMETROS E EVENTOS
 class LibraryFilterBar extends StatelessWidget {
-  final bool filterFiction;
-  final bool filterStudyGuide;
+  final bool showFiction;
+  final bool showStudyGuide;
+  final String? exclusiveFilter;
   final RangeValues difficultyRange;
   final bool isAnyFilterActive;
-  final ValueChanged<bool> onFictionToggle;
-  final ValueChanged<bool> onStudyGuideToggle;
+  final VoidCallback onFictionTap;
+  final VoidCallback onFictionLongPress;
+  final VoidCallback onStudyGuideTap;
+  final VoidCallback onStudyGuideLongPress;
   final VoidCallback onDifficultyTap;
   final VoidCallback onClearFilters;
 
   const LibraryFilterBar({
     super.key,
-    required this.filterFiction,
-    required this.filterStudyGuide,
+    required this.showFiction,
+    required this.showStudyGuide,
+    this.exclusiveFilter,
     required this.difficultyRange,
     required this.isAnyFilterActive,
-    required this.onFictionToggle,
-    required this.onStudyGuideToggle,
+    required this.onFictionTap,
+    required this.onFictionLongPress,
+    required this.onStudyGuideTap,
+    required this.onStudyGuideLongPress,
     required this.onDifficultyTap,
     required this.onClearFilters,
   });
 
-  // Helper para construir os botões customizados no estilo da BiblePage
   Widget _buildFilterButton({
     required BuildContext context,
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    required VoidCallback onLongPress,
     required bool isActive,
     bool hasDropdown = false,
     int flex = 2,
@@ -751,6 +779,7 @@ class LibraryFilterBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: onTap,
+          onLongPress: onLongPress, // Adiciona o evento de long press
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
@@ -798,7 +827,6 @@ class LibraryFilterBar extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      // Fundo escuro e unificado
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
@@ -809,8 +837,10 @@ class LibraryFilterBar extends StatelessWidget {
             context: context,
             icon: Icons.auto_stories_outlined,
             label: 'Ficção',
-            onTap: () => onFictionToggle(!filterFiction),
-            isActive: filterFiction,
+            onTap: onFictionTap,
+            onLongPress: onFictionLongPress,
+            isActive: exclusiveFilter == 'ficcao' ||
+                (exclusiveFilter == null && showFiction),
             flex: 2,
           ),
           const SizedBox(width: 6),
@@ -818,8 +848,10 @@ class LibraryFilterBar extends StatelessWidget {
             context: context,
             icon: Icons.school_outlined,
             label: 'Guias',
-            onTap: () => onStudyGuideToggle(!filterStudyGuide),
-            isActive: filterStudyGuide,
+            onTap: onStudyGuideTap,
+            onLongPress: onStudyGuideLongPress,
+            isActive: exclusiveFilter == 'isStudyGuide' ||
+                (exclusiveFilter == null && showStudyGuide),
             flex: 2,
           ),
           const SizedBox(width: 6),
@@ -829,6 +861,8 @@ class LibraryFilterBar extends StatelessWidget {
             label:
                 '${difficultyRange.start.round()}-${difficultyRange.end.round()}',
             onTap: onDifficultyTap,
+            onLongPress:
+                onDifficultyTap, // Long press no de dificuldade faz a mesma coisa que o tap
             isActive: difficultyRange.start != 1 || difficultyRange.end != 7,
             hasDropdown: true,
             flex: 3,
