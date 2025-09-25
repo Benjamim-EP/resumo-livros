@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/components/custom_search_bar.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
+import 'package:septima_biblia/pages/library_page/book_study_guide_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
 import 'package:septima_biblia/pages/library_page/compact_resource_card.dart';
 import 'package:septima_biblia/pages/library_page/generic_book_viewer_page.dart';
@@ -335,6 +336,253 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'ficcao': false,
     'dificuldade': 2,
     'isStudyGuide': false,
+  },
+  {
+    'title': "O Peso da Glória",
+    'description':
+        "Uma coleção de sermões e ensaios que exploram o anseio humano pelo céu e a natureza da glória divina.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-o-peso-da-gloria_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-o-peso-da-gloria', bookTitle: "O Peso da Glória"),
+    'ficcao': false,
+    'dificuldade': 6,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "O Dom da Amizade",
+    'description':
+        "Uma exploração profunda sobre a natureza e o valor da amizade, um dos 'quatro amores' de Lewis.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-o-dom-da-amizade_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-o-dom-da-amizade', bookTitle: "O Dom da Amizade"),
+    'ficcao': false,
+    'dificuldade':
+        4, // É uma parte de "Os Quatro Amores", então a dificuldade é similar
+    'isStudyGuide': true,
+  },
+  {
+    'title': "A Abolição do Homem",
+    'description':
+        "Uma defesa filosófica da existência de valores objetivos e da lei natural contra o relativismo.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false, // Alterado conforme solicitado
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-a-abolicao-do-homem_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-a-abolicao-do-homem',
+        bookTitle: "A Abolição do Homem"),
+    'ficcao': false,
+    'dificuldade': 7,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "A Anatomia de Uma Dor",
+    'description':
+        "Um diário íntimo e cru sobre a luta de Lewis com a fé e o sofrimento após a morte de sua esposa.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-a-anatomia-de-uma-dor_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-a-anatomia-de-uma-dor',
+        bookTitle: "A Anatomia de Uma Dor"),
+    'ficcao': false,
+    'dificuldade': 6,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Como Ser Cristão",
+    'description':
+        "Uma compilação que une 'Cristianismo Puro e Simples', 'Cartas de um Diabo a seu Aprendiz', 'O Grande Divórcio' e 'O Problema da Dor'.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-como-ser-cristao_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-como-ser-cristao', bookTitle: "Como Ser Cristão"),
+    'ficcao': false,
+    'dificuldade': 6, // Dificuldade alta por ser uma compilação de obras densas
+    'isStudyGuide': true,
+  },
+  {
+    'title': "A Última Noite do Mundo",
+    'description':
+        "Uma coleção de ensaios que exploram temas como a segunda vinda de Cristo, oração e o significado da existência.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-a-ultima-noite-do-mundo_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-a-ultima-noite-do-mundo',
+        bookTitle: "A Última Noite do Mundo"),
+    'ficcao': false,
+    'dificuldade': 5,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Cartas a Malcolm",
+    'description':
+        "Uma troca de cartas fictícia que explora a natureza da oração de forma íntima, prática e profundamente pessoal.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-cartas-a-malcolm_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-cartas-a-malcolm', bookTitle: "Cartas a Malcolm"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Cartas de um Diabo a seu Aprendiz",
+    'description':
+        "Uma sátira genial onde um demônio veterano ensina seu sobrinho a como tentar e corromper um ser humano.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-cartas-de-um-diabo-a-seu-aprendiz_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-cartas-de-um-diabo-a-seu-aprendiz',
+        bookTitle: "Cartas de um Diabo a seu Aprendiz"),
+    'ficcao': true,
+    'dificuldade': 5,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Cristianismo Puro e Simples",
+    'description':
+        "Uma das mais famosas defesas da fé cristã, argumentando de forma lógica e acessível os pilares do cristianismo.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-cristianismo-puro-e-simples_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-cristianismo-puro-e-simples',
+        bookTitle: "Cristianismo Puro e Simples"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Deus no Banco dos Réus",
+    'description':
+        "Ensaios que abordam objeções comuns ao cristianismo, colocando Deus 'no banco dos réus' para responder a críticas.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-deus-no-banco-dos-reus_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-deus-no-banco-dos-reus',
+        bookTitle: "Deus no Banco dos Réus"),
+    'ficcao': false,
+    'dificuldade': 6,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Milagres",
+    'description':
+        "Uma análise filosófica sobre a possibilidade e a natureza dos milagres em um mundo governado por leis naturais.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/guias/c-s-lewis-milagres_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-milagres', bookTitle: "Milagres"),
+    'ficcao': false,
+    'dificuldade': 6,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "O Grande Divórcio",
+    'description':
+        "Uma alegoria sobre uma viagem do inferno ao céu, explorando as escolhas que nos prendem ao pecado e nos impedem de aceitar a graça.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-o-grande-divorcio_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-o-grande-divorcio', bookTitle: "O Grande Divórcio"),
+    'ficcao': true,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "O Problema da Dor",
+    'description':
+        "Uma tentativa intelectual de reconciliar a existência de um Deus bom e todo-poderoso com a realidade do sofrimento no mundo.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-o-problema-da-dor_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-o-problema-da-dor', bookTitle: "O Problema da Dor"),
+    'ficcao': false,
+    'dificuldade': 6,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Os Quatro Amores",
+    'description':
+        "Uma exploração das quatro formas de amor descritas no grego: Afeição, Amizade, Eros e Caridade (Ágape).",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-os-quatro-amores_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-os-quatro-amores', bookTitle: "Os Quatro Amores"),
+    'ficcao': false,
+    'dificuldade': 5,
+    'isStudyGuide': true,
+  },
+  {
+    'title': "Reflexões sobre os Salmos",
+    'description':
+        "Uma meditação pessoal e acadêmica sobre o livro de Salmos, abordando suas dificuldades, belezas e significados.",
+    'author': 'C. S. Lewis',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/c-s-lewis-reflexoes-sobre-os-salmos_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'c-s-lewis-reflexoes-sobre-os-salmos',
+        bookTitle: "Reflexões sobre os Salmos"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
   },
 ];
 
