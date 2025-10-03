@@ -1745,6 +1745,31 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
     return buildInteractionDetector(
       child: StoreConnector<AppState, _BiblePageViewModel>(
         converter: (store) => _BiblePageViewModel.fromStore(store),
+        onDidChange: (previousViewModel, newViewModel) {
+          if (newViewModel == null) return;
+
+          // Verifica se uma nova navegação foi solicitada (vindo da UserPage, por exemplo)
+          final bool hasNewNavigationRequest =
+              newViewModel.initialBook != null &&
+                  newViewModel.initialBibleChapter != null;
+
+          // Se houver uma nova solicitação E ela for diferente da que já está na tela
+          if (hasNewNavigationRequest &&
+              (newViewModel.initialBook != selectedBook ||
+                  newViewModel.initialBibleChapter != selectedChapter)) {
+            print(
+                "BiblePage onDidChange: Nova navegação detectada para ${newViewModel.initialBook} ${newViewModel.initialBibleChapter}. Atualizando a UI...");
+
+            // Força a atualização da página com os novos dados
+            _applyNavigationState(
+                newViewModel.initialBook!, newViewModel.initialBibleChapter!,
+                forceKeyUpdate: true);
+
+            // Limpa a ação do Redux para que não seja reativada acidentalmente
+            StoreProvider.of<AppState>(context, listen: false)
+                .dispatch(SetInitialBibleLocationAction(null, null));
+          }
+        },
         onInit: (store) {
           _store = store;
           if (mounted && booksMap != null && !_hasProcessedInitialNavigation) {

@@ -36,17 +36,12 @@ class _UserPageState extends State<UserPage> {
   Map<String, dynamic>? _localBooksMap;
   bool _isLoadingBooksMap = true;
   String _selectedTab = 'Progresso';
-  bool _showAllBookProgress =
-      false; // NOVO: Para controlar a expansão da lista de progresso por livro
-
-  bool _initialProgressLoadDispatched =
-      false; // Flag para controlar o despacho da ação
+  bool _showAllBookProgress = false;
+  bool _initialProgressLoadDispatched = false;
   final TextEditingController _tagSearchController = TextEditingController();
   String _tagSearchQuery = '';
   Timer? _debounce;
-
-  HighlightType? _selectedHighlightType = null;
-
+  HighlightType? _selectedHighlightType;
   bool _isTabInitialized = false;
 
   final List<String> _availableTabs = const [
@@ -61,12 +56,8 @@ class _UserPageState extends State<UserPage> {
     _loadLocalBooksMap();
 
     _tagSearchController.addListener(() {
-      // Se já houver um timer rodando, cancele-o.
       if (_debounce?.isActive ?? false) _debounce!.cancel();
-
-      // Inicie um novo timer.
       _debounce = Timer(const Duration(milliseconds: 400), () {
-        // Esta parte do código só será executada 400ms depois que o usuário parar de digitar.
         if (mounted && _tagSearchController.text != _tagSearchQuery) {
           setState(() {
             _tagSearchQuery = _tagSearchController.text;
@@ -75,35 +66,27 @@ class _UserPageState extends State<UserPage> {
       });
     });
 
-    @override
-    void dispose() {
-      // >>> INÍCIO DA MODIFICAÇÃO 3/3: Cancelar o debounce no dispose <<<
-      _debounce?.cancel();
-      // >>> FIM DA MODIFICAÇÃO 3/3 <<<
-      _tagSearchController.dispose();
-      super.dispose();
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final storeInstance = StoreProvider.of<AppState>(context, listen: false);
-
       if (storeInstance.state.metadataState.bibleSectionCounts.isEmpty &&
           !storeInstance.state.metadataState.isLoadingSectionCounts) {
         storeInstance.dispatch(LoadBibleSectionCountsAction());
       }
-
-      // >>> INÍCIO DA CORREÇÃO <<<
-      // Movemos a lógica de carregamento inicial para o initState
       _dispatchInitialLoadActions(storeInstance);
-      // >>> FIM DA CORREÇÃO <<<
     });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _tagSearchController.dispose();
+    super.dispose();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Inicializa a aba selecionada com o texto localizado
     if (!_isTabInitialized) {
       final l10n = AppLocalizations.of(context)!;
       setState(() {
@@ -113,26 +96,18 @@ class _UserPageState extends State<UserPage> {
     }
   }
 
-  // >>> INÍCIO DA CORREÇÃO <<<
-  // Nova função para centralizar o carregamento inicial
   void _dispatchInitialLoadActions(Store<AppState> storeInstance) async {
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
     if (storeInstance.state.userState.userId != null) {
-      // Carrega o progresso se ainda não foi solicitado
       if (!_initialProgressLoadDispatched &&
           storeInstance.state.userState.allBooksProgress.isEmpty &&
           !storeInstance.state.userState.isLoadingAllBibleProgress) {
-        print(
-            "UserPage: Disparando carregamento inicial do progresso bíblico.");
         storeInstance.dispatch(LoadAllBibleProgressAction());
         setState(() {
-          _initialProgressLoadDispatched =
-              true; // Marca que a ação já foi despachada
+          _initialProgressLoadDispatched = true;
         });
       }
-
-      // Carrega outros dados do usuário
       storeInstance.dispatch(LoadUserStatsAction());
       storeInstance.dispatch(LoadUserDiariesAction());
       storeInstance.dispatch(LoadReadingHistoryAction());
@@ -145,16 +120,11 @@ class _UserPageState extends State<UserPage> {
       if (storeInstance.state.userState.userNotes.isEmpty) {
         storeInstance.dispatch(LoadUserNotesAction());
       }
-
-      // <<< ADICIONE ESTA LINHA AQUI >>>
-      // Garante que as tags sejam carregadas quando a UserPage é inicializada.
       storeInstance.dispatch(LoadUserTagsAction());
     }
   }
-  // >>> FIM DA CORREÇÃO <<<
 
   Future<void> _loadLocalBooksMap() async {
-    // ... (sem alterações) ...
     try {
       final map = await BiblePageHelper.loadBooksMap();
       if (mounted) {
@@ -164,7 +134,6 @@ class _UserPageState extends State<UserPage> {
         });
       }
     } catch (e) {
-      print("Erro ao carregar booksMap localmente em UserPage: $e");
       if (mounted) {
         setState(() {
           _isLoadingBooksMap = false;
@@ -178,24 +147,24 @@ class _UserPageState extends State<UserPage> {
       setState(() {
         _selectedTab = tab;
       });
-      // A lógica de carregamento foi movida para o initState e para o RefreshIndicator.
-      // Não precisamos mais despachar ações aqui, pois isso estava causando o loop.
-      // A UI vai simplesmente mudar de aba, e o StoreConnector de cada aba cuidará de mostrar
-      // os dados que já estão no estado ou um indicador de loading se o carregamento inicial ainda estiver ocorrendo.
     }
   }
 
+  // ✅ FUNÇÃO IMPLEMENTADA CORRETAMENTE
   void _navigateToBibleVerseAndTab(String verseId) {
-    print("Navegando para o versículo: $verseId");
+    print("UserPage: Navegando para o versículo: $verseId");
     final parts = verseId.split('_');
     if (parts.length == 3) {
       final bookAbbrev = parts[0];
       final chapter = int.tryParse(parts[1]);
       if (chapter != null && context.mounted) {
         final store = StoreProvider.of<AppState>(context, listen: false);
+
+        // Ação para dizer à BiblePage para qual livro/capítulo ir
         store.dispatch(SetInitialBibleLocationAction(bookAbbrev, chapter));
-        // Assumindo que o índice da aba Bíblia é 1, não 2
-        store.dispatch(RequestBottomNavChangeAction(1));
+
+        // Ação para mudar a aba da BottomNavigationBar para a da Bíblia (índice 2)
+        store.dispatch(RequestBottomNavChangeAction(2));
       }
     }
   }

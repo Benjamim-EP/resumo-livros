@@ -30,8 +30,6 @@ class HighlightItemCard extends StatelessWidget {
     final sourceType = item.originalData['sourceType'] as String?;
 
     if (item.type == HighlightItemType.likedQuote) {
-      // Frases curtidas podem, no futuro, abrir uma visualização especial.
-      // Por enquanto, não fazem nada ao serem tocadas.
       return;
     }
 
@@ -105,7 +103,11 @@ class HighlightItemCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: isVerse ? null : () => _handleTap(context),
+        // ✅ CORREÇÃO APLICADA AQUI
+        // Agora, o onTap chama a função correta quando o item é um versículo
+        onTap: isVerse
+            ? () => onNavigateToVerse(item.id)
+            : () => _handleTap(context),
         splashColor: baseColor.withOpacity(0.1),
         highlightColor: baseColor.withOpacity(0.05),
         child: Container(
@@ -191,10 +193,6 @@ class HighlightItemCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                // ===================================
-                // <<< INÍCIO DA LÓGICA ATUALIZADA >>>
-                // ===================================
                 if (isVerse)
                   FutureBuilder<String>(
                     future: item.originalData['fullVerseTextFuture']
@@ -215,7 +213,7 @@ class HighlightItemCard extends StatelessWidget {
                           !snapshot.hasData ||
                           snapshot.data!.isEmpty) {
                         return Text(
-                          item.contentPreview, // Usa o preview como fallback em caso de erro
+                          item.contentPreview,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             height: 1.5,
                             fontStyle: FontStyle.italic,
@@ -225,7 +223,6 @@ class HighlightItemCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         );
                       }
-                      // Se carregou com sucesso
                       return Text(
                         snapshot.data!,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -239,7 +236,6 @@ class HighlightItemCard extends StatelessWidget {
                     },
                   )
                 else
-                  // Lógica para literatura e frases curtidas (que já têm o texto)
                   Text(
                     '"${item.contentPreview}"',
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -256,10 +252,6 @@ class HighlightItemCard extends StatelessWidget {
                     maxLines: isLikedQuote ? 6 : 4,
                     overflow: TextOverflow.ellipsis,
                   ),
-                // ===================================
-                // <<< FIM DA LÓGICA ATUALIZADA >>>
-                // ===================================
-
                 if (item.tags.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Wrap(
