@@ -863,3 +863,21 @@ class UpdateLocalProgressAction {
 
   UpdateLocalProgressAction(this.updatedItem);
 }
+
+class LoadLibraryShelvesAction {
+  LoadLibraryShelvesAction();
+}
+
+/// Despachada pelo middleware após todas as prateleiras serem carregadas e processadas.
+/// Leva a lista final para o reducer atualizar o estado.
+class LibraryShelvesLoadedAction {
+  final List<Map<String, dynamic>> shelves;
+
+  LibraryShelvesLoadedAction(this.shelves);
+}
+
+/// Ação para indicar que o carregamento falhou.
+class LibraryShelvesFailedAction {
+  final String error;
+  LibraryShelvesFailedAction(this.error);
+}

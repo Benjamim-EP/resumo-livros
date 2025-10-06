@@ -3048,63 +3048,125 @@ def mercadoPagoWebhook(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_call(
-    secrets=["openai-api-key"], # Garante que a chave da API da OpenAI esteja disponível
+    secrets=["openai-api-key"], # Garante que a chave da API OpenAI está disponível
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
     timeout_sec=60
 )
 def recommendLibraryBooks(req: https_fn.CallableRequest) -> dict:
     """
-    Recebe a necessidade de um usuário e recomenda livros da biblioteca estática
-    usando a IA da OpenAI para análise e justificativa.
+    Recomenda livros da biblioteca. Funciona em dois modos:
+    1. MODO BUSCA (Explícito): Se 'user_query' for fornecido no request,
+       a IA busca livros que correspondam àquela necessidade específica.
+    2. MODO RECOMENDAÇÃO (Implícito): Se 'user_query' for omitido,
+       a IA usa as interações recentes do usuário ('recentInteractions' no Firestore)
+       para gerar recomendações proativas e personalizadas.
     """
-    # 1. Validação de Autenticação e Parâmetros de Entrada
+    db = get_db()
+    
+    # 1. Validação de Autenticação
     if not req.auth or not req.auth.uid:
         raise https_fn.HttpsError(
             code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
             message='Você precisa estar logado para usar este recurso.'
         )
 
+    user_id = req.auth.uid
     user_query = req.data.get("user_query")
-    if not user_query or not isinstance(user_query, str):
-        raise https_fn.HttpsError(
-            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
-            message="O parâmetro 'user_query' (string) é obrigatório."
-        )
 
-    # 2. Lista da Biblioteca (A FONTE DE DADOS PARA A IA)
+    # 2. Determinação do Texto Base para Recomendação
+    recommendation_base_text = ""
+    
+    if user_query and isinstance(user_query, str) and user_query.strip():
+        # --- MODO BUSCA ---
+        print(f"Executando recommendLibraryBooks em modo de BUSCA para a query: '{user_query}'")
+        recommendation_base_text = user_query.strip()
+    else:
+        # --- MODO RECOMENDAÇÃO AUTOMÁTICA ---
+        print(f"Executando recommendLibraryBooks em modo de RECOMENDAÇÃO para o usuário {user_id}")
+        try:
+            user_doc = db.collection('users').document(user_id).get()
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                recent_interactions = user_data.get("recentInteractions", [])
+                
+                if recent_interactions:
+                    # Concatena o texto das 7 interações mais recentes
+                    interaction_texts = [item.get("text", "") for item in recent_interactions]
+                    recommendation_base_text = ". ".join(filter(None, interaction_texts))
+                    print(f"Texto base (interações): '{recommendation_base_text[:150]}...'")
+                else:
+                    print(f"Usuário {user_id} não possui interações recentes. Nenhuma recomendação será gerada.")
+                    return {"status": "success", "recommendations": []}
+            else:
+                 raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Usuário não encontrado.")
+        except Exception as e:
+            print(f"Erro ao buscar interações do usuário {user_id}: {e}")
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro ao buscar seu histórico.")
+
+    # Se, após toda a lógica, não houver texto base, retorna uma lista vazia.
+    if not recommendation_base_text:
+        return {"status": "success", "recommendations": []}
+
+    # 3. Lista da Biblioteca (Fonte de Dados para a IA)
     library_items_json = """
     [
-        {"bookId": "gravidade-e-graca", "title": "Gravidade e Graça", "author": "Simone Weil", "description": "Todos os movimentos naturais da alma são regidos por leis análogas às da gravidade física. A graça é a única exceção.", "coverImagePath": "assets/covers/gravidade_e_graca_cover.webp"},
-        {"bookId": "o-enraizamento", "title": "O Enraizamento", "author": "Simone Weil", "description": "A obediência é uma necessidade vital da alma humana. Ela é de duas espécies: obediência a regras estabelecidas e obediência a seres humanos.", "coverImagePath": "assets/covers/enraizamento.webp"},
-        {"bookId": "ortodoxia", "title": "Ortodoxia", "author": "G.K. Chesterton", "description": "A única desculpa possível para este livro é que ele é uma resposta a um desafio. Mesmo um mau atirador é digno quando aceita um duelo.", "coverImagePath": "assets/covers/ortodoxia.webp"},
-        {"bookId": "hereges", "title": "Hereges", "author": "G.K. Chesterton", "description": "É tolo, de modo geral, que um filósofo ateie fogo a outro filósofo porque não concordam em sua teoria do universo.", "coverImagePath": "assets/covers/hereges.webp"},
-        {"bookId": "carta-a-um-religioso", "title": "Carta a um Religioso", "author": "Simone Weil", "description": "Quando leio o catecismo do Concílio de Trento, tenho a impressão de que não tenho nada em comum com a religião que nele se expõe.", "coverImagePath": "assets/covers/cartas_a_um_religioso.webp"},
-        {"bookId": "spurgeon_sermons", "title": "Sermões de Spurgeon", "author": "C.H. Spurgeon", "description": "Uma vasta coleção dos sermões do 'Príncipe dos Pregadores', abordando praticamente todos os temas da vida cristã.", "coverImagePath": "assets/covers/spurgeon_cover.webp"},
-        {"bookId": "gods_word_to_women", "title": "A Palavra às Mulheres", "author": "K. C. Bushnell", "description": "Uma análise profunda das escrituras sobre o papel e a interpretação de passagens relacionadas às mulheres.", "coverImagePath": "assets/covers/gods_word_to_women_cover.webp"},
-        {"bookId": "bible_promises", "title": "Promessas da Bíblia", "author": "Samuel Clarke", "description": "Um compêndio de promessas divinas organizadas por tema para encorajamento e oração.", "coverImagePath": "assets/covers/promessas_cover.webp"},
-        {"bookId": "church_history", "title": "História da Igreja", "author": "Philip Schaff", "description": "A jornada completa da igreja cristã desde os apóstolos até a era moderna, cobrindo doutrinas, concílios e eventos.", "coverImagePath": "assets/covers/historia_igreja.webp"},
-        {"bookId": "turretin_theology", "title": "Teologia Apologética", "author": "Francis Turretin", "description": "Uma obra monumental da teologia sistemática reformada, defendendo a fé com rigor lógico.", "coverImagePath": "assets/covers/turretin_cover.webp"}
+        {"bookId": "o-peregrino-oxford-world-s-classics", "title": "O Peregrino", "author": "John Bunyan", "description": "A jornada alegórica de Cristão da Cidade da Destruição à Cidade Celestial."},
+        {"bookId": "a-divina-comedia", "title": "A Divina Comédia", "author": "Dante Alighieri", "description": "Uma jornada épica através do Inferno, Purgatório e Paraíso, explorando a teologia e a moralidade medieval."},
+        {"bookId": "ben-hur", "title": "Ben-Hur: Uma História de Cristo", "author": "Lew Wallace", "description": "A épica história de um nobre judeu que, após ser traído, encontra redenção e fé durante a época de Jesus Cristo."},
+        {"bookId": "elogio-da-loucura", "title": "Elogio da Loucura", "author": "Desiderius Erasmus", "description": "Uma sátira espirituosa da sociedade, costumes e religião do século XVI, narrada pela própria Loucura."},
+        {"bookId": "anna-karenina", "title": "Anna Karenina", "author": "Leo Tolstoy", "description": "Um retrato complexo da sociedade russa e das paixões humanas através da história de uma mulher que desafia as convenções."},
+        {"bookId": "lilith", "title": "Lilith", "author": "George MacDonald", "description": "Uma fantasia sombria e alegórica sobre a vida, a morte e a redenção, explorando temas de egoísmo e sacrifício."},
+        {"bookId": "donal-grantchapters", "title": "Donal Grant", "author": "George MacDonald", "description": "A história de um jovem poeta e tutor que navega pelos desafios do amor, fé e mistério em um castelo escocês."},
+        {"bookId": "david-elginbrod", "title": "David Elginbrod", "author": "George MacDonald", "description": "Um romance que explora a fé, o espiritismo e a natureza do bem e do mal através de seus personagens memoráveis."},
+        {"bookId": "gravidade-e-graca", "title": "Gravidade e Graça", "author": "Simone Weil", "description": "Reflexões filosóficas sobre a condição humana, o sofrimento, e a busca pela graça divina em meio à 'gravidade' do mundo."},
+        {"bookId": "o-enraizamento", "title": "O Enraizamento", "author": "Simone Weil", "description": "Um ensaio sobre as necessidades da alma humana e a importância de ter raízes espirituais, culturais e sociais."},
+        {"bookId": "ortodoxia", "title": "Ortodoxia", "author": "G.K. Chesterton", "description": "A jornada intelectual do autor, defendendo a lógica e a alegria da fé cristã tradicional como uma aventura emocionante."},
+        {"bookId": "hereges", "title": "Hereges", "author": "G.K. Chesterton", "description": "Uma coleção de ensaios que critica as filosofias modernas da época, argumentando que a verdadeira liberdade vem da aceitação de uma verdade objetiva."},
+        {"bookId": "carta-a-um-religioso", "title": "Carta a um Religioso", "author": "Simone Weil", "description": "Uma carta profunda e pessoal que explora as dúvidas e as certezas da autora em relação à fé e à Igreja Católica."},
+        {"bookId": "mapas-tematicos", "title": "Mapas Temáticos", "author": "Septima", "description": "Explore as jornadas dos apóstolos e outros eventos bíblicos em mapas interativos."},
+        {"bookId": "spurgeon-sermoes", "title": "Sermões de Spurgeon", "author": "C.H. Spurgeon", "description": "Uma vasta coleção dos sermões do 'Príncipe dos Pregadores', abordando praticamente todos os temas da vida cristã."},
+        {"bookId": "a-palavra-as-mulheres", "title": "A Palavra às Mulheres", "author": "K. C. Bushnell", "description": "Uma análise profunda das escrituras sobre o papel e a interpretação de passagens relacionadas às mulheres."},
+        {"bookId": "promessas-da-biblia", "title": "Promessas da Bíblia", "author": "Samuel Clarke", "description": "Um compêndio de promessas divinas organizadas por tema para encorajamento e oração."},
+        {"bookId": "historia-da-igreja", "title": "História da Igreja", "author": "Philip Schaff", "description": "A jornada completa da igreja cristã desde os apóstolos até a era moderna, cobrindo doutrinas, concílios e eventos."},
+        {"bookId": "teologia-apologetica", "title": "Teologia Apologética", "author": "Francis Turretin", "description": "Uma obra monumental da teologia sistemática reformada, defendendo a fé cristã com rigor lógico."},
+        {"bookId": "estudos-rapidos", "title": "Estudos Rápidos", "author": "Séptima", "description": "Guias e rotas de estudo temáticos para aprofundar seu conhecimento bíblico de forma rápida e focada."},
+        {"bookId": "linha-do-tempo", "title": "Linha do Tempo", "author": "Septima", "description": "Contextualize os eventos bíblicos com a história mundial através de uma linha do tempo interativa."},
+        {"bookId": "c-s-lewis-o-peso-da-gloria", "title": "O Peso da Glória", "author": "C. S. Lewis", "description": "Um guia de estudo sobre os sermões e ensaios de Lewis que exploram o anseio humano pelo céu e a natureza da glória divina."},
+        {"bookId": "c-s-lewis-o-dom-da-amizade", "title": "O Dom da Amizade", "author": "C. S. Lewis", "description": "Um guia de estudo sobre a exploração profunda da natureza e do valor da amizade, um dos 'quatro amores' de Lewis."},
+        {"bookId": "c-s-lewis-a-abolicao-do-homem", "title": "A Abolição do Homem", "author": "C. S. Lewis", "description": "Um guia de estudo sobre a defesa filosófica da existência de valores objetivos e da lei natural contra o relativismo."},
+        {"bookId": "c-s-lewis-a-anatomia-de-uma-dor", "title": "A Anatomia de Uma Dor", "author": "C. S. Lewis", "description": "Um guia de estudo sobre o diário íntimo e cru de Lewis com a fé e o sofrimento após a morte de sua esposa."},
+        {"bookId": "c-s-lewis-como-ser-cristao", "title": "Como Ser Cristão", "author": "C. S. Lewis", "description": "Um guia de estudo que une obras como 'Cristianismo Puro e Simples', 'Cartas de um Diabo a seu Aprendiz', 'O Grande Divórcio' e 'O Problema da Dor'."},
+        {"bookId": "c-s-lewis-a-ultima-noite-do-mundo", "title": "A Última Noite do Mundo", "author": "C. S. Lewis", "description": "Um guia de estudo sobre ensaios que exploram a segunda vinda de Cristo, oração e o significado da existência."},
+        {"bookId": "c-s-lewis-cartas-a-malcolm", "title": "Cartas a Malcolm", "author": "C. S. Lewis", "description": "Um guia de estudo sobre uma troca de cartas fictícia que explora a natureza da oração de forma íntima e prática."},
+        {"bookId": "c-s-lewis-cartas-de-um-diabo-a-seu-aprendiz", "title": "Cartas de um Diabo a seu Aprendiz", "author": "C. S. Lewis", "description": "Um guia de estudo sobre a sátira genial onde um demônio veterano ensina seu sobrinho a como corromper um ser humano."},
+        {"bookId": "c-s-lewis-cristianismo-puro-e-simples", "title": "Cristianismo Puro e Simples", "author": "C. S. Lewis", "description": "Um guia de estudo de uma das mais famosas defesas da fé cristã, argumentando de forma lógica e acessível os pilares do cristianismo."},
+        {"bookId": "c-s-lewis-deus-no-banco-dos-reus", "title": "Deus no Banco dos Réus", "author": "C. S. Lewis", "description": "Um guia de estudo sobre ensaios que abordam objeções comuns ao cristianismo, colocando Deus 'no banco dos réus' para responder a críticas."},
+        {"bookId": "c-s-lewis-milagres", "title": "Milagres", "author": "C. S. Lewis", "description": "Um guia de estudo sobre a análise filosófica da possibilidade e natureza dos milagres em um mundo governado por leis naturais."},
+        {"bookId": "c-s-lewis-o-grande-divorcio", "title": "O Grande Divórcio", "author": "C. S. Lewis", "description": "Um guia de estudo da alegoria sobre uma viagem do inferno ao céu, explorando as escolhas que nos prendem ao pecado."},
+        {"bookId": "c-s-lewis-o-problema-da-dor", "title": "O Problema da Dor", "author": "C. S. Lewis", "description": "Um guia de estudo da tentativa intelectual de reconciliar um Deus bom com a realidade do sofrimento."},
+        {"bookId": "c-s-lewis-os-quatro-amores", "title": "Os Quatro Amores", "author": "C. S. Lewis", "description": "Um guia de estudo sobre a exploração das quatro formas de amor: Afeição, Amizade, Eros e Caridade (Ágape)."},
+        {"bookId": "c-s-lewis-reflexoes-sobre-os-salmos", "title": "Reflexões sobre os Salmos", "author": "C. S. Lewis", "description": "Um guia de estudo da meditação pessoal e acadêmica sobre o livro de Salmos, abordando suas dificuldades e belezas."}
     ]
     """
 
-    # 3. Montagem do Prompt para a OpenAI
+    # 4. Montagem do Prompt para a OpenAI
     system_prompt = f"""
-Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é analisar a necessidade do usuário e recomendar até 3 livros da lista fornecida.
+Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é analisar a necessidade do usuário e recomendar até 4 livros da lista fornecida.
 
 # INSTRUÇÕES:
-1.  Analise a "NECESSIDADE DO USUÁRIO".
-2.  Compare a necessidade com o título, autor e descrição de cada livro na "LISTA DE LIVROS".
-3.  Selecione de 1 a 3 livros que melhor respondem à necessidade do usuário.
+1.  Analise a "NECESSIDADE DO USUÁRIO". Este texto pode ser uma pergunta direta ou um compilado de interações recentes que refletem os interesses do usuário.
+2.  Compare essa necessidade com o título, autor e descrição de cada livro na "LISTA DE LIVROS".
+3.  Selecione de 3 a 7 livros que melhor respondem à necessidade ou interesse do usuário.
 4.  Para CADA livro selecionado, escreva uma "justificativa" curta e pessoal (1-2 frases) explicando por que aquele livro é uma boa recomendação.
-5.  Retorne sua resposta ESTRITAMENTE no formato JSON de uma lista de objetos, usando a chave "books" para a lista, incluindo os campos 'bookId', 'title', 'author', 'coverImagePath' e 'justificativa'.
+5.  Retorne sua resposta ESTRITAMENTE no formato JSON, como uma lista de objetos, usando a chave "recommendations". Cada objeto deve conter 'bookId', 'title', 'author', 'coverImagePath', e 'justificativa'.
 
 # LISTA DE LIVROS DISPONÍVEIS:
 {library_items_json}
 
 # EXEMPLO DE SAÍDA JSON ESPERADA:
 {{
-  "books": [
+  "recommendations": [
     {{
       "bookId": "id-do-livro-1",
       "title": "Título do Livro 1",
@@ -3116,15 +3178,15 @@ Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é 
 }}
 """
     
-    user_prompt = f"NECESSIDADE DO USUÁRIO: \"{user_query}\""
+    user_prompt = f"NECESSIDADE DO USUÁRIO: \"{recommendation_base_text}\""
 
-    # 4. Chamada à API da OpenAI
+    # 5. Chamada à API da OpenAI e Retorno
     try:
         openai_api_key = os.environ.get("openai-api-key")
         if not openai_api_key: raise ValueError("Secret 'openai-api-key' não encontrado.")
         client = OpenAI(api_key=openai_api_key)
 
-        print(f"Enviando prompt para a OpenAI para a query: {user_query}")
+        print(f"Enviando prompt para a OpenAI...")
         
         chat_completion = client.chat.completions.create(
             model="gpt-4.1-nano",
@@ -3142,27 +3204,22 @@ Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é 
         if response_content:
             try:
                 response_data = json.loads(response_content)
-
-                # Estratégia 1: Procura pela chave "recommendations"
+                
+                # Procura pela chave "recommendations" ou "books"
                 if isinstance(response_data, dict) and "recommendations" in response_data and isinstance(response_data["recommendations"], list):
                     recommendations = response_data["recommendations"]
-                
-                # Estratégia 2: Procura pela chave "books"
                 elif isinstance(response_data, dict) and "books" in response_data and isinstance(response_data["books"], list):
                     recommendations = response_data["books"]
-
-                # Estratégia 3: Verifica se a resposta já é a própria lista
                 elif isinstance(response_data, list):
                     recommendations = response_data
-                
                 else:
-                    raise TypeError("A resposta da IA não continha uma lista de recomendações no formato esperado.")
+                    raise TypeError("Formato de resposta da IA não contém uma lista de recomendações válida.")
 
             except (json.JSONDecodeError, TypeError) as e:
                 print(f"Erro ao processar o JSON da OpenAI: {e}")
-                raise TypeError("A resposta da IA não foi uma lista de recomendações.")
+                raise TypeError("A resposta da IA não estava no formato JSON esperado.")
         
-        print(f"Recomendações extraídas com sucesso: {recommendations}")
+        print(f"Recomendações extraídas com sucesso: {len(recommendations)} livros.")
         return {"status": "success", "recommendations": recommendations}
 
     except Exception as e:

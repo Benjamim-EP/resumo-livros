@@ -77,6 +77,7 @@ class BooksState {
   final List<Map<String, dynamic>> weeklyRecommendations; // Indicação semanal ✅
   final Set<String> booksReading;
   final Map<String, Map<String, dynamic>> bookDetails;
+  final List<Map<String, dynamic>> libraryShelves;
 
   BooksState(
       {this.booksByTag = const {},
@@ -85,8 +86,8 @@ class BooksState {
       this.booksProgress = const {},
       this.nTopicos = 1,
       this.weeklyRecommendations = const [], // ✅ Inicializa corretamente
-      this.booksReading = const {}});
-
+      this.booksReading = const {},
+      this.libraryShelves = const []});
   BooksState copyWith(
       {Map<String, List<Map<String, String>>>? booksByTag,
       bool? isLoading,
@@ -96,6 +97,7 @@ class BooksState {
           weeklyRecommendations, // ✅ Adicionado no copyWith
       Map<String, Map<String, dynamic>>?
           bookDetails, // ✅ CORREÇÃO: Tipo correto no copyWith
+      List<Map<String, dynamic>>? libraryShelves,
       Set<String>? booksReading}) {
     return BooksState(
       booksByTag: booksByTag ?? this.booksByTag,
@@ -107,6 +109,7 @@ class BooksState {
           this.weeklyRecommendations, // ✅ Agora atualizado corretamente
       booksReading: booksReading ?? this.booksReading,
       bookDetails: bookDetails ?? this.bookDetails,
+      libraryShelves: libraryShelves ?? this.libraryShelves,
     );
   }
 }
@@ -173,6 +176,14 @@ BooksState booksReducer(BooksState state, dynamic action) {
     };
 
     return state.copyWith(booksProgress: updatedBooksProgress);
+  } else if (action is LoadLibraryShelvesAction) {
+    return state.copyWith(
+        isLoading: true,
+        libraryShelves: []); // Limpa prateleiras antigas e ativa o loading
+  } else if (action is LibraryShelvesLoadedAction) {
+    return state.copyWith(isLoading: false, libraryShelves: action.shelves);
+  } else if (action is LibraryShelvesFailedAction) {
+    return state.copyWith(isLoading: false); // Para o loading em caso de erro
   }
   return state;
 }

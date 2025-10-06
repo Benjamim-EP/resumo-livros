@@ -9,6 +9,7 @@ import 'package:septima_biblia/pages/library_page/book_study_guide_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
 import 'package:septima_biblia/pages/library_page/compact_resource_card.dart';
 import 'package:septima_biblia/pages/library_page/components/continue_reading_row.dart';
+import 'package:septima_biblia/pages/library_page/components/recommendation_row.dart';
 import 'package:septima_biblia/pages/library_page/generic_book_viewer_page.dart';
 import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/library_recommendation_page.dart';
@@ -622,10 +623,12 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
 ];
+
 // ViewModel
 class _LibraryViewModel {
   final bool isPremium;
-  _LibraryViewModel({required this.isPremium});
+  final List<Map<String, dynamic>> libraryShelves;
+  _LibraryViewModel({required this.isPremium, required this.libraryShelves});
   static _LibraryViewModel fromStore(Store<AppState> store) {
     bool isCurrentlyPremium = store.state.subscriptionState.status ==
         SubscriptionStatus.premiumActive;
@@ -642,7 +645,10 @@ class _LibraryViewModel {
         }
       }
     }
-    return _LibraryViewModel(isPremium: isCurrentlyPremium);
+    return _LibraryViewModel(
+      isPremium: isCurrentlyPremium,
+      libraryShelves: store.state.booksState.libraryShelves,
+    );
   }
 }
 
@@ -867,14 +873,15 @@ class _LibraryPageState extends State<LibraryPage> {
     return StoreConnector<AppState, _LibraryViewModel>(
       converter: (store) => _LibraryViewModel.fromStore(store),
       onInit: (store) {
-        // Dispara a ação para carregar os itens em progresso
+        // Dispara as duas ações de carregamento ao iniciar a tela
         store.dispatch(LoadInProgressItemsAction());
+        store.dispatch(LoadLibraryShelvesAction());
       },
       builder: (context, viewModel) {
         return Scaffold(
           body: Column(
             children: [
-              // --- BARRA DE BUSCA E BOTÃO DE IA (sem alterações) ---
+              // --- BARRA DE BUSCA E BOTÃO DE IA ---
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Row(
@@ -883,7 +890,8 @@ class _LibraryPageState extends State<LibraryPage> {
                       child: CustomSearchBar(
                         controller: _searchController,
                         hintText: "Buscar na biblioteca...",
-                        onChanged: (value) {},
+                        onChanged:
+                            (value) {}, // O listener já cuida da filtragem
                         onClear: _clearSearch,
                       ),
                     ),
@@ -905,25 +913,30 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
               ),
 
-              // --- CORPO PRINCIPAL COM CUSTOMSCROLLVIEW E SLIVERS ---
+              // --- CORPO PRINCIPAL COM SCROLL UNIFICADO ---
               Expanded(
                 child: CustomScrollView(
                   slivers: [
-                    // Sliver 1: A nova seção "Continuar Lendo"
-                    // Usamos SliverToBoxAdapter para colocar um widget normal dentro de um CustomScrollView
+                    // Sliver 1: Seção "Continuar Lendo"
                     const SliverToBoxAdapter(
                       child: Padding(
-                        // Adiciona um padding vertical para separar da grade
                         padding: EdgeInsets.symmetric(vertical: 8.0),
                         child: ContinueReadingRow(),
                       ),
                     ),
 
-                    // Sliver 2: Um título para a seção "Toda a Biblioteca", que só aparece se houver livros filtrados.
+                    // Sliver 2: Renderiza dinamicamente as prateleiras de recomendação
+                    ...viewModel.libraryShelves.map((shelfData) {
+                      return SliverToBoxAdapter(
+                        child: RecommendationRow(shelfData: shelfData),
+                      );
+                    }).toList(),
+
+                    // Sliver 3: Título para a grade completa de livros
                     if (_filteredLibraryItems.isNotEmpty)
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
                           child: Text(
                             "Toda a Biblioteca",
                             style: theme.textTheme.titleLarge,
@@ -931,8 +944,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         ),
                       ),
 
-                    // Sliver 3: A grade de livros (como no seu design original)
-                    // SliverPadding adiciona o padding ao redor da grade.
+                    // Sliver 4: A grade com todos os livros da biblioteca (filtrados)
                     SliverPadding(
                       padding: const EdgeInsets.all(16.0),
                       sliver: SliverGrid(
@@ -951,16 +963,18 @@ class _LibraryPageState extends State<LibraryPage> {
                             final String coverPath =
                                 itemData['coverImagePath'] ?? '';
 
-                            // A lógica de onTap e onExpandTap é a mesma do seu código original
+                            // Lógica completa para o toque no card
                             void startReadingAction() {
                               AnalyticsService.instance
                                   .logLibraryResourceOpened(itemData['title']);
                               if (isFullyPremium && !viewModel.isPremium) {
                                 _showPremiumDialog(context);
                               } else {
-                                interstitialManager.tryShowInterstitial(
-                                    fromScreen:
-                                        "Library_To_${itemData['title']}");
+                                if (!viewModel.isPremium) {
+                                  interstitialManager.tryShowInterstitial(
+                                      fromScreen:
+                                          "Library_To_${itemData['title']}");
+                                }
                                 Navigator.push(
                                   context,
                                   FadeScalePageRoute(
@@ -969,6 +983,7 @@ class _LibraryPageState extends State<LibraryPage> {
                               }
                             }
 
+                            // Lógica completa para o menu de detalhes
                             void openDetailsModal() {
                               showModalBottomSheet(
                                 context: context,
@@ -995,15 +1010,14 @@ class _LibraryPageState extends State<LibraryPage> {
                               onExpandTap: openDetailsModal,
                             ).animate().fadeIn(
                                 duration: 400.ms,
-                                delay:
-                                    (50 * (index % 15)).ms); // Animação sutil
+                                delay: (50 * (index % 15)).ms);
                           },
                           childCount: _filteredLibraryItems.length,
                         ),
                       ),
                     ),
 
-                    // Sliver 4: Mensagem de "Nenhum item" (só aparece se a busca não retornar nada)
+                    // Sliver 5: Mensagem para quando a busca ou filtro não retorna resultados
                     if (_filteredLibraryItems.isEmpty)
                       const SliverFillRemaining(
                         child: Center(
@@ -1015,7 +1029,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
               ),
 
-              // --- BARRA DE FILTROS INFERIOR (sem alterações) ---
+              // --- BARRA DE FILTROS INFERIOR ---
               LibraryFilterBar(
                 showFiction: _showFiction,
                 showStudyGuide: _showStudyGuide,

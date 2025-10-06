@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/redux/middleware/book_club_middleware.dart';
 import 'package:septima_biblia/redux/middleware/cross_reference_middleware.dart';
+import 'package:septima_biblia/redux/middleware/library_middleware.dart';
 import 'package:septima_biblia/redux/middleware/library_reference_middleware.dart';
 import 'package:septima_biblia/redux/reducers/cross_reference_reducer.dart';
 import 'package:septima_biblia/redux/reducers/library_reference_reducer.dart';
@@ -162,6 +163,7 @@ List<Middleware<AppState>> createAppMiddleware({
     ...createBookClubMiddleware(),
     ...createCrossReferenceMiddleware(),
     ...createLibraryReferenceMiddleware(),
+    ...createLibraryMiddleware(),
   ];
 
   if (useFakePayment) {

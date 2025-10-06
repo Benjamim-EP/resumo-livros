@@ -1972,6 +1972,20 @@ class FirestoreService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchLibraryShelves() async {
+    try {
+      final snapshot = await _db
+          .collection('libraryShelves')
+          .orderBy('order') // Ordena pela ordem definida no documento
+          .get();
+
+      return snapshot.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      print("FirestoreService: ERRO ao buscar prateleiras da biblioteca: $e");
+      return [];
+    }
+  }
+
   Future<void> updateUnifiedReadingProgress(
       String userId, String contentId, double progressPercentage) async {
     // Garante que o progresso esteja entre 0.0 e 1.0
