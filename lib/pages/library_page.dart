@@ -663,6 +663,7 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _filteredLibraryItems = [];
+  bool _isSearchActive = false;
 
   // Estado dos filtros
   bool _showFiction = true; // Inicia como true para mostrar por padrão
@@ -873,7 +874,6 @@ class _LibraryPageState extends State<LibraryPage> {
     return StoreConnector<AppState, _LibraryViewModel>(
       converter: (store) => _LibraryViewModel.fromStore(store),
       onInit: (store) {
-        // Dispara as duas ações de carregamento ao iniciar a tela
         store.dispatch(LoadInProgressItemsAction());
         store.dispatch(LoadLibraryShelvesAction());
       },
@@ -881,35 +881,52 @@ class _LibraryPageState extends State<LibraryPage> {
         return Scaffold(
           body: Column(
             children: [
-              // --- BARRA DE BUSCA E BOTÃO DE IA ---
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomSearchBar(
-                        controller: _searchController,
-                        hintText: "Buscar na biblioteca...",
-                        onChanged:
-                            (value) {}, // O listener já cuida da filtragem
-                        onClear: _clearSearch,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: Icon(Icons.auto_awesome,
-                          color: theme.colorScheme.primary),
-                      tooltip: "Recomendação com IA",
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const LibraryRecommendationPage()),
-                        );
-                      },
-                    ),
-                  ],
+              // ✅ ETAPA 1: BARRA DE BUSCA CONDICIONAL COM ANIMAÇÃO
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) {
+                    return SizeTransition(
+                      sizeFactor: animation,
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: _isSearchActive
+                      ? Padding(
+                          key: const ValueKey('searchBar'),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: CustomSearchBar(
+                                  controller: _searchController,
+                                  hintText: "Buscar na biblioteca...",
+                                  onChanged: (value) {},
+                                  onClear: _clearSearch,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.auto_awesome,
+                                    color: theme.colorScheme.primary),
+                                tooltip: "Recomendação com IA",
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LibraryRecommendationPage()),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox(
+                          key: ValueKey('empty'),
+                          height: 16), // Espaço quando a busca está oculta
                 ),
               ),
 
@@ -1048,9 +1065,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   _filterLibrary();
                 },
                 onFictionLongPress: () {
-                  setState(() {
-                    _exclusiveFilter = 'ficcao';
-                  });
+                  setState(() => _exclusiveFilter = 'ficcao');
                   _filterLibrary();
                 },
                 onStudyGuideTap: () {
@@ -1065,13 +1080,28 @@ class _LibraryPageState extends State<LibraryPage> {
                   _filterLibrary();
                 },
                 onStudyGuideLongPress: () {
-                  setState(() {
-                    _exclusiveFilter = 'isStudyGuide';
-                  });
+                  setState(() => _exclusiveFilter = 'isStudyGuide');
                   _filterLibrary();
                 },
                 onDifficultyTap: _showDifficultyFilter,
-                onClearFilters: _clearAllFilters,
+                // ✅ AÇÃO DO BOTÃO DE BUSCA/LIMPAR
+                onSearchOrClearTap: () {
+                  if (_isSearchActive) {
+                    // Se a busca está ativa e o campo tem texto, limpa o campo
+                    if (_searchController.text.isNotEmpty) {
+                      _clearSearch();
+                    } else {
+                      // Se a busca está ativa mas o campo está vazio, oculta a barra
+                      setState(() => _isSearchActive = false);
+                    }
+                  } else {
+                    // Se a busca não está ativa, mostra a barra
+                    setState(() => _isSearchActive = true);
+                  }
+                },
+                // Passa o estado atual para o botão saber qual ícone mostrar
+                isSearchActive: _isSearchActive,
+                searchQuery: _searchController.text,
               ),
             ],
           ),
@@ -1093,7 +1123,11 @@ class LibraryFilterBar extends StatelessWidget {
   final VoidCallback onStudyGuideTap;
   final VoidCallback onStudyGuideLongPress;
   final VoidCallback onDifficultyTap;
-  final VoidCallback onClearFilters;
+
+  // Parâmetros atualizados para a nova funcionalidade
+  final VoidCallback onSearchOrClearTap;
+  final bool isSearchActive;
+  final String searchQuery;
 
   const LibraryFilterBar({
     super.key,
@@ -1107,9 +1141,14 @@ class LibraryFilterBar extends StatelessWidget {
     required this.onStudyGuideTap,
     required this.onStudyGuideLongPress,
     required this.onDifficultyTap,
-    required this.onClearFilters,
+
+    // Construtor atualizado
+    required this.onSearchOrClearTap,
+    required this.isSearchActive,
+    required this.searchQuery,
   });
 
+  // Widget auxiliar para construir os botões de filtro
   Widget _buildFilterButton({
     required BuildContext context,
     required IconData icon,
@@ -1130,7 +1169,7 @@ class LibraryFilterBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: onTap,
-          onLongPress: onLongPress, // Adiciona o evento de long press
+          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
@@ -1176,6 +1215,32 @@ class LibraryFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Lógica para determinar o ícone e o estado do botão de busca/limpar
+    IconData finalIcon;
+    String tooltip;
+    bool isFinalButtonActive = isSearchActive || isAnyFilterActive;
+
+    if (isSearchActive) {
+      if (searchQuery.isNotEmpty) {
+        finalIcon =
+            Icons.clear; // Mostra 'X' se a barra está visível e com texto
+        tooltip = "Limpar Busca";
+      } else {
+        finalIcon = Icons.search; // Mostra lupa se a barra está visível e vazia
+        tooltip = "Ocultar Busca";
+      }
+    } else {
+      if (isAnyFilterActive) {
+        finalIcon =
+            Icons.tune; // Mostra 'tune' se a busca está oculta mas há filtros
+        tooltip = "Limpar Filtros";
+      } else {
+        finalIcon = Icons.search; // Mostra lupa se tudo estiver limpo/oculto
+        tooltip = "Buscar na Biblioteca";
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
       decoration: BoxDecoration(
@@ -1184,6 +1249,7 @@ class LibraryFilterBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Botão de Filtro: Ficção
           _buildFilterButton(
             context: context,
             icon: Icons.auto_stories_outlined,
@@ -1195,6 +1261,8 @@ class LibraryFilterBar extends StatelessWidget {
             flex: 2,
           ),
           const SizedBox(width: 6),
+
+          // Botão de Filtro: Guias
           _buildFilterButton(
             context: context,
             icon: Icons.school_outlined,
@@ -1206,36 +1274,42 @@ class LibraryFilterBar extends StatelessWidget {
             flex: 2,
           ),
           const SizedBox(width: 6),
+
+          // Botão de Filtro: Dificuldade
           _buildFilterButton(
             context: context,
             icon: Icons.stacked_line_chart,
             label:
                 '${difficultyRange.start.round()}-${difficultyRange.end.round()}',
             onTap: onDifficultyTap,
-            onLongPress:
-                onDifficultyTap, // Long press no de dificuldade faz a mesma coisa que o tap
+            onLongPress: onDifficultyTap,
             isActive: difficultyRange.start != 1 || difficultyRange.end != 7,
             hasDropdown: true,
             flex: 3,
           ),
           const SizedBox(width: 6),
+
+          // Botão Final: Busca / Limpar / Tune
           Material(
-            color: isAnyFilterActive
+            color: isFinalButtonActive
                 ? theme.colorScheme.primary.withOpacity(0.15)
                 : theme.cardColor.withOpacity(0.15),
             borderRadius: BorderRadius.circular(8),
             child: InkWell(
-              onTap: onClearFilters,
+              onTap: onSearchOrClearTap,
               borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                child: Icon(
-                  Icons.tune,
-                  size: 22,
-                  color: isAnyFilterActive
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface.withOpacity(0.7),
+              child: Tooltip(
+                message: tooltip,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  child: Icon(
+                    finalIcon,
+                    size: 22,
+                    color: isFinalButtonActive
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
               ),
             ),
