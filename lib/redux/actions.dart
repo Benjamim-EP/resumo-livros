@@ -834,3 +834,32 @@ class CrossReferencesForSectionFailedAction {
   final String error;
   CrossReferencesForSectionFailedAction(this.sectionId, this.error);
 }
+
+// ==========================================================
+// <<< AÇÕES PARA A SEÇÃO "CONTINUAR LENDO" >>>
+// ==========================================================
+
+/// Disparada pela UI (LibraryPage) para iniciar o carregamento dos
+/// itens em progresso a partir do Firestore.
+class LoadInProgressItemsAction {
+  LoadInProgressItemsAction();
+}
+
+/// Despachada pelo middleware após os dados serem carregados com sucesso.
+/// Leva a lista de itens para o reducer atualizar o estado.
+class InProgressItemsLoadedAction {
+  final List<Map<String, dynamic>> items;
+
+  InProgressItemsLoadedAction(this.items);
+}
+
+/// (Opcional, mas recomendado) Ação para atualizar a UI otimisticamente.
+/// Quando o usuário avança um pouco em um livro, você pode despachar esta ação
+/// para atualizar a barra de progresso na LibraryPage imediatamente,
+/// antes mesmo da confirmação do Firestore.
+class UpdateLocalProgressAction {
+  final Map<String, dynamic>
+      updatedItem; // Contém o contentId e o novo progressPercentage
+
+  UpdateLocalProgressAction(this.updatedItem);
+}

@@ -1948,4 +1948,54 @@ class FirestoreService {
       return [];
     }
   }
+
+  Future<List<Map<String, dynamic>>> fetchInProgressContent(
+      String userId) async {
+    try {
+      print(
+          "FirestoreService: Buscando conteúdo em progresso para o usuário $userId...");
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('userReadingProgress') // A nova subcoleção que planejamos
+          .orderBy('lastAccessed', descending: true)
+          .limit(10) // Limitamos a 10 para a UI não ficar sobrecarregada
+          .get();
+
+      final items = snapshot.docs.map((doc) => doc.data()).toList();
+      print(
+          "FirestoreService: Encontrados ${items.length} itens em progresso.");
+      return items;
+    } catch (e) {
+      print("FirestoreService: ERRO ao buscar conteúdo em progresso: $e");
+      return []; // Retorna uma lista vazia em caso de erro
+    }
+  }
+
+  Future<void> updateUnifiedReadingProgress(
+      String userId, String contentId, double progressPercentage) async {
+    // Garante que o progresso esteja entre 0.0 e 1.0
+    final clampedProgress = progressPercentage.clamp(0.0, 1.0);
+
+    try {
+      final docRef = _db
+          .collection('users')
+          .doc(userId)
+          .collection('userReadingProgress')
+          .doc(contentId); // O ID do documento é o ID do conteúdo
+
+      await docRef.set({
+        'contentId': contentId,
+        'progressPercentage': clampedProgress,
+        'lastAccessed': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)); // 'merge: true' cria ou atualiza o documento
+
+      print(
+          "FirestoreService: Progresso unificado para '$contentId' atualizado para ${(clampedProgress * 100).toStringAsFixed(1)}%.");
+    } catch (e) {
+      print(
+          "FirestoreService: ERRO ao atualizar progresso unificado para '$contentId': $e");
+      // Não relançamos o erro para não quebrar o fluxo principal de salvamento de progresso.
+    }
+  }
 }

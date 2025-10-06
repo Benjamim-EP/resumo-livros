@@ -21,7 +21,8 @@ List<Middleware<AppState>> createSermonDataMiddleware() {
     TypedMiddleware<AppState, ToggleSermonFavoriteAction>(
         _toggleFavorite(firestoreService)),
     TypedMiddleware<AppState, LoadSermonProgressAction>(_loadProgress()),
-    TypedMiddleware<AppState, UpdateSermonProgressAction>(_updateProgress()),
+    TypedMiddleware<AppState, UpdateSermonProgressAction>(
+        _updateProgress(firestoreService)),
   ];
 }
 
@@ -90,18 +91,34 @@ void Function(Store<AppState>, LoadSermonProgressAction, NextDispatcher)
 }
 
 void Function(Store<AppState>, UpdateSermonProgressAction, NextDispatcher)
-    _updateProgress() {
+    _updateProgress(FirestoreService firestoreService) {
   return (store, action, next) async {
     next(action); // Atualiza o estado no Redux
+
+    // Salva no SharedPreferences (lógica existente)
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Pega o estado atualizado do Redux para salvar
       final currentProgressMap = store.state.sermonState.sermonProgress;
       final String jsonString = json.encode(currentProgressMap
           .map((key, value) => MapEntry(key, value.toJson())));
       await prefs.setString(_sermonProgressKey, jsonString);
     } catch (e) {
       print("Erro ao salvar progresso de sermões no SharedPreferences: $e");
+    }
+
+    // Salva no Firestore (nova lógica)
+    final userId = store.state.userState.userId;
+    if (userId != null) {
+      try {
+        await firestoreService.updateUnifiedReadingProgress(
+          userId,
+          action.sermonId,
+          action.progressPercentage,
+        );
+      } catch (e) {
+        print(
+            "SermonDataMiddleware: Erro ao salvar progresso unificado para sermão: $e");
+      }
     }
   };
 }

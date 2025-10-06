@@ -40,6 +40,60 @@ List<Middleware<AppState>> createUserMiddleware() {
     }
   }
 
+  void Function(Store<AppState>, MarkTopicAsReadAction, NextDispatcher)
+      _markTopicAsRead(FirestoreService firestoreService) {
+    return (Store<AppState> store, MarkTopicAsReadAction action,
+        NextDispatcher next) async {
+      // Deixa o reducer atualizar o estado primeiro para termos os dados mais recentes
+      next(action);
+
+      final userId = store.state.userState.userId;
+      if (userId == null) return;
+
+      // --- Sua lógica existente (permanece a mesma) ---
+      final bookDetails = store.state.booksState.bookDetails[action.bookId];
+      final totalTopicos =
+          (bookDetails?['chapters'] as List<dynamic>?)?.length ?? 1;
+
+      try {
+        await firestoreService.markTopicAsRead(userId, action.bookId,
+            action.topicId, action.chapterId, totalTopicos);
+      } catch (e) {
+        print('Middleware: Erro ao marcar tópico como lido: $e');
+      }
+
+      // ==========================================================
+      // <<< INÍCIO DA NOVA LÓGICA DE ATUALIZAÇÃO UNIFICADA >>>
+      // ==========================================================
+      try {
+        // 1. Pega o progresso atualizado do estado (que o reducer acabou de atualizar)
+        final bookProgress =
+            store.state.booksState.booksProgress[action.bookId];
+        if (bookProgress == null) return;
+
+        final readTopics = List<String>.from(bookProgress['readTopics'] ?? []);
+
+        // 2. Calcula a porcentagem
+        final double progressPercentage =
+            totalTopicos > 0 ? (readTopics.length / totalTopicos) : 0.0;
+
+        // 3. Chama o novo método do FirestoreService
+        // O 'contentId' para um livro é o seu 'bookId'
+        await firestoreService.updateUnifiedReadingProgress(
+          userId,
+          action.bookId, // <- contentId
+          progressPercentage,
+        );
+      } catch (e) {
+        print(
+            "UserMiddleware: Erro ao salvar progresso unificado para livro: $e");
+      }
+      // ==========================================================
+      // <<< FIM DA NOVA LÓGICA >>>
+      // ==========================================================
+    };
+  }
+
   void _handleAcceptFriendRequestOptimistic(Store<AppState> store,
       AcceptFriendRequestOptimisticAction action, NextDispatcher next) async {
     final originalUserDetails =
@@ -249,6 +303,27 @@ List<Middleware<AppState>> createUserMiddleware() {
     }
   }
 
+  void _loadInProgressItems(Store<AppState> store,
+      LoadInProgressItemsAction action, NextDispatcher next) async {
+    next(action);
+
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print(
+          "UserMiddleware: Não é possível carregar itens em progresso, usuário não logado.");
+      return;
+    }
+
+    try {
+      final items = await firestoreService.fetchInProgressContent(userId);
+      store.dispatch(InProgressItemsLoadedAction(items));
+    } catch (e) {
+      print("UserMiddleware: Erro ao carregar itens em progresso: $e");
+      // Opcional: despachar uma ação de erro, se você tiver uma.
+      // store.dispatch(InProgressItemsLoadFailedAction(e.toString()));
+    }
+  }
+
   return [
     TypedMiddleware<AppState, LoadUserTagsAction>((store, action, next) async {
       next(action);
@@ -367,6 +442,8 @@ List<Middleware<AppState>> createUserMiddleware() {
             _handleDeclineFriendRequestOptimistic)
         .call,
     TypedMiddleware<AppState, SubmitReferralCodeAction>(_handleProcessReferral)
+        .call,
+    TypedMiddleware<AppState, LoadInProgressItemsAction>(_loadInProgressItems)
         .call,
   ];
 }

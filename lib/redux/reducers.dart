@@ -259,6 +259,7 @@ class UserState {
   final bool isLoadingNotifications; // ✅ CAMPO QUE FALTAVA
   final List<Map<String, dynamic>> recentInteractions;
   final bool hasBeenReferred;
+  final List<Map<String, dynamic>> inProgressItems;
 
   UserState({
     this.userId,
@@ -318,6 +319,7 @@ class UserState {
     this.isLoadingNotifications = false, // ✅ NOVO VALOR PADRÃO
     this.recentInteractions = const [],
     this.hasBeenReferred = false,
+    this.inProgressItems = const [],
   });
 
   UserState copyWith({
@@ -389,6 +391,7 @@ class UserState {
     bool? isLoadingNotifications, // ✅ NOVO PARÂMETRO
     List<Map<String, dynamic>>? recentInteractions,
     bool? hasBeenReferred,
+    List<Map<String, dynamic>>? inProgressItems,
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -491,6 +494,7 @@ class UserState {
           isLoadingNotifications ?? this.isLoadingNotifications, // ✅ MAPEAMENTO
       recentInteractions: recentInteractions ?? this.recentInteractions,
       hasBeenReferred: hasBeenReferred ?? this.hasBeenReferred,
+      inProgressItems: inProgressItems ?? this.inProgressItems,
     );
   }
 }
@@ -509,9 +513,7 @@ UserState userReducer(UserState state, dynamic action) {
 
     newDetails['subscribedBookClubs'] = subscribedClubs.toList();
     return state.copyWith(userDetails: newDetails);
-  }
-
-  if (action is UpdateBookReadingStatusAction) {
+  } else if (action is UpdateBookReadingStatusAction) {
     final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
     final booksRead = Set<String>.from(newDetails['booksRead'] ?? []);
     final booksToRead = Set<String>.from(newDetails['booksToRead'] ?? []);
@@ -951,6 +953,27 @@ UserState userReducer(UserState state, dynamic action) {
         clearFirstAdIn6HourWindowTimestamp:
             action.firstAdTimestamp == null // Limpa se for nulo
         );
+  } else if (action is InProgressItemsLoadedAction) {
+    return state.copyWith(inProgressItems: action.items);
+  } // ✅  BLOCO PARA A ATUALIZAÇÃO OTIMISTA
+  else if (action is UpdateLocalProgressAction) {
+    // Cria uma cópia da lista atual para não modificar o estado diretamente
+    final updatedList = List<Map<String, dynamic>>.from(state.inProgressItems);
+
+    // Encontra o índice do item que precisa ser atualizado
+    final indexToUpdate = updatedList.indexWhere(
+        (item) => item['contentId'] == action.updatedItem['contentId']);
+
+    if (indexToUpdate != -1) {
+      // Se encontrou, substitui o item antigo pelo novo
+      updatedList[indexToUpdate] = action.updatedItem;
+    } else {
+      // Se não encontrou (ex: um item novo que acabou de passar de 0% de progresso),
+      // adiciona no início da lista.
+      updatedList.insert(0, action.updatedItem);
+    }
+
+    return state.copyWith(inProgressItems: updatedList);
   }
 
   // Ações de Busca Geral de Tópicos

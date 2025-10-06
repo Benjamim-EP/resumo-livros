@@ -1,4 +1,6 @@
 // lib/pages/library_page/generic_book_viewer_page.dart
+
+import 'dart:async'; // Para o Timer
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -55,6 +57,7 @@ class _BookViewerViewModel {
   }
 }
 
+// Widget principal que agora é Stateful
 class GenericBookViewerPage extends StatefulWidget {
   final String bookId;
   final String bookTitle;
@@ -72,19 +75,66 @@ class GenericBookViewerPage extends StatefulWidget {
 class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
   final FirestoreService _firestoreService = FirestoreService();
   late Future<List<Map<String, dynamic>>> _chaptersFuture;
+
+  // Estado para controle da UI e do progresso
   PageController? _pageController;
   int _currentPage = 0;
   bool _isLoadingLastPage = true;
+
+  // Controladores de scroll e debounce para salvar o progresso
+  final Map<int, ScrollController> _scrollControllers = {};
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _chaptersFuture = _firestoreService.getBookChapters(widget.bookId);
     _loadLastReadPage();
-    // Garante que as tags do usuário estejam carregadas ao entrar na tela
     WidgetsBinding.instance.addPostFrameCallback((_) {
       StoreProvider.of<AppState>(context, listen: false)
           .dispatch(LoadUserTagsAction());
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController?.dispose();
+    _debounce?.cancel();
+    for (var controller in _scrollControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  /// Salva o progresso unificado no Firestore com debounce.
+  void _saveUnifiedProgress(int chapterIndex, int totalChapters) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 2500), () {
+      if (!mounted) return;
+
+      final scrollController = _scrollControllers[chapterIndex];
+      if (scrollController == null ||
+          !scrollController.hasClients ||
+          scrollController.position.maxScrollExtent <= 0) return;
+
+      final double scrollProgress = (scrollController.position.pixels /
+              scrollController.position.maxScrollExtent)
+          .clamp(0.0, 1.0);
+      final double overallProgress =
+          (chapterIndex + scrollProgress) / totalChapters;
+
+      final store = StoreProvider.of<AppState>(context, listen: false);
+      final userId = store.state.userState.userId;
+
+      if (userId != null) {
+        print(
+            "Salvando progresso para '${widget.bookId}': ${(overallProgress * 100).toStringAsFixed(1)}%");
+        _firestoreService.updateUnifiedReadingProgress(
+          userId,
+          widget.bookId,
+          overallProgress,
+        );
+      }
     });
   }
 
@@ -101,12 +151,6 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
   Future<void> _saveCurrentPage(int page) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('last_page_${widget.bookId}', page);
-  }
-
-  @override
-  void dispose() {
-    _pageController?.dispose();
-    super.dispose();
   }
 
   void _showChaptersIndex(
@@ -319,7 +363,7 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
               final chapters = snapshot.data!;
               final totalChapters = chapters.length;
               final double progress =
-                  totalChapters > 1 ? (_currentPage + 1) / totalChapters : 1.0;
+                  totalChapters > 0 ? (_currentPage + 1) / totalChapters : 1.0;
 
               return Column(
                 children: [
@@ -343,8 +387,17 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
                       onPageChanged: (index) {
                         setState(() => _currentPage = index);
                         _saveCurrentPage(index);
+                        // Salva um progresso "inicial" ao virar a página
+                        _saveUnifiedProgress(index, totalChapters);
                       },
                       itemBuilder: (context, index) {
+                        if (!_scrollControllers.containsKey(index)) {
+                          _scrollControllers[index] = ScrollController();
+                          _scrollControllers[index]!.addListener(() {
+                            _saveUnifiedProgress(index, totalChapters);
+                          });
+                        }
+
                         final chapter = chapters[index];
                         final title = chapter['title'] ?? 'Capítulo';
                         final paragraphs =
@@ -354,6 +407,7 @@ class _GenericBookViewerPageState extends State<GenericBookViewerPage> {
                             .toList();
 
                         return SingleChildScrollView(
+                          controller: _scrollControllers[index],
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24.0, vertical: 16.0),
                           child: Column(

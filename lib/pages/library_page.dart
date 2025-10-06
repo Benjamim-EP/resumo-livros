@@ -8,6 +8,7 @@ import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
 import 'package:septima_biblia/pages/library_page/book_study_guide_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
 import 'package:septima_biblia/pages/library_page/compact_resource_card.dart';
+import 'package:septima_biblia/pages/library_page/components/continue_reading_row.dart';
 import 'package:septima_biblia/pages/library_page/generic_book_viewer_page.dart';
 import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/library_recommendation_page.dart';
@@ -18,6 +19,7 @@ import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
 import 'package:septima_biblia/pages/library_page/turretin_elenctic_theology/turretin_index_page.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/themed_maps_list_page.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
@@ -27,9 +29,12 @@ import 'package:redux/redux.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 // Lista estática e pública com os metadados de todos os recursos da biblioteca
+// lib/pages/library_page.dart
+
 final List<Map<String, dynamic>> allLibraryItems = [
   // --- LIVROS ADICIONADOS ---
   {
+    'id': 'o-peregrino-oxford-world-s-classics',
     'title': "O Peregrino",
     'description':
         "A jornada alegórica de Cristão da Cidade da Destruição à Cidade Celestial.",
@@ -37,14 +42,16 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '2 partes',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/o-peregrino.webp', // ATUALIZADO
+    'coverImagePath': 'assets/covers/o-peregrino.webp',
     'destinationPage': const GenericBookViewerPage(
-        bookId: 'john-bunyan-o-peregrino', bookTitle: "O Peregrino"),
+        bookId: 'o-peregrino-oxford-world-s-classics',
+        bookTitle: "O Peregrino"),
     'ficcao': true,
     'dificuldade': 4,
     'isStudyGuide': false,
   },
   {
+    'id': 'a-divina-comedia',
     'title': "A Divina Comédia",
     'description':
         "Uma jornada épica através do Inferno, Purgatório e Paraíso, explorando a teologia e a moralidade medieval.",
@@ -52,15 +59,15 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '100 cantos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/a-divina-comedia.webp', // ATUALIZADO
+    'coverImagePath': 'assets/covers/a-divina-comedia.webp',
     'destinationPage': const GenericBookViewerPage(
-        bookId: 'dante-alighieri-a-divina-comedia',
-        bookTitle: "A Divina Comédia"),
+        bookId: 'a-divina-comedia', bookTitle: "A Divina Comédia"),
     'ficcao': true,
     'dificuldade': 7,
     'isStudyGuide': false,
   },
   {
+    'id': 'ben-hur',
     'title': "Ben-Hur: Uma História de Cristo",
     'description':
         "A épica história de um nobre judeu que, após ser traído, encontra redenção e fé durante a época de Jesus Cristo.",
@@ -68,15 +75,15 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '8 partes',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/ben-hur.webp', // ATUALIZADO
+    'coverImagePath': 'assets/covers/ben-hur.webp',
     'destinationPage': const GenericBookViewerPage(
-        bookId: 'lew-wallace-ben-hur',
-        bookTitle: "Ben-Hur: Uma História de Cristo"),
+        bookId: 'ben-hur', bookTitle: "Ben-Hur: Uma História de Cristo"),
     'ficcao': true,
     'dificuldade': 4,
     'isStudyGuide': false,
   },
   {
+    'id': 'elogio-da-loucura',
     'title': "Elogio da Loucura",
     'description':
         "Uma sátira espirituosa da sociedade, costumes e religião do século XVI, narrada pela própria Loucura.",
@@ -84,14 +91,15 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '68 seções',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/elogio-loucura.webp', // ATUALIZADO
+    'coverImagePath': 'assets/covers/elogio-loucura.webp',
     'destinationPage': const GenericBookViewerPage(
-        bookId: 'erasmus-elogio-da-loucura', bookTitle: "Elogio da Loucura"),
+        bookId: 'elogio-da-loucura', bookTitle: "Elogio da Loucura"),
     'ficcao': false,
     'dificuldade': 6,
     'isStudyGuide': false,
   },
   {
+    'id': 'anna-karenina',
     'title': "Anna Karenina",
     'description':
         "Um retrato complexo da sociedade russa e das paixões humanas através da história de uma mulher que desafia as convenções.",
@@ -99,14 +107,15 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '239 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/anna-karenina.webp', // ATUALIZADO
+    'coverImagePath': 'assets/covers/anna-karenina.webp',
     'destinationPage': const GenericBookViewerPage(
-        bookId: 'leo-tolstoy-anna-karenina', bookTitle: "Anna Karenina"),
+        bookId: 'anna-karenina', bookTitle: "Anna Karenina"),
     'ficcao': true,
     'dificuldade': 7,
     'isStudyGuide': false,
   },
   {
+    'id': 'lilith',
     'title': "Lilith",
     'description':
         "Uma fantasia sombria e alegórica sobre a vida, a morte e a redenção, explorando temas de egoísmo e sacrifício.",
@@ -114,14 +123,15 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '47 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/lilith.webp', // OK
-    'destinationPage': const GenericBookViewerPage(
-        bookId: 'george-macdonald-lilith', bookTitle: "Lilith"),
+    'coverImagePath': 'assets/covers/lilith.webp',
+    'destinationPage':
+        const GenericBookViewerPage(bookId: 'lilith', bookTitle: "Lilith"),
     'ficcao': true,
     'dificuldade': 6,
     'isStudyGuide': false,
   },
   {
+    'id': 'donal-grantchapters',
     'title': "Donal Grant",
     'description':
         "A história de um jovem poeta e tutor que navega pelos desafios do amor, fé e mistério em um castelo escocês.",
@@ -129,14 +139,15 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '78 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/donal-grant.webp', // ATUALIZADO
+    'coverImagePath': 'assets/covers/donal-grant.webp',
     'destinationPage': const GenericBookViewerPage(
-        bookId: 'george-macdonald-donal-grant', bookTitle: "Donal Grant"),
+        bookId: 'donal-grantchapters', bookTitle: "Donal Grant"),
     'ficcao': true,
     'dificuldade': 5,
     'isStudyGuide': false,
   },
   {
+    'id': 'david-elginbrod',
     'title': "David Elginbrod",
     'description':
         "Um romance que explora a fé, o espiritismo e a natureza do bem e do mal através de seus personagens memoráveis.",
@@ -144,16 +155,16 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '58 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/david-elginbrod.webp', // ATUALIZADO
+    'coverImagePath': 'assets/covers/david-elginbrod.webp',
     'destinationPage': const GenericBookViewerPage(
-        bookId: 'george-macdonald-david-elginbrod',
-        bookTitle: "David Elginbrod"),
+        bookId: 'david-elginbrod', bookTitle: "David Elginbrod"),
     'ficcao': true,
     'dificuldade': 5,
     'isStudyGuide': false,
   },
   // --- ITENS EXISTENTES ATUALIZADOS ---
   {
+    'id': 'gravidade-e-graca',
     'title': "Gravidade e Graça",
     'description':
         "Todos os movimentos naturais da alma são regidos por leis análogas às da gravidade física. A graça é a única exceção.",
@@ -161,7 +172,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '39 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/gravidade_e_graca_cover.webp', // OK
+    'coverImagePath': 'assets/covers/gravidade_e_graca_cover.webp',
     'destinationPage': const GenericBookViewerPage(
         bookId: 'gravidade-e-graca', bookTitle: "Gravidade e Graça"),
     'ficcao': false,
@@ -169,6 +180,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'o-enraizamento',
     'title': "O Enraizamento",
     'description':
         "A obediência é uma necessidade vital da alma humana. Ela é de duas espécies: obediência a regras estabelecidas e obediência a seres humanos.",
@@ -176,7 +188,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '15 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/enraizamento.webp', // OK
+    'coverImagePath': 'assets/covers/enraizamento.webp',
     'destinationPage': const GenericBookViewerPage(
         bookId: 'o-enraizamento', bookTitle: "O Enraizamento"),
     'ficcao': false,
@@ -184,6 +196,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'ortodoxia',
     'title': "Ortodoxia",
     'description':
         "A única desculpa possível para este livro é que ele é uma resposta a um desafio. Mesmo um mau atirador é digno quando aceita um duelo.",
@@ -191,7 +204,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '9 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/ortodoxia.webp', // OK
+    'coverImagePath': 'assets/covers/ortodoxia.webp',
     'destinationPage': const GenericBookViewerPage(
         bookId: 'ortodoxia', bookTitle: "Ortodoxia"),
     'ficcao': false,
@@ -199,6 +212,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'hereges',
     'title': "Hereges",
     'description':
         "É tolo, de modo geral, que um filósofo ateie fogo a outro filósofo porque não concordam em sua teoria do universo.",
@@ -206,7 +220,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '20 capítulos',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/hereges.webp', // OK
+    'coverImagePath': 'assets/covers/hereges.webp',
     'destinationPage':
         const GenericBookViewerPage(bookId: 'hereges', bookTitle: "Hereges"),
     'ficcao': false,
@@ -214,6 +228,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'carta-a-um-religioso',
     'title': "Carta a um Religioso",
     'description':
         "Quando leio o catecismo do Concílio de Trento, tenho a impressão de que não tenho nada em comum com a religião que nele se expõe.",
@@ -221,7 +236,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '1 capítulo',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/cartas_a_um_religioso.webp', // OK
+    'coverImagePath': 'assets/covers/cartas_a_um_religioso.webp',
     'destinationPage': const GenericBookViewerPage(
         bookId: 'carta-a-um-religioso', bookTitle: "Carta a um Religioso"),
     'ficcao': false,
@@ -229,6 +244,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'mapas-tematicos',
     'title': "Mapas Temáticos",
     'description':
         "Explore as jornadas dos apóstolos e outros eventos bíblicos.",
@@ -243,6 +259,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'spurgeon-sermoes',
     'title': "Sermões de Spurgeon",
     'description':
         "Uma vasta coleção dos sermões do 'Príncipe dos Pregadores'.",
@@ -257,6 +274,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'a-palavra-as-mulheres',
     'title': "A Palavra às Mulheres",
     'description':
         "Uma análise profunda das escrituras sobre o papel da mulher.",
@@ -271,6 +289,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'promessas-da-biblia',
     'title': "Promessas da Bíblia",
     'description': "Um compêndio de promessas divinas organizadas por tema.",
     'author': 'Samuel Clarke',
@@ -284,6 +303,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'historia-da-igreja',
     'title': "História da Igreja",
     'description':
         "A jornada da igreja cristã desde os apóstolos até a era moderna.",
@@ -298,6 +318,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'teologia-apologetica',
     'title': "Teologia Apologética",
     'description': "A obra monumental da teologia sistemática reformada.",
     'author': 'Francis Turretin',
@@ -311,6 +332,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'estudos-rapidos',
     'title': "Estudos Rápidos",
     'description':
         "Guias e rotas de estudo temáticos para aprofundar seu conhecimento.",
@@ -325,6 +347,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'linha-do-tempo',
     'title': "Linha do Tempo",
     'description': "Contextualize os eventos bíblicos com a história mundial.",
     'author': 'Septima',
@@ -338,6 +361,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false,
   },
   {
+    'id': 'c-s-lewis-o-peso-da-gloria',
     'title': "O Peso da Glória",
     'description':
         "Uma coleção de sermões e ensaios que exploram o anseio humano pelo céu e a natureza da glória divina.",
@@ -354,6 +378,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-o-dom-da-amizade',
     'title': "O Dom da Amizade",
     'description':
         "Uma exploração profunda sobre a natureza e o valor da amizade, um dos 'quatro amores' de Lewis.",
@@ -366,17 +391,17 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const BookStudyGuidePage(
         bookId: 'c-s-lewis-o-dom-da-amizade', bookTitle: "O Dom da Amizade"),
     'ficcao': false,
-    'dificuldade':
-        4, // É uma parte de "Os Quatro Amores", então a dificuldade é similar
+    'dificuldade': 4,
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-a-abolicao-do-homem',
     'title': "A Abolição do Homem",
     'description':
         "Uma defesa filosófica da existência de valores objetivos e da lei natural contra o relativismo.",
     'author': 'C. S. Lewis',
     'pageCount': 'Guia de Estudo',
-    'isFullyPremium': false, // Alterado conforme solicitado
+    'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
         'assets/covers/guias/c-s-lewis-a-abolicao-do-homem_cover.webp',
@@ -388,6 +413,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-a-anatomia-de-uma-dor',
     'title': "A Anatomia de Uma Dor",
     'description':
         "Um diário íntimo e cru sobre a luta de Lewis com a fé e o sofrimento após a morte de sua esposa.",
@@ -405,6 +431,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-como-ser-cristao',
     'title': "Como Ser Cristão",
     'description':
         "Uma compilação que une 'Cristianismo Puro e Simples', 'Cartas de um Diabo a seu Aprendiz', 'O Grande Divórcio' e 'O Problema da Dor'.",
@@ -417,10 +444,11 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'destinationPage': const BookStudyGuidePage(
         bookId: 'c-s-lewis-como-ser-cristao', bookTitle: "Como Ser Cristão"),
     'ficcao': false,
-    'dificuldade': 6, // Dificuldade alta por ser uma compilação de obras densas
+    'dificuldade': 6,
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-a-ultima-noite-do-mundo',
     'title': "A Última Noite do Mundo",
     'description':
         "Uma coleção de ensaios que exploram temas como a segunda vinda de Cristo, oração e o significado da existência.",
@@ -438,6 +466,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-cartas-a-malcolm',
     'title': "Cartas a Malcolm",
     'description':
         "Uma troca de cartas fictícia que explora a natureza da oração de forma íntima, prática e profundamente pessoal.",
@@ -454,6 +483,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-cartas-de-um-diabo-a-seu-aprendiz',
     'title': "Cartas de um Diabo a seu Aprendiz",
     'description':
         "Uma sátira genial onde um demônio veterano ensina seu sobrinho a como tentar e corromper um ser humano.",
@@ -471,6 +501,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-cristianismo-puro-e-simples',
     'title': "Cristianismo Puro e Simples",
     'description':
         "Uma das mais famosas defesas da fé cristã, argumentando de forma lógica e acessível os pilares do cristianismo.",
@@ -488,6 +519,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-deus-no-banco-dos-reus',
     'title': "Deus no Banco dos Réus",
     'description':
         "Ensaios que abordam objeções comuns ao cristianismo, colocando Deus 'no banco dos réus' para responder a críticas.",
@@ -505,6 +537,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-milagres',
     'title': "Milagres",
     'description':
         "Uma análise filosófica sobre a possibilidade e a natureza dos milagres em um mundo governado por leis naturais.",
@@ -520,6 +553,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-o-grande-divorcio',
     'title': "O Grande Divórcio",
     'description':
         "Uma alegoria sobre uma viagem do inferno ao céu, explorando as escolhas que nos prendem ao pecado e nos impedem de aceitar a graça.",
@@ -536,6 +570,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-o-problema-da-dor',
     'title': "O Problema da Dor",
     'description':
         "Uma tentativa intelectual de reconciliar a existência de um Deus bom e todo-poderoso com a realidade do sofrimento no mundo.",
@@ -552,6 +587,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-os-quatro-amores',
     'title': "Os Quatro Amores",
     'description':
         "Uma exploração das quatro formas de amor descritas no grego: Afeição, Amizade, Eros e Caridade (Ágape).",
@@ -568,6 +604,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
+    'id': 'c-s-lewis-reflexoes-sobre-os-salmos',
     'title': "Reflexões sobre os Salmos",
     'description':
         "Uma meditação pessoal e acadêmica sobre o livro de Salmos, abordando suas dificuldades, belezas e significados.",
@@ -585,7 +622,6 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
 ];
-
 // ViewModel
 class _LibraryViewModel {
   final bool isPremium;
@@ -827,153 +863,206 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: CustomSearchBar(
-                    controller: _searchController,
-                    hintText: "Buscar na biblioteca...",
-                    onChanged: (value) {}, // O listener já cuida disso
-                    onClear: _clearSearch,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(Icons.auto_awesome,
-                      color: theme.colorScheme.primary),
-                  tooltip: "Recomendação com IA",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              const LibraryRecommendationPage()),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StoreConnector<AppState, _LibraryViewModel>(
-              converter: (store) => _LibraryViewModel.fromStore(store),
-              builder: (context, viewModel) {
-                if (_filteredLibraryItems.isEmpty) {
-                  return const Center(child: Text("Nenhum item encontrado."));
-                }
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12.0,
-                    mainAxisSpacing: 12.0,
-                    childAspectRatio: 0.45,
-                  ),
-                  itemCount: _filteredLibraryItems.length,
-                  itemBuilder: (context, index) {
-                    final itemData = _filteredLibraryItems[index];
-                    final bool isFullyPremium = itemData['isFullyPremium'];
-                    final String coverPath = itemData['coverImagePath'] ?? '';
 
-                    void startReadingAction() {
-                      AnalyticsService.instance
-                          .logLibraryResourceOpened(itemData['title']);
-                      if (isFullyPremium && !viewModel.isPremium) {
-                        _showPremiumDialog(context);
-                      } else {
-                        if (!viewModel.isPremium) {
-                          interstitialManager.tryShowInterstitial(
-                              fromScreen: "Library_To_${itemData['title']}");
-                        }
+    return StoreConnector<AppState, _LibraryViewModel>(
+      converter: (store) => _LibraryViewModel.fromStore(store),
+      onInit: (store) {
+        // Dispara a ação para carregar os itens em progresso
+        store.dispatch(LoadInProgressItemsAction());
+      },
+      builder: (context, viewModel) {
+        return Scaffold(
+          body: Column(
+            children: [
+              // --- BARRA DE BUSCA E BOTÃO DE IA (sem alterações) ---
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomSearchBar(
+                        controller: _searchController,
+                        hintText: "Buscar na biblioteca...",
+                        onChanged: (value) {},
+                        onClear: _clearSearch,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(Icons.auto_awesome,
+                          color: theme.colorScheme.primary),
+                      tooltip: "Recomendação com IA",
+                      onPressed: () {
                         Navigator.push(
                           context,
-                          FadeScalePageRoute(page: itemData['destinationPage']),
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const LibraryRecommendationPage()),
                         );
-                      }
-                    }
+                      },
+                    ),
+                  ],
+                ),
+              ),
 
-                    void openDetailsModal() {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (ctx) => ResourceDetailModal(
-                          itemData: itemData,
-                          onStartReading: () {
-                            Navigator.pop(ctx);
-                            startReadingAction();
-                          },
+              // --- CORPO PRINCIPAL COM CUSTOMSCROLLVIEW E SLIVERS ---
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    // Sliver 1: A nova seção "Continuar Lendo"
+                    // Usamos SliverToBoxAdapter para colocar um widget normal dentro de um CustomScrollView
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        // Adiciona um padding vertical para separar da grade
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: ContinueReadingRow(),
+                      ),
+                    ),
+
+                    // Sliver 2: Um título para a seção "Toda a Biblioteca", que só aparece se houver livros filtrados.
+                    if (_filteredLibraryItems.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          child: Text(
+                            "Toda a Biblioteca",
+                            style: theme.textTheme.titleLarge,
+                          ),
                         ),
-                      );
-                    }
+                      ),
 
-                    return CompactResourceCard(
-                      title: itemData['title'],
-                      author: itemData['author'],
-                      coverImage:
-                          coverPath.isNotEmpty ? AssetImage(coverPath) : null,
-                      isPremium: isFullyPremium,
-                      onCardTap: startReadingAction,
-                      onExpandTap: openDetailsModal,
-                    )
-                        .animate()
-                        .fadeIn(duration: 400.ms, delay: (50 * index).ms);
-                  },
-                );
-              },
-            ),
+                    // Sliver 3: A grade de livros (como no seu design original)
+                    // SliverPadding adiciona o padding ao redor da grade.
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.5,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final itemData = _filteredLibraryItems[index];
+                            final bool isFullyPremium =
+                                itemData['isFullyPremium'] == true;
+                            final String coverPath =
+                                itemData['coverImagePath'] ?? '';
+
+                            // A lógica de onTap e onExpandTap é a mesma do seu código original
+                            void startReadingAction() {
+                              AnalyticsService.instance
+                                  .logLibraryResourceOpened(itemData['title']);
+                              if (isFullyPremium && !viewModel.isPremium) {
+                                _showPremiumDialog(context);
+                              } else {
+                                interstitialManager.tryShowInterstitial(
+                                    fromScreen:
+                                        "Library_To_${itemData['title']}");
+                                Navigator.push(
+                                  context,
+                                  FadeScalePageRoute(
+                                      page: itemData['destinationPage']),
+                                );
+                              }
+                            }
+
+                            void openDetailsModal() {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (ctx) => ResourceDetailModal(
+                                  itemData: itemData,
+                                  onStartReading: () {
+                                    Navigator.pop(ctx);
+                                    startReadingAction();
+                                  },
+                                ),
+                              );
+                            }
+
+                            return CompactResourceCard(
+                              title: itemData['title'],
+                              author: itemData['author'],
+                              coverImage: coverPath.isNotEmpty
+                                  ? AssetImage(coverPath)
+                                  : null,
+                              isPremium: isFullyPremium,
+                              onCardTap: startReadingAction,
+                              onExpandTap: openDetailsModal,
+                            ).animate().fadeIn(
+                                duration: 400.ms,
+                                delay:
+                                    (50 * (index % 15)).ms); // Animação sutil
+                          },
+                          childCount: _filteredLibraryItems.length,
+                        ),
+                      ),
+                    ),
+
+                    // Sliver 4: Mensagem de "Nenhum item" (só aparece se a busca não retornar nada)
+                    if (_filteredLibraryItems.isEmpty)
+                      const SliverFillRemaining(
+                        child: Center(
+                          child: Text(
+                              "Nenhum item encontrado com os filtros aplicados."),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // --- BARRA DE FILTROS INFERIOR (sem alterações) ---
+              LibraryFilterBar(
+                showFiction: _showFiction,
+                showStudyGuide: _showStudyGuide,
+                exclusiveFilter: _exclusiveFilter,
+                difficultyRange: _difficultyRange,
+                isAnyFilterActive: _isAnyFilterActive,
+                onFictionTap: () {
+                  setState(() {
+                    if (_exclusiveFilter == 'ficcao') {
+                      _exclusiveFilter = null;
+                    } else {
+                      _exclusiveFilter = null;
+                      _showFiction = !_showFiction;
+                    }
+                  });
+                  _filterLibrary();
+                },
+                onFictionLongPress: () {
+                  setState(() {
+                    _exclusiveFilter = 'ficcao';
+                  });
+                  _filterLibrary();
+                },
+                onStudyGuideTap: () {
+                  setState(() {
+                    if (_exclusiveFilter == 'isStudyGuide') {
+                      _exclusiveFilter = null;
+                    } else {
+                      _exclusiveFilter = null;
+                      _showStudyGuide = !_showStudyGuide;
+                    }
+                  });
+                  _filterLibrary();
+                },
+                onStudyGuideLongPress: () {
+                  setState(() {
+                    _exclusiveFilter = 'isStudyGuide';
+                  });
+                  _filterLibrary();
+                },
+                onDifficultyTap: _showDifficultyFilter,
+                onClearFilters: _clearAllFilters,
+              ),
+            ],
           ),
-          LibraryFilterBar(
-            showFiction: _showFiction,
-            showStudyGuide: _showStudyGuide,
-            exclusiveFilter: _exclusiveFilter,
-            difficultyRange: _difficultyRange,
-            isAnyFilterActive: _isAnyFilterActive,
-            onFictionTap: () {
-              setState(() {
-                if (_exclusiveFilter == 'ficcao') {
-                  _exclusiveFilter = null; // Sai do modo exclusivo
-                } else {
-                  _exclusiveFilter =
-                      null; // Garante que sai de qualquer modo exclusivo
-                  _showFiction = !_showFiction;
-                }
-              });
-              _filterLibrary();
-            },
-            onFictionLongPress: () {
-              setState(() {
-                _exclusiveFilter = 'ficcao';
-              });
-              _filterLibrary();
-            },
-            onStudyGuideTap: () {
-              setState(() {
-                if (_exclusiveFilter == 'isStudyGuide') {
-                  _exclusiveFilter = null;
-                } else {
-                  _exclusiveFilter = null;
-                  _showStudyGuide = !_showStudyGuide;
-                }
-              });
-              _filterLibrary();
-            },
-            onStudyGuideLongPress: () {
-              setState(() {
-                _exclusiveFilter = 'isStudyGuide';
-              });
-              _filterLibrary();
-            },
-            onDifficultyTap: _showDifficultyFilter,
-            onClearFilters: _clearAllFilters,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
