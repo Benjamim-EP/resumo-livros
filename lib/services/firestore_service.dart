@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:septima_biblia/models/bible_saga_model.dart';
 import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/library_reference_reducer.dart'; // Para formatar datas
 
@@ -59,6 +60,23 @@ class FirestoreService {
     }
 
     return results;
+  }
+
+  Future<List<BibleSaga>> fetchBibleSagas() async {
+    try {
+      final snapshot = await _db.collection('bibleSagas').get();
+      if (snapshot.docs.isEmpty) {
+        print(
+            "FirestoreService: Nenhuma saga bíblica encontrada na coleção 'bibleSagas'.");
+        return [];
+      }
+      return snapshot.docs
+          .map((doc) => BibleSaga.fromFirestore(doc.id, doc.data()))
+          .toList();
+    } catch (e) {
+      print("FirestoreService: ERRO ao buscar sagas bíblicas: $e");
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> fetchUserNotifications(

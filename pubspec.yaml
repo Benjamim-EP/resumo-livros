@@ -134,6 +134,7 @@ flutter:
     - assets/data/
     - assets/data/cross_references.json
     - assets/covers/guias/
+    - assets/covers/sagas/
     - test.env
     
     - assets/metadata/bible_sections_count.json 
