@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:septima_biblia/main.dart';
 import 'package:septima_biblia/models/highlight_item_model.dart';
 import 'package:septima_biblia/pages/biblie_page/note_editor_modal.dart';
+import 'package:septima_biblia/pages/user_page/components/bible_progress_summary_card.dart';
 import 'package:septima_biblia/pages/user_page/components/sagas_and_journeys_card.dart';
 import 'package:septima_biblia/pages/user_page/highlight_item_card.dart';
 
@@ -397,298 +398,149 @@ class _UserPageState extends State<UserPage> {
     // --- LÓGICA DA ABA "PROGRESSO" ---
     if (_selectedTab == l10n.userTabProgress) {
       return SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        // Padding geral da tela
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Column(
           children: [
             // ==========================================================
-            // CARD 1: RESUMO DO PROGRESSO DA BÍBLIA
+            // CARD 1: O NOVO WIDGET DE RESUMO DE PROGRESSO COMPACTO
             // ==========================================================
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: StoreConnector<AppState, _UserProgressViewModel>(
-                  converter: (store) => _UserProgressViewModel.fromStore(store),
-                  distinct: true,
-                  builder: (context, vm) {
-                    final isStillLoading = vm.isLoadingCounts ||
-                        vm.isLoadingUserProgress ||
-                        (vm.bibleSectionCounts.isEmpty && vm.userId != null);
+            const BibleProgressSummaryCard(),
 
-                    if (isStillLoading) {
-                      return const Center(
-                          heightFactor: 5, child: CircularProgressIndicator());
-                    }
-                    if (vm.countsError != null ||
-                        vm.userProgressError != null) {
-                      return const Center(
-                          child: Text("Erro ao carregar progresso."));
-                    }
+            const SizedBox(height: 16),
 
-                    return StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('userBibleProgress')
-                          .doc(vm.userId)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData && !snapshot.hasError) {
-                          return const Center(
-                              heightFactor: 5,
-                              child: CircularProgressIndicator());
-                        }
+            // ==========================================================
+            // EXPANSION TILE: PARA O PROGRESSO DETALHADO POR LIVRO
+            // ==========================================================
+            StoreConnector<AppState, _UserProgressViewModel>(
+              converter: (store) => _UserProgressViewModel.fromStore(store),
+              distinct: true,
+              builder: (context, vm) {
+                // Prepara a lista de widgets de progresso por livro
+                List<Widget> bookProgressWidgets = [];
+                if (_localBooksMap != null &&
+                    vm.bibleSectionCounts.isNotEmpty) {
+                  final booksMetadataFromCounts =
+                      vm.bibleSectionCounts['livros']
+                              as Map<String, dynamic>? ??
+                          {};
+                  int index = 0;
+                  for (String bookAbbrev in CANONICAL_BOOK_ORDER) {
+                    final bookMetaForName =
+                        _localBooksMap![bookAbbrev] as Map<String, dynamic>?;
+                    final bookMetaFromCounts =
+                        booksMetadataFromCounts[bookAbbrev]
+                            as Map<String, dynamic>?;
+                    if (bookMetaForName == null || bookMetaFromCounts == null)
+                      continue;
 
-                        final progressData =
-                            snapshot.data?.data() as Map<String, dynamic>? ??
-                                {};
-                        final overallProgress =
-                            (progressData['currentProgressPercent'] as num?)
-                                    ?.toDouble() ??
-                                0.0;
-                        final completionCount =
-                            progressData['bibleCompletionCount'] as int? ?? 0;
-
-                        int totalSectionsInBible =
-                            (vm.bibleSectionCounts['total_secoes_biblia']
-                                        as int? ??
-                                    1)
-                                .clamp(1, 1000000);
-                        int totalSectionsInAT = (vm.bibleSectionCounts[
-                                    'total_secoes_antigo_testamento'] as int? ??
-                                1)
+                    final bookProgressData = vm.allBooksProgress[bookAbbrev];
+                    int totalSectionsInThisBook =
+                        (bookMetaFromCounts['total_secoes_livro'] as int? ?? 1)
                             .clamp(1, 1000000);
-                        int totalSectionsInNT = (vm.bibleSectionCounts[
-                                    'total_secoes_novo_testamento'] as int? ??
-                                1)
-                            .clamp(1, 1000000);
+                    int readSectionsInThisBook =
+                        bookProgressData?.readSections.length ?? 0;
+                    double bookProgressPercent = (totalSectionsInThisBook > 0)
+                        ? (readSectionsInThisBook / totalSectionsInThisBook)
+                            .clamp(0.0, 1.0)
+                        : 0.0;
+                    String bookFullName =
+                        bookMetaForName['nome'] ?? bookAbbrev.toUpperCase();
 
-                        int totalReadSectionsBible = vm.allBooksProgress.values
-                            .fold<int>(0,
-                                (sum, book) => sum + book.readSections.length);
-                        int totalReadSectionsAT = 0;
-                        int totalReadSectionsNT = 0;
-                        final booksMetadataFromCounts =
-                            vm.bibleSectionCounts['livros']
-                                    as Map<String, dynamic>? ??
-                                {};
-
-                        vm.allBooksProgress.forEach((bookAbbrev, progressData) {
-                          final String? testament =
-                              booksMetadataFromCounts[bookAbbrev]?['testamento']
-                                  as String?;
-                          if (testament == "Antigo") {
-                            totalReadSectionsAT +=
-                                progressData.readSections.length;
-                          } else if (testament == "Novo") {
-                            totalReadSectionsNT +=
-                                progressData.readSections.length;
-                          }
-                        });
-
-                        double atProgress = (totalSectionsInAT > 0)
-                            ? (totalReadSectionsAT / totalSectionsInAT)
-                                .clamp(0.0, 1.0)
-                            : 0.0;
-                        double ntProgress = (totalSectionsInNT > 0)
-                            ? (totalReadSectionsNT / totalSectionsInNT)
-                                .clamp(0.0, 1.0)
-                            : 0.0;
-
-                        List<Widget> bookProgressWidgets = [];
-                        if (_localBooksMap != null &&
-                            vm.bibleSectionCounts.isNotEmpty) {
-                          int index = 0;
-                          for (String bookAbbrev in CANONICAL_BOOK_ORDER) {
-                            final bookMetaForName = _localBooksMap![bookAbbrev]
-                                as Map<String, dynamic>?;
-                            final bookMetaFromCounts =
-                                booksMetadataFromCounts[bookAbbrev]
-                                    as Map<String, dynamic>?;
-                            if (bookMetaForName == null ||
-                                bookMetaFromCounts == null) continue;
-
-                            final bookProgressData =
-                                vm.allBooksProgress[bookAbbrev];
-                            int totalSectionsInThisBook =
-                                (bookMetaFromCounts['total_secoes_livro']
-                                            as int? ??
-                                        1)
-                                    .clamp(1, 1000000);
-                            int readSectionsInThisBook =
-                                bookProgressData?.readSections.length ?? 0;
-                            double bookProgressPercent =
-                                (totalSectionsInThisBook > 0)
-                                    ? (readSectionsInThisBook /
-                                            totalSectionsInThisBook)
-                                        .clamp(0.0, 1.0)
-                                    : 0.0;
-                            String bookFullName = bookMetaForName['nome'] ??
-                                bookAbbrev.toUpperCase();
-
-                            bookProgressWidgets.add(Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 6.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                          child: Text(bookFullName,
-                                              style: theme.textTheme.titleSmall
-                                                  ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: theme
-                                                          .colorScheme.onSurface
-                                                          .withOpacity(0.9)))),
-                                      Text(
-                                          "${(bookProgressPercent * 100).toStringAsFixed(0)}% ($readSectionsInThisBook/$totalSectionsInThisBook)",
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme.onSurface
-                                                      .withOpacity(0.7))),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  LinearPercentIndicator(
-                                    percent: bookProgressPercent,
-                                    lineHeight: 10.0,
-                                    barRadius: const Radius.circular(5),
-                                    backgroundColor: theme
-                                        .colorScheme.surfaceVariant
-                                        .withOpacity(0.4),
-                                    progressColor: theme.colorScheme.primary,
-                                    animation: !kIsIntegrationTest,
-                                    animationDuration: 600,
-                                  ),
-                                ],
-                              ),
-                            )
-                                .animate(delay: (50 * (index % 10)).ms)
-                                .fadeIn(duration: 300.ms)
-                                .slideY(begin: 0.2, curve: Curves.easeOut));
-                            index++;
-                          }
-                        }
-
-                        return Column(
+                    bookProgressWidgets.add(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Progresso Geral da Bíblia",
-                                style: theme.textTheme.titleLarge),
-                            const SizedBox(height: 16),
-                            if (completionCount > 0)
-                              Chip(
-                                avatar: Icon(Icons.workspace_premium_rounded,
-                                    color: Colors.amber.shade800, size: 20),
-                                label: Text(
-                                    '$completionCount ${completionCount > 1 ? "Leituras Completas" : "Leitura Completa"}'),
-                              ),
-                            const SizedBox(height: 12),
-                            CircularPercentIndicator(
-                              radius: 80.0,
-                              lineWidth: 12.0,
-                              percent: overallProgress / 100,
-                              center: Text(
-                                  "${overallProgress.toStringAsFixed(1)}%",
-                                  style: theme.textTheme.headlineSmall),
-                              footer: Padding(
-                                padding: const EdgeInsets.only(top: 12.0),
-                                child: Text(
-                                    "Você leu $totalReadSectionsBible de $totalSectionsInBible seções!",
-                                    style: theme.textTheme.bodyMedium),
-                              ),
-                              circularStrokeCap: CircularStrokeCap.round,
-                              progressColor: theme.colorScheme.primary,
-                              backgroundColor: theme.colorScheme.surfaceVariant
-                                  .withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 24),
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                    child: _buildTestamentProgressCard(
-                                        "Antigo Testamento",
-                                        atProgress,
-                                        totalReadSectionsAT,
-                                        totalSectionsInAT,
-                                        theme,
-                                        Colors.orange.shade700)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                    child: _buildTestamentProgressCard(
-                                        "Novo Testamento",
-                                        ntProgress,
-                                        totalReadSectionsNT,
-                                        totalSectionsInNT,
-                                        theme,
-                                        Colors.teal.shade600)),
+                                  child: Text(
+                                    bookFullName,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.9),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  "${(bookProgressPercent * 100).toStringAsFixed(0)}% ($readSectionsInThisBook/$totalSectionsInThisBook)",
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
+                                  ),
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 24),
-                            Theme(
-                              data: theme.copyWith(
-                                  dividerColor: Colors.transparent),
-                              child: ExpansionTile(
-                                key: const PageStorageKey<String>(
-                                    'book_progress_expansion_tile_userpage'),
-                                tilePadding: const EdgeInsets.symmetric(
-                                    horizontal: 8.0, vertical: 4.0),
-                                backgroundColor:
-                                    theme.cardColor.withOpacity(0.5),
-                                collapsedBackgroundColor:
-                                    theme.cardColor.withOpacity(0.3),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                collapsedShape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                title: Text("Progresso Detalhado por Livro",
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: theme.colorScheme.onSurface)),
-                                subtitle: Text(
-                                    "Toque para ver o progresso em cada livro",
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.6))),
-                                trailing: Icon(
-                                    _showAllBookProgress
-                                        ? Icons.keyboard_arrow_up_rounded
-                                        : Icons.keyboard_arrow_down_rounded,
-                                    color: theme.colorScheme.primary,
-                                    size: 28),
-                                onExpansionChanged: (bool expanded) {
-                                  if (mounted) {
-                                    setState(
-                                        () => _showAllBookProgress = expanded);
-                                  }
-                                },
-                                initiallyExpanded: _showAllBookProgress,
-                                children: <Widget>[
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 0,
-                                        left: 16.0,
-                                        right: 16.0,
-                                        bottom: 16.0),
-                                    child:
-                                        Column(children: bookProgressWidgets),
-                                  ),
-                                ],
-                              ),
+                            const SizedBox(height: 4),
+                            LinearPercentIndicator(
+                              percent: bookProgressPercent,
+                              lineHeight: 10.0,
+                              barRadius: const Radius.circular(5),
+                              backgroundColor: theme.colorScheme.surfaceVariant
+                                  .withOpacity(0.4),
+                              progressColor: theme.colorScheme.primary,
+                              animation: !kIsIntegrationTest,
+                              animationDuration: 600,
                             ),
                           ],
-                        );
-                      },
+                        ),
+                      )
+                          .animate(delay: (50 * (index % 10)).ms)
+                          .fadeIn(duration: 300.ms)
+                          .slideY(begin: 0.2, curve: Curves.easeOut),
                     );
-                  },
-                ),
-              ),
+                    index++;
+                  }
+                }
+
+                return Theme(
+                  data: theme.copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    key: const PageStorageKey<String>(
+                        'book_progress_expansion_tile_userpage'),
+                    tilePadding: const EdgeInsets.symmetric(
+                        horizontal: 8.0, vertical: 4.0),
+                    backgroundColor: theme.cardColor.withOpacity(0.5),
+                    collapsedBackgroundColor: theme.cardColor.withOpacity(0.3),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    collapsedShape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    title: Text("Progresso Detalhado por Livro",
+                        style: theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface)),
+                    subtitle: Text("Toque para ver o progresso em cada livro",
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.6))),
+                    trailing: Icon(
+                        _showAllBookProgress
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 28),
+                    onExpansionChanged: (bool expanded) {
+                      if (mounted) {
+                        setState(() => _showAllBookProgress = expanded);
+                      }
+                    },
+                    initiallyExpanded: _showAllBookProgress,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            top: 0, left: 16.0, right: 16.0, bottom: 16.0),
+                        child: Column(children: bookProgressWidgets),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
 
             // ==========================================================
