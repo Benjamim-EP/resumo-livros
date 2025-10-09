@@ -1,5 +1,6 @@
 // lib/pages/biblie_page/section_item_widget.dart
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
@@ -27,6 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // ViewModel (sem alterações)
 class _SectionItemViewModel {
   final List<String> allUserTags;
+
   final bool isPremium;
   // <<< NOVO CAMPO NO VIEWMODEL >>>
   final List<LibraryReference> libraryReferences;
@@ -108,6 +110,35 @@ class SectionItemWidget extends StatefulWidget {
 
   @override
   State<SectionItemWidget> createState() => _SectionItemWidgetState();
+}
+
+class _SectionViewModel {
+  final List<String> allUserTags;
+  final Map<String, List<int>> recommendedVerses;
+
+  _SectionViewModel({
+    required this.allUserTags,
+    required this.recommendedVerses,
+  });
+
+  static _SectionViewModel fromStore(Store<AppState> store) {
+    return _SectionViewModel(
+      allUserTags: store.state.userState.allUserTags,
+      recommendedVerses: store.state.userState.recommendedVerses,
+    );
+  }
+
+  // Otimização para o StoreConnector
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _SectionViewModel &&
+          runtimeType == other.runtimeType &&
+          listEquals(allUserTags, other.allUserTags) &&
+          mapEquals(recommendedVerses, other.recommendedVerses);
+
+  @override
+  int get hashCode => allUserTags.hashCode ^ recommendedVerses.hashCode;
 }
 
 class _SectionItemWidgetState extends State<SectionItemWidget>
@@ -485,11 +516,18 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
       }
     }
 
-    return StoreConnector<AppState, _SectionItemViewModel>(
-      converter: (store) =>
-          _SectionItemViewModel.fromStore(store, _sectionIdForTracking),
+    return StoreConnector<AppState, _SectionViewModel>(
+      // O converter agora usa o sectionId para otimização, mas como o estado
+      // é um mapa para o capítulo inteiro, passamos o chapterId.
+      converter: (store) => _SectionViewModel.fromStore(store),
+      distinct:
+          true, // ESSENCIAL: Só reconstrói se os dados do ViewModel mudarem.
       builder: (context, viewModel) {
+        // Acessamos os dados do ViewModel DENTRO do builder.
         final allUserTags = viewModel.allUserTags;
+        final chapterId = "${widget.bookAbbrev}_${widget.chapterNumber}";
+        final recommendedVersesForChapter =
+            viewModel.recommendedVerses[chapterId];
 
         return Card(
           elevation: 2,
@@ -546,6 +584,12 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   itemBuilder: (context, indexInSecao) {
                     final verseNumber =
                         widget.verseNumbersInSection[indexInSecao];
+
+                    // Lógica de verificação continua aqui
+                    final bool isRecommended =
+                        recommendedVersesForChapter?.contains(verseNumber) ??
+                            false;
+
                     dynamic mainTranslationVerseDataItem;
                     List<Map<String, String>>? hebrewDataForThisVerse;
                     List<Map<String, String>>? greekDataForThisVerse;
@@ -595,6 +639,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             hebrewVerseData: hebrewDataForThisVerse,
                             greekVerseData: greekDataForThisVerse,
                             fontSizeMultiplier: widget.fontSizeMultiplier,
+                            isRecommended:
+                                isRecommended, // <<< O parâmetro é passado aqui
                           ),
                           CrossReferencesRow(
                             bookAbbrev: widget.bookAbbrev,
@@ -615,64 +661,16 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   },
                 ),
 
-                // --- CARD DE ESTUDO CONDICIONAL ---
+                // ... (o resto do seu widget continua exatamente como estava)
                 if (widget.isStudyModeActive)
                   StudyCardWidget(
                     commentaryDocId: _commentaryDocId,
                     onGenerateSummary: () {
-                      // Passa a função de gerar resumo para o novo widget
                       widget.onShowSummaryRequest(
                           _commentaryDocId, widget.sectionTitle);
                     },
                   ),
-
-                // // --- MAPA MENTAL CONDICIONAL ---
-                // if (widget.showMindMap)
-                //   FutureBuilder<Map<String, dynamic>?>(
-                //     future: _firestoreService.getMindMap(_sectionIdForTracking),
-                //     builder: (context, snapshot) {
-                //       if (snapshot.connectionState == ConnectionState.waiting ||
-                //           !snapshot.hasData ||
-                //           snapshot.data == null) {
-                //         return const SizedBox.shrink();
-                //       }
-                //       final mapData = snapshot.data!;
-                //       return Card(
-                //         margin: const EdgeInsets.only(top: 16.0),
-                //         child: Padding(
-                //           padding: const EdgeInsets.all(12.0),
-                //           child: Column(
-                //             crossAxisAlignment: CrossAxisAlignment.start,
-                //             children: [
-                //               Row(
-                //                 mainAxisAlignment:
-                //                     MainAxisAlignment.spaceBetween,
-                //                 children: [
-                //                   Text(mapData['title'] ?? 'Mapa Mental',
-                //                       style: theme.textTheme.titleMedium),
-                //                   IconButton(
-                //                     icon: const Icon(Icons.fullscreen),
-                //                     onPressed: () {
-                //                       /* Lógica para tela cheia */
-                //                     },
-                //                   ),
-                //                 ],
-                //               ),
-                //               const SizedBox(height: 8),
-                //               SizedBox(
-                //                 height: 400,
-                //                 child: MindMapView(mapData: mapData),
-                //               ),
-                //             ],
-                //           ),
-                //         ),
-                //       );
-                //     },
-                //   ),
-
                 const Divider(height: 20),
-
-                // --- RODAPÉ COM BOTÕES DE AÇÃO ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -741,7 +739,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     ),
                   ],
                 ),
-                // Card de Recursos Recomendados (expansível)
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
@@ -769,5 +766,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         );
       },
     );
+    // ==========================================================
+    // <<< FIM DA CORREÇÃO E OTIMIZAÇÃO >>>
+    // ==========================================================
   }
 }

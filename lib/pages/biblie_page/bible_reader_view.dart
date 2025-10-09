@@ -8,6 +8,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
 import 'package:septima_biblia/pages/biblie_page/section_item_widget.dart';
 import 'package:septima_biblia/pages/components/mind_map_view.dart';
+import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/bible_progress_actions.dart';
 import 'package:septima_biblia/redux/actions/library_reference_actions.dart';
 import 'package:septima_biblia/redux/store.dart';
@@ -144,7 +145,12 @@ class _BibleReaderViewState extends State<BibleReaderView> {
         widget.selectedTranslation1,
         widget.isCompareMode ? widget.selectedTranslation2 : null,
       );
-
+      if (mounted) {
+        final store = StoreProvider.of<AppState>(context, listen: false);
+        // Despacha a ação para buscar as recomendações para este capítulo
+        store.dispatch(FetchVerseRecommendationsAction(
+            widget.selectedBook, widget.selectedChapter));
+      }
       if (mounted) {
         StoreProvider.of<AppState>(context, listen: false).dispatch(
             LoadLibraryReferencesForChapterAction(

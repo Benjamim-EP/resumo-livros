@@ -881,3 +881,28 @@ class LibraryShelvesFailedAction {
   final String error;
   LibraryShelvesFailedAction(this.error);
 }
+
+// Disparada pela UserSettingsPage quando o learningGoal é salvo.
+// Será interceptada pelo user_middleware.
+class UpdateLearningGoalAction {
+  final String newGoal;
+  UpdateLearningGoalAction(this.newGoal);
+}
+
+// Disparada pelo middleware após a limpeza no backend ser confirmada.
+// Será tratada pelo reducer para limpar o estado local.
+class ClearAllVerseRecommendationsAction {}
+
+/// Disparada pela UI (BibleReaderView) quando um novo capítulo é carregado.
+class FetchVerseRecommendationsAction {
+  final String bookAbbrev;
+  final int chapter;
+  FetchVerseRecommendationsAction(this.bookAbbrev, this.chapter);
+}
+
+/// Despachada pelo middleware quando os dados da Cloud Function chegam.
+class VerseRecommendationsLoadedAction {
+  final String chapterId; // ex: "gn_1"
+  final List<int> verses;
+  VerseRecommendationsLoadedAction(this.chapterId, this.verses);
+}

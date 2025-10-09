@@ -271,6 +271,8 @@ class UserState {
   final List<Map<String, dynamic>> recentInteractions;
   final bool hasBeenReferred;
   final List<Map<String, dynamic>> inProgressItems;
+  final String? learningGoal;
+  final Map<String, List<int>> recommendedVerses;
 
   UserState({
     this.userId,
@@ -331,6 +333,8 @@ class UserState {
     this.recentInteractions = const [],
     this.hasBeenReferred = false,
     this.inProgressItems = const [],
+    this.learningGoal,
+    this.recommendedVerses = const {},
   });
 
   UserState copyWith({
@@ -403,6 +407,9 @@ class UserState {
     List<Map<String, dynamic>>? recentInteractions,
     bool? hasBeenReferred,
     List<Map<String, dynamic>>? inProgressItems,
+    String? learningGoal,
+    bool clearLearningGoal = false,
+    Map<String, List<int>>? recommendedVerses,
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -506,6 +513,9 @@ class UserState {
       recentInteractions: recentInteractions ?? this.recentInteractions,
       hasBeenReferred: hasBeenReferred ?? this.hasBeenReferred,
       inProgressItems: inProgressItems ?? this.inProgressItems,
+      learningGoal:
+          clearLearningGoal ? null : (learningGoal ?? this.learningGoal),
+      recommendedVerses: recommendedVerses ?? this.recommendedVerses,
     );
   }
 }
@@ -524,6 +534,18 @@ UserState userReducer(UserState state, dynamic action) {
 
     newDetails['subscribedBookClubs'] = subscribedClubs.toList();
     return state.copyWith(userDetails: newDetails);
+  } else if (action is VerseRecommendationsLoadedAction) {
+    // Cria uma nova cópia do mapa para manter a imutabilidade
+    final newMap = Map<String, List<int>>.from(state.recommendedVerses);
+    // Adiciona ou atualiza os versículos para o chapterId recebido
+    newMap[action.chapterId] = action.verses;
+    return state.copyWith(recommendedVerses: newMap);
+  } else if (action is ClearAllVerseRecommendationsAction) {
+    // Limpa completamente o mapa de recomendações
+    return state.copyWith(recommendedVerses: {});
+  } else if (action is UserLoggedOutAction) {
+    // Garante que o estado seja limpo ao deslogar
+    return UserState();
   } else if (action is UpdateBookReadingStatusAction) {
     final newDetails = Map<String, dynamic>.from(state.userDetails ?? {});
     final booksRead = Set<String>.from(newDetails['booksRead'] ?? []);
@@ -622,9 +644,6 @@ UserState userReducer(UserState state, dynamic action) {
     // Usado pelo AuthCheck se o UID inicial for nulo
     return state.copyWith(userId: action.uid);
   } else if (action is UserDetailsLoadedAction) {
-    // Esta ação carrega os dados do documento /users/{userId}
-    // Não deve mais conter bibleProgress, userHighlights, userNotes, userCommentHighlights, lastRead...
-    // Esses virão de ações específicas que leem as novas coleções.
     return state.copyWith(
       userDetails: action.userDetails,
       userCoins: action.userDetails['userCoins'] as int? ?? state.userCoins,
@@ -632,13 +651,7 @@ UserState userReducer(UserState state, dynamic action) {
       hasBeenReferred: action.userDetails['hasBeenReferred'] as bool? ?? false,
       recentInteractions: List<Map<String, dynamic>>.from(
           action.userDetails['recentInteractions'] as List? ?? []),
-
-      // >>> INÍCIO DA CORREÇÃO <<<
-      // DE:
-      // lastRewardedAdWatchTime:
-      //     (action.userDetails['lastRewardedAdWatchTime'] as Timestamp?)
-      //         ?.toDate(),
-      // PARA (precisamos da função helper aqui também ou de uma lógica similar):
+      learningGoal: action.userDetails['learningGoal'] as String?,
       lastRewardedAdWatchTime: (dynamic value) {
         if (value == null) return null;
         if (value is Timestamp) return value.toDate();

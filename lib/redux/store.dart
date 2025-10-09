@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/redux/middleware/bible_recommendation_middleware.dart';
 import 'package:septima_biblia/services/payment_service.dart';
 
 // ✅ IMPORTS CORRIGIDOS: Cada state/reducer de seu próprio arquivo
@@ -156,6 +157,7 @@ List<Middleware<AppState>> createAppMiddleware({
     ...createCrossReferenceMiddleware(),
     ...createLibraryReferenceMiddleware(),
     ...createLibraryMiddleware(),
+    ...createBibleRecommendationMiddleware(),
   ];
 
   if (useFakePayment) {

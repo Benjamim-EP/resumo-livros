@@ -48,6 +48,7 @@ class _UserPageState extends State<UserPage> {
 
   final List<String> _availableTabs = const [
     'Progresso',
+    'Indicações',
     'Destaques',
     'Notas',
   ];
@@ -550,6 +551,8 @@ class _UserPageState extends State<UserPage> {
           ],
         ),
       );
+    } else if (_selectedTab == l10n.userTabRecommendations) {
+      return const _RecommendationsTab(); // Nosso novo widget stateful
     }
     // --- LÓGICA DA ABA "DESTAQUES" ---
     else if (_selectedTab == l10n.userTabHighlights) {
@@ -1000,6 +1003,7 @@ class _UserPageState extends State<UserPage> {
     final List<String> availableTabs = [
       l10n.userTabProgress, // <-- Usando l10n
       l10n.userTabHighlights, // <-- Usando l10n
+      l10n.userTabRecommendations, // <-- Usando l10n
       l10n.userTabNotes, // <-- Usando l10n
     ];
 
@@ -1336,4 +1340,139 @@ class _UserProgressViewModel {
       bibleSectionCounts.hashCode ^
       countsError.hashCode ^
       userProgressError.hashCode;
+}
+
+// ==========================================================
+// <<< NOVO WIDGET STATEFUL PARA A ABA DE INDICAÇÕES >>>
+// Adicione esta classe ao final do arquivo `user_page.dart`
+// ==========================================================
+class _RecommendationsTab extends StatefulWidget {
+  const _RecommendationsTab();
+
+  @override
+  State<_RecommendationsTab> createState() => _RecommendationsTabState();
+}
+
+class _RecommendationsTabState extends State<_RecommendationsTab> {
+  late final TextEditingController _learningGoalController;
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _learningGoalController = TextEditingController();
+    // Popula o controller com o valor inicial do Redux Store
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final initialGoal = StoreProvider.of<AppState>(context, listen: false)
+            .state
+            .userState
+            .learningGoal;
+        _learningGoalController.text = initialGoal ?? '';
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _learningGoalController.dispose();
+    super.dispose();
+  }
+
+  void _saveLearningGoal() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      final store = StoreProvider.of<AppState>(context, listen: false);
+
+      final newLearningGoal = _learningGoalController.text.trim();
+      final oldLearningGoal = store.state.userState.learningGoal ?? '';
+
+      // Só despacha a ação se o valor realmente mudou
+      if (newLearningGoal != oldLearningGoal) {
+        print(
+            "Objetivo de estudo alterado. Despachando UpdateLearningGoalAction.");
+        store.dispatch(UpdateLearningGoalAction(newLearningGoal));
+      }
+
+      // Feedback para o usuário
+      Future.delayed(const Duration(milliseconds: 700), () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foco de estudo salvo!')),
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              "Seu Foco de Estudo",
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Descreva o que você busca aprender ou a dificuldade que está enfrentando. A IA usará essa informação para destacar versículos relevantes para você durante sua leitura da Bíblia.",
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _learningGoalController,
+              decoration: const InputDecoration(
+                hintText: 'Ex: "Quero entender mais sobre a graça de Deus."',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 4,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: _isLoading
+                  ? Container(
+                      width: 20,
+                      height: 20,
+                      padding: const EdgeInsets.all(2.0),
+                      child: CircularProgressIndicator(
+                          color: theme.colorScheme.onPrimary, strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_alt_outlined),
+              label: Text(_isLoading ? 'Salvando...' : 'Salvar Foco de Estudo'),
+              onPressed: _isLoading ? null : _saveLearningGoal,
+            ),
+            const Divider(height: 48),
+
+            // --- Placeholder para o futuro ---
+            Text(
+              "Últimas Indicações",
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Center(
+                  child: Text(
+                    "Quando você ler a Bíblia, os versículos recomendados com base no seu foco aparecerão aqui.",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

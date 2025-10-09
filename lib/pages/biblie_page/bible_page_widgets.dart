@@ -1,5 +1,6 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/pages/biblie_page/tag_editor_dialog.dart';
@@ -436,8 +437,6 @@ class BiblePageWidgets {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-
-            // ❌ 5. REMOÇÃO DO NÚMERO DE STRONG (não é mais exibido aqui)
           ],
         ),
       ),
@@ -453,7 +452,7 @@ class BiblePageWidgets {
     required BuildContext context,
     required Map<String, Map<String, dynamic>> userHighlights,
     required List<Map<String, dynamic>> userNotes,
-    required List<String> allUserTags, // <<< PARÂMETRO ADICIONADO
+    required List<String> allUserTags,
     required double fontSizeMultiplier,
     bool isHebrew = false,
     bool isGreekInterlinear = false,
@@ -461,7 +460,10 @@ class BiblePageWidgets {
     bool showGreekInterlinear = false,
     List<Map<String, String>>? hebrewVerseData,
     List<Map<String, String>>? greekVerseData,
+    bool isRecommended = false, // Parâmetro que estamos usando
   }) {
+    // A lógica interna para preparar os dados (theme, verseId, highlights, etc.)
+    // permanece exatamente a mesma.
     final theme = Theme.of(context);
     final verseId = "${selectedBook}_${selectedChapter}_$verseNumber";
 
@@ -476,7 +478,6 @@ class BiblePageWidgets {
         orElse: () => {},
       )['noteText'] as String?;
     }
-    // final bool hasNote = userNotes.any((note) => note['verseId'] == verseId);
     final backgroundColor = currentHighlightColorHex != null
         ? Color(int.parse(currentHighlightColorHex.replaceFirst('#', '0xff')))
             .withOpacity(0.30)
@@ -485,6 +486,7 @@ class BiblePageWidgets {
     String verseTextForModalDialog = "";
     Widget mainTranslationWidget;
 
+    // ... (toda a sua lógica para 'if (isGreekInterlinear)', 'if (isHebrew)', etc. continua AQUI, sem nenhuma alteração)
     if (isGreekInterlinear && verseData is List<Map<String, String>>) {
       List<Widget> greekWordWidgets = [];
       final greekLexicon = BiblePageHelper.cachedGreekStrongsLexicon;
@@ -606,22 +608,22 @@ class BiblePageWidgets {
         ),
       );
     }
+    // ==========================================================
+    // <<< INÍCIO DA MODIFICAÇÃO PRINCIPAL >>>
+    // ==========================================================
 
-    // A lógica de obter os dados foi movida para o topo da função
-    // para estar disponível tanto para a decoração quanto para o `onLongPress`.
-
-    return GestureDetector(
+    // 1. O conteúdo interno do versículo (o que já estava dentro do GestureDetector)
+    final verseContentWidget = GestureDetector(
       key: key,
       onLongPress: () {
+        // ... sua lógica de onLongPress permanece a mesma
         String? currentNoteText;
         if (hasNote) {
-          // Usa 'firstWhere' para encontrar o mapa da nota e pegar o texto
           currentNoteText = userNotes.firstWhere(
             (note) => note['verseId'] == verseId,
-            orElse: () => {}, // Retorna mapa vazio se não encontrar
+            orElse: () => {},
           )['noteText'] as String?;
         }
-        // <<< MUDANÇA: Parâmetros agora são nomeados >>>
         _showVerseOptionsModal(
           context,
           verseId: verseId,
@@ -636,12 +638,9 @@ class BiblePageWidgets {
         );
       },
       child: Container(
+        // A cor de fundo do highlight do usuário continua aqui
+        color: backgroundColor,
         padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
-        margin: const EdgeInsets.symmetric(vertical: 1.0),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(4),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -666,11 +665,9 @@ class BiblePageWidgets {
                         color: theme.colorScheme.primary.withOpacity(0.8),
                         size: 16 * fontSizeMultiplier),
                     tooltip: "Ver Nota",
-                    padding:
-                        EdgeInsets.zero, // Para deixar o botão mais compacto
-                    constraints:
-                        const BoxConstraints(), // Remove o tamanho mínimo
-                    visualDensity: VisualDensity.compact, // Reduz o espaço
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    visualDensity: VisualDensity.compact,
                     onPressed: () {
                       if (currentNoteText != null &&
                           currentNoteText.isNotEmpty) {
@@ -691,6 +688,38 @@ class BiblePageWidgets {
         ),
       ),
     );
+
+    // 2. O Container externo que receberá a animação
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 1.0),
+      // A decoração (borda/brilho) será controlada pelo flutter_animate
+      decoration: BoxDecoration(
+        borderRadius:
+            BorderRadius.circular(8), // Borda arredondada para o brilho
+      ),
+      child: verseContentWidget,
+    )
+        .animate(
+          target: isRecommended ? 1.0 : 0.0, // O alvo da animação
+          onPlay: (controller) {
+            if (isRecommended) {
+              controller.repeat(reverse: true); // Faz a animação pulsar
+            }
+          },
+        )
+        .boxShadow(
+          begin: BoxShadow(color: Colors.transparent),
+          end: BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.6),
+            spreadRadius: 2,
+            blurRadius: 5,
+          ),
+          duration: 1500.ms, // Duração de cada "pulso"
+          curve: Curves.easeInOut,
+        );
+    // ==========================================================
+    // <<< FIM DA MODIFICAÇÃO PRINCIPAL >>>
+    // ==========================================================
   }
 
   static void _showVerseOptionsModal(

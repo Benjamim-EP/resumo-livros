@@ -92,6 +92,25 @@ options.set_global_options(region=options.SupportedRegion.SOUTHAMERICA_EAST1)
 # --- Constantes do Google Play ---
 PACKAGE_NAME = "com.septima.septimabiblia" 
 
+ABBREV_TO_FULL_NAME_MAP = {
+    "gn": "Gênesis", "ex": "Êxodo", "lv": "Levítico", "nm": "Números", "dt": "Deuteronômio",
+    "js": "Josué", "jz": "Juízes", "rt": "Rute", "1sm": "1 Samuel", "2sm": "2 Samuel",
+    "1rs": "1 Reis", "2rs": "2 Reis", "1cr": "1 Crônicas", "2cr": "2 Crônicas",
+    "ed": "Esdras", "ne": "Neemias", "et": "Ester", "job": "Jó", "sl": "Salmos",
+    "pv": "Provérbios", "ec": "Eclesiastes", "ct": "Cantares de Salomão", "is": "Isaías",
+    "jr": "Jeremias", "lm": "Lamentações", "ez": "Ezequiel", "dn": "Daniel",
+    "os": "Oseias", "jl": "Joel", "am": "Amós", "ob": "Obadias", "jn": "Jonas",
+    "mq": "Miqueias", "na": "Naum", "hc": "Habacuque", "sf": "Sofonias",
+    "ag": "Ageu", "zc": "Zacarias", "ml": "Malaquias", "mt": "Mateus", "mc": "Marcos",
+    "lc": "Lucas", "jo": "João", "at": "Atos", "rm": "Romanos", "1co": "1 Coríntios",
+    "2co": "2 Coríntios", "gl": "Gálatas", "ef": "Efésios", "fp": "Filipenses",
+    "cl": "Colossenses", "1ts": "1 Tessalonicenses", "2ts": "2 Tessalonicenses",
+    "1tm": "1 Timóteo", "2tm": "2 Timóteo", "tt": "Tito", "fm": "Filemom",
+    "hb": "Hebreus", "tg": "Tiago", "1pe": "1 Pedro", "2pe": "2 Pedro",
+    "1jo": "1 João", "2jo": "2 João", "3jo": "3 João", "jd": "Judas", "ap": "Apocalipse"
+}
+
+
 # --- Funções Auxiliares (Async) ---
 def _run_async_handler_wrapper(async_func):
     try:
@@ -3229,3 +3248,153 @@ Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é 
             code=https_fn.FunctionsErrorCode.INTERNAL,
             message=f"Ocorreu um erro ao gerar as recomendações: {e}"
         )
+
+
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=60
+)
+def getVerseRecommendationsForChapter(req: https_fn.CallableRequest) -> dict:
+    db = get_db()
+    
+    # 1. Autenticação e Validação
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='Você precisa estar logado para receber recomendações.'
+        )
+    
+    user_id = req.auth.uid
+    book_abbrev = req.data.get("bookAbbrev")
+    chapter_raw = req.data.get("chapter")
+
+    # ==========================================================
+    # <<< CORREÇÃO FINAL E DEFINITIVA AQUI >>>
+    # ==========================================================
+    # Esta lógica agora lida com o formato de objeto que o Flutter envia para números.
+    chapter_to_parse = None
+    if isinstance(chapter_raw, dict) and 'value' in chapter_raw:
+        # Se 'chapter_raw' for um dicionário com a chave 'value', pegamos o valor de dentro.
+        chapter_to_parse = chapter_raw['value']
+        print(f"Parâmetro 'chapter' recebido como objeto, extraindo valor: {chapter_to_parse}")
+    else:
+        # Se for qualquer outra coisa (int, string, etc.), usamos o valor bruto.
+        chapter_to_parse = chapter_raw
+
+    try:
+        chapter = int(chapter_to_parse)
+    except (ValueError, TypeError):
+        print(f"ERRO: Não foi possível converter 'chapter_to_parse' para inteiro. Valor: {chapter_to_parse}, Tipo: {type(chapter_to_parse)}")
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            message="O parâmetro 'chapter' deve ser um número inteiro."
+        )
+    # ==========================================================
+    # <<< FIM DA CORREÇÃO >>>
+    # ==========================================================
+    
+    # 2. Lógica de Cache (sem alterações)
+    chapter_id_cache = f"{book_abbrev}_{chapter}"
+    user_doc_ref = db.collection('users').document(user_id)
+    cache_ref = user_doc_ref.collection('recommendedVerses').document(chapter_id_cache)
+    
+    try:
+        cached_doc = cache_ref.get()
+        if cached_doc.exists:
+            cached_data = cached_doc.to_dict()
+            if 'verses' in cached_data:
+                print(f"Cache HIT para '{chapter_id_cache}'.")
+                return {"verses": cached_data['verses']}
+    except Exception as e:
+        print(f"AVISO: Erro ao ler cache: {e}.")
+
+    print(f"Cache MISS para '{chapter_id_cache}'. Buscando na IA.")
+
+    # O resto da sua função continua exatamente o mesmo...
+    try:
+        user_doc_snapshot = user_doc_ref.get()
+        if not user_doc_snapshot.exists:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Usuário não encontrado.")
+        
+        # ... (lógica para learning_goal, texto da bíblia, chamada à OpenAI, etc.) ...
+        user_data = user_doc_snapshot.to_dict()
+        learning_goal = user_data.get("learningGoal")
+        
+        if not learning_goal or not learning_goal.strip():
+            print(f"Usuário {user_id} não possui um 'learningGoal' definido. Retornando lista vazia.")
+            cache_ref.set({"verses": [], "createdAt": firestore.SERVER_TIMESTAMP})
+            return {"verses": []}
+
+        bible_doc_id = f"ARA_{book_abbrev}"
+        bible_doc = db.collection('Bible').document(bible_doc_id).get()
+        if not bible_doc.exists:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message=f"Texto bíblico não encontrado para '{bible_doc_id}'.")
+            
+        bible_data = bible_doc.to_dict()
+        chapter_verses = bible_data.get("chapters", {}).get(str(chapter))
+        
+        if not chapter_verses or not isinstance(chapter_verses, list):
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message=f"Capítulo {chapter} não encontrado para o livro '{bible_doc_id}'.")
+
+        chapter_text_formatted = "\n".join([f"Versículo {i+1}: {verse}" for i, verse in enumerate(chapter_verses)])
+
+        openai_api_key = os.environ.get("openai-api-key")
+        if not openai_api_key:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Chave da API OpenAI não configurada.")
+        
+        client = OpenAI(api_key=openai_api_key)
+        book_full_name = ABBREV_TO_FULL_NAME_MAP.get(book_abbrev, book_abbrev.upper())
+        
+        system_prompt = "Você é um assistente teológico especialista em análise semântica da Bíblia."
+        user_prompt = f"""
+O objetivo de estudo do usuário é: "{learning_goal}"
+
+Abaixo está o texto completo do capítulo {book_full_name} {chapter}.
+Analise cada versículo e identifique quais se relacionam DIRETAMENTE com o objetivo do usuário.
+
+Retorne APENAS um objeto JSON com uma única chave "verses" contendo um array com os NÚMEROS dos versículos relevantes. Não inclua nenhuma outra palavra, explicação ou formatação.
+Se nenhum versículo for relevante, retorne um array vazio [].
+
+Exemplo de saída: {{"verses": [3, 5, 12, 26]}}
+
+Texto do Capítulo:
+---
+{chapter_text_formatted}
+---
+"""
+        print(f"Enviando prompt para a OpenAI para o usuário {user_id}...")
+        
+        chat_completion = client.chat.completions.create(
+            model="gpt-4.1-nano",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.1,
+            response_format={"type": "json_object"}
+        )
+        
+        response_content = chat_completion.choices[0].message.content
+        print(f"Resposta da OpenAI recebida: {response_content}")
+        
+        try:
+            parsed_json = json.loads(response_content)
+            recommended_verses = parsed_json.get("verses", []) 
+            if not isinstance(recommended_verses, list):
+                recommended_verses = []
+
+        except (json.JSONDecodeError, TypeError, AttributeError) as e:
+            print(f"ERRO: A resposta da OpenAI não é um JSON válido ou está em formato inesperado: {e}")
+            recommended_verses = []
+
+        cache_ref.set({"verses": recommended_verses, "createdAt": firestore.SERVER_TIMESTAMP})
+        print(f"Resultado salvo no cache para '{chapter_id_cache}'. Versículos: {recommended_verses}")
+        
+        return {"verses": recommended_verses}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em getVerseRecommendationsForChapter: {e}")
+        traceback.print_exc()
+        return {"verses": []}
