@@ -4,6 +4,7 @@ import 'package:redux/redux.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Cria e retorna a lista de middlewares responsáveis por:
 /// 1. Buscar recomendações de versículos de uma Cloud Function.
@@ -13,6 +14,7 @@ List<Middleware<AppState>> createBibleRecommendationMiddleware() {
       "RecommendationMiddleware: Inicializando o middleware de recomendações...");
   // Instancia o cliente do Firebase Functions, apontando para a região correta.
   final functions = FirebaseFunctions.instanceFor(region: "southamerica-east1");
+  final firestore = FirebaseFirestore.instance;
 
   /// Handler que lida com a ação de buscar recomendações para um capítulo específico.
   void _fetchRecommendations(Store<AppState> store,
@@ -77,32 +79,58 @@ List<Middleware<AppState>> createBibleRecommendationMiddleware() {
     }
   }
 
-  /// Handler que lida com a ação de limpar todas as recomendações.
-  /// É disparado quando o usuário salva um novo `learningGoal`.
   void _clearRecommendations(Store<AppState> store,
       UpdateLearningGoalAction action, NextDispatcher next) async {
-    // 1. Despacha a ação genérica para que o user_middleware salve o novo objetivo no Firestore.
+    // 1. Despacha a ação para o user_middleware salvar o novo objetivo no Firestore.
     store.dispatch(UpdateUserFieldAction('learningGoal', action.newGoal));
 
-    // 2. Passa a ação `UpdateLearningGoalAction` adiante.
+    // 2. Passa a ação adiante.
     next(action);
 
-    // 3. Limpa o estado local IMEDIATAMENTE. A UI refletirá a limpeza na hora.
+    // 3. Limpa o estado local IMEDIATAMENTE para a UI ficar consistente.
     store.dispatch(ClearAllVerseRecommendationsAction());
     print(
         "RecommendationMiddleware: Estado de recomendações locais (Redux) limpo.");
 
-    // 4. Chama a Cloud Function para limpar o cache no backend em segundo plano.
+    // 4. Executa a limpeza do cache no Firestore em segundo plano, direto do app.
+    final userId = store.state.userState.userId;
+    if (userId == null) return;
+
+    print(
+        "RecommendationMiddleware: Iniciando limpeza do cache no Firestore para o usuário $userId...");
     try {
-      final callable = functions.httpsCallable('clearVerseRecommendations');
-      // Uma chamada sem parâmetros é enviada como `{"data": null}` pelo pacote, o que é
-      // aceito por uma função `onCall` do Python que não lê o `req.data`.
-      await callable.call();
+      // 4a. Referência para a subcoleção que queremos limpar.
+      final collectionRef = firestore
+          .collection('users')
+          .doc(userId)
+          .collection('recommendedVerses');
+
+      // 4b. Busca todos os documentos na subcoleção de cache.
+      final snapshot = await collectionRef.get();
+
+      if (snapshot.docs.isEmpty) {
+        print(
+            "RecommendationMiddleware: Cache do Firestore já estava vazio. Nenhuma ação necessária.");
+        return;
+      }
+
       print(
-          "RecommendationMiddleware: Cache de recomendações no backend limpo com sucesso via Cloud Function.");
+          "RecommendationMiddleware: Encontrados ${snapshot.docs.length} documentos de cache para deletar.");
+
+      // 4c. Cria um "batch" para deletar todos os documentos em uma única operação de rede.
+      final batch = firestore.batch();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 4d. Executa o batch.
+      await batch.commit();
+
+      print(
+          "RecommendationMiddleware: Cache de recomendações no Firestore limpo com sucesso.");
     } catch (e) {
-      // Este erro não é crítico para a experiência do usuário, então apenas o registramos.
-      print("ERRO ao chamar a Cloud Function 'clearVerseRecommendations': $e");
+      // Este erro pode acontecer se as regras do Firestore não estiverem corretas.
+      print("ERRO ao limpar o cache de recomendações no Firestore: $e");
     }
   }
 

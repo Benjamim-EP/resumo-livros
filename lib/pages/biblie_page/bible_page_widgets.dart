@@ -480,9 +480,10 @@ class BiblePageWidgets {
     }
     final backgroundColor = currentHighlightColorHex != null
         ? Color(int.parse(currentHighlightColorHex.replaceFirst('#', '0xff')))
-            .withOpacity(0.30)
+            .withOpacity(0.25) // de 0.30 para 0.25
         : Colors.transparent;
 
+    // O resto da lógica para preparar o `mainTranslationWidget` e os interlineares continua a mesma...
     String verseTextForModalDialog = "";
     Widget mainTranslationWidget;
 
@@ -612,18 +613,9 @@ class BiblePageWidgets {
     // <<< INÍCIO DA MODIFICAÇÃO PRINCIPAL >>>
     // ==========================================================
 
-    // 1. O conteúdo interno do versículo (o que já estava dentro do GestureDetector)
-    final verseContentWidget = GestureDetector(
+    Widget verseWidget = GestureDetector(
       key: key,
       onLongPress: () {
-        // ... sua lógica de onLongPress permanece a mesma
-        String? currentNoteText;
-        if (hasNote) {
-          currentNoteText = userNotes.firstWhere(
-            (note) => note['verseId'] == verseId,
-            orElse: () => {},
-          )['noteText'] as String?;
-        }
         _showVerseOptionsModal(
           context,
           verseId: verseId,
@@ -638,9 +630,12 @@ class BiblePageWidgets {
         );
       },
       child: Container(
-        // A cor de fundo do highlight do usuário continua aqui
-        color: backgroundColor,
+        margin: const EdgeInsets.symmetric(vertical: 1.0),
         padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
+        decoration: BoxDecoration(
+          color: backgroundColor, // Fundo do highlight do usuário
+          borderRadius: BorderRadius.circular(8.0),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -689,36 +684,37 @@ class BiblePageWidgets {
       ),
     );
 
-    // 2. O Container externo que receberá a animação
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 1.0),
-      // A decoração (borda/brilho) será controlada pelo flutter_animate
-      decoration: BoxDecoration(
-        borderRadius:
-            BorderRadius.circular(8), // Borda arredondada para o brilho
-      ),
-      child: verseContentWidget,
-    )
-        .animate(
-          target: isRecommended ? 1.0 : 0.0, // O alvo da animação
-          onPlay: (controller) {
-            if (isRecommended) {
-              controller.repeat(reverse: true); // Faz a animação pulsar
-            }
-          },
-        )
-        .boxShadow(
-          begin: BoxShadow(color: Colors.transparent),
-          end: BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.6),
-            spreadRadius: 2,
-            blurRadius: 5,
-          ),
-          duration: 1500.ms, // Duração de cada "pulso"
-          curve: Curves.easeInOut,
-        );
+    // 2. Aplicamos a animação CONDICIONALMENTE.
+    if (isRecommended) {
+      // Se for recomendado, retornamos o widget com a animação em loop.
+      return verseWidget
+          .animate(onPlay: (controller) => controller.repeat(reverse: true))
+          .custom(
+            duration: 1500.ms,
+            curve: Curves.easeInOut,
+            builder: (context, value, child) {
+              final borderColor = Color.lerp(
+                Colors.transparent,
+                theme.colorScheme.primary.withOpacity(0.3),
+                value,
+              )!;
+
+              // O builder da animação agora apenas "desenha" a borda por cima do child.
+              return Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: borderColor, width: 2.0),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: child, // child aqui é o nosso verseWidget
+              );
+            },
+          );
+    } else {
+      // Se não for recomendado, retornamos o widget original, sem nenhuma animação.
+      return verseWidget;
+    }
     // ==========================================================
-    // <<< FIM DA MODIFICAÇÃO PRINCIPAL >>>
+    // <<< FIM DA CORREÇÃO >>>
     // ==========================================================
   }
 
