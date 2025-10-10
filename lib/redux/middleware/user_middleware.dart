@@ -796,19 +796,68 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
   return (Store<AppState> store, UpdateUserFieldAction action,
       NextDispatcher next) async {
     next(action);
+
     final userId = store.state.userState.userId;
     if (userId == null) return;
+
+    final firestore = FirebaseFirestore.instance;
+
     try {
       await firestoreService.updateUserField(
           userId, action.field, action.value);
+
+      if (action.field == 'learningGoal') {
+        print(
+            "UserMiddleware: 'learningGoal' alterado. Iniciando limpeza de caches...");
+
+        store.dispatch(ClearAllVerseRecommendationsAction());
+        store.dispatch(ClearRecommendedSermonsAction());
+        print(
+            "UserMiddleware: Estado local (Redux) de versículos e sermões limpo.");
+
+        // Limpa cache de versículos
+        Future.microtask(() async {
+          try {
+            final collectionRef = firestore
+                .collection('users')
+                .doc(userId)
+                .collection('recommendedVerses');
+            final snapshot = await collectionRef.get();
+            if (snapshot.docs.isNotEmpty) {
+              final batch = firestore.batch();
+              for (var doc in snapshot.docs) {
+                batch.delete(doc.reference);
+              }
+              await batch.commit();
+              print("UserMiddleware: Cache de versículos no Firestore limpo.");
+            }
+          } catch (e) {
+            print("UserMiddleware: Erro ao limpar cache de versículos: $e");
+          }
+        });
+
+        // Limpa cache de sermões
+        Future.microtask(() async {
+          try {
+            final docRef = firestore
+                .collection('users')
+                .doc(userId)
+                .collection('personalizedContent')
+                .doc('sermonRecommendations');
+            await docRef.delete();
+            print("UserMiddleware: Cache de sermões no Firestore limpo.");
+          } catch (e) {
+            print("UserMiddleware: Erro ao limpar cache de sermões: $e");
+          }
+        });
+      }
+
       final details = await firestoreService.getUserDetails(userId);
       if (details != null) {
         store.dispatch(UserDetailsLoadedAction(details));
       }
     } catch (e) {
-      print(
-          'UserMiddleware: Erro ao atualizar o campo "${action.field}" para $userId: $e');
-      // ✅ ALTERAÇÃO AQUI
+      print('UserMiddleware: Erro ao atualizar o campo "${action.field}": $e');
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         CustomNotificationService.showError(

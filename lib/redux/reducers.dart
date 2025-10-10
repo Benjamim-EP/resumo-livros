@@ -273,6 +273,7 @@ class UserState {
   final List<Map<String, dynamic>> inProgressItems;
   final String? learningGoal;
   final Map<String, List<int>> recommendedVerses;
+  final List<Map<String, dynamic>> recommendedSermons;
 
   UserState({
     this.userId,
@@ -335,6 +336,7 @@ class UserState {
     this.inProgressItems = const [],
     this.learningGoal,
     this.recommendedVerses = const {},
+    this.recommendedSermons = const [],
   });
 
   UserState copyWith({
@@ -410,6 +412,7 @@ class UserState {
     String? learningGoal,
     bool clearLearningGoal = false,
     Map<String, List<int>>? recommendedVerses,
+    List<Map<String, dynamic>>? recommendedSermons,
   }) {
     return UserState(
       userId: clearUserId ? null : (userId ?? this.userId),
@@ -516,6 +519,7 @@ class UserState {
       learningGoal:
           clearLearningGoal ? null : (learningGoal ?? this.learningGoal),
       recommendedVerses: recommendedVerses ?? this.recommendedVerses,
+      recommendedSermons: recommendedSermons ?? this.recommendedSermons,
     );
   }
 }
@@ -699,8 +703,16 @@ UserState userReducer(UserState state, dynamic action) {
       }
     }
     return state.copyWith(topicSaves: updatedTopicSaves);
+  } else if (action is RecommendedSermonsLoadedAction) {
+    return state.copyWith(recommendedSermons: action.sermons);
+  } else if (action is ClearRecommendedSermonsAction) {
+    return state.copyWith(recommendedSermons: []);
   }
 
+  // Garanta que o logout também limpe as recomendações.
+  else if (action is UserLoggedOutAction) {
+    return UserState(); // Retornar um estado limpo já zera a lista.
+  }
   // Diário do Usuário
   else if (action is LoadUserDiariesSuccessAction) {
     return state.copyWith(userDiaries: action.diaries);

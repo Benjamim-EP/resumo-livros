@@ -906,3 +906,19 @@ class VerseRecommendationsLoadedAction {
   final List<int> verses;
   VerseRecommendationsLoadedAction(this.chapterId, this.verses);
 }
+
+/// Disparada pela UI (LibraryPage) para iniciar a busca por sermões recomendados.
+class FetchRecommendedSermonsAction {
+  FetchRecommendedSermonsAction();
+}
+
+/// Despachada pelo middleware quando os dados da Cloud Function chegam.
+class RecommendedSermonsLoadedAction {
+  final List<Map<String, dynamic>> sermons;
+  RecommendedSermonsLoadedAction(this.sermons);
+}
+
+/// Disparada pelo middleware quando o 'learningGoal' muda, para limpar a UI.
+class ClearRecommendedSermonsAction {
+  ClearRecommendedSermonsAction();
+}

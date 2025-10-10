@@ -3367,12 +3367,11 @@ Texto do Capítulo:
         print(f"Enviando prompt para a OpenAI para o usuário {user_id}...")
         
         chat_completion = client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="gpt-5-nano",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.1,
             response_format={"type": "json_object"}
         )
         
@@ -3398,3 +3397,95 @@ Texto do Capítulo:
         print(f"ERRO CRÍTICO em getVerseRecommendationsForChapter: {e}")
         traceback.print_exc()
         return {"verses": []}
+
+
+
+# ==============================================================================
+# <<< NOVA CLOUD FUNCTION: GET SERMON RECOMMENDATIONS FOR USER >>>
+# ==============================================================================
+async def getSermonRecommendationsForUser_async(req: https_fn.CallableRequest) -> dict:
+    """
+    (Lógica Assíncrona Interna)
+    Busca o 'learningGoal' de um usuário, usa-o para encontrar sermões
+    semanticamente relevantes e armazena o resultado em cache no Firestore.
+    """
+    db = get_db()
+    
+    # 1. Autenticação e Validação
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            message='Você precisa estar logado para receber recomendações.'
+        )
+    
+    user_id = req.auth.uid
+    
+    if sermons_service is None:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno: serviço de sermões não está disponível.")
+
+    # 2. Lógica de Cache (Leitura)
+    cache_ref = db.collection('users').document(user_id).collection('personalizedContent').document('sermonRecommendations')
+    
+    try:
+        cached_doc = await asyncio.to_thread(cache_ref.get)
+        if cached_doc.exists:
+            cached_data = cached_doc.to_dict()
+            if 'recommendations' in cached_data:
+                print(f"Cache HIT para recomendações de sermões do usuário {user_id}.")
+                return {"recommendations": cached_data.get('recommendations', [])}
+    except Exception as e:
+        print(f"AVISO: Erro ao ler o cache de sermões para {user_id}: {e}. Prosseguindo...")
+
+    print(f"Cache MISS para recomendações de sermões do usuário {user_id}. Gerando novas recomendações.")
+
+    try:
+        # 3. Buscar Contexto (learningGoal do usuário)
+        user_ref = db.collection('users').document(user_id)
+        user_doc = await asyncio.to_thread(user_ref.get)
+        if not user_doc.exists:
+            raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message="Usuário não encontrado.")
+        
+        user_data = user_doc.to_dict()
+        learning_goal = user_data.get("learningGoal")
+        
+        if not learning_goal or not learning_goal.strip():
+            print(f"Usuário {user_id} não possui 'learningGoal'. Cacheando resultado vazio.")
+            await asyncio.to_thread(cache_ref.set, {'recommendations': [], 'createdAt': firestore.SERVER_TIMESTAMP})
+            return {"recommendations": []}
+
+        # 4. Chamar o Serviço de Busca Semântica
+        print(f"Chamando sermons_service com a query: '{learning_goal[:50]}...'")
+        recommended_sermons = await sermons_service.perform_sermon_semantic_search(
+            user_query=learning_goal,
+            top_k_sermons=5
+        )
+        
+        # 5. Salvar no Cache
+        print(f"Salvando {len(recommended_sermons)} recomendações de sermões no cache para {user_id}.")
+        await asyncio.to_thread(cache_ref.set, {
+            'recommendations': recommended_sermons,
+            'createdAt': firestore.SERVER_TIMESTAMP
+        })
+        
+        # 6. Retornar o resultado
+        return {"recommendations": recommended_sermons}
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO em getSermonRecommendationsForUser_async para {user_id}: {e}")
+        traceback.print_exc()
+        return {"recommendations": []}
+
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=60
+)
+def getSermonRecommendationsForUser(req: https_fn.CallableRequest) -> dict:
+    """
+    (Wrapper Síncrono)
+    Ponto de entrada para a chamada do cliente. Executa a lógica assíncrona.
+    """
+    return _run_async_handler_wrapper(
+        getSermonRecommendationsForUser_async(req)
+    )

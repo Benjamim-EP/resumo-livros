@@ -14,6 +14,7 @@ import 'package:septima_biblia/pages/library_page/generic_book_viewer_page.dart'
 import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/library_recommendation_page.dart';
 import 'package:septima_biblia/pages/library_page/promises_page.dart';
+import 'package:septima_biblia/pages/library_page/recommended_sermon_card.dart';
 import 'package:septima_biblia/pages/library_page/resource_detail_modal.dart';
 import 'package:septima_biblia/pages/library_page/spurgeon_sermons_index_page.dart';
 import 'package:septima_biblia/pages/biblie_page/study_hub_page.dart';
@@ -628,7 +629,12 @@ final List<Map<String, dynamic>> allLibraryItems = [
 class _LibraryViewModel {
   final bool isPremium;
   final List<Map<String, dynamic>> libraryShelves;
-  _LibraryViewModel({required this.isPremium, required this.libraryShelves});
+  final List<Map<String, dynamic>> recommendedSermons;
+  _LibraryViewModel({
+    required this.isPremium,
+    required this.libraryShelves,
+    required this.recommendedSermons,
+  });
   static _LibraryViewModel fromStore(Store<AppState> store) {
     bool isCurrentlyPremium = store.state.subscriptionState.status ==
         SubscriptionStatus.premiumActive;
@@ -648,6 +654,7 @@ class _LibraryViewModel {
     return _LibraryViewModel(
       isPremium: isCurrentlyPremium,
       libraryShelves: store.state.booksState.libraryShelves,
+      recommendedSermons: store.state.userState.recommendedSermons,
     );
   }
 }
@@ -876,6 +883,7 @@ class _LibraryPageState extends State<LibraryPage> {
       onInit: (store) {
         store.dispatch(LoadInProgressItemsAction());
         store.dispatch(LoadLibraryShelvesAction());
+        store.dispatch(FetchRecommendedSermonsAction());
       },
       builder: (context, viewModel) {
         return Scaffold(
@@ -948,7 +956,110 @@ class _LibraryPageState extends State<LibraryPage> {
                         child: RecommendationRow(shelfData: shelfData),
                       );
                     }).toList(),
+// ==========================================================
+                    // <<< INÍCIO DA NOVA SEÇÃO DE SERMÕES >>>
+                    // ==========================================================
+                    if (viewModel.recommendedSermons.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0),
+                                child: Text("Sermões Recomendados",
+                                    style: theme.textTheme.titleLarge),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 220, // Altura da prateleira horizontal
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0),
+                                  // +1 para o card estático que leva ao índice
+                                  itemCount:
+                                      1 + viewModel.recommendedSermons.length,
+                                  itemBuilder: (context, index) {
+                                    // 1. O primeiro item (index 0) é o card estático
+                                    if (index == 0) {
+                                      // Busca os dados do recurso "Sermões de Spurgeon" na lista global
+                                      final spurgeonResourceData =
+                                          allLibraryItems.firstWhere(
+                                        (item) =>
+                                            item['id'] == 'spurgeon-sermoes',
+                                        orElse: () => {},
+                                      );
 
+                                      if (spurgeonResourceData.isEmpty) {
+                                        return const SizedBox
+                                            .shrink(); // Não renderiza se não encontrar
+                                      }
+
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 12.0),
+                                        child: CompactResourceCard(
+                                          title: spurgeonResourceData['title'],
+                                          author:
+                                              spurgeonResourceData['author'],
+                                          coverImage: AssetImage(
+                                              spurgeonResourceData[
+                                                  'coverImagePath']),
+                                          onCardTap: () {
+                                            Navigator.push(
+                                                context,
+                                                FadeScalePageRoute(
+                                                    page: spurgeonResourceData[
+                                                        'destinationPage']));
+                                          },
+                                          onExpandTap: () {
+                                            // Você pode adicionar um modal de detalhes aqui se quiser
+                                            showModalBottomSheet(
+                                              context: context,
+                                              isScrollControlled: true,
+                                              backgroundColor:
+                                                  Colors.transparent,
+                                              builder: (ctx) =>
+                                                  ResourceDetailModal(
+                                                itemData: spurgeonResourceData,
+                                                onStartReading: () {
+                                                  Navigator.pop(ctx);
+                                                  Navigator.push(
+                                                      context,
+                                                      FadeScalePageRoute(
+                                                          page: spurgeonResourceData[
+                                                              'destinationPage']));
+                                                },
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }
+
+                                    // 2. O resto dos itens são os sermões recomendados
+                                    // (index - 1 para ajustar o índice da lista)
+                                    final sermonData =
+                                        viewModel.recommendedSermons[index - 1];
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets.only(right: 12.0),
+                                      child: RecommendedSermonCard(
+                                          sermonData: sermonData),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    // ==========================================================
+                    // <<< FIM DA NOVA SEÇÃO DE SERMÕES >>>
+                    // ==========================================================
                     // Sliver 3: Título para a grade completa de livros
                     if (_filteredLibraryItems.isNotEmpty)
                       SliverToBoxAdapter(
