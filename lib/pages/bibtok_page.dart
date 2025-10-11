@@ -418,7 +418,7 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(12),
                   image: DecorationImage(
                     image: NetworkImage(
-                        "https://picsum.photos/seed/$quoteId/450/800"),
+                        "https://picsum.photos/seed/$quoteId/225/400"),
                     fit: BoxFit.cover,
                     colorFilter: ColorFilter.mode(
                         Colors.black.withOpacity(0.4), BlendMode.darken),

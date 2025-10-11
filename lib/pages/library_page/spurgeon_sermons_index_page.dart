@@ -6,15 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart';
-import 'package:septima_biblia/components/bottomNavigationBar/bottomNavigationBar.dart'; // Para _UserCoinsViewModel
-import 'package:septima_biblia/components/login_required.dart';
+import 'package:intl/intl.dart'; // Para _UserCoinsViewModel
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/utils.dart';
 import 'package:septima_biblia/pages/library_page/sermon_card.dart';
-import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/pages/sermon_detail_page.dart';
-import 'package:septima_biblia/pages/sermons/sermon_chat_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/actions/sermon_search_actions.dart';
 import 'package:septima_biblia/redux/reducers.dart';
@@ -501,24 +497,24 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
               _buildContinuarLendoTab(theme, viewModel),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () {
-              final store = StoreProvider.of<AppState>(context, listen: false);
-              if (store.state.userState.isGuestUser) {
-                showLoginRequiredDialog(context,
-                    featureName: "o chat com Spurgeon AI");
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SermonChatPage()),
-                );
-              }
-            },
-            label: const Text("Conversar com IA"),
-            icon: const Icon(Icons.chat_bubble_outline),
-            tooltip: "Faça perguntas sobre os sermões de Spurgeon",
-          ),
+          // floatingActionButton: FloatingActionButton.extended(
+          //   onPressed: () {
+          //     final store = StoreProvider.of<AppState>(context, listen: false);
+          //     if (store.state.userState.isGuestUser) {
+          //       showLoginRequiredDialog(context,
+          //           featureName: "o chat com Spurgeon AI");
+          //     } else {
+          //       Navigator.push(
+          //         context,
+          //         MaterialPageRoute(
+          //             builder: (context) => const SermonChatPage()),
+          //       );
+          //     }
+          //   },
+          //   label: const Text("Conversar com IA"),
+          //   icon: const Icon(Icons.chat_bubble_outline),
+          //   tooltip: "Faça perguntas sobre os sermões de Spurgeon",
+          // ),
         );
       },
     );
