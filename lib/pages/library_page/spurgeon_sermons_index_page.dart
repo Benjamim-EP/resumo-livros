@@ -381,32 +381,6 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
     });
   }
 
-  void _showPremiumFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Recurso Premium 👑'),
-        content: const Text(
-            'Filtrar sermões por livro e capítulo é um recurso exclusivo para assinantes Premium.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Entendi')),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SubscriptionSelectionPage()));
-            },
-            child: const Text('Ver Planos'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -741,45 +715,35 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
   }
 
   Widget _buildFilterBarForPreload(ThemeData theme, bool isPremium) {
-    final Color premiumFeatureColor = Colors.amber.shade700;
+    // A variável isPremium não é mais necessária aqui, mas a mantemos para
+    // evitar quebrar a chamada do método no build, caso queira usá-la para outra coisa no futuro.
 
     final Widget filterBarContent = Row(
       children: <Widget>[
-        if (!isPremium)
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Icon(Icons.lock,
-                size: 18, color: premiumFeatureColor.withOpacity(0.7)),
-          ),
+        // <<< 1. ÍCONE DE CADEADO REMOVIDO >>>
+        // A verificação `if (!isPremium)` e o ícone de cadeado foram removidos daqui.
+
         Expanded(
           flex: 2,
           child: UtilsBiblePage.buildBookDropdown(
             context: context,
             selectedBook: _selectedBookFilterLocal,
             booksMap: _bibleBooksMap,
-            // ==========================================================
-            // <<< CORREÇÃO 1 AQUI >>>
-            // ==========================================================
             onChanged: (String? newValue) {
-              if (!isPremium) return; // Guarda de segurança
+              // <<< 2. BLOQUEIO REMOVIDO DO ONCHANGED >>>
+              // A linha 'if (!isPremium) return;' foi removida.
               setState(() {
                 _selectedBookFilterLocal = newValue;
                 _selectedChapterFilterLocal = null;
                 _applyLocalFiltersAndDisplayPreloadedSermons();
               });
             },
-            // ==========================================================
-            // <<< FIM DA CORREÇÃO 1 >>>
-            // ==========================================================
             backgroundColor:
                 (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
                     .withOpacity(0.4),
-            textColor: isPremium
-                ? theme.textTheme.bodySmall?.color
-                : Colors.grey.withOpacity(0.5),
-            iconColor: isPremium
-                ? theme.iconTheme.color?.withOpacity(0.6)
-                : Colors.grey.withOpacity(0.5),
+            // <<< 3. ESTILO UNIFICADO (NÃO DEPENDE MAIS DE isPremium) >>>
+            textColor: theme.textTheme.bodySmall?.color,
+            iconColor: theme.iconTheme.color?.withOpacity(0.6),
           ),
         ),
         const SizedBox(width: 8),
@@ -790,28 +754,20 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
             selectedChapter: _selectedChapterFilterLocal,
             booksMap: _bibleBooksMap,
             selectedBook: _selectedBookFilterLocal,
-            // ==========================================================
-            // <<< CORREÇÃO 2 AQUI >>>
-            // ==========================================================
             onChanged: (int? newValue) {
-              if (!isPremium) return; // Guarda de segurança
+              // <<< 2. BLOQUEIO REMOVIDO DO ONCHANGED >>>
+              // A linha 'if (!isPremium) return;' foi removida.
               setState(() {
                 _selectedChapterFilterLocal = newValue;
                 _applyLocalFiltersAndDisplayPreloadedSermons();
               });
             },
-            // ==========================================================
-            // <<< FIM DA CORREÇÃO 2 >>>
-            // ==========================================================
             backgroundColor:
                 (theme.inputDecorationTheme.fillColor ?? theme.cardColor)
                     .withOpacity(0.4),
-            textColor: isPremium
-                ? theme.textTheme.bodySmall?.color
-                : Colors.grey.withOpacity(0.5),
-            iconColor: isPremium
-                ? theme.iconTheme.color?.withOpacity(0.6)
-                : Colors.grey.withOpacity(0.5),
+            // <<< 3. ESTILO UNIFICADO (NÃO DEPENDE MAIS DE isPremium) >>>
+            textColor: theme.textTheme.bodySmall?.color,
+            iconColor: theme.iconTheme.color?.withOpacity(0.6),
           ),
         ),
         IconButton(
@@ -832,6 +788,8 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
       ],
     );
 
+    // <<< 4. WRAPPER DE BLOQUEIO REMOVIDO >>>
+    // Agora o Container é retornado diretamente, sem o GestureDetector e AbsorbPointer.
     return Container(
       padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
       decoration: BoxDecoration(
@@ -840,14 +798,7 @@ class _SpurgeonSermonsIndexPageState extends State<SpurgeonSermonsIndexPage>
             bottom: BorderSide(
                 color: theme.dividerColor.withOpacity(0.2), width: 1)),
       ),
-      child: isPremium
-          ? filterBarContent
-          : GestureDetector(
-              onTap: _showPremiumFilterDialog,
-              child: AbsorbPointer(
-                child: filterBarContent,
-              ),
-            ),
+      child: filterBarContent, // Retorna o conteúdo diretamente
     );
   }
 
