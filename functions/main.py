@@ -2124,8 +2124,9 @@ def getBibTokFeed(req: https_fn.CallableRequest) -> dict:
 
 async def _getBibTokFeed_async(req: https_fn.CallableRequest) -> dict:
     """
-    (Lógica Assíncrona Real)
-    Gera um feed de frases (BibTok) para um usuário.
+    (Lógica Assíncrona Real - VERSÃO ATUALIZADA)
+    Gera um feed de frases (BibTok) para um usuário, retornando listas separadas
+    para personalizadas e aleatórias.
     """
     db = get_db()
     
@@ -2133,39 +2134,55 @@ async def _getBibTokFeed_async(req: https_fn.CallableRequest) -> dict:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
 
     user_id = req.auth.uid
-    search_type = req.data.get("type", "random")
+    
+    # O frontend agora sempre pedirá ambos, então removemos o 'type'.
+    # O 'count' agora é o número de cada tipo que queremos.
     try:
         count = int(req.data.get("count", 10))
     except (ValueError, TypeError):
         count = 10
-    fetch_count = count * 4
+        
+    fetch_count = count * 4 # Busca 4x mais para ter margem de filtragem no cliente
 
-    print(f"BibTok Feed (async) chamada para User: {user_id}, Tipo: {search_type}, Contagem: {count}")
+    print(f"BibTok Feed (async) chamada para User: {user_id}, Contagem por tipo: {count}")
 
     try:
-        query_vector = None
-        if search_type == "personalized":
-            user_doc = await asyncio.to_thread(db.collection('users').document(user_id).get)
-            if user_doc.exists:
-                user_data = user_doc.to_dict()
-                recent_interactions = user_data.get("recentInteractions", [])
-                if recent_interactions:
-                    profile_text = " ".join([item.get("text", "") for item in recent_interactions])
-                    if profile_text.strip():
-                        query_vector = await sermons_service._generate_sermon_embedding_async(profile_text)
-                        print("Vetor de perfil gerado com sucesso.")
-        
-        if query_vector is None:
-            print("Gerando vetor aleatório para a busca de frases.")
-            query_vector = [random.uniform(-1, 1) for _ in range(1536)]
+        # --- BUSCA PERSONALIZADA ---
+        personalized_quotes = []
+        user_doc = await asyncio.to_thread(db.collection('users').document(user_id).get)
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            recent_interactions = user_data.get("recentInteractions", [])
+            if recent_interactions:
+                profile_text = " ".join([item.get("text", "") for item in recent_interactions])
+                if profile_text.strip():
+                    query_vector_personalized = await sermons_service._generate_sermon_embedding_async(profile_text)
+                    print("Vetor de perfil gerado com sucesso.")
+                    
+                    personalized_results = await _query_pinecone_quotes_async(vector=query_vector_personalized, top_k=fetch_count)
+                    
+                    for match in personalized_results:
+                        metadata = match.get("metadata", {})
+                        if "text" in metadata:
+                            personalized_quotes.append({
+                                "id": match.get("id"),
+                                "text": metadata.get("text"),
+                                "author": metadata.get("author"),
+                                "book": metadata.get("book"),
+                                "score": match.get("score", 0.0),
+                            })
 
-        pinecone_results = await _query_pinecone_quotes_async(vector=query_vector, top_k=fetch_count)
+        # --- BUSCA ALEATÓRIA ---
+        random_quotes = []
+        query_vector_random = [random.uniform(-1, 1) for _ in range(1536)]
+        print("Gerando vetor aleatório para a busca de frases.")
         
-        final_quotes = []
-        for match in pinecone_results:
+        random_results = await _query_pinecone_quotes_async(vector=query_vector_random, top_k=fetch_count)
+
+        for match in random_results:
             metadata = match.get("metadata", {})
             if "text" in metadata:
-                final_quotes.append({
+                random_quotes.append({
                     "id": match.get("id"),
                     "text": metadata.get("text"),
                     "author": metadata.get("author"),
@@ -2173,8 +2190,14 @@ async def _getBibTokFeed_async(req: https_fn.CallableRequest) -> dict:
                     "score": match.get("score", 0.0),
                 })
         
-        print(f"Retornando {len(final_quotes)} resultados brutos do Pinecone.")
-        return {"quotes": final_quotes}
+        print(f"Retornando {len(personalized_quotes)} frases personalizadas e {len(random_quotes)} frases aleatórias.")
+        
+        # <<< A MUDANÇA PRINCIPAL ESTÁ AQUI >>>
+        # Retorna um objeto com duas chaves, em vez de uma única lista.
+        return {
+            "personalized_quotes": personalized_quotes,
+            "random_quotes": random_quotes
+        }
 
     except Exception as e:
         print(f"ERRO CRÍTICO em _getBibTokFeed_async para o usuário {user_id}: {e}")

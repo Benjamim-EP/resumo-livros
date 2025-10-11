@@ -46,6 +46,9 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
   static const int _chunkSize = 10000;
   static const String _seenQuotesPrefsKey = 'bibtok_seen_ids_cache';
 
+  final List<Map<String, dynamic>> _personalizedBuffer = [];
+  final List<Map<String, dynamic>> _randomBuffer = [];
+
   final int _adInterval = 7;
   int _currentPageIndex = 0;
 
@@ -178,49 +181,48 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
 
   Future<void> _fetchAndBuildFeed({bool isInitialLoad = false}) async {
     if (_isFetchingMore) return;
-    if (mounted)
+    if (mounted) {
       setState(() {
         if (isInitialLoad)
           _isLoading = true;
         else
           _isFetchingMore = true;
       });
+    }
 
     try {
-      final store = StoreProvider.of<AppState>(context, listen: false);
-      final interactions =
-          store.state.userState.userDetails?['recentInteractions'];
-      final bool hasInteractions =
-          interactions != null && (interactions as List).isNotEmpty;
-
-      const batchSize = 10;
-      List<Map<String, dynamic>> newQuotes = [];
-      Set<String> allSeenIdsToFilter = {
-        ..._persistentSeenIds,
-        ..._sessionOnlySeenIds
-      };
-
-      if (hasInteractions) {
-        final personalizedCount = (batchSize * 0.7).round();
-        final randomCount = batchSize - personalizedCount;
-        final results = await Future.wait([
-          _fetchQuotesFromBackend(
-              type: 'personalized', count: personalizedCount),
-          _fetchQuotesFromBackend(type: 'random', count: randomCount),
-        ]);
-        newQuotes.addAll(results[0]);
-        newQuotes.addAll(results[1]);
-      } else {
-        newQuotes =
-            await _fetchQuotesFromBackend(type: 'random', count: batchSize);
+      // 1. Sempre busca mais frases se os buffers estiverem baixos
+      if (_personalizedBuffer.length < 5 || _randomBuffer.length < 15) {
+        print("BibTokPage: Buffers baixos. Buscando mais frases do backend...");
+        await _fetchAndFillBuffers();
       }
-      final unseenQuotes = newQuotes
-          .where((quote) => !allSeenIdsToFilter.contains(quote['id']))
-          .toList();
 
-      if (mounted) {
+      // 2. Intercala as frases dos buffers para a lista de exibição
+      final List<Map<String, dynamic>> newItemsToDisplay = [];
+      int itemsAdded = 0;
+      const int batchSize = 10; // Adiciona até 10 novos itens por vez
+
+      while (itemsAdded < batchSize &&
+          (_personalizedBuffer.isNotEmpty || _randomBuffer.isNotEmpty)) {
+        // Adiciona 1 personalizada
+        if (_personalizedBuffer.isNotEmpty) {
+          newItemsToDisplay.add(_personalizedBuffer.removeAt(0));
+          itemsAdded++;
+        }
+
+        // Adiciona até 3 aleatórias
+        int randomsToAdd = 0;
+        while (randomsToAdd < 3 && _randomBuffer.isNotEmpty) {
+          newItemsToDisplay.add(_randomBuffer.removeAt(0));
+          randomsToAdd++;
+          itemsAdded++;
+        }
+      }
+
+      if (newItemsToDisplay.isNotEmpty && mounted) {
         setState(() {
-          _feedItems.addAll(unseenQuotes);
+          _feedItems.addAll(newItemsToDisplay);
+          // Marca a primeira frase da lista como vista, se for a carga inicial
           if (isInitialLoad && _feedItems.isNotEmpty) {
             final firstQuoteId = _feedItems.first['id'] as String?;
             if (firstQuoteId != null &&
@@ -229,15 +231,68 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
             }
           }
         });
+        print(
+            "BibTokPage: ${newItemsToDisplay.length} novas frases intercaladas e adicionadas ao feed.");
+      } else {
+        print(
+            "BibTokPage: Nenhum item novo para adicionar após a filtragem e intercalação.");
       }
     } catch (e) {
       print("Erro ao construir feed do BibTok: $e");
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isLoading = false;
           _isFetchingMore = false;
         });
+      }
+    }
+  }
+
+  // <<< NOVA FUNÇÃO HELPER PARA BUSCAR E FILTRAR >>>
+  Future<void> _fetchAndFillBuffers() async {
+    try {
+      // Define quantos de cada tipo buscar. Queremos 1 para cada 3 aleatórias.
+      const int personalizedCount = 10;
+      const int randomCount = 30; // Mantém a proporção e busca um bom volume
+
+      final callable =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1")
+              .httpsCallable('getBibTokFeed');
+
+      // A chamada agora não precisa do 'type', mas envia a contagem desejada
+      final result = await callable.call<Map<String, dynamic>>(
+          {'count': max(personalizedCount, randomCount)});
+
+      final data = result.data;
+      final List<dynamic> personalized = data['personalized_quotes'] ?? [];
+      final List<dynamic> random = data['random_quotes'] ?? [];
+
+      final allSeenIdsToFilter = {
+        ..._persistentSeenIds,
+        ..._sessionOnlySeenIds
+      };
+
+      // Filtra e adiciona aos buffers
+      final unseenPersonalized = personalized
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .where((quote) =>
+              !allSeenIdsToFilter.contains(quote['id']) &&
+              !_personalizedBuffer.any((b) => b['id'] == quote['id']));
+
+      final unseenRandom = random
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .where((quote) =>
+              !allSeenIdsToFilter.contains(quote['id']) &&
+              !_randomBuffer.any((b) => b['id'] == quote['id']));
+
+      _personalizedBuffer.addAll(unseenPersonalized);
+      _randomBuffer.addAll(unseenRandom);
+
+      print(
+          "BibTokPage: Buffers preenchidos. Personalizadas: ${_personalizedBuffer.length}, Aleatórias: ${_randomBuffer.length}");
+    } catch (e) {
+      print("Erro ao preencher os buffers de frases: $e");
     }
   }
 
