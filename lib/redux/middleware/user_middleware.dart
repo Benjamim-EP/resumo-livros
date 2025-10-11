@@ -795,27 +795,42 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
     _updateUserField(FirestoreService firestoreService) {
   return (Store<AppState> store, UpdateUserFieldAction action,
       NextDispatcher next) async {
+    // Passa a ação para o reducer, caso ele faça alguma atualização otimista
     next(action);
 
     final userId = store.state.userState.userId;
-    if (userId == null) return;
+    if (userId == null) {
+      print(
+          "UserMiddleware (_updateUserField): Usuário não logado, abortando atualização.");
+      return;
+    }
 
+    // Instância do Firestore para as operações de limpeza de cache
     final firestore = FirebaseFirestore.instance;
 
     try {
+      // 1. Persiste a alteração no Firestore
       await firestoreService.updateUserField(
           userId, action.field, action.value);
 
+      // 2. Lógica especial executada APENAS se o campo atualizado for 'learningGoal'
       if (action.field == 'learningGoal') {
         print(
-            "UserMiddleware: 'learningGoal' alterado. Iniciando limpeza de caches...");
+            "UserMiddleware: 'learningGoal' alterado. Iniciando limpeza e recarregamento de caches de recomendação...");
 
+        // 2a. Limpa o estado local (Redux) das recomendações antigas
         store.dispatch(ClearAllVerseRecommendationsAction());
         store.dispatch(ClearRecommendedSermonsAction());
         print(
             "UserMiddleware: Estado local (Redux) de versículos e sermões limpo.");
 
-        // Limpa cache de versículos
+        // 2b. ACIONA PROATIVAMENTE A BUSCA POR NOVAS RECOMENDAÇÕES DE SERMÕES
+        store.dispatch(FetchRecommendedSermonsAction());
+        print(
+            "UserMiddleware: Ação para buscar novos sermões recomendados foi despachada.");
+
+        // 2c. Limpa os caches no Firestore em segundo plano (não bloqueia a UI)
+        // Limpa o cache de versículos recomendados
         Future.microtask(() async {
           try {
             final collectionRef = firestore
@@ -836,7 +851,7 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
           }
         });
 
-        // Limpa cache de sermões
+        // Limpa o cache de sermões recomendados
         Future.microtask(() async {
           try {
             final docRef = firestore
@@ -852,11 +867,13 @@ void Function(Store<AppState>, UpdateUserFieldAction, NextDispatcher)
         });
       }
 
+      // 3. Recarrega os detalhes do usuário para garantir que a UI esteja sincronizada
       final details = await firestoreService.getUserDetails(userId);
       if (details != null) {
         store.dispatch(UserDetailsLoadedAction(details));
       }
     } catch (e) {
+      // 4. Tratamento de erro
       print('UserMiddleware: Erro ao atualizar o campo "${action.field}": $e');
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {

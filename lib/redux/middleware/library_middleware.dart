@@ -38,9 +38,9 @@ List<Middleware<AppState>> createLibraryMiddleware() {
   void _fetchSermons(Store<AppState> store,
       FetchRecommendedSermonsAction action, NextDispatcher next) async {
     next(action);
-    if (store.state.userState.recommendedSermons.isNotEmpty) {
-      return;
-    }
+    // if (store.state.userState.recommendedSermons.isNotEmpty) {
+    //   return;
+    // }
     final userId = store.state.userState.userId;
     if (userId == null || (store.state.userState.learningGoal ?? '').isEmpty) {
       return;
@@ -49,8 +49,17 @@ List<Middleware<AppState>> createLibraryMiddleware() {
       final callable =
           functions.httpsCallable('getSermonRecommendationsForUser');
       final result = await callable.call<Map<String, dynamic>>({});
-      final recommendations =
-          List<Map<String, dynamic>>.from(result.data['recommendations'] ?? []);
+      // 1. Recebe a lista como 'dynamic' para evitar erros de tipo iniciais.
+      final dynamic rawRecommendations = result.data['recommendations'];
+      final List<Map<String, dynamic>> recommendations =
+          []; // Inicializa uma lista vazia do tipo correto.
+
+      // 2. Verifica se a resposta é de fato uma lista antes de iterar.
+      if (rawRecommendations != null && rawRecommendations is List) {
+        // 3. Itera sobre a lista dinâmica e converte cada item para o tipo desejado.
+        recommendations.addAll(rawRecommendations
+            .map((item) => Map<String, dynamic>.from(item as Map)));
+      }
       store.dispatch(RecommendedSermonsLoadedAction(recommendations));
     } catch (e) {
       print("ERRO no LibraryMiddleware ao buscar sermões: $e");

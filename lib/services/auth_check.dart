@@ -282,6 +282,7 @@ class AuthCheck extends StatelessWidget {
       store.dispatch(LoadUserCollectionsAction());
       store.dispatch(LoadUserTagsAction());
       store.dispatch(LoadUserCommentHighlightsAction());
+      store.dispatch(FetchRecommendedSermonsAction());
     } catch (e) {
       print(
           "AuthCheck: ERRO GERAL no processamento do login para ${user.uid}: $e");

@@ -956,8 +956,8 @@ class _LibraryPageState extends State<LibraryPage> {
                         child: RecommendationRow(shelfData: shelfData),
                       );
                     }).toList(),
-// ==========================================================
-                    // <<< INÍCIO DA NOVA SEÇÃO DE SERMÕES >>>
+                    // ==========================================================
+                    // <<< INÍCIO DA SEÇÃO DE SERMÕES >>>
                     // ==========================================================
                     if (viewModel.recommendedSermons.isNotEmpty)
                       SliverToBoxAdapter(
@@ -998,46 +998,55 @@ class _LibraryPageState extends State<LibraryPage> {
                                             .shrink(); // Não renderiza se não encontrar
                                       }
 
+                                      // <<< INÍCIO DA CORREÇÃO >>>
                                       return Padding(
                                         padding:
                                             const EdgeInsets.only(right: 12.0),
-                                        child: CompactResourceCard(
-                                          title: spurgeonResourceData['title'],
-                                          author:
-                                              spurgeonResourceData['author'],
-                                          coverImage: AssetImage(
-                                              spurgeonResourceData[
-                                                  'coverImagePath']),
-                                          onCardTap: () {
-                                            Navigator.push(
-                                                context,
-                                                FadeScalePageRoute(
-                                                    page: spurgeonResourceData[
-                                                        'destinationPage']));
-                                          },
-                                          onExpandTap: () {
-                                            // Você pode adicionar um modal de detalhes aqui se quiser
-                                            showModalBottomSheet(
-                                              context: context,
-                                              isScrollControlled: true,
-                                              backgroundColor:
-                                                  Colors.transparent,
-                                              builder: (ctx) =>
-                                                  ResourceDetailModal(
-                                                itemData: spurgeonResourceData,
-                                                onStartReading: () {
-                                                  Navigator.pop(ctx);
-                                                  Navigator.push(
-                                                      context,
-                                                      FadeScalePageRoute(
-                                                          page: spurgeonResourceData[
-                                                              'destinationPage']));
-                                                },
-                                              ),
-                                            );
-                                          },
+                                        // Envolva o CompactResourceCard com um SizedBox para dar-lhe uma largura finita.
+                                        child: SizedBox(
+                                          width:
+                                              120, // <<< LARGURA DEFINIDA AQUI
+                                          child: CompactResourceCard(
+                                            title:
+                                                spurgeonResourceData['title'],
+                                            author:
+                                                spurgeonResourceData['author'],
+                                            coverImage: AssetImage(
+                                                spurgeonResourceData[
+                                                    'coverImagePath']),
+                                            onCardTap: () {
+                                              Navigator.push(
+                                                  context,
+                                                  FadeScalePageRoute(
+                                                      page: spurgeonResourceData[
+                                                          'destinationPage']));
+                                            },
+                                            onExpandTap: () {
+                                              // Você pode adicionar um modal de detalhes aqui se quiser
+                                              showModalBottomSheet(
+                                                context: context,
+                                                isScrollControlled: true,
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                builder: (ctx) =>
+                                                    ResourceDetailModal(
+                                                  itemData:
+                                                      spurgeonResourceData,
+                                                  onStartReading: () {
+                                                    Navigator.pop(ctx);
+                                                    Navigator.push(
+                                                        context,
+                                                        FadeScalePageRoute(
+                                                            page: spurgeonResourceData[
+                                                                'destinationPage']));
+                                                  },
+                                                ),
+                                              );
+                                            },
+                                          ),
                                         ),
                                       );
+                                      // <<< FIM DA CORREÇÃO >>>
                                     }
 
                                     // 2. O resto dos itens são os sermões recomendados
@@ -1058,7 +1067,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         ),
                       ),
                     // ==========================================================
-                    // <<< FIM DA NOVA SEÇÃO DE SERMÕES >>>
+                    // <<< FIM DA SEÇÃO DE SERMÕES >>>
                     // ==========================================================
                     // Sliver 3: Título para a grade completa de livros
                     if (_filteredLibraryItems.isNotEmpty)
