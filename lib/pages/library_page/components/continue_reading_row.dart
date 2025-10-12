@@ -28,14 +28,23 @@ class ContinueReadingRow extends StatelessWidget {
 
     return StoreConnector<AppState, _ViewModel>(
       converter: _ViewModel.fromStore,
-      distinct: true, // Otimização: só reconstrói se inProgressItems mudar
+      distinct: true,
       builder: (context, viewModel) {
-        // Se não houver itens em progresso, não renderiza nada.
-        if (viewModel.inProgressItems.isEmpty) {
+        // <<< INÍCIO DA CORREÇÃO >>>
+        // Filtramos a lista para remover qualquer item cujo ID comece com 'sermon_'.
+        // Isso garante que apenas livros e outros recursos da biblioteca sejam exibidos.
+        final filteredItems = viewModel.inProgressItems.where((item) {
+          final contentId = item['contentId'] as String?;
+          // Se o ID não for nulo E NÃO começar com 'sermon_', o item é mantido.
+          return contentId != null && !contentId.startsWith('sermon_');
+        }).toList();
+        // <<< FIM DA CORREÇÃO >>>
+
+        // Se a lista filtrada estiver vazia, não renderiza nada.
+        if (filteredItems.isEmpty) {
           return const SizedBox.shrink();
         }
 
-        // Se houver itens, constrói a linha completa.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -48,14 +57,15 @@ class ContinueReadingRow extends StatelessWidget {
               ),
             ),
             SizedBox(
-              height: 220, // Altura fixa para a linha horizontal
+              height: 220,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: viewModel.inProgressItems.length,
+                // <<< CORREÇÃO AQUI: Usa a contagem da lista filtrada >>>
+                itemCount: filteredItems.length,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 itemBuilder: (context, index) {
-                  final item = viewModel.inProgressItems[index];
-                  // Cria um InProgressCard para cada item na lista do Redux
+                  // <<< CORREÇÃO AQUI: Pega o item da lista filtrada >>>
+                  final item = filteredItems[index];
                   return InProgressCard(progressData: item);
                 },
               ),
