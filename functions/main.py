@@ -49,16 +49,8 @@ CHAT_COST = 5
 
 
 cors_options = options.CorsOptions(
-    cors_origins=[
-        "https://septimahome.com",                  # Seu domínio principal
-        "https://www.septimahome.com",              # Boa prática incluir a versão 'www'
-        "https://resumo-livros.web.app",          # Domínio padrão do Firebase Hosting
-        "https://resumo-livros.firebaseapp.com",  # Domínio legado do Firebase Hosting
-        "http://localhost"                        # Para permitir testes locais com `flutter run`
-        # Você pode adicionar portas específicas se preferir, como "http://localhost:5000"
-    ],
-    cors_methods=["get", "post"] # Métodos HTTP permitidos
-)
+    cors_origins=["*"],  # <<< MUDE PARA APENAS ESTA LINHA
+    cors_methods=["get", "post"])
 
 try:
     import bible_search_service

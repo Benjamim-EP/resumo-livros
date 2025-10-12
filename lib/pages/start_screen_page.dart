@@ -5,6 +5,8 @@ import 'package:septima_biblia/redux/actions.dart'; // Importar ações
 import 'package:septima_biblia/redux/store.dart'; // Para AppState
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:septima_biblia/consts.dart'; // <<< IMPORTAR SEU ARQUIVO DE CONSTANTES GLOBAIS
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 
 // Remova a definição local da chave se você a importou de consts.dart
 // const String _guestUserCoinsPrefsKeyFromSermonSearch = 'sermon_search_guest_user_coins'; // REMOVER OU COMENTAR
@@ -76,61 +78,40 @@ class StartScreenPage extends StatelessWidget {
                     final store =
                         StoreProvider.of<AppState>(context, listen: false);
 
-                    int? loadedGuestCoins;
-                    int loadedAdsToday = 0;
-                    DateTime? loadedLastAdTime;
-
+                    // <<< INÍCIO DA CORREÇÃO >>>
                     try {
-                      final prefs = await SharedPreferences.getInstance();
-
-                      // Carrega moedas salvas para o convidado usando a constante global
-                      loadedGuestCoins = prefs.getInt(guestUserCoinsPrefsKey);
+                      // 1. FAZ O LOGIN ANÔNIMO PRIMEIRO
+                      UserCredential userCredential =
+                          await FirebaseAuth.instance.signInAnonymously();
                       print(
-                          "StartScreenPage: Moedas do convidado lidas do SharedPreferences (Chave: '$guestUserCoinsPrefsKey'): $loadedGuestCoins");
+                          'Usuário anônimo logado com sucesso: ${userCredential.user?.uid}');
 
-                      // Carrega dados relacionados a anúncios recompensados do convidado
-                      // Use chaves diferentes para estes se forem distintos do saldo de moedas gasto em buscas
-                      // Por exemplo, defina estas chaves em consts.dart também:
-                      // const String guestLastAdTimePrefsKey = 'guest_last_ad_time_reward';
-                      // const String guestAdsTodayPrefsKey = 'guest_ads_today_reward';
+                      // 2. DISPACHA A AÇÃO DE LOGIN NO REDUX (IMPORTANTE!)
+                      store.dispatch(UserLoggedInAction(
+                        userId: userCredential.user!.uid,
+                        email: '', // Anônimo não tem e-mail
+                        nome: 'Convidado',
+                      ));
 
-                      // Se você tem chaves separadas para os dados de anúncios do ad_middleware:
-                      // final String? lastAdTimeStringFromAd = prefs.getString(guestLastAdTimePrefsKey); // Usaria a chave do ad_middleware
-                      // loadedLastAdTime = lastAdTimeStringFromAd != null ? DateTime.tryParse(lastAdTimeStringFromAd) : null;
-                      // final int? guestAdsTodayFromAd = prefs.getInt(guestAdsTodayPrefsKey); // Usaria a chave do ad_middleware
+                      // 3. AGORA, DISPACHA A AÇÃO DE MODO CONVIDADO
+                      // (A lógica de carregar moedas pode ser removida se o backend for cuidar disso para anônimos)
+                      store.dispatch(UserEnteredGuestModeAction());
 
-                      // Lógica para resetar adsToday se for um novo dia (se você estiver carregando esses dados)
-                      // if (loadedLastAdTime != null) {
-                      //     final now = DateTime.now();
-                      //     if(now.year > loadedLastAdTime!.year || now.month > loadedLastAdTime!.month || now.day > loadedLastAdTime!.day) {
-                      //         loadedAdsToday = 0;
-                      //     } else {
-                      //         loadedAdsToday = guestAdsTodayFromAd ?? 0;
-                      //     }
-                      // } else {
-                      //    loadedAdsToday = guestAdsTodayFromAd ?? 0;
-                      // }
-                    } catch (e) {
-                      print(
-                          "StartScreenPage: Erro ao carregar dados de convidado do SharedPreferences: $e");
-                      // Não impede o fluxo, usará os defaults na ação
+                      // 4. NAVEGA PARA A TELA PRINCIPAL
+                      store.dispatch(RequestBottomNavChangeAction(
+                          2)); // Navega para Bíblia (índice 2)
+
+                      // Usamos pushAndRemoveUntil para garantir que a tela de start não possa ser acessada voltando
+                      Navigator.pushNamedAndRemoveUntil(
+                          context, '/mainAppScreen', (route) => false);
+                    } on FirebaseAuthException catch (e) {
+                      print("Erro ao fazer login anônimo: $e");
+                      if (context.mounted) {
+                        CustomNotificationService.showError(context,
+                            "Não foi possível entrar como convidado. Verifique sua conexão.");
+                      }
                     }
-
-                    // Despacha a ação com os dados carregados (ou nulos/padrão se não encontrados/erro)
-                    store.dispatch(UserEnteredGuestModeAction(
-                      initialCoins:
-                          loadedGuestCoins, // Passa as moedas carregadas (pode ser null)
-                      initialAdsToday:
-                          loadedAdsToday, // Passa o valor (pode ser 0)
-                      initialLastAdTime:
-                          loadedLastAdTime, // Passa o valor (pode ser null)
-                    ));
-
-                    // Solicita a navegação para a aba da Bíblia (índice 1) para convidados
-                    store.dispatch(RequestBottomNavChangeAction(1));
-
-                    Navigator.pushNamedAndRemoveUntil(
-                        context, '/mainAppScreen', (route) => false);
+                    // <<< FIM DA CORREÇÃO >>>
                   },
                   child: const Text('Continuar como Convidado'),
                 ),
