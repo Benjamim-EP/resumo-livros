@@ -28,10 +28,10 @@ import 'package:septima_biblia/redux/reducers.dart';
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
+import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:septima_biblia/services/notification_service.dart';
 import 'package:showcaseview/showcaseview.dart';
-import 'package:septima_biblia/services/tutorial_service.dart'; // <<< ARQUIVO REFATORADO
 import 'package:septima_biblia/services/update_service.dart'; // <<< ARQUIVO REFATORADO
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -164,7 +164,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
   StreamSubscription? _userDocSubscription;
   bool _isPremiumFromState = false;
   static bool _notificationsInitialized = false;
-  final TutorialService _tutorialService = TutorialService();
   bool _tutorialHasBeenChecked = false;
   final UpdateService _updateService = UpdateService();
   StreamSubscription? _userProgressSubscription;
@@ -321,6 +320,66 @@ class _MainAppScreenState extends State<MainAppScreen> {
     }
   }
 
+  Future<void> _showLearningGoalDialog(BuildContext context) async {
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final theme = Theme.of(context);
+
+    // Controlador para o campo de texto, inicializado com o valor atual
+    final TextEditingController controller = TextEditingController(
+      text: store.state.userState.learningGoal ?? '',
+    );
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: theme.dialogBackgroundColor,
+          title: Text("Seu Foco de Estudo",
+              style: TextStyle(color: theme.colorScheme.onSurface)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Descreva o que você busca aprender. A IA usará essa informação para destacar versículos relevantes para você.",
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  hintText: 'Ex: "Quero entender mais sobre a graça de Deus."',
+                  border: const OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text("Cancelar"),
+            ),
+            FilledButton(
+              onPressed: () {
+                final newGoal = controller.text.trim();
+                // Despacha a ação para atualizar o estado e salvar no Firestore
+                store.dispatch(UpdateLearningGoalAction(newGoal));
+                Navigator.of(dialogContext).pop();
+                // Mostra um feedback de sucesso
+                CustomNotificationService.showSuccess(
+                    context, 'Foco de estudo salvo!');
+              },
+              child: const Text("Salvar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildTabNavigator(
       GlobalKey<NavigatorState>? navigatorKey, Widget child) {
     if (navigatorKey == null) return child;
@@ -414,7 +473,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
             !isGuest &&
             !kIsIntegrationTest) {
           _tutorialHasBeenChecked = true;
-          _tutorialService.startMainTutorial(showcaseContext);
         }
 
         // ✅ O StoreConnector agora envolve o Scaffold para ouvir as mudanças de navegação
@@ -487,103 +545,97 @@ class _MainAppScreenState extends State<MainAppScreen> {
                       ),
                 title: Text(_getAppBarTitle(_selectedIndex, context)),
                 actions: [
-                  _tutorialService.buildShowcase(
-                    key: _tutorialService.keyMudarTema,
-                    title: l10n.showcaseChangeThemeTitle,
-                    description: l10n.showcaseChangeThemeDesc,
-                    child: IconButton(
-                      icon: Icon(_getThemeIcon(currentThemeOptionFromRedux)),
-                      tooltip: 'Mudar Tema',
-                      onPressed: () {
-                        final nextTheme =
-                            _getNextTheme(currentThemeOptionFromRedux);
-                        storeInstance.dispatch(SetThemeAction(nextTheme));
-                      },
-                    ),
+                  // --- Botão de Tema (sem showcase) ---
+                  IconButton(
+                    icon: Icon(_getThemeIcon(currentThemeOptionFromRedux)),
+                    tooltip: 'Mudar Tema',
+                    onPressed: () {
+                      final nextTheme =
+                          _getNextTheme(currentThemeOptionFromRedux);
+                      storeInstance.dispatch(SetThemeAction(nextTheme));
+                    },
                   ),
-                  _tutorialService.buildShowcase(
-                    key: _tutorialService.keyMoedas,
-                    title: 'Suas Moedas',
-                    description:
-                        'Use moedas para buscas avançadas. Assista a um anúncio para ganhar mais!',
-                    child: StoreConnector<AppState, _UserCoinsViewModel>(
-                      converter: (store) =>
-                          _UserCoinsViewModel.fromStore(store),
-                      builder: (context, coinsViewModel) {
-                        if (coinsViewModel.isPremium) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                coinsViewModel.hasWeeklyReward
-                                    ? Icons.card_giftcard
-                                    : Icons.monetization_on,
-                                color: currentThemeData.colorScheme.primary,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${coinsViewModel.totalUserCoins}',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: currentThemeData
-                                          .appBarTheme.titleTextStyle?.color ??
-                                      currentThemeData.colorScheme.onPrimary,
-                                ),
-                              ),
-                              if (coinsViewModel.totalUserCoins <
-                                  MAX_COINS_LIMIT)
-                                const RewardCooldownTimer()
-                              else
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8.0),
-                                  child: Icon(
-                                    Icons.check_circle,
-                                    color: currentThemeData.colorScheme.primary
-                                        .withOpacity(0.7),
-                                    size: 22,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      },
+
+                  // --- Botão de Foco de Estudo (sem showcase) ---
+                  if (!isGuest)
+                    IconButton(
+                      icon: const Icon(Icons.track_changes_outlined),
+                      tooltip: 'Definir Foco de Estudo',
+                      onPressed: () => _showLearningGoalDialog(context),
                     ),
-                  ),
-                  _tutorialService.buildShowcase(
-                    key: _tutorialService.keySejaPremium,
-                    title: 'Seja Premium',
-                    description:
-                        'Toque aqui para desbloquear todos os recursos e remover os anúncios.',
-                    child: StoreConnector<AppState, bool>(
-                      converter: (store) =>
-                          _UserCoinsViewModel.fromStore(store).isPremium,
-                      builder: (context, isPremium) {
-                        if (isPremium) {
-                          return const Padding(
-                            padding: EdgeInsets.only(right: 12.0),
-                            child: AnimatedInfinityIcon(),
-                          );
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: AnimatedPremiumButton(
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const SubscriptionSelectionPage(),
+
+                  // --- Widget de Moedas (sem showcase) ---
+                  StoreConnector<AppState, _UserCoinsViewModel>(
+                    converter: (store) => _UserCoinsViewModel.fromStore(store),
+                    builder: (context, coinsViewModel) {
+                      if (coinsViewModel.isPremium) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              coinsViewModel.hasWeeklyReward
+                                  ? Icons.card_giftcard
+                                  : Icons.monetization_on,
+                              color: currentThemeData.colorScheme.primary,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${coinsViewModel.totalUserCoins}',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: currentThemeData
+                                        .appBarTheme.titleTextStyle?.color ??
+                                    currentThemeData.colorScheme.onPrimary,
                               ),
                             ),
-                          ),
+                            if (coinsViewModel.totalUserCoins < MAX_COINS_LIMIT)
+                              const RewardCooldownTimer()
+                            else
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: Icon(
+                                  Icons.check_circle,
+                                  color: currentThemeData.colorScheme.primary
+                                      .withOpacity(0.7),
+                                  size: 22,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  // --- Widget Premium (sem showcase) ---
+                  StoreConnector<AppState, bool>(
+                    converter: (store) =>
+                        _UserCoinsViewModel.fromStore(store).isPremium,
+                    builder: (context, isPremium) {
+                      if (isPremium) {
+                        return const Padding(
+                          padding: EdgeInsets.only(right: 12.0),
+                          child: AnimatedInfinityIcon(),
                         );
-                      },
-                    ),
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: AnimatedPremiumButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const SubscriptionSelectionPage(),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -594,6 +646,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                 type: BottomNavigationBarType.fixed,
                 currentIndex: _selectedIndex,
                 onTap: (index) {
+                  // ... (sua lógica onTap permanece a mesma)
                   if (!mounted) return;
                   if (storeInstance.state.userState.isGuestUser && index == 0) {
                     showLoginRequiredDialog(context, featureName: "seu perfil");
@@ -610,7 +663,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
                       if (mounted) {
                         setState(() => _selectedIndex = index);
                         if (previousIndex == 1 && index != 1) {
-                          // Saiu do BibTok
                           final userState = storeInstance.state.userState;
                           if (userState.userId != null) {
                             if (userState.pendingSectionsToAdd.isNotEmpty ||
@@ -637,11 +689,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   }
                 },
                 items: [
-                  _tutorialService.buildShowcasedBottomNavItem(
-                      key: _tutorialService.keyAbaUsuario,
-                      icon: Icons.account_circle,
-                      label: l10n.navUser,
-                      description: l10n.showcaseUserDesc),
+                  // --- Itens da BottomNav (sem showcase) ---
+                  BottomNavigationBarItem(
+                    icon: const Icon(Icons.account_circle),
+                    label: l10n.navUser,
+                  ),
                   BottomNavigationBarItem(
                     icon: Image.asset(
                       'assets/icon/bibtok.png',
@@ -652,20 +704,18 @@ class _MainAppScreenState extends State<MainAppScreen> {
                     ),
                     label: 'BibTok',
                   ),
-                  _tutorialService.buildShowcasedBottomNavItem(
-                      key: _tutorialService.keyAbaBiblia,
-                      icon: Icons.book_outlined,
-                      label: l10n.bible,
-                      description: l10n.showcaseBibleDesc),
+                  BottomNavigationBarItem(
+                    icon: const Icon(Icons.book_outlined),
+                    label: l10n.bible,
+                  ),
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.groups_outlined),
                     label: l10n.community,
                   ),
-                  _tutorialService.buildShowcasedBottomNavItem(
-                      key: _tutorialService.keyAbaBiblioteca,
-                      icon: Icons.local_library_outlined,
-                      label: l10n.library,
-                      description: l10n.showcaseLibraryDesc),
+                  BottomNavigationBarItem(
+                    icon: const Icon(Icons.local_library_outlined),
+                    label: l10n.library,
+                  ),
                 ],
               ),
       ),

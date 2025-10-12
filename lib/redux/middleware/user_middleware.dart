@@ -324,6 +324,71 @@ List<Middleware<AppState>> createUserMiddleware() {
     }
   }
 
+  void _handleUpdateLearningGoal(Store<AppState> store,
+      UpdateLearningGoalAction action, NextDispatcher next) async {
+    next(action); // Passa a ação para o reducer atualizar a UI imediatamente
+
+    final userId = store.state.userState.userId;
+    if (userId == null) {
+      print("UserMiddleware (LearningGoal): Usuário não logado, abortando.");
+      return;
+    }
+
+    try {
+      print(
+          "UserMiddleware (LearningGoal): Atualizando 'learningGoal' para o usuário $userId...");
+      // 1. Salva o novo foco de estudo no Firestore
+      await firestoreService.updateUserField(
+          userId, 'learningGoal', action.newGoal);
+      print(
+          "UserMiddleware (LearningGoal): 'learningGoal' salvo com sucesso no Firestore.");
+
+      // <<< INÍCIO DA NOVA LÓGICA DE LIMPEZA DE CACHE >>>
+
+      // 2. Limpa o cache de recomendações no Firestore
+      print(
+          "UserMiddleware (LearningGoal): Iniciando limpeza do cache de 'recommendedVerses' no Firestore...");
+      final collectionRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('recommendedVerses');
+      final snapshot = await collectionRef.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        // Usa um batch para deletar todos os documentos de uma vez (mais eficiente)
+        final batch = FirebaseFirestore.instance.batch();
+        for (var doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+        print(
+            "UserMiddleware (LearningGoal): Cache de ${snapshot.docs.length} recomendações antigas limpo no Firestore.");
+      } else {
+        print(
+            "UserMiddleware (LearningGoal): Nenhum cache de recomendações para limpar no Firestore.");
+      }
+
+      // 3. Limpa o estado local (Redux) das recomendações antigas para a UI
+      store.dispatch(ClearAllVerseRecommendationsAction());
+      store.dispatch(ClearRecommendedSermonsAction());
+      print(
+          "UserMiddleware (LearningGoal): Caches de recomendação de versículos e sermões limpos no Redux.");
+
+      // 4. (Opcional) Inicia proativamente a busca por novas recomendações
+      store.dispatch(FetchRecommendedSermonsAction());
+
+      // <<< FIM DA NOVA LÓGICA DE LIMPEZA DE CACHE >>>
+    } catch (e) {
+      print(
+          'UserMiddleware (LearningGoal): Erro ao atualizar o campo "learningGoal" ou limpar caches: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        CustomNotificationService.showError(
+            context, 'Falha ao salvar o foco de estudo.');
+      }
+    }
+  }
+
   return [
     TypedMiddleware<AppState, LoadUserTagsAction>((store, action, next) async {
       next(action);
@@ -444,6 +509,9 @@ List<Middleware<AppState>> createUserMiddleware() {
     TypedMiddleware<AppState, SubmitReferralCodeAction>(_handleProcessReferral)
         .call,
     TypedMiddleware<AppState, LoadInProgressItemsAction>(_loadInProgressItems)
+        .call,
+    TypedMiddleware<AppState, UpdateLearningGoalAction>(
+            _handleUpdateLearningGoal)
         .call,
   ];
 }

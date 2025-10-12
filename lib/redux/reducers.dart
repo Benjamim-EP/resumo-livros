@@ -572,6 +572,9 @@ UserState userReducer(UserState state, dynamic action) {
     return state.copyWith(userDetails: newDetails);
   } else if (action is UnreadNotificationsCountUpdatedAction) {
     return state.copyWith(unreadNotificationsCount: action.count);
+  } else if (action is UpdateLearningGoalAction) {
+    // Atualiza o campo learningGoal no estado com o novo valor da ação
+    return state.copyWith(learningGoal: action.newGoal);
   }
   // ✅ ADICIONE ESTE NOVO BLOCO DE LÓGICA
   else if (action is LoadNotificationsAction) {
