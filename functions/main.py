@@ -48,6 +48,18 @@ print(">>>> main.py (VERSÃO LAZY INIT - CORRETA) <<<<")
 CHAT_COST = 5
 
 
+cors_options = options.CorsOptions(
+    cors_origins=[
+        "https://septimahome.com",                  # Seu domínio principal
+        "https://www.septimahome.com",              # Boa prática incluir a versão 'www'
+        "https://resumo-livros.web.app",          # Domínio padrão do Firebase Hosting
+        "https://resumo-livros.firebaseapp.com",  # Domínio legado do Firebase Hosting
+        "http://localhost"                        # Para permitir testes locais com `flutter run`
+        # Você pode adicionar portas específicas se preferir, como "http://localhost:5000"
+    ],
+    cors_methods=["get", "post"] # Métodos HTTP permitidos
+)
+
 try:
     import bible_search_service
     import sermons_service
@@ -124,7 +136,8 @@ def _run_async_handler_wrapper(async_func):
 @https_fn.on_call(
     secrets=["play-store-service-account-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def validate_google_play_purchase(req: https_fn.CallableRequest) -> dict:
     print("Handler validate_google_play_purchase chamado.")
@@ -209,7 +222,8 @@ async def _validate_google_play_purchase_async(req: https_fn.CallableRequest) ->
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=60
+    timeout_sec=60,
+    cors=cors_options
 )
 def semantic_bible_search(request: https_fn.CallableRequest) -> dict:
     print("Handler síncrono semantic_bible_search chamado.")
@@ -237,7 +251,8 @@ def semantic_bible_search(request: https_fn.CallableRequest) -> dict:
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=60
+    timeout_sec=60,
+    cors=cors_options
 )
 def semantic_sermon_search(request: https_fn.CallableRequest) -> dict:
     print("Handler síncrono semantic_sermon_search chamado.")
@@ -281,7 +296,8 @@ async def _delete_collection_with_db(coll_ref, batch_size):
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=300
+    timeout_sec=300,
+    cors=cors_options
 )
 def deleteUserData(req: https_fn.CallableRequest) -> dict:
     return _run_async_handler_wrapper(_delete_user_data_async(req))
@@ -546,7 +562,8 @@ async def _process_rtdn_async(event: pubsub_fn.CloudEvent[pubsub_fn.MessagePubli
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=120
+    timeout_sec=120,
+    cors=cors_options
 )
 
 def chatWithSermons(request: https_fn.CallableRequest) -> dict:
@@ -661,7 +678,8 @@ def chatWithSermons(request: https_fn.CallableRequest) -> dict:
     secrets=["openai-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=120
+    timeout_sec=120,
+    cors=cors_options
 )
 def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -781,7 +799,8 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
 # --- NOVA CLOUD FUNCTION PARA ATUALIZAR TEMPO DE LEITURA ---
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def updateReadingTime(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -953,7 +972,8 @@ def calculateUserScore(event: Event[Change]) -> None:
 # --- NOVA FUNÇÃO PARA CRIAR O SEPTIMA ID ---
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def assignSeptimaId(req: https_fn.CallableRequest) -> dict:
     """
@@ -1165,7 +1185,8 @@ def processWeeklyRanking(event: scheduler_fn.ScheduledEvent) -> None:
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512, # Memória suficiente para múltiplas chamadas de IA
-    timeout_sec=90 # Timeout maior por causa das múltiplas chamadas
+    timeout_sec=90,
+    cors=cors_options
 )
 def semanticBookSearch(request: https_fn.CallableRequest) -> dict:
     """
@@ -1207,7 +1228,8 @@ def semanticBookSearch(request: https_fn.CallableRequest) -> dict:
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_256,
-    secrets=["play-store-service-account-key"] # Necessário para autenticar a chamada HTTP do FCM
+    secrets=["play-store-service-account-key"],
+    cors=cors_options
 )
 def sendFriendRequest(req: https_fn.CallableRequest) -> dict:
     """
@@ -1369,7 +1391,9 @@ def sendFriendRequest(req: https_fn.CallableRequest) -> dict:
 
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
+
 )
 def acceptFriendRequest(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -1433,7 +1457,8 @@ def acceptFriendRequest(req: https_fn.CallableRequest) -> dict:
     
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def getRandomUsers(req: https_fn.CallableRequest) -> dict:
     """
@@ -1505,7 +1530,8 @@ def getRandomUsers(req: https_fn.CallableRequest) -> dict:
 # =================================================================
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def findUsers(req: https_fn.CallableRequest) -> dict: # <<< NOME ALTERADO
     """
@@ -1570,7 +1596,8 @@ def findUsers(req: https_fn.CallableRequest) -> dict: # <<< NOME ALTERADO
 
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def declineFriendRequest(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -1793,7 +1820,8 @@ def onNewComment(event: firestore_fn.Event[firestore_fn.Change]) -> None:
 @https_fn.on_call(
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -1933,7 +1961,8 @@ def createOrUpdatePost(req: https_fn.CallableRequest) -> dict:
 # <<< NOVA FUNÇÃO PARA EXCLUSÃO >>>
 @https_fn.on_call(
     secrets=["pinecone-api-key", "openai-api-key"], # Apenas a chave do pinecone é necessária aqui
-    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    cors=cors_options
 )
 def deletePost(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -2031,7 +2060,8 @@ def cleanupOldPosts(event: scheduler_fn.ScheduledEvent) -> None:
 # 2. FUNÇÃO PARA VERIFICAR A SENHA
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def verifyPostPassword(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -2109,7 +2139,8 @@ async def _query_pinecone_quotes_async(vector: list[float], top_k: int) -> list[
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=60
+    timeout_sec=60,
+    cors=cors_options
 )
 def getBibTokFeed(req: https_fn.CallableRequest) -> dict:
     """
@@ -2210,7 +2241,8 @@ async def _getBibTokFeed_async(req: https_fn.CallableRequest) -> dict:
 @https_fn.on_call(
     secrets=["openai-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def generateForumQuestion(req: https_fn.CallableRequest) -> dict:
     if not req.auth or not req.auth.uid:
@@ -2281,7 +2313,8 @@ def generateForumQuestion(req: https_fn.CallableRequest) -> dict:
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=60
+    timeout_sec=60,
+    cors=cors_options
 )
 def semanticCommunitySearch(request: https_fn.CallableRequest) -> dict:
     """
@@ -2305,7 +2338,8 @@ def semanticCommunitySearch(request: https_fn.CallableRequest) -> dict:
     
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def submitReplyOrComment(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -2399,7 +2433,8 @@ def submitReplyOrComment(req: https_fn.CallableRequest) -> dict:
 @https_fn.on_call(
     secrets=["openai-api-key"], # Garante que a chave da API OpenAI está disponível
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256 # Memória suficiente para esta tarefa
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def generateCommentarySummary(req: https_fn.CallableRequest) -> dict:
     """
@@ -2499,7 +2534,8 @@ Agora, resuma o seguinte texto:
 @https_fn.on_call(
     secrets=["openai-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def generateSermonSummary(req: https_fn.CallableRequest) -> dict:
     """
@@ -2593,7 +2629,8 @@ Agora, resuma o seguinte sermão:
 
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256
+    memory=options.MemoryOption.MB_256,
+    cors=cors_options
 )
 def processReferralById(req: https_fn.CallableRequest) -> dict:
     """
@@ -2712,7 +2749,8 @@ def processReferralById(req: https_fn.CallableRequest) -> dict:
 @https_fn.on_call(
     secrets=["STRIPE_SECRET_KEY"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_512 
+    memory=options.MemoryOption.MB_512 ,
+    cors=cors_options
 )
 def createStripeCheckoutSession(req: https_fn.CallableRequest) -> dict:
     if not req.auth or not req.auth.uid:
@@ -2794,7 +2832,8 @@ def createStripeCheckoutSession(req: https_fn.CallableRequest) -> dict:
 @https_fn.on_request(
     secrets=["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_512
+    memory=options.MemoryOption.MB_512,
+    cors=cors_options
 )
 def stripeWebhook(req: https_fn.Request) -> https_fn.Response:
     stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
@@ -2877,7 +2916,8 @@ def stripeWebhook(req: https_fn.Request) -> https_fn.Response:
 
 @https_fn.on_call(
     secrets=["STRIPE_SECRET_KEY"],
-    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    cors=cors_options
 )
 def createStripePortalSession(req: https_fn.CallableRequest) -> dict:
     if not req.auth or not req.auth.uid:
@@ -2914,7 +2954,8 @@ def createStripePortalSession(req: https_fn.CallableRequest) -> dict:
 # ==============================================================================
 @https_fn.on_call(
     secrets=["MERCADO_PAGO_ACCESS_TOKEN"],
-    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    cors=cors_options
 )
 def createMercadoPagoPix(req: https_fn.CallableRequest) -> dict:
     if not req.auth or not req.auth.uid:
@@ -3024,7 +3065,8 @@ def createMercadoPagoPix(req: https_fn.CallableRequest) -> dict:
 # ==============================================================================
 @https_fn.on_request(
     secrets=["MERCADO_PAGO_ACCESS_TOKEN", "STRIPE_SECRET_KEY"], # Adicionei stripe p/ n dar erro
-    region=options.SupportedRegion.SOUTHAMERICA_EAST1
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    cors=cors_options
 )
 def mercadoPagoWebhook(req: https_fn.Request) -> https_fn.Response:
     db = get_db()
@@ -3093,7 +3135,8 @@ def mercadoPagoWebhook(req: https_fn.Request) -> https_fn.Response:
     secrets=["openai-api-key"], # Garante que a chave da API OpenAI está disponível
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=60
+    timeout_sec=60,
+    cors=cors_options
 )
 def recommendLibraryBooks(req: https_fn.CallableRequest) -> dict:
     """
@@ -3277,7 +3320,8 @@ Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é 
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=60
+    timeout_sec=60,
+    cors=cors_options
 )
 def getVerseRecommendationsForChapter(req: https_fn.CallableRequest) -> dict:
     db = get_db()
@@ -3502,7 +3546,8 @@ async def getSermonRecommendationsForUser_async(req: https_fn.CallableRequest) -
     secrets=["openai-api-key", "pinecone-api-key"],
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
     memory=options.MemoryOption.MB_512,
-    timeout_sec=60
+    timeout_sec=60,
+    cors=cors_options
 )
 def getSermonRecommendationsForUser(req: https_fn.CallableRequest) -> dict:
     """
