@@ -799,7 +799,7 @@ def chatWithBibleSection(request: https_fn.CallableRequest) -> dict:
 # --- NOVA CLOUD FUNCTION PARA ATUALIZAR TEMPO DE LEITURA ---
 @https_fn.on_call(
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256,
+    memory=options.MemoryOption.MB_512,
     cors=cors_options
 )
 def updateReadingTime(req: https_fn.CallableRequest) -> dict:

@@ -27,6 +27,33 @@ class CustomNotificationService {
     ).show(context);
   }
 
+  static void showInfo(BuildContext context, String message,
+      {Duration duration = const Duration(seconds: 4)}) {
+    if (!context.mounted) return; // Verificação de segurança
+
+    Flushbar(
+      message: message,
+      icon: Icon(
+        Icons.info_outline, // Ícone de informação
+        size: 28.0,
+        color: Colors.blue.shade300, // Cor azul para informação
+      ),
+      duration: duration,
+      leftBarIndicatorColor: Colors.blue.shade300,
+      borderRadius: BorderRadius.circular(12),
+      margin: const EdgeInsets.all(8),
+      flushbarStyle: FlushbarStyle.FLOATING,
+      boxShadows: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.2),
+          spreadRadius: 1,
+          blurRadius: 8,
+        )
+      ],
+      backgroundColor: const Color(0xFF323232), // Mesmo fundo escuro
+    ).show(context);
+  }
+
   // Notificação de ERRO (vermelha)
   static void showError(BuildContext context, String message) {
     Flushbar(

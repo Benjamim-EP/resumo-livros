@@ -373,13 +373,21 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     return StoreConnector<AppState, _BibTokViewModel>(
       converter: (store) => _BibTokViewModel.fromStore(store),
       onInit: (store) {
-        if (store.state.userState.userDetails != null) {
+        final userState = store.state.userState;
+        // Se o usuário for convidado, ou se for um usuário logado que já tem
+        // seus dados carregados (ex: ao reiniciar o app), inicia o feed.
+        if (userState.isGuestUser || userState.userDetails != null) {
+          print(
+              "BibTok onInit: Usuário convidado ou já logado. Iniciando feed...");
           _initializeFeed();
         }
       },
+      // onWillChange ainda é útil para quando um usuário faz login na sessão atual.
       onWillChange: (previousViewModel, newViewModel) {
         if (previousViewModel?.userDetails == null &&
             newViewModel.userDetails != null) {
+          print(
+              "BibTok onWillChange: Usuário acabou de fazer login. Iniciando feed...");
           _initializeFeed();
         }
       },
