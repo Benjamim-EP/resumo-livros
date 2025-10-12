@@ -1,9 +1,11 @@
 // lib/redux/middleware/ad_middleware.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/consts.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
+import 'package:septima_biblia/services/ad_helper_web.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/main.dart';
@@ -30,16 +32,24 @@ const String _prefsAdsWatchedIn6HourWindowKey =
     'adsWatchedIn6HourWindow'; //NOVO
 
 List<Middleware<AppState>> createAdMiddleware() {
-  final adHelper = AdHelperAdMob(); // <<< Use a nova classe
+  if (kIsWeb) {
+    // Se estiver na web, retorna uma lista vazia de middlewares.
+    // Nenhum middleware de anúncio será registrado.
+    return [];
+  }
+  final adHelper =
+      kIsWeb ? AdHelperWeb() : AdHelperAdMob(); // <<< Use a nova classe
   final firestoreService = FirestoreService();
 
   // Pré-carrega o primeiro anúncio recompensado ao iniciar o app
-  adHelper.loadRewardedAd(
-    onAdLoaded: () =>
-        print("AdMiddleware: Anúncio recompensado pré-carregado com sucesso."),
-    onAdFailedToLoad: () =>
-        print("AdMiddleware: Falha ao pré-carregar anúncio recompensado."),
-  );
+  if (!kIsWeb) {
+    (adHelper as AdHelperAdMob).loadRewardedAd(
+      onAdLoaded: () => print(
+          "AdMiddleware: Anúncio recompensado pré-carregado com sucesso."),
+      onAdFailedToLoad: () =>
+          print("AdMiddleware: Falha ao pré-carregar anúncio recompensado."),
+    );
+  }
 
   return [
     TypedMiddleware<AppState, RequestRewardedAdAction>(
@@ -117,10 +127,15 @@ Future<void> _saveAdWindowStatsToPrefs(DateTime? timestamp, int count) async {
 
 void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
     _handleRequestRewardedAd(
-        AdHelperAdMob adHelper, FirestoreService firestoreService) {
+        dynamic adHelper, FirestoreService firestoreService) {
   return (Store<AppState> store, RequestRewardedAdAction action,
       NextDispatcher next) async {
     next(action);
+
+    if (kIsWeb) {
+      print("AdMiddleware: Anúncios recompensados não disponíveis na web.");
+      return;
+    }
 
     final BuildContext? currentContext = navigatorKey.currentContext;
     final userState = store.state.userState;
@@ -191,7 +206,7 @@ void Function(Store<AppState>, RequestRewardedAdAction, NextDispatcher)
     }
 
     // A chamada ao AdHelper para mostrar o anúncio
-    adHelper.showRewardedAd(
+    (adHelper as AdHelperAdMob).showRewardedAd(
       onUserEarnedReward: (RewardItem reward) async {
         print(
             "AdMiddleware (AdMob): Recompensa ganha! Quantidade: ${reward.amount}, Tipo: ${reward.type}");

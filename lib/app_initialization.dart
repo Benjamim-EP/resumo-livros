@@ -1,29 +1,48 @@
+// lib/app_initialization.dart
+
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:google_mobile_ads/google_mobile_ads.dart'; // REMOVIDO
-import 'package:septima_biblia/consts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
-// import 'package:startapp_sdk/startapp.dart'; // Adicione se for chamar StartAppSdk().setTestAdsEnabled(true) aqui
+// Importe o plugin de anúncios se for usá-lo aqui
+// import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AppInitialization {
   static Future<void> init() async {
-    await Firebase.initializeApp(
-      name:
-          "resumo-livros", // Certifique-se que este nome é intencional e consistente se você tiver múltiplos projetos Firebase. Se não, pode remover o parâmetro `name`.
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    // MobileAds.instance.initialize(); // REMOVIDO - Esta era a inicialização do AdMob
+    try {
+      // Tenta inicializar o Firebase normalmente.
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print("AppInitialization: Firebase inicializado com sucesso.");
+    } on FirebaseException catch (e) {
+      // Se a inicialização falhar, verificamos se o erro é de "app duplicado".
+      if (e.code == 'duplicate-app') {
+        // Se for, significa que outro plugin (provavelmente o de anúncios)
+        // já inicializou o Firebase. Isso não é um erro real para nós.
+        print(
+            "AppInitialization: A instância padrão do Firebase já existia (detectado via exceção).");
+      } else {
+        // Se for qualquer outro erro do Firebase, ele é um problema real e deve ser lançado.
+        print(
+            "AppInitialization: Erro INESPERADO do Firebase durante a inicialização: ${e.code} - ${e.message}");
+        rethrow;
+      }
+    } catch (e) {
+      // Captura outros erros não relacionados ao Firebase.
+      print("AppInitialization: Erro GERAL durante a inicialização: $e");
+      rethrow;
+    }
 
-    // A documentação do Start.io sugere que a inicialização principal ocorre
-    // através das configurações no AndroidManifest.xml e Info.plist.
-    // A chamada `StartAppSdk().setTestAdsEnabled(true)` é para habilitar anúncios de teste.
-    // Você pode colocar essa chamada aqui ou no initState do seu widget MyApp.
-    // Se você não precisar fazer nada assíncrono específico do Start.io aqui,
-    // esta função pode até não precisar de alterações relacionadas a ele,
-    // e a configuração de anúncios de teste pode ir para AdHelperStartIo ou MyApp.
+    // <<< FIM DA CORREÇÃO DEFINITIVA >>>
 
-    // Exemplo de como poderia ser, SE você quiser centralizar aqui:
-    // final startAppSdk = StartAppSdk();
-    // startAppSdk.setTestAdsEnabled(true); // Lembre-se de remover para produção
-    // print("Start.io Test Ads Enabled via AppInitialization.init()");
+    // Agora, com o Firebase garantidamente inicializado, podemos configurar
+    // outros serviços que dependem dele.
+    if (!kIsWeb) {
+      // Como o google_mobile_ads pode ter inicializado o Firebase,
+      // a inicialização do próprio SDK de anúncios deve vir DEPOIS.
+      // Exemplo:
+      // MobileAds.instance.initialize();
+      // print("Mobile Ads SDK inicializado.");
+    }
   }
 }

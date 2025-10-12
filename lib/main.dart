@@ -1,6 +1,7 @@
 // lib/main.dart
 
 import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 // REMOVA O IMPORT DO FLAVOR, NÃO É MAIS NECESSÁRIO AQUI
@@ -30,15 +31,23 @@ void main() async {
 
   // NENHUMA LÓGICA DE FLAVOR OU STORE PRECISA ESTAR AQUI AGORA.
   // A variável `store` já foi criada e configurada em `store.dart`.
-  if (dotenv.env['STRIPE_PUBLISHABLE_KEY'] != null) {
-    Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
-    await Stripe.instance.applySettings();
-    print("Stripe SDK inicializado com sucesso.");
+  if (!kIsWeb) {
+    if (dotenv.env['STRIPE_PUBLISHABLE_KEY'] != null) {
+      Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+      await Stripe.instance.applySettings();
+      print("Stripe SDK inicializado com sucesso para plataforma mobile.");
+    }
   }
 
   await initializeDateFormatting('pt_BR');
+
+  // 1. PRIMEIRO, inicializamos o Firebase e esperamos (await) a conclusão.
   await AppInitialization.init();
-  FirebaseInAppMessaging.instance.setMessagesSuppressed(false);
+
+  if (!kIsWeb) {
+    // Firebase In-App Messaging só funciona em mobile.
+    FirebaseInAppMessaging.instance.setMessagesSuppressed(false);
+  }
 
   // A variável `store` importada de `store.dart` já está pronta para uso.
   store.dispatch(LoadSavedThemeAction());

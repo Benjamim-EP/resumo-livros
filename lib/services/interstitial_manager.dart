@@ -1,6 +1,9 @@
 // lib/services/interstitial_manager.dart
+import 'package:flutter/foundation.dart';
+import 'package:septima_biblia/services/ad_helper_web.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:septima_biblia/services/ad_helper_admob.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class InterstitialManager {
   // --- CHAVES E CONSTANTES ---
@@ -13,7 +16,7 @@ class InterstitialManager {
   static const _subsequentCooldown = Duration(minutes: 7);
 
   // --- ESTADO INTERNO ---
-  final AdHelperAdMob _adHelper;
+  final dynamic _adHelper;
 
   // ✅ 1. NOVA VARIÁVEL DE ESTADO
   // Esta variável "lembra" se um anúncio já foi exibido nesta sessão.
@@ -56,6 +59,10 @@ class InterstitialManager {
   }
 
   Future<void> tryShowInterstitial({String? fromScreen}) async {
+    if (kIsWeb) {
+      print("InterstitialManager: Anúncios pulados (Plataforma Web).");
+      return;
+    }
     if (await _canShowInterstitial()) {
       print(
           "InterstitialManager: Cooldown permite. Tentando mostrar anúncio...");
@@ -80,4 +87,4 @@ class InterstitialManager {
 
 // A instância global permanece a mesma
 final InterstitialManager interstitialManager =
-    InterstitialManager(AdHelperAdMob());
+    InterstitialManager(kIsWeb ? AdHelperWeb() : AdHelperAdMob());
