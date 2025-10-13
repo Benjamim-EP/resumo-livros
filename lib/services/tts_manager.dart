@@ -1,17 +1,16 @@
 // lib/services/tts_manager.dart
+// lib/services/tts_manager.dart
 
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:septima_biblia/consts/bible_constants.dart'; // >>> 1. IMPORTAR CONSTANTES
+import 'package:septima_biblia/consts/bible_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
-// --- Enums e Classes de Dados ---
-enum TtsContentType {
-  versesOnly,
-  versesAndCommentary,
-}
+// Enums e Classes de Dados (sem alterações)
+enum TtsContentType { versesOnly, versesAndCommentary }
 
 class TtsQueueItem {
   final String sectionId;
@@ -21,7 +20,7 @@ class TtsQueueItem {
 
 enum TtsPlayerState { playing, stopped, paused }
 
-// --- Chave de Persistência ---
+// Constantes (sem alterações)
 const String _ttsVoicePrefsKey = 'user_selected_tts_voice';
 const Map<String, String> _voiceDisplayNames = {
   'pt-br-x-afs-local': 'Voz Feminina 2 (Offline)',
@@ -29,58 +28,136 @@ const Map<String, String> _voiceDisplayNames = {
   'pt-br-x-ptd-local': 'Voz Masculina 1 (Offline)',
 };
 
-/// Gerencia a funcionalidade de Text-to-Speech (TTS) para todo o aplicativo.
-///
-/// Utiliza o padrão Singleton para garantir uma única instância, evitando
-/// conflitos e gerenciando centralmente a fila de reprodução, o estado e
-/// a seleção de voz.
 class TtsManager {
-  // --- Singleton ---
   static final TtsManager _instance = TtsManager._internal();
   factory TtsManager() => _instance;
-  TtsManager._internal() {
-    _initTts();
-  }
 
   final FlutterTts _flutterTts = FlutterTts();
 
-  // --- Estado ---
+  // <<< INÍCIO DA GRANDE MUDANÇA: MAPAS ESTÁTICOS >>>
+
+  // 1. O mapa de variações agora é uma constante estática no código.
+  static const Map<String, String> _bookVariationsMap = {
+    "genesis": "gn", "gênesis": "gn", "gen": "gn", "exodo": "ex", "êxodo": "ex",
+    "levitico": "lv", "levítico": "lv", "numeros": "nm", "números": "nm",
+    "deuteronomio": "dt", "deuteronômio": "dt", "josue": "js", "josué": "js",
+    "juizes": "jz", "juízes": "jz", "rute": "rt", "1 samuel": "1sm",
+    "1samuel": "1sm",
+    "1 sm": "1sm", "1sam": "1sm", "2 samuel": "2sm", "2samuel": "2sm",
+    "2 sm": "2sm",
+    "2sam": "2sm", "1 reis": "1rs", "1reis": "1rs", "2 reis": "2rs",
+    "2reis": "2rs",
+    "1 cronicas": "1cr", "1 crônicas": "1cr", "1cronicas": "1cr",
+    "2 cronicas": "2cr",
+    "2 crônicas": "2cr", "2cronicas": "2cr", "esdras": "ed", "neemias": "ne",
+    "ester": "et", "jó": "job", "job": "job", "salmos": "sl", "salmo": "sl",
+    "sls": "sl",
+    "proverbios": "pv", "provérbios": "pv", "eclesiastes": "ec",
+    "cantico dos canticos": "ct",
+    "cântico dos cânticos": "ct", "cantares": "ct", "isaias": "is",
+    "isaías": "is",
+    "jeremias": "jr", "lamentacoes": "lm", "lamentações": "lm",
+    "ezequiel": "ez",
+    "daniel": "dn", "oseias": "os", "oséias": "os", "joel": "jl", "amos": "am",
+    "amós": "am", "obadias": "ob", "jonas": "jn", "miqueias": "mq",
+    "miquéias": "mq",
+    "naum": "na", "habacuque": "hc", "sofonias": "sf", "ageu": "ag",
+    "zacarias": "zc",
+    "malaquias": "ml", "mateus": "mt", "marcos": "mc", "lucas": "lc",
+    "joao": "jo",
+    "joão": "jo", "atos": "at", "atos dos apostolos": "at", "romanos": "rm",
+    "1 corintios": "1co", "1 coríntios": "1co", "1corintios": "1co",
+    "2 corintios": "2co",
+    "2 coríntios": "2co", "2corintios": "2co", "galatas": "gl", "gálatas": "gl",
+    "efesios": "ef", "efésios": "ef", "filipenses": "fp", "colossenses": "cl",
+    "1 tessalonicenses": "1ts", "1tessalonicenses": "1ts",
+    "2 tessalonicenses": "2ts",
+    "2tessalonicenses": "2ts", "1 timoteo": "1tm", "1 timóteo": "1tm",
+    "1timoteo": "1tm",
+    "2 timoteo": "2tm", "2 timóteo": "2tm", "2timoteo": "2tm", "tito": "tt",
+    "filemom": "fm", "filemon": "fm", "hebreus": "hb", "tiago": "tg",
+    "1 pedro": "1pe",
+    "1pedro": "1pe", "2 pedro": "2pe", "2pedro": "2pe", "1 joao": "1jo",
+    "1 joão": "1jo",
+    "1joao": "1jo", "2 joao": "2jo", "2 joão": "2jo", "2joao": "2jo",
+    "3 joao": "3jo",
+    "3 joão": "3jo", "3joao": "3jo", "judas": "jd", "apocalipse": "ap"
+    // Nota: A variação "jo" já aponta para "joão"
+  };
+
+  // 2. O mapa final combinado é construído uma única vez quando a classe é carregada.
+  static final Map<String, String> _variationToFullNameMap =
+      _createCombinedMap();
+
+  // 3. Função auxiliar que constrói o mapa combinado.
+  static Map<String, String> _createCombinedMap() {
+    print("TTS Manager: Construindo mapa combinado de livros para TTS...");
+    final finalMap = <String, String>{};
+
+    String normalize(String text) => unorm
+        .nfd(text.toLowerCase())
+        .replaceAll(RegExp(r'[\u0300-\u036f]'), '');
+
+    _bookVariationsMap.forEach((variation, abbrev) {
+      final fullName = ABBREV_TO_FULL_NAME_MAP[abbrev];
+      if (fullName != null) {
+        finalMap[normalize(variation)] = fullName;
+      }
+    });
+
+    // Garante que o nome completo também seja uma chave
+    ABBREV_TO_FULL_NAME_MAP.forEach((abbrev, fullName) {
+      finalMap[normalize(fullName)] = fullName;
+    });
+
+    print(
+        "TTS Manager: Mapa combinado de livros para TTS construído com sucesso.");
+    return finalMap;
+  }
+
+  // <<< FIM DA GRANDE MUDANÇA >>>
+
+  // Variáveis de estado (sem alterações)
   final ValueNotifier<TtsPlayerState> playerState =
       ValueNotifier(TtsPlayerState.stopped);
   final ValueNotifier<String?> currentPlayingId = ValueNotifier(null);
   final List<TtsQueueItem> _queue = [];
   int _currentQueueIndex = -1;
 
-  // --- Callbacks ---
+  // Callbacks (sem alterações)
   Function(String)? onError;
   Function()? onStart;
   Function()? onComplete;
 
-  // >>> INÍCIO DA MODIFICAÇÃO 1/3: Função de pré-processamento de texto <<<
+  TtsManager._internal() {
+    _initTts();
+  }
 
-  /// Pré-processa um texto, convertendo referências bíblicas em formato falável.
-  /// Ex: "Gn 3:2-5" se torna "Gênesis, capítulo 3, versículos 2 a 5".
+  // <<< FUNÇÃO DE PRÉ-PROCESSAMENTO ATUALIZADA >>>
   String _preprocessTextForTts(String text) {
-    // Regex para encontrar referências como: 1Jo 1:9, Gn 3:2-5, Sl 119:105, 2 Co 5:17
-    // A regex foi aprimorada para ser mais precisa
+    // Regex aprimorada (sem alterações, já estava boa)
     final RegExp bibleRefRegex = RegExp(
-      r'\b([1-3]?\s*[a-zA-ZçÇéÉáÁúÚíÍóÓâÂêÊôÔãÃõÕ]+)\s+(\d+)(?::(\d+(?:-\d+)?))?\b',
+      r'\b([1-3]?\s*[a-zA-ZçÇáéíóúâêôãõ\.]+)\s*(\d+)(?::(\d+(?:-\d+)?))?\b',
       caseSensitive: false,
     );
 
-    String processedText = text.replaceAllMapped(bibleRefRegex, (match) {
-      String bookAbbrevRaw =
-          match.group(1)!.trim().toLowerCase().replaceAll(' ', '');
+    String normalize(String text) => unorm
+        .nfd(text.toLowerCase())
+        .replaceAll(RegExp(r'[\u0300-\u036f]'), '');
+
+    return text.replaceAllMapped(bibleRefRegex, (match) {
+      String bookNamePart = match.group(1)!.trim();
       String chapter = match.group(2)!;
-      String? verses = match.group(3); // Pode ser nulo, ex: "Gn 1"
+      String? verses = match.group(3);
 
-      // Trata abreviações comuns que podem não estar no mapa, ex: "jo" vs "jó"
-      if (bookAbbrevRaw == 'jo' && text.toLowerCase().contains('jó')) {
-        bookAbbrevRaw = 'job';
+      String normalizedBookName = normalize(bookNamePart);
+
+      // Usa o mapa estático _variationToFullNameMap
+      String? bookFullName = _variationToFullNameMap[normalizedBookName];
+
+      if (bookFullName == null) {
+        return match.group(0)!;
       }
-
-      String bookFullName =
-          ABBREV_TO_FULL_NAME_MAP[bookAbbrevRaw] ?? match.group(1)!;
 
       if (verses != null) {
         if (verses.contains('-')) {
@@ -93,29 +170,12 @@ class TtsManager {
         return '$bookFullName, capítulo $chapter';
       }
     });
-
-    // Caso especial: se a string INTEIRA era só uma referência, adicione contexto.
-    // Ex: "2co 6:14" se torna "Referência: 2 Coríntios..."
-    final isOnlyReference = bibleRefRegex.allMatches(text.trim()).length == 1 &&
-        bibleRefRegex.firstMatch(text.trim())?.group(0) == text.trim();
-
-    if (isOnlyReference) {
-      // Remove a vírgula final se houver
-      if (processedText.endsWith(', ')) {
-        processedText = processedText.substring(0, processedText.length - 2);
-      }
-      return 'Referência: $processedText.';
-    }
-
-    // Adiciona uma pequena pausa após a referência processada para melhorar a fluidez.
-    processedText = processedText.replaceAllMapped(
-        RegExp(r'(versículos? \d+(?: a \d+)?)'),
-        (match) => '${match.group(0)!}, ');
-
-    return processedText;
   }
 
   void _initTts() async {
+    // <<< REMOVIDO: a chamada para _loadAndPrepareBookMaps() não é mais necessária aqui >>>
+    if (kIsWeb) return;
+
     if (Platform.isAndroid) {
       try {
         await _flutterTts.setEngine("com.google.android.tts");
@@ -130,7 +190,6 @@ class TtsManager {
     _flutterTts.setPitch(1.0);
 
     _flutterTts.setStartHandler(() {
-      // Somente muda para 'playing' se não estiver já nesse estado (evita loops com restart)
       if (playerState.value != TtsPlayerState.playing) {
         playerState.value = TtsPlayerState.playing;
       }
@@ -138,7 +197,6 @@ class TtsManager {
     });
 
     _flutterTts.setCompletionHandler(() {
-      // Se a fala terminou naturalmente (não foi pausada), avança na fila.
       if (playerState.value != TtsPlayerState.paused) {
         if (_currentQueueIndex < _queue.length - 1) {
           _playNextInQueue();
@@ -168,7 +226,13 @@ class TtsManager {
     if (_currentQueueIndex < _queue.length) {
       final item = _queue[_currentQueueIndex];
       currentPlayingId.value = item.sectionId;
-      _flutterTts.speak(item.textToSpeak);
+
+      // Pré-processa o texto ANTES de enviar para o motor TTS
+      final processedText = _preprocessTextForTts(item.textToSpeak);
+      print(
+          "TTS Manager: Texto Original: '${item.textToSpeak}' -> Processado: '$processedText'");
+
+      _flutterTts.speak(processedText);
     } else {
       _stopAndClear();
     }
@@ -213,15 +277,15 @@ class TtsManager {
 
   /// REINICIA a fala do item atual da fila.
   Future<void> restartCurrentItem() async {
+    if (kIsWeb) return;
     if (_currentQueueIndex >= 0 && _currentQueueIndex < _queue.length) {
       final currentItem = _queue[_currentQueueIndex];
-      // Atualiza o estado manualmente para refletir a ação de tocar
       playerState.value = TtsPlayerState.playing;
-      // >>> INÍCIO DA MODIFICAÇÃO 3/3: Pré-processa o texto aqui também <<<
+
+      // Pré-processa o texto ANTES de reiniciar
       final processedText = _preprocessTextForTts(currentItem.textToSpeak);
-      // Chama speak com o texto do item atual, reiniciando-o.
       await _flutterTts.speak(processedText);
-      // >>> FIM DA MODIFICAÇÃO 3/3 <<<
+
       print("TTS Manager: Reiniciando item atual da fila.");
     }
   }
