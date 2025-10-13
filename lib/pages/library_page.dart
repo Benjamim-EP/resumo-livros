@@ -670,7 +670,8 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _filteredLibraryItems = [];
-  bool _isSearchActive = false;
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _showSearchBar = false;
 
   // Estado dos filtros
   bool _showFiction = true; // Inicia como true para mostrar por padrão
@@ -679,6 +680,14 @@ class _LibraryPageState extends State<LibraryPage> {
 
   // Nova variável para controlar o modo de filtro exclusivo (ativado com long press)
   String? _exclusiveFilter; // Pode ser 'ficcao', 'isStudyGuide', ou null
+
+  bool get _isFilterOrSearchActive =>
+      _searchController.text.isNotEmpty ||
+      !_showFiction ||
+      !_showStudyGuide ||
+      _exclusiveFilter != null ||
+      _difficultyRange.start != 1 ||
+      _difficultyRange.end != 7;
 
   // Getter para verificar se algum filtro está ativo
   bool get _isAnyFilterActive =>
@@ -691,16 +700,14 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   void initState() {
     super.initState();
-    _filteredLibraryItems = allLibraryItems;
     _searchController.addListener(_filterLibrary);
-    // Chama o filtro uma vez no início para garantir que o estado inicial seja aplicado
-    _filterLibrary();
+    _filterLibrary(); // Executa uma vez no início para popular a lista.
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_filterLibrary);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -714,11 +721,11 @@ class _LibraryPageState extends State<LibraryPage> {
 
   // Lógica de filtragem atualizada para lidar com os dois modos
   void _filterLibrary() {
+    // A lógica de filtragem interna está correta e permanece a mesma.
     List<Map<String, dynamic>> filtered = allLibraryItems;
 
-    // --- Lógica Principal de Filtro (Ficção e Guias) ---
+    // Filtros de categoria
     if (_exclusiveFilter != null) {
-      // MODO EXCLUSIVO: Mostra apenas o tipo selecionado
       if (_exclusiveFilter == 'ficcao') {
         filtered = filtered.where((item) => item['ficcao'] == true).toList();
       } else if (_exclusiveFilter == 'isStudyGuide') {
@@ -726,7 +733,6 @@ class _LibraryPageState extends State<LibraryPage> {
             filtered.where((item) => item['isStudyGuide'] == true).toList();
       }
     } else {
-      // MODO NORMAL (EXCLUSÃO): Esconde os tipos desmarcados
       if (!_showFiction) {
         filtered = filtered.where((item) => item['ficcao'] != true).toList();
       }
@@ -736,15 +742,14 @@ class _LibraryPageState extends State<LibraryPage> {
       }
     }
 
-    // --- Filtros Adicionais (aplicados sobre o resultado anterior) ---
-    // Filtro de Dificuldade
+    // Filtro de dificuldade
     filtered = filtered.where((item) {
-      final difficulty = item['dificuldade'] as int? ?? 1; // Padrão 1 se nulo
+      final difficulty = item['dificuldade'] as int? ?? 1;
       return difficulty >= _difficultyRange.start &&
           difficulty <= _difficultyRange.end;
     }).toList();
 
-    // Filtro de Busca por Texto
+    // Filtro de texto (sempre aplicado)
     final query = _normalize(_searchController.text);
     if (query.isNotEmpty) {
       filtered = filtered.where((item) {
@@ -757,25 +762,32 @@ class _LibraryPageState extends State<LibraryPage> {
       }).toList();
     }
 
-    // Atualiza o estado da UI com a lista final filtrada
-    setState(() => _filteredLibraryItems = filtered);
+    // setState agora é chamado em um único lugar, garantindo que a UI sempre reflita o estado correto.
+    setState(() {
+      _filteredLibraryItems = filtered;
+    });
   }
 
   // Limpa apenas o texto da barra de busca
-  void _clearSearch() {
+  void _clearSearchText() {
     _searchController.clear();
-    FocusScope.of(context).unfocus();
+    // A chamada a _filterLibrary() já acontece automaticamente pelo listener.
   }
 
   // Limpa TODOS os filtros e reseta a lista
-  void _clearAllFilters() {
+  void _clearAllFiltersAndSearch() {
+    _searchController.clear();
     setState(() {
       _showFiction = true;
       _showStudyGuide = true;
       _exclusiveFilter = null;
       _difficultyRange = const RangeValues(1, 7);
     });
-    _filterLibrary(); // Reaplica os filtros (agora zerados)
+    // O listener do searchController já vai chamar _filterLibrary.
+    // Se não chamar (porque o texto já estava vazio), chamamos manualmente.
+    if (_searchController.text.isEmpty) {
+      _filterLibrary();
+    }
   }
 
   // Mostra o modal para selecionar o range de dificuldade
@@ -877,6 +889,7 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool shouldHideRecommendations = _searchController.text.isNotEmpty;
 
     return StoreConnector<AppState, _LibraryViewModel>(
       converter: (store) => _LibraryViewModel.fromStore(store),
@@ -889,338 +902,305 @@ class _LibraryPageState extends State<LibraryPage> {
         return Scaffold(
           body: Column(
             children: [
-              // ✅ ETAPA 1: BARRA DE BUSCA CONDICIONAL COM ANIMAÇÃO
+              // Barra de busca animada
               AnimatedSize(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return SizeTransition(
-                      sizeFactor: animation,
-                      child: FadeTransition(opacity: animation, child: child),
-                    );
-                  },
-                  child: _isSearchActive
-                      ? Padding(
-                          key: const ValueKey('searchBar'),
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: CustomSearchBar(
-                                  controller: _searchController,
-                                  hintText: "Buscar na biblioteca...",
-                                  onChanged: (value) {},
-                                  onClear: _clearSearch,
-                                ),
+                child: _showSearchBar
+                    ? Padding(
+                        key: const ValueKey('searchBar'),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: CustomSearchBar(
+                                controller: _searchController,
+                                hintText: "Buscar na biblioteca...",
+                                onChanged: (value) => setState(() {}),
+                                onClear: _clearSearchText,
                               ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: Icon(Icons.auto_awesome,
-                                    color: theme.colorScheme.primary),
-                                tooltip: "Recomendação com IA",
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            const LibraryRecommendationPage()),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        )
-                      : const SizedBox(
-                          key: ValueKey('empty'),
-                          height: 16), // Espaço quando a busca está oculta
-                ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(Icons.auto_awesome,
+                                  color: theme.colorScheme.primary),
+                              tooltip: "Recomendação com IA",
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const LibraryRecommendationPage()),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox(key: ValueKey('empty'), height: 16),
               ),
 
-              // --- CORPO PRINCIPAL COM SCROLL UNIFICADO ---
+              // Corpo principal com scroll
               Expanded(
                 child: CustomScrollView(
                   slivers: [
-                    // Sliver 1: Seção "Continuar Lendo"
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: ContinueReadingRow(),
-                      ),
-                    ),
-
-                    // Sliver 2: Renderiza dinamicamente as prateleiras de recomendação
-                    ...viewModel.libraryShelves.map((shelfData) {
-                      return SliverToBoxAdapter(
-                        child: RecommendationRow(shelfData: shelfData),
-                      );
-                    }).toList(),
-                    // ==========================================================
-                    // <<< INÍCIO DA SEÇÃO DE SERMÕES >>>
-                    // ==========================================================
-                    if (viewModel.recommendedSermons.isNotEmpty)
-                      SliverToBoxAdapter(
+                    // --- SEÇÕES CONDICIONAIS ---
+                    if (!shouldHideRecommendations) ...[
+                      // "Continuar Lendo"
+                      const SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
-                                child: Text("Sermões Recomendados",
-                                    style: theme.textTheme.titleLarge),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                height: 220, // Altura da prateleira horizontal
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: ContinueReadingRow(),
+                        ),
+                      ),
+
+                      // Prateleiras dinâmicas do Firestore
+                      ...viewModel.libraryShelves.map((shelfData) {
+                        return SliverToBoxAdapter(
+                          child: RecommendationRow(shelfData: shelfData),
+                        );
+                      }).toList(),
+
+                      // "Sermões Recomendados"
+                      if (viewModel.recommendedSermons.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16.0),
-                                  // +1 para o card estático que leva ao índice
-                                  itemCount:
-                                      1 + viewModel.recommendedSermons.length,
-                                  itemBuilder: (context, index) {
-                                    // 1. O primeiro item (index 0) é o card estático
-                                    if (index == 0) {
-                                      // Busca os dados do recurso "Sermões de Spurgeon" na lista global
-                                      final spurgeonResourceData =
-                                          allLibraryItems.firstWhere(
-                                        (item) =>
-                                            item['id'] == 'spurgeon-sermoes',
-                                        orElse: () => {},
-                                      );
-
-                                      if (spurgeonResourceData.isEmpty) {
-                                        return const SizedBox
-                                            .shrink(); // Não renderiza se não encontrar
+                                  child: Text("Sermões Recomendados",
+                                      style: theme.textTheme.titleLarge),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  height: 220,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0),
+                                    itemCount:
+                                        1 + viewModel.recommendedSermons.length,
+                                    itemBuilder: (context, index) {
+                                      if (index == 0) {
+                                        final spurgeonResourceData =
+                                            allLibraryItems.firstWhere(
+                                          (item) =>
+                                              item['id'] == 'spurgeon-sermoes',
+                                          orElse: () => {},
+                                        );
+                                        if (spurgeonResourceData.isEmpty) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: 12.0),
+                                          child: SizedBox(
+                                            width: 120,
+                                            child: CompactResourceCard(
+                                              title:
+                                                  spurgeonResourceData['title'],
+                                              author: spurgeonResourceData[
+                                                  'author'],
+                                              coverImage: AssetImage(
+                                                  spurgeonResourceData[
+                                                      'coverImagePath']),
+                                              onCardTap: () {
+                                                Navigator.push(
+                                                    context,
+                                                    FadeScalePageRoute(
+                                                        page: spurgeonResourceData[
+                                                            'destinationPage']));
+                                              },
+                                              onExpandTap: () {
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  isScrollControlled: true,
+                                                  backgroundColor:
+                                                      Colors.transparent,
+                                                  builder: (ctx) =>
+                                                      ResourceDetailModal(
+                                                    itemData:
+                                                        spurgeonResourceData,
+                                                    onStartReading: () {
+                                                      Navigator.pop(ctx);
+                                                      Navigator.push(
+                                                          context,
+                                                          FadeScalePageRoute(
+                                                              page: spurgeonResourceData[
+                                                                  'destinationPage']));
+                                                    },
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        );
                                       }
-
-                                      // <<< INÍCIO DA CORREÇÃO >>>
+                                      final sermonData = viewModel
+                                          .recommendedSermons[index - 1];
                                       return Padding(
                                         padding:
                                             const EdgeInsets.only(right: 12.0),
-                                        // Envolva o CompactResourceCard com um SizedBox para dar-lhe uma largura finita.
-                                        child: SizedBox(
-                                          width:
-                                              120, // <<< LARGURA DEFINIDA AQUI
-                                          child: CompactResourceCard(
-                                            title:
-                                                spurgeonResourceData['title'],
-                                            author:
-                                                spurgeonResourceData['author'],
-                                            coverImage: AssetImage(
-                                                spurgeonResourceData[
-                                                    'coverImagePath']),
-                                            onCardTap: () {
-                                              Navigator.push(
-                                                  context,
-                                                  FadeScalePageRoute(
-                                                      page: spurgeonResourceData[
-                                                          'destinationPage']));
-                                            },
-                                            onExpandTap: () {
-                                              // Você pode adicionar um modal de detalhes aqui se quiser
-                                              showModalBottomSheet(
-                                                context: context,
-                                                isScrollControlled: true,
-                                                backgroundColor:
-                                                    Colors.transparent,
-                                                builder: (ctx) =>
-                                                    ResourceDetailModal(
-                                                  itemData:
-                                                      spurgeonResourceData,
-                                                  onStartReading: () {
-                                                    Navigator.pop(ctx);
-                                                    Navigator.push(
-                                                        context,
-                                                        FadeScalePageRoute(
-                                                            page: spurgeonResourceData[
-                                                                'destinationPage']));
-                                                  },
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
+                                        child: RecommendedSermonCard(
+                                            sermonData: sermonData),
                                       );
-                                      // <<< FIM DA CORREÇÃO >>>
-                                    }
-
-                                    // 2. O resto dos itens são os sermões recomendados
-                                    // (index - 1 para ajustar o índice da lista)
-                                    final sermonData =
-                                        viewModel.recommendedSermons[index - 1];
-                                    return Padding(
-                                      padding:
-                                          const EdgeInsets.only(right: 12.0),
-                                      child: RecommendedSermonCard(
-                                          sermonData: sermonData),
-                                    );
-                                  },
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    // ==========================================================
-                    // <<< FIM DA SEÇÃO DE SERMÕES >>>
-                    // ==========================================================
-                    // Sliver 3: Título para a grade completa de livros
-                    if (_filteredLibraryItems.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                          child: Text(
-                            "Toda a Biblioteca",
-                            style: theme.textTheme.titleLarge,
-                          ),
-                        ),
-                      ),
+                    ],
 
-                    // Sliver 4: A grade com todos os livros da biblioteca (filtrados)
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16.0),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.5,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final itemData = _filteredLibraryItems[index];
-                            final bool isFullyPremium =
-                                itemData['isFullyPremium'] == true;
-                            final String coverPath =
-                                itemData['coverImagePath'] ?? '';
-
-                            // Lógica completa para o toque no card
-                            void startReadingAction() {
-                              AnalyticsService.instance
-                                  .logLibraryResourceOpened(itemData['title']);
-                              if (isFullyPremium && !viewModel.isPremium) {
-                                _showPremiumDialog(context);
-                              } else {
-                                if (!viewModel.isPremium) {
-                                  interstitialManager.tryShowInterstitial(
-                                      fromScreen:
-                                          "Library_To_${itemData['title']}");
-                                }
-                                Navigator.push(
-                                  context,
-                                  FadeScalePageRoute(
-                                      page: itemData['destinationPage']),
-                                );
-                              }
-                            }
-
-                            // Lógica completa para o menu de detalhes
-                            void openDetailsModal() {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (ctx) => ResourceDetailModal(
-                                  itemData: itemData,
-                                  onStartReading: () {
-                                    Navigator.pop(ctx);
-                                    startReadingAction();
-                                  },
-                                ),
-                              );
-                            }
-
-                            return CompactResourceCard(
-                              title: itemData['title'],
-                              author: itemData['author'],
-                              coverImage: coverPath.isNotEmpty
-                                  ? AssetImage(coverPath)
-                                  : null,
-                              isPremium: isFullyPremium,
-                              onCardTap: startReadingAction,
-                              onExpandTap: openDetailsModal,
-                            ).animate().fadeIn(
-                                duration: 400.ms,
-                                delay: (50 * (index % 15)).ms);
-                          },
-                          childCount: _filteredLibraryItems.length,
+                    // Título da grade principal
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                        child: Text(
+                          _searchController.text.isNotEmpty
+                              ? "Resultados da Busca"
+                              : "Toda a Biblioteca",
+                          style: theme.textTheme.titleLarge,
                         ),
                       ),
                     ),
 
-                    // Sliver 5: Mensagem para quando a busca ou filtro não retorna resultados
-                    if (_filteredLibraryItems.isEmpty)
-                      const SliverFillRemaining(
-                        child: Center(
-                          child: Text(
-                              "Nenhum item encontrado com os filtros aplicados."),
-                        ),
-                      ),
+                    // --- Grade de Resultados ---
+                    _filteredLibraryItems.isEmpty
+                        ? SliverFillRemaining(
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Text(
+                                  _searchController.text.isNotEmpty
+                                      ? "Nenhum livro encontrado para '${_searchController.text}'."
+                                      : "Nenhum livro corresponde aos filtros aplicados.",
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          )
+                        : SliverPadding(
+                            padding: const EdgeInsets.all(16.0),
+                            sliver: SliverGrid(
+                              gridDelegate:
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 140.0,
+                                mainAxisExtent: 210.0,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 16,
+                              ),
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final itemData = _filteredLibraryItems[index];
+                                  final bool isFullyPremium =
+                                      itemData['isFullyPremium'] == true;
+                                  final String coverPath =
+                                      itemData['coverImagePath'] ?? '';
+
+                                  void startReadingAction() {
+                                    AnalyticsService.instance
+                                        .logLibraryResourceOpened(
+                                            itemData['title']);
+                                    if (isFullyPremium &&
+                                        !viewModel.isPremium) {
+                                      _showPremiumDialog(context);
+                                    } else {
+                                      if (!viewModel.isPremium) {
+                                        interstitialManager.tryShowInterstitial(
+                                            fromScreen:
+                                                "Library_To_${itemData['title']}");
+                                      }
+                                      Navigator.push(
+                                        context,
+                                        FadeScalePageRoute(
+                                            page: itemData['destinationPage']),
+                                      );
+                                    }
+                                  }
+
+                                  void openDetailsModal() {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (ctx) => ResourceDetailModal(
+                                        itemData: itemData,
+                                        onStartReading: () {
+                                          Navigator.pop(ctx);
+                                          startReadingAction();
+                                        },
+                                      ),
+                                    );
+                                  }
+
+                                  return CompactResourceCard(
+                                    title: itemData['title'],
+                                    author: itemData['author'],
+                                    coverImage: coverPath.isNotEmpty
+                                        ? AssetImage(coverPath)
+                                        : null,
+                                    isPremium: isFullyPremium,
+                                    onCardTap: startReadingAction,
+                                    onExpandTap: openDetailsModal,
+                                  ).animate().fadeIn(
+                                      duration: 400.ms,
+                                      delay: (50 * (index % 15)).ms);
+                                },
+                                childCount: _filteredLibraryItems.length,
+                              ),
+                            ),
+                          ),
                   ],
                 ),
               ),
 
-              // --- BARRA DE FILTROS INFERIOR ---
+              // Barra de filtros inferior
               LibraryFilterBar(
                 showFiction: _showFiction,
                 showStudyGuide: _showStudyGuide,
                 exclusiveFilter: _exclusiveFilter,
                 difficultyRange: _difficultyRange,
-                isAnyFilterActive: _isAnyFilterActive,
-                onFictionTap: () {
-                  setState(() {
-                    if (_exclusiveFilter == 'ficcao') {
-                      _exclusiveFilter = null;
-                    } else {
-                      _exclusiveFilter = null;
-                      _showFiction = !_showFiction;
-                    }
-                  });
+                isAnyFilterActive: _isFilterOrSearchActive,
+                onFictionTap: () => setState(() {
+                  _exclusiveFilter =
+                      (_exclusiveFilter == 'ficcao') ? null : null;
+                  _showFiction = !_showFiction;
                   _filterLibrary();
-                },
-                onFictionLongPress: () {
-                  setState(() => _exclusiveFilter = 'ficcao');
+                }),
+                onFictionLongPress: () => setState(() {
+                  _exclusiveFilter = 'ficcao';
                   _filterLibrary();
-                },
-                onStudyGuideTap: () {
-                  setState(() {
-                    if (_exclusiveFilter == 'isStudyGuide') {
-                      _exclusiveFilter = null;
-                    } else {
-                      _exclusiveFilter = null;
-                      _showStudyGuide = !_showStudyGuide;
-                    }
-                  });
+                }),
+                onStudyGuideTap: () => setState(() {
+                  _exclusiveFilter =
+                      (_exclusiveFilter == 'isStudyGuide') ? null : null;
+                  _showStudyGuide = !_showStudyGuide;
                   _filterLibrary();
-                },
-                onStudyGuideLongPress: () {
-                  setState(() => _exclusiveFilter = 'isStudyGuide');
+                }),
+                onStudyGuideLongPress: () => setState(() {
+                  _exclusiveFilter = 'isStudyGuide';
                   _filterLibrary();
-                },
+                }),
                 onDifficultyTap: _showDifficultyFilter,
-                // ✅ AÇÃO DO BOTÃO DE BUSCA/LIMPAR
                 onSearchOrClearTap: () {
-                  if (_isSearchActive) {
-                    // Se a busca está ativa e o campo tem texto, limpa o campo
-                    if (_searchController.text.isNotEmpty) {
-                      _clearSearch();
-                    } else {
-                      // Se a busca está ativa mas o campo está vazio, oculta a barra
-                      setState(() => _isSearchActive = false);
-                    }
+                  if (_isFilterOrSearchActive) {
+                    _clearAllFiltersAndSearch();
+                    setState(() => _showSearchBar = false);
+                    FocusScope.of(context).unfocus();
                   } else {
-                    // Se a busca não está ativa, mostra a barra
-                    setState(() => _isSearchActive = true);
+                    setState(() {
+                      _showSearchBar = true;
+                      _searchFocusNode.requestFocus();
+                    });
                   }
                 },
-                // Passa o estado atual para o botão saber qual ícone mostrar
-                isSearchActive: _isSearchActive,
+                isSearchActive: _showSearchBar,
                 searchQuery: _searchController.text,
               ),
             ],
