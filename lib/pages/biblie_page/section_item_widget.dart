@@ -229,49 +229,49 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     return "${abbrevForFirestore}_c${widget.chapterNumber}_v$range";
   }
 
-  Future<void> _showCommentary(BuildContext context) async {
-    if (!mounted) return;
-    AnalyticsService.instance.logEvent(
-      name: 'commentary_opened',
-      parameters: {
-        'book_abbrev': widget.bookAbbrev,
-        'chapter_number': widget.chapterNumber,
-        'verses_range': widget.versesRangeStr,
-      },
-    );
-    TtsManager().stop();
-    setState(() => _isLoadingCommentary = true);
-    final commentaryData =
-        await _firestoreService.getSectionCommentary(_commentaryDocId);
-    String bookFullName = widget.bookAbbrev.toUpperCase();
-    try {
-      final booksMap = await BiblePageHelper.loadBooksMap();
-      if (booksMap.containsKey(widget.bookAbbrev)) {
-        bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
-      }
-    } catch (e) {/* ignored */}
-    if (mounted) {
-      setState(() => _isLoadingCommentary = false);
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => SectionCommentaryModal(
-          sectionTitle: commentaryData?['title'] ?? widget.sectionTitle,
-          commentaryItems: (commentaryData?['commentary'] as List?)
-                  ?.map((e) => Map<String, dynamic>.from(e))
-                  .toList() ??
-              [],
-          bookAbbrev: widget.bookAbbrev,
-          bookSlug: widget.bookSlug,
-          bookName: bookFullName,
-          chapterNumber: widget.chapterNumber,
-          versesRangeStr: widget.versesRangeStr,
-          initialFontSizeMultiplier: widget.fontSizeMultiplier,
-        ),
-      );
-    }
-  }
+  // Future<void> _showCommentary(BuildContext context) async {
+  //   if (!mounted) return;
+  //   AnalyticsService.instance.logEvent(
+  //     name: 'commentary_opened',
+  //     parameters: {
+  //       'book_abbrev': widget.bookAbbrev,
+  //       'chapter_number': widget.chapterNumber,
+  //       'verses_range': widget.versesRangeStr,
+  //     },
+  //   );
+  //   TtsManager().stop();
+  //   setState(() => _isLoadingCommentary = true);
+  //   final commentaryData =
+  //       await _firestoreService.getSectionCommentary(_commentaryDocId);
+  //   String bookFullName = widget.bookAbbrev.toUpperCase();
+  //   try {
+  //     final booksMap = await BiblePageHelper.loadBooksMap();
+  //     if (booksMap.containsKey(widget.bookAbbrev)) {
+  //       bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
+  //     }
+  //   } catch (e) {/* ignored */}
+  //   if (mounted) {
+  //     setState(() => _isLoadingCommentary = false);
+  //     showModalBottomSheet(
+  //       context: context,
+  //       isScrollControlled: true,
+  //       backgroundColor: Colors.transparent,
+  //       builder: (_) => SectionCommentaryModal(
+  //         sectionTitle: commentaryData?['title'] ?? widget.sectionTitle,
+  //         commentaryItems: (commentaryData?['commentary'] as List?)
+  //                 ?.map((e) => Map<String, dynamic>.from(e))
+  //                 .toList() ??
+  //             [],
+  //         bookAbbrev: widget.bookAbbrev,
+  //         bookSlug: widget.bookSlug,
+  //         bookName: bookFullName,
+  //         chapterNumber: widget.chapterNumber,
+  //         versesRangeStr: widget.versesRangeStr,
+  //         initialFontSizeMultiplier: widget.fontSizeMultiplier,
+  //       ),
+  //     );
+  //   }
+  // }
 
   Future<void> _loadAndShowSummary(
       String sectionId, String sectionTitle) async {
