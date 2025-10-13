@@ -7,22 +7,59 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/biblie_page/font_size_slider_dialog.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
 import 'package:septima_biblia/redux/actions.dart';
+import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+// <<< 1. IMPORTAR SEU UTILITY DE TEXTSPAN >>>
+import 'package:septima_biblia/utils/text_span_utils.dart';
 
 // ViewModel (sem alterações)
 class _CommentaryModalViewModel {
   final List<Map<String, dynamic>> userCommentHighlights;
-  _CommentaryModalViewModel({required this.userCommentHighlights});
-  static _CommentaryModalViewModel fromStore(Store<AppState> store) {
+  final bool isPremium;
+  final List<String> allUserTags;
+
+  _CommentaryModalViewModel({
+    required this.userCommentHighlights,
+    required this.isPremium,
+    required this.allUserTags,
+  });
+
+  static _CommentaryModalViewModel fromStore(
+      Store<AppState> store, String sectionId) {
+    // Lógica para filtrar destaques
+    final highlights = store.state.userState.userCommentHighlights
+        .where((h) => h['sectionId'] == sectionId)
+        .toList();
+
+    // Lógica robusta para status premium
+    bool premiumStatus = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    if (!premiumStatus) {
+      final userDetails = store.state.userState.userDetails;
+      if (userDetails != null) {
+        final status = userDetails['subscriptionStatus'] as String?;
+        final endDate =
+            (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+        if (status == 'active' &&
+            endDate != null &&
+            endDate.isAfter(DateTime.now())) {
+          premiumStatus = true;
+        }
+      }
+    }
+
     return _CommentaryModalViewModel(
-      userCommentHighlights: store.state.userState.userCommentHighlights,
+      userCommentHighlights: highlights,
+      isPremium: premiumStatus,
+      allUserTags: store.state.userState.allUserTags,
     );
   }
 }
 
 class SectionCommentaryModal extends StatefulWidget {
-  // Parâmetros (sem alterações)
+  // Seus parâmetros existentes
   final String sectionTitle;
   final List<Map<String, dynamic>> commentaryItems;
   final String bookAbbrev;
@@ -169,6 +206,122 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
 
   String get currentSectionIdForHighlights {
     return "${widget.bookSlug}_c${widget.chapterNumber}_v${widget.versesRangeStr}";
+  }
+
+  void _handleHighlight(
+    BuildContext context,
+    String fullParagraph,
+    EditableTextState editableTextState,
+    _CommentaryModalViewModel viewModel, // Recebe o ViewModel
+  ) async {
+    editableTextState.hideToolbar();
+    final selection = editableTextState.textEditingValue.selection;
+    if (selection.isCollapsed) return;
+
+    final selectedSnippet =
+        fullParagraph.substring(selection.start, selection.end);
+
+    final result = await showDialog<HighlightResult?>(
+      context: context,
+      builder: (_) => HighlightEditorDialog(
+        initialColor: "#FFA07A",
+        initialTags: const [],
+        allUserTags: viewModel.allUserTags, // Usa as tags do ViewModel
+      ),
+    );
+
+    if (result == null || result.shouldRemove || result.colorHex == null)
+      return;
+
+    final store = StoreProvider.of<AppState>(context, listen: false);
+    final highlightData = {
+      'selectedSnippet': selectedSnippet,
+      'fullContext': fullParagraph,
+      'bookAbbrev': widget.bookAbbrev,
+      'bookName': widget.bookName,
+      'chapterNumber': widget.chapterNumber,
+      'sectionId': currentSectionIdForHighlights,
+      'sectionTitle': widget.sectionTitle,
+      'verseReferenceText':
+          "${widget.bookName} ${widget.chapterNumber}:${widget.versesRangeStr} (Comentário)",
+      'sourceType': 'bible_commentary',
+      'language': _showOriginalText ? 'en' : 'pt',
+      'color': result.colorHex,
+      'tags': result.tags,
+    };
+
+    store.dispatch(AddCommentHighlightAction(highlightData));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Destaque salvo!")));
+  }
+
+  // <<< 3. FUNÇÃO _buildHighlightedParagraph RESTAURADA E ADAPTADA >>>
+  List<TextSpan> _buildHighlightedParagraph(
+    String originalParagraph,
+    List<TextSpan> spansWithLinks,
+    List<Map<String, dynamic>> highlights,
+    ThemeData theme,
+  ) {
+    if (highlights.isEmpty) {
+      return spansWithLinks;
+    }
+
+    List<Map<String, dynamic>> snippetsInParagraph = [];
+    for (var highlight in highlights) {
+      String snippet = highlight['selectedSnippet'] ?? '';
+      if (snippet.isEmpty) continue;
+      int startIndex = 0;
+      while (startIndex < originalParagraph.length) {
+        int pos = originalParagraph.indexOf(snippet, startIndex);
+        if (pos == -1) break;
+        snippetsInParagraph.add({
+          'start': pos,
+          'end': pos + snippet.length,
+          'color': highlight['color'] as String? ?? '#FFA07A'
+        });
+        startIndex = pos + snippet.length;
+      }
+    }
+
+    if (snippetsInParagraph.isEmpty) {
+      return spansWithLinks;
+    }
+
+    snippetsInParagraph.sort((a, b) => a['start'].compareTo(b['start']));
+
+    final List<TextSpan> finalSpans = [];
+    int charIndex = 0;
+
+    for (final span in spansWithLinks) {
+      final text = span.text;
+      if (text == null || text.isEmpty) {
+        finalSpans.add(span);
+        continue;
+      }
+
+      final spanStart = charIndex;
+      final spanEnd = charIndex + text.length;
+      charIndex = spanEnd;
+
+      Color? backgroundColor;
+      for (final highlight in snippetsInParagraph) {
+        if (spanStart < highlight['end'] && spanEnd > highlight['start']) {
+          backgroundColor = Color(int.parse(
+                  (highlight['color'] as String).replaceFirst('#', '0xff')))
+              .withOpacity(0.35);
+          break;
+        }
+      }
+
+      finalSpans.add(TextSpan(
+        text: text,
+        style: span.style?.copyWith(backgroundColor: backgroundColor) ??
+            TextStyle(backgroundColor: backgroundColor),
+        recognizer: span.recognizer,
+      ));
+    }
+
+    return finalSpans;
   }
 
   String _getCombinedCommentaryText([bool forTTS = false]) {
@@ -546,7 +699,8 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
     );
 
     return StoreConnector<AppState, _CommentaryModalViewModel>(
-      converter: (store) => _CommentaryModalViewModel.fromStore(store),
+      converter: (store) => _CommentaryModalViewModel.fromStore(
+          store, currentSectionIdForHighlights),
       builder: (modalBuilderContext, viewModel) {
         return DraggableScrollableSheet(
           initialChildSize: 0.8,
@@ -665,7 +819,7 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
                             itemCount: widget.commentaryItems.length,
                             itemBuilder: (context, index) {
                               final item = widget.commentaryItems[index];
-                              final String text = _showOriginalText
+                              final text = _showOriginalText
                                   ? (item['original'] as String? ?? '').trim()
                                   : (item['traducao'] as String? ??
                                           item['original'] as String? ??
@@ -674,77 +828,52 @@ class _SectionCommentaryModalState extends State<SectionCommentaryModal> {
 
                               if (text.isEmpty) return const SizedBox.shrink();
 
-                              String numberPart = "";
-                              String contentPart = text;
-                              final match = RegExp(r'^(\(?[0-9]+\)?\.?)\s*')
-                                  .firstMatch(text);
-                              if (match != null) {
-                                numberPart = match.group(1)!;
-                                contentPart = text.substring(match.end);
-                              }
+                              final chapterHighlights = viewModel
+                                  .userCommentHighlights
+                                  .where((h) => h['fullContext'] == text)
+                                  .toList();
 
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 20.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (numberPart.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            right: 12.0, top: 2.0),
-                                        child: Text(numberPart,
-                                            style: numberStyle),
-                                      ),
-                                    Expanded(
-                                      child: SelectableText.rich(
-                                        TextSpan(
-                                          style: bodyStyle,
-                                          children: _buildCombinedTextSpans(
-                                            contentPart,
-                                            viewModel.userCommentHighlights,
-                                            currentSectionIdForHighlights,
-                                            theme,
-                                            modalBuilderContext, // <<< CONTEXTO CORRETO
-                                            bodyStyle.fontSize!,
-                                          ),
-                                        ),
-                                        textAlign: TextAlign.justify,
-                                        contextMenuBuilder:
-                                            (context, editableTextState) {
-                                          final buttonItems = editableTextState
-                                              .contextMenuButtonItems;
-                                          if (!editableTextState
-                                              .textEditingValue
-                                              .selection
-                                              .isCollapsed) {
-                                            buttonItems.insert(
-                                              0,
-                                              ContextMenuButtonItem(
-                                                label: 'Marcar Trecho',
-                                                onPressed: () {
-                                                  ContextMenuController
-                                                      .removeAny();
-                                                  _markSelectedCommentSnippet(
-                                                    context,
-                                                    text,
-                                                    editableTextState
-                                                        .textEditingValue
-                                                        .selection,
-                                                  );
-                                                },
-                                              ),
-                                            );
-                                          }
-                                          return AdaptiveTextSelectionToolbar
-                                              .buttonItems(
-                                            anchors: editableTextState
-                                                .contextMenuAnchors,
-                                            buttonItems: buttonItems,
-                                          );
+                                child: SelectableText.rich(
+                                  TextSpan(
+                                    style: bodyStyle,
+                                    // <<< 4. LÓGICA DE CONSTRUÇÃO DO TEXTO ATUALIZADA >>>
+                                    children: _buildHighlightedParagraph(
+                                      text,
+                                      // 4a. Primeiro, gera os spans com os links clicáveis
+                                      TextSpanUtils.buildTextSpansForSegment(
+                                          text,
+                                          theme,
+                                          modalBuilderContext,
+                                          baseFontSize),
+                                      // 4b. Depois, passa o resultado para a função que aplica os destaques
+                                      chapterHighlights,
+                                      theme,
+                                    ),
+                                  ),
+                                  textAlign: TextAlign.justify,
+                                  contextMenuBuilder:
+                                      (context, editableTextState) {
+                                    final buttonItems = editableTextState
+                                        .contextMenuButtonItems;
+                                    buttonItems.insert(
+                                      0,
+                                      ContextMenuButtonItem(
+                                        label: 'Destacar',
+                                        onPressed: () {
+                                          _handleHighlight(context, text,
+                                              editableTextState, viewModel);
                                         },
                                       ),
-                                    ),
-                                  ],
+                                    );
+                                    return AdaptiveTextSelectionToolbar
+                                        .buttonItems(
+                                      anchors:
+                                          editableTextState.contextMenuAnchors,
+                                      buttonItems: buttonItems,
+                                    );
+                                  },
                                 ),
                               );
                             },

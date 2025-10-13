@@ -21,6 +21,7 @@ import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ViewModel (sem alterações)
 class _SectionItemViewModel {
@@ -58,6 +59,7 @@ class SectionItemWidget extends StatefulWidget {
   final String bookSlug;
   final String bookAbbrev;
   final int chapterNumber;
+  final String bookName;
   final String versesRangeStr;
   final Map<String, Map<String, dynamic>> userHighlights;
   final List<Map<String, dynamic>> userNotes;
@@ -86,6 +88,7 @@ class SectionItemWidget extends StatefulWidget {
     required this.bookAbbrev,
     required this.chapterNumber,
     required this.versesRangeStr,
+    required this.bookName,
     required this.userHighlights,
     required this.userNotes,
     this.isHebrew = false,
@@ -112,16 +115,41 @@ class SectionItemWidget extends StatefulWidget {
 class _SectionViewModel {
   final List<String> allUserTags;
   final Map<String, List<int>> recommendedVerses;
+  final bool isPremium;
+  final List<LibraryReference> libraryReferences;
 
   _SectionViewModel({
     required this.allUserTags,
     required this.recommendedVerses,
+    required this.isPremium,
+    required this.libraryReferences,
   });
 
-  static _SectionViewModel fromStore(Store<AppState> store) {
+  static _SectionViewModel fromStore(Store<AppState> store, String sectionId) {
+    // Lógica robusta para status premium
+    bool premiumStatus = store.state.subscriptionState.status ==
+        SubscriptionStatus.premiumActive;
+    if (!premiumStatus) {
+      final userDetails = store.state.userState.userDetails;
+      if (userDetails != null) {
+        final status = userDetails['subscriptionStatus'] as String?;
+        final endDate =
+            (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
+        if (status == 'active' &&
+            endDate != null &&
+            endDate.isAfter(DateTime.now())) {
+          premiumStatus = true;
+        }
+      }
+    }
+
     return _SectionViewModel(
       allUserTags: store.state.userState.allUserTags,
       recommendedVerses: store.state.userState.recommendedVerses,
+      isPremium: premiumStatus,
+      libraryReferences:
+          store.state.libraryReferenceState.referencesBySection[sectionId] ??
+              [],
     );
   }
 
@@ -132,10 +160,16 @@ class _SectionViewModel {
       other is _SectionViewModel &&
           runtimeType == other.runtimeType &&
           listEquals(allUserTags, other.allUserTags) &&
-          mapEquals(recommendedVerses, other.recommendedVerses);
+          mapEquals(recommendedVerses, other.recommendedVerses) &&
+          isPremium == other.isPremium &&
+          listEquals(libraryReferences, other.libraryReferences);
 
   @override
-  int get hashCode => allUserTags.hashCode ^ recommendedVerses.hashCode;
+  int get hashCode =>
+      allUserTags.hashCode ^
+      recommendedVerses.hashCode ^
+      isPremium.hashCode ^
+      libraryReferences.hashCode;
 }
 
 class _SectionItemWidgetState extends State<SectionItemWidget>
@@ -513,7 +547,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     }
 
     return StoreConnector<AppState, _SectionViewModel>(
-      converter: (store) => _SectionViewModel.fromStore(store),
+      converter: (store) =>
+          _SectionViewModel.fromStore(store, _sectionIdForTracking),
       distinct: true,
       builder: (context, viewModel) {
         // Acessamos os dados do ViewModel DENTRO do builder.
@@ -685,8 +720,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                     }
                   },
                 ),
-
-                // ... (o resto do seu widget continua exatamente como estava)
                 if (widget.isStudyModeActive)
                   StudyCardWidget(
                     commentaryDocId: _commentaryDocId,
@@ -694,6 +727,15 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       widget.onShowSummaryRequest(
                           _commentaryDocId, widget.sectionTitle);
                     },
+                    // <<< CORREÇÃO FINAL AQUI >>>
+                    isPremium: viewModel.isPremium,
+                    allUserTags: viewModel.allUserTags,
+                    bookAbbrev: widget.bookAbbrev,
+                    bookName: widget.bookName, // Agora deve funcionar
+                    chapterNumber: widget.chapterNumber,
+                    sectionIdForHighlights: _sectionIdForTracking,
+                    sectionTitle: widget.sectionTitle,
+                    versesRangeStr: widget.versesRangeStr,
                   ),
                 const Divider(height: 20),
                 Row(

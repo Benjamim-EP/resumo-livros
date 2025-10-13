@@ -117,12 +117,26 @@ class BibleReaderView extends StatefulWidget {
 class _BibleReaderViewState extends State<BibleReaderView> {
   late Future<Map<String, dynamic>> _chapterDataFuture;
   // ✅ ADICIONADO: Instância do FirestoreService para ser usada no widget.
-  final FirestoreService _firestoreService = FirestoreService();
+  Map<String, dynamic>? _bibleBooksMap;
 
   @override
   void initState() {
     super.initState();
     _loadChapterData();
+    _loadBooksMap();
+  }
+
+  Future<void> _loadBooksMap() async {
+    try {
+      final map = await BiblePageHelper.loadBooksMap();
+      if (mounted) {
+        setState(() {
+          _bibleBooksMap = map;
+        });
+      }
+    } catch (e) {
+      print("Erro ao carregar booksMap em BibleReaderView: $e");
+    }
   }
 
   @override
@@ -164,6 +178,8 @@ class _BibleReaderViewState extends State<BibleReaderView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final String bookName = _bibleBooksMap?[widget.selectedBook]?['nome'] ??
+        widget.selectedBook.toUpperCase();
     return FutureBuilder<Map<String, dynamic>>(
       future: _chapterDataFuture,
       builder: (context, snapshot) {
@@ -190,6 +206,10 @@ class _BibleReaderViewState extends State<BibleReaderView> {
           return Center(
               child: Text(
                   'Nenhum dado bíblico encontrado para ${widget.selectedBook} ${widget.selectedChapter}.'));
+        }
+        if (_bibleBooksMap == null) {
+          // Mostra um loader enquanto o mapa de nomes dos livros está sendo carregado
+          return const Center(child: CircularProgressIndicator());
         }
 
         final chapterData = snapshot.data!;
@@ -229,19 +249,21 @@ class _BibleReaderViewState extends State<BibleReaderView> {
     List<Map<String, dynamic>> sections,
     dynamic primaryTranslationVerseData,
   ) {
+    // <<< 7. MOVA A LÓGICA DO bookName PARA CÁ TAMBÉM >>>
+    final String bookName = _bibleBooksMap?[widget.selectedBook]?['nome'] ??
+        widget.selectedBook.toUpperCase();
+
     return StoreConnector<AppState, _BibleContentViewModel>(
       converter: (store) =>
           _BibleContentViewModel.fromStore(store, widget.selectedBook),
       distinct: true,
       builder: (context, contentViewModel) {
-        // 1. Constrói a lista de widgets de forma dinâmica
         List<Widget> contentWidgets = [];
 
         if (sections.isNotEmpty) {
           for (var sectionData in sections) {
             final sectionId = _getSectionIdFromData(sectionData);
 
-            // Adiciona o Card da seção de versículos
             contentWidgets.add(
               SectionItemWidget(
                 sectionTitle: sectionData['title'] ?? 'Seção Desconhecida',
@@ -270,6 +292,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
                 allUserTags: contentViewModel.allUserTags,
                 onShowSummaryRequest: widget.onShowSummaryRequest,
                 isStudyModeActive: widget.isStudyModeActive,
+                bookName: bookName,
               ),
             );
 
@@ -374,7 +397,7 @@ class _BibleReaderViewState extends State<BibleReaderView> {
   // ✅ NOVO MÉTODO HELPER: Constrói o Card do Mapa Mental.
   Widget _buildMindMapCard(ThemeData theme, String sectionId) {
     final FirestoreService _firestoreService = FirestoreService();
-
+    Map<String, dynamic>? _bibleBooksMap;
     return FutureBuilder<Map<String, dynamic>?>(
       future: _firestoreService.getMindMap(sectionId),
       builder: (context, snapshot) {
