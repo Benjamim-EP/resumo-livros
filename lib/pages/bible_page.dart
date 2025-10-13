@@ -163,6 +163,25 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
     });
   }
 
+  String _generateTtsIntro(String rawTitle, List<int> verses) {
+    if (verses.isEmpty) {
+      return rawTitle;
+    }
+
+    // Remove partes como "(a.C. 4004)" ou ". d.C. 30" do título
+    String cleanTitle =
+        rawTitle.replaceAll(RegExp(r'\s*\(?[ad]\.c\.\s*\d+\)?\.?'), '').trim();
+
+    String verseRange;
+    if (verses.length == 1) {
+      verseRange = "versículo ${verses.first}";
+    } else {
+      verseRange = "versículos ${verses.first} ao ${verses.last}";
+    }
+
+    return "$cleanTitle, $verseRange.";
+  }
+
   Future<void> _checkIfMapDataExists() async {
     if (selectedBook == null || selectedChapter == null) {
       if (mounted) setState(() => _hasMapData = false);
@@ -550,6 +569,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
       String startSectionId, TtsContentType contentType) async {
     await _ttsManager.stop();
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Preparando áudio..."), duration: Duration(seconds: 15)));
 
@@ -564,32 +584,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         throw Exception("Dados do capítulo inválidos.");
       }
 
-      List<TtsQueueItem> fullChapterQueue = [];
-      List<String> splitTextIntoSentences(String text) {
-        String sanitizedText = text
-            .replaceAll(RegExp(r'\s{2,}', multiLine: true), ' ')
-            .replaceAll(RegExp(r'\n'), ' ')
-            .trim();
-        if (sanitizedText.isEmpty) return [];
-        List<String> sentences = sanitizedText.split(RegExp(r'(?<=[.?!])\s*'));
-        final List<String> finalChunks = [];
-        const int maxLength = 3500;
-        for (var sentence in sentences) {
-          if (sentence.length > maxLength) {
-            for (var i = 0; i < sentence.length; i += maxLength) {
-              final end = (i + maxLength > sentence.length)
-                  ? sentence.length
-                  : i + maxLength;
-              finalChunks.add(sentence.substring(i, end));
-            }
-          } else if (sentence.trim().isNotEmpty) {
-            finalChunks.add(sentence);
-          }
-        }
-        return finalChunks;
-      }
-
-      for (var section in sections) {
+      final targetSectionData = sections.firstWhere((section) {
         final List<int> verseNumbers =
             (section['verses'] as List?)?.cast<int>() ?? [];
         final String versesRangeForId = verseNumbers.isNotEmpty
@@ -599,63 +594,86 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
             : "all";
         final String currentSectionId =
             "${selectedBook}_c${selectedChapter}_v$versesRangeForId";
-        final String sectionTitle = section['title'] ?? '';
+        return currentSectionId == startSectionId;
+      }, orElse: () => {});
 
-        if (sectionTitle.isNotEmpty) {
-          fullChapterQueue.add(TtsQueueItem(
-              sectionId: currentSectionId, textToSpeak: sectionTitle));
-        }
+      if (targetSectionData.isEmpty) {
+        throw Exception("Seção de início não encontrada.");
+      }
 
-        for (int i = 0; i < verseNumbers.length; i++) {
-          int verseNum = verseNumbers[i];
-          if (verseNum > 0 && verseNum <= verseData.length) {
-            final verseText = verseData[verseNum - 1];
-            String textToSpeak = (i == 0)
-                ? "Versículo $verseNum. $verseText"
-                : "$verseNum. $verseText";
-            fullChapterQueue.add(TtsQueueItem(
-                sectionId: currentSectionId, textToSpeak: textToSpeak));
+      // --- NOVA FUNÇÃO AUXILIAR PARA QUEBRAR TEXTOS ---
+      List<TtsQueueItem> _splitTextIntoQueueItems(
+          String text, String sectionId) {
+        // Regex para dividir por pontos, interrogações e exclamações, mantendo o delimitador.
+        final RegExp sentenceRegex = RegExp(r'[^.!?]+[.!?]?');
+        final List<TtsQueueItem> items = [];
+
+        final matches = sentenceRegex.allMatches(text);
+
+        for (var match in matches) {
+          final sentence = match.group(0)?.trim();
+          if (sentence != null && sentence.isNotEmpty) {
+            items
+                .add(TtsQueueItem(sectionId: sectionId, textToSpeak: sentence));
           }
         }
+        // Se a regex não encontrar nada (texto sem pontuação), adiciona o texto inteiro
+        if (items.isEmpty && text.isNotEmpty) {
+          items.add(TtsQueueItem(sectionId: sectionId, textToSpeak: text));
+        }
 
-        if (contentType == TtsContentType.versesAndCommentary) {
-          final String versesRangeStr = verseNumbers.isNotEmpty
-              ? (verseNumbers.length == 1
-                  ? verseNumbers.first.toString()
-                  : "${verseNumbers.first}-${verseNumbers.last}")
-              : "all_verses_in_section";
-          String abbrevForFirestore =
-              selectedBook!.toLowerCase() == 'job' ? 'jó' : selectedBook!;
-          final commentaryDocId =
-              "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
-          final commentaryData =
-              await _firestoreService.getSectionCommentary(commentaryDocId);
+        return items;
+      }
+      // --- FIM DA FUNÇÃO AUXILIAR ---
 
-          if (commentaryData != null && commentaryData['commentary'] is List) {
-            final commentaryList = commentaryData['commentary'] as List;
-            if (commentaryList.isNotEmpty) {
-              fullChapterQueue.add(TtsQueueItem(
-                  sectionId: currentSectionId,
-                  textToSpeak: "Comentário da seção."));
-              for (var item in commentaryList) {
-                final text = (item as Map)['traducao']?.trim() ??
-                    (item)['original']?.trim() ??
-                    '';
-                if (text.isNotEmpty) {
-                  final textSentences = splitTextIntoSentences(text);
-                  for (var sentence in textSentences) {
-                    String trimmedSentence = sentence.trim();
-                    final RegExp listMarkerRegex =
-                        RegExp(r'^(?:\d+|[IVXLCDM]+)\.$');
-                    final RegExp bibleRefRegex = RegExp(r'[A-Za-z]+\s*\d+:\d+');
-                    if (listMarkerRegex.hasMatch(trimmedSentence) &&
-                        !bibleRefRegex.hasMatch(trimmedSentence)) {
-                      continue;
-                    }
-                    fullChapterQueue.add(TtsQueueItem(
-                        sectionId: currentSectionId, textToSpeak: sentence));
-                  }
-                }
+      List<TtsQueueItem> audioQueue = [];
+      final List<int> verseNumbers =
+          (targetSectionData['verses'] as List?)?.cast<int>() ?? [];
+      final String sectionTitle = targetSectionData['title'] ?? '';
+
+      audioQueue.add(TtsQueueItem(
+          sectionId: startSectionId,
+          textToSpeak: _generateTtsIntro(sectionTitle, verseNumbers)));
+
+      for (int verseNum in verseNumbers) {
+        if (verseNum > 0 && verseNum <= verseData.length) {
+          final verseText = verseData[verseNum - 1];
+          // Os versículos geralmente são curtos, então não precisam ser divididos.
+          audioQueue.add(
+              TtsQueueItem(sectionId: startSectionId, textToSpeak: verseText));
+        }
+      }
+
+      if (contentType == TtsContentType.versesAndCommentary) {
+        final String versesRangeStr = verseNumbers.isNotEmpty
+            ? (verseNumbers.length == 1
+                ? verseNumbers.first.toString()
+                : "${verseNumbers.first}-${verseNumbers.last}")
+            : "all_verses_in_section";
+        String abbrevForFirestore =
+            selectedBook!.toLowerCase() == 'job' ? 'jó' : selectedBook!;
+        final commentaryDocId =
+            "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
+
+        final commentaryData =
+            await _firestoreService.getSectionCommentary(commentaryDocId);
+
+        if (commentaryData != null && commentaryData['commentary'] is List) {
+          final commentaryList = commentaryData['commentary'] as List;
+          if (commentaryList.isNotEmpty) {
+            audioQueue.add(TtsQueueItem(
+                sectionId: startSectionId,
+                textToSpeak: "Comentário da seção."));
+
+            for (var item in commentaryList) {
+              final text = (item as Map)['traducao']?.trim() ??
+                  (item)['original']?.trim() ??
+                  '';
+              if (text.isNotEmpty) {
+                // <<< A MÁGICA ACONTECE AQUI >>>
+                // Em vez de adicionar o parágrafo inteiro, adicionamos a lista de sentenças
+                audioQueue
+                    .addAll(_splitTextIntoQueueItems(text, startSectionId));
               }
             }
           }
@@ -667,10 +685,15 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
           _currentlyPlayingSectionId = startSectionId;
           _currentlyPlayingContentType = contentType;
         });
-        _ttsManager.speak(fullChapterQueue, startSectionId);
+        _ttsManager.speak(audioQueue, startSectionId);
       }
     } catch (e) {
       print("Erro em _startNewPlayback: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Ocorreu um erro ao preparar o áudio.")),
+        );
+      }
     } finally {
       if (mounted) {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();

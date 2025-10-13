@@ -8,7 +8,10 @@ import 'package:septima_biblia/consts/bible_constants.dart'; // >>> 1. IMPORTAR 
 import 'package:shared_preferences/shared_preferences.dart';
 
 // --- Enums e Classes de Dados ---
-enum TtsContentType { versesOnly, versesAndCommentary }
+enum TtsContentType {
+  versesOnly,
+  versesAndCommentary,
+}
 
 class TtsQueueItem {
   final String sectionId;

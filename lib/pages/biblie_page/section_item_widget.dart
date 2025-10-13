@@ -182,9 +182,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     return "${widget.bookAbbrev}_c${widget.chapterNumber}_v$range";
   }
 
-  void _handlePlayRequest(TtsContentType contentType) {
-    widget.onPlayRequest(_sectionIdForTracking, contentType);
-  }
+  // void _handlePlayRequest(TtsContentType contentType) {
+  //   widget.onPlayRequest(_sectionIdForTracking, contentType);
+  // }
 
   String get _commentaryDocId {
     final range = widget.versesRangeStr.isNotEmpty
@@ -482,7 +482,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   @override
   Widget build(BuildContext context) {
-    // Chamada necessária para o AutomaticKeepAliveClientMixin, que preserva o estado do widget na lista
     super.build(context);
 
     final theme = Theme.of(context);
@@ -490,35 +489,32 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     final bool isThisSectionTheCurrentOne =
         widget.currentlyPlayingSectionId == _sectionIdForTracking;
     final TtsPlayerState playerState = widget.currentPlayerState;
-    final TtsContentType? playingType = widget.currentlyPlayingContentType;
-    final Color defaultIconColor =
+
+    // <<< LÓGICA DO ÍCONE ATUALIZADA >>>
+    IconData audioIcon;
+    Color audioIconColor =
         theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
-    final Color activeIconColor = theme.colorScheme.primary.withOpacity(0.8);
+    String audioTooltip;
 
-    // Lógica para determinar o ícone e tooltip do botão de áudio
-    IconData versesIcon = Icons.play_circle_outline;
-    Color versesIconColor = defaultIconColor;
-    String versesTooltip = "Ouvir Versículos";
-
-    if (isThisSectionTheCurrentOne &&
-        playingType == TtsContentType.versesOnly) {
+    if (isThisSectionTheCurrentOne) {
       if (playerState == TtsPlayerState.playing) {
-        versesIcon = Icons.pause_circle_outline;
-        versesIconColor = activeIconColor;
-        versesTooltip = "Pausar Leitura";
-      } else if (playerState == TtsPlayerState.paused) {
-        versesIcon = Icons.play_circle_outline;
-        versesIconColor = activeIconColor;
-        versesTooltip = "Continuar Leitura";
+        audioIcon = Icons.pause_circle_outline;
+        audioIconColor = theme.colorScheme.primary.withOpacity(0.8);
+        audioTooltip = "Pausar Leitura";
+      } else {
+        // Paused or Stopped
+        audioIcon = Icons.play_circle_outline;
+        audioIconColor = theme.colorScheme.primary.withOpacity(0.8);
+        audioTooltip = "Continuar Leitura";
       }
+    } else {
+      audioIcon = Icons.play_circle_outline;
+      audioTooltip = "Ouvir Seção";
     }
 
     return StoreConnector<AppState, _SectionViewModel>(
-      // O converter agora usa o sectionId para otimização, mas como o estado
-      // é um mapa para o capítulo inteiro, passamos o chapterId.
       converter: (store) => _SectionViewModel.fromStore(store),
-      distinct:
-          true, // ESSENCIAL: Só reconstrói se os dados do ViewModel mudarem.
+      distinct: true,
       builder: (context, viewModel) {
         // Acessamos os dados do ViewModel DENTRO do builder.
         final allUserTags = viewModel.allUserTags;
@@ -562,13 +558,45 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(versesIcon, color: versesIconColor, size: 26),
-                      tooltip: versesTooltip,
-                      onPressed: () =>
-                          _handlePlayRequest(TtsContentType.versesOnly),
-                      splashRadius: 24,
+
+                    // <<< INÍCIO DA GRANDE MUDANÇA: IconButton -> PopupMenuButton >>>
+                    Tooltip(
+                      message: audioTooltip,
+                      child: PopupMenuButton<TtsContentType>(
+                        // Quando um item do menu é selecionado
+                        onSelected: (TtsContentType choice) {
+                          // Se já estiver tocando esta seção, a ação é de pausar/continuar
+                          if (isThisSectionTheCurrentOne) {
+                            widget.onPlayRequest(_sectionIdForTracking,
+                                choice); // A BiblePage vai lidar com o pause/resume
+                          } else {
+                            // Se não, inicia uma nova reprodução com a opção escolhida
+                            widget.onPlayRequest(_sectionIdForTracking, choice);
+                          }
+                        },
+                        // O ícone do botão é o que definimos na lógica acima
+                        icon: Icon(audioIcon, color: audioIconColor, size: 26),
+                        // Constrói os itens do menu
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<TtsContentType>>[
+                          const PopupMenuItem<TtsContentType>(
+                            value: TtsContentType.versesOnly,
+                            child: ListTile(
+                              leading: Icon(Icons.menu_book_outlined),
+                              title: Text('Somente Versículos'),
+                            ),
+                          ),
+                          const PopupMenuItem<TtsContentType>(
+                            value: TtsContentType.versesAndCommentary,
+                            child: ListTile(
+                              leading: Icon(Icons.comment_bank_outlined),
+                              title: Text('Versículos e Comentário'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    // <<< FIM DA GRANDE MUDANÇA >>>
                   ],
                 ),
                 const Divider(color: Colors.transparent, height: 4),
