@@ -623,6 +623,179 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'dificuldade': 4,
     'isStudyGuide': true,
   },
+  {
+    'id': 'billy-graham-a-jornada',
+    'title': "A Jornada",
+    'description':
+        "Uma exploração sobre o propósito de Deus para a vida e como lidar com as decepções e desafios ao longo do caminho.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/guias/billy-graham-a-jornada_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-a-jornada', bookTitle: "A Jornada"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-anjos',
+    'title': "Anjos",
+    'description':
+        "Uma investigação sobre o papel dos anjos como agentes secretos de Deus, sua influência na história bíblica e sua atuação na proteção da humanidade.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/guias/billy-graham-anjos_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-anjos', bookTitle: "Anjos"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-aproximando-se-de-casa-vida-fe-e-terminar-bem',
+    'title': "Aproximando-se de Casa",
+    'description':
+        "Reflexões sobre envelhecer com graça, fé e propósito, oferecendo sabedoria para terminar bem a jornada da vida.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-aproximando-se-de-casa-vida-fe-e-terminar-bem_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-aproximando-se-de-casa-vida-fe-e-terminar-bem',
+        bookTitle: "Aproximando-se de Casa"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-como-nascer-de-novo',
+    'title': "Como Nascer de Novo",
+    'description':
+        "Um guia que explica a experiência do novo nascimento espiritual, ajudando a descobrir valores esquecidos e a tomar uma decisão que pode revolucionar a vida.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-como-nascer-de-novo_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-como-nascer-de-novo',
+        bookTitle: "Como Nascer de Novo"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-em-paz-com-deus',
+    'title': "Em Paz com Deus",
+    'description':
+        "Apresenta o caminho para a autêntica paz pessoal em um mundo em crise, mostrando como encontrar calma espiritual em meio ao estresse e desânimo.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-em-paz-com-deus_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-em-paz-com-deus', bookTitle: "Em Paz com Deus"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-esperanca-para-o-coracao-perturbado',
+    'title': "Esperança para o Coração Perturbado",
+    'description':
+        "Oferece conforto e encorajamento bíblico para aqueles que enfrentam dor, perda e incerteza, lembrando do amor inabalável de Deus.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-esperanca-para-o-coracao-perturbado_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-esperanca-para-o-coracao-perturbado',
+        bookTitle: "Esperança para o Coração Perturbado"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-o-espirito-santo',
+    'title': "O Espírito Santo",
+    'description':
+        "Responde a perguntas fundamentais sobre a terceira pessoa da Trindade, explicando quem Ele é, o que Ele faz e como experimentar Seu poder na vida diária.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-o-espirito-santo_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-o-espirito-santo', bookTitle: "O Espírito Santo"),
+    'ficcao': false,
+    'dificuldade': 5,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-respostas-para-os-problemas-da-vida',
+    'title': "Respostas para os Problemas da Vida",
+    'description':
+        "Um guia com respostas bíblicas para as preocupações e dúvidas mais comuns da atualidade, abordando mais de 80 tópicos para fortalecer a fé.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-respostas-para-os-problemas-da-vida_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-respostas-para-os-problemas-da-vida',
+        bookTitle: "Respostas para os Problemas da Vida"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-tempestade-a-vista',
+    'title': "Tempestade à Vista",
+    'description':
+        "Analisa os sinais dos tempos e os problemas urgentes que o mundo enfrenta, explicando como Deus está traçando seu plano final em meio às crises.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-tempestade-a-vista_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-tempestade-a-vista',
+        bookTitle: "Tempestade à Vista"),
+    'ficcao': false,
+    'dificuldade': 5,
+    'isStudyGuide': true,
+  },
+  {
+    'id': 'billy-graham-vida-e-pos-morte',
+    'title': "Vida e Pós-morte",
+    'description':
+        "Aborda uma das maiores questões da humanidade, a morte, explicando-a como parte do plano de Deus e ajudando a superar o medo do que vem a seguir.",
+    'author': 'Billy Graham',
+    'pageCount': 'Guia de Estudo',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/guias/billy-graham-vida-e-pos-morte_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'billy-graham-vida-e-pos-morte', bookTitle: "Vida e Pós-morte"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': true,
+  }
 ];
 
 // ViewModel
