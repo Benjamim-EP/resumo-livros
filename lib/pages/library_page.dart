@@ -808,7 +808,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '256',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/os-guinness-o-chamado_cover.webp',
+    'coverImagePath': 'assets/covers/guias/os-guinness-o-chamado_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'os-guinness-o-chamado', bookTitle: "O Chamado"),
     'ficcao': false,
@@ -825,7 +825,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/christine-caine-inesperado-deixe-o-medo-para-tras-e-avance-em-fe_cover.webp',
+        'assets/covers/guias/christine-caine-inesperado-deixe-o-medo-para-tras-e-avance-em-fe_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'christine-caine-inesperado-deixe-o-medo-para-tras-e-avance-em-fe',
@@ -844,7 +844,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/corrie-ten-boom-o-refugio-secreto_cover.webp',
+        'assets/covers/guias/corrie-ten-boom-o-refugio-secreto_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'corrie-ten-boom-o-refugio-secreto',
         bookTitle: "O Refúgio Secreto"),
@@ -862,7 +862,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/elisabeth-elliot-paixao-e-pureza_cover.webp',
+        'assets/covers/guias/elisabeth-elliot-paixao-e-pureza_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'elisabeth-elliot-paixao-e-pureza',
         bookTitle: "Paixão e Pureza"),
@@ -880,7 +880,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/ellen-santilli-tornando-se-elisabeth-elliot_cover.webp',
+        'assets/covers/guias/ellen-santilli-tornando-se-elisabeth-elliot_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'ellen-santilli-tornando-se-elisabeth-elliot',
         bookTitle: "Tornando-se Elisabeth Elliot"),
@@ -898,7 +898,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/elisabeth-elliot-deixe-me-ser-mulher_cover.webp',
+        'assets/covers/guias/elisabeth-elliot-deixe-me-ser-mulher_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'elisabeth-elliot-deixe-me-ser-mulher',
         bookTitle: "Deixe-me Ser Mulher"),
@@ -916,7 +916,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao_cover.webp',
+        'assets/covers/guias/elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao',
@@ -935,7 +935,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/elisabeth-elliot-o-sofrimento-nunca-e-em-vao_cover.webp',
+        'assets/covers/guias/elisabeth-elliot-o-sofrimento-nunca-e-em-vao_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'elisabeth-elliot-o-sofrimento-nunca-e-em-vao',
         bookTitle: "O Sofrimento Nunca é em Vão"),
@@ -954,7 +954,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte_cover.webp',
+        'assets/covers/guias/elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte',
@@ -974,7 +974,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/emerson-eggerichs-amor-e-respeito-na-familia-o-que-os-pais-mais-desejam-do-que-os-filhos-mais-precisam_cover.webp',
+        'assets/covers/guias/emerson-eggerichs-amor-e-respeito-na-familia-o-que-os-pais-mais-desejam-do-que-os-filhos-mais-precisam_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'emerson-eggerichs-amor-e-respeito-na-familia-o-que-os-pais-mais-desejam-do-que-os-filhos-mais-precisam',
@@ -994,7 +994,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente_cover.webp',
+        'assets/covers/guias/jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente',
@@ -1012,7 +1012,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '224',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/jen-wilkin-ninguem-como-ele_cover.webp',
+    'coverImagePath':
+        'assets/covers/guias/jen-wilkin-ninguem-como-ele_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'jen-wilkin-ninguem-como-ele', bookTitle: "Ninguém como Ele"),
     'ficcao': false,
@@ -1030,7 +1031,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente_cover.webp',
+        'assets/covers/guias/joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente',
@@ -1049,7 +1050,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/martyn-lloyd-jones-depressao-espiritual_cover.webp',
+        'assets/covers/guias/martyn-lloyd-jones-depressao-espiritual_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'martyn-lloyd-jones-depressao-espiritual',
         bookTitle: "Depressão Espiritual"),
@@ -1068,7 +1069,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres_cover.webp',
+        'assets/covers/guias/nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres',
@@ -1088,7 +1089,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/nancy-leigh-demoss-mentiras-em-que-as-garotas-acreditam-e-a-verdade-que-as-liberta_cover.webp',
+        'assets/covers/guias/nancy-leigh-demoss-mentiras-em-que-as-garotas-acreditam-e-a-verdade-que-as-liberta_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'nancy-leigh-demoss-mentiras-em-que-as-garotas-acreditam-e-a-verdade-que-as-liberta',
@@ -1109,7 +1110,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural_cover.webp',
+        'assets/covers/guias/nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural',
@@ -1128,7 +1129,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/richard-j-foster-celebracao-da-disciplina_cover.webp',
+        'assets/covers/guias/richard-j-foster-celebracao-da-disciplina_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'richard-j-foster-celebracao-da-disciplina',
         bookTitle: "Celebração da Disciplina"),
@@ -1146,7 +1147,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/rosaria-butterfield-o-evangelho-vem-com-uma-chave-de-casa_cover.webp',
+        'assets/covers/guias/rosaria-butterfield-o-evangelho-vem-com-uma-chave-de-casa_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'rosaria-butterfield-o-evangelho-vem-com-uma-chave-de-casa',
         bookTitle: "O Evangelho Vem com uma Chave de Casa"),
@@ -1165,7 +1166,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel_cover.webp',
+        'assets/covers/guias/rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel',
@@ -1185,7 +1186,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito_cover.webp',
+        'assets/covers/guias/sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
             'sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito',
@@ -1204,7 +1205,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/tedd-tripp-pastoreando-o-coracao-da-crianca_cover.webp',
+        'assets/covers/guias/tedd-tripp-pastoreando-o-coracao-da-crianca_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'tedd-tripp-pastoreando-o-coracao-da-crianca',
         bookTitle: "Pastoreando o Coração da Criança"),
@@ -1222,7 +1223,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/timothy-keller-o-significado-do-casamento_cover.webp',
+        'assets/covers/guias/timothy-keller-o-significado-do-casamento_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'timothy-keller-o-significado-do-casamento',
         bookTitle: "O Significado do Casamento"),
