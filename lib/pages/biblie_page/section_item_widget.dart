@@ -14,7 +14,6 @@ import 'package:septima_biblia/redux/reducers/library_reference_reducer.dart'; /
 import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_widgets.dart';
-import 'package:septima_biblia/pages/biblie_page/section_commentary_modal.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
@@ -228,50 +227,6 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         widget.bookAbbrev.toLowerCase() == 'job' ? 'jó' : widget.bookAbbrev;
     return "${abbrevForFirestore}_c${widget.chapterNumber}_v$range";
   }
-
-  // Future<void> _showCommentary(BuildContext context) async {
-  //   if (!mounted) return;
-  //   AnalyticsService.instance.logEvent(
-  //     name: 'commentary_opened',
-  //     parameters: {
-  //       'book_abbrev': widget.bookAbbrev,
-  //       'chapter_number': widget.chapterNumber,
-  //       'verses_range': widget.versesRangeStr,
-  //     },
-  //   );
-  //   TtsManager().stop();
-  //   setState(() => _isLoadingCommentary = true);
-  //   final commentaryData =
-  //       await _firestoreService.getSectionCommentary(_commentaryDocId);
-  //   String bookFullName = widget.bookAbbrev.toUpperCase();
-  //   try {
-  //     final booksMap = await BiblePageHelper.loadBooksMap();
-  //     if (booksMap.containsKey(widget.bookAbbrev)) {
-  //       bookFullName = booksMap[widget.bookAbbrev]?['nome'] ?? bookFullName;
-  //     }
-  //   } catch (e) {/* ignored */}
-  //   if (mounted) {
-  //     setState(() => _isLoadingCommentary = false);
-  //     showModalBottomSheet(
-  //       context: context,
-  //       isScrollControlled: true,
-  //       backgroundColor: Colors.transparent,
-  //       builder: (_) => SectionCommentaryModal(
-  //         sectionTitle: commentaryData?['title'] ?? widget.sectionTitle,
-  //         commentaryItems: (commentaryData?['commentary'] as List?)
-  //                 ?.map((e) => Map<String, dynamic>.from(e))
-  //                 .toList() ??
-  //             [],
-  //         bookAbbrev: widget.bookAbbrev,
-  //         bookSlug: widget.bookSlug,
-  //         bookName: bookFullName,
-  //         chapterNumber: widget.chapterNumber,
-  //         versesRangeStr: widget.versesRangeStr,
-  //         initialFontSizeMultiplier: widget.fontSizeMultiplier,
-  //       ),
-  //     );
-  //   }
-  // }
 
   Future<void> _loadAndShowSummary(
       String sectionId, String sectionTitle) async {
@@ -524,34 +479,44 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         widget.currentlyPlayingSectionId == _sectionIdForTracking;
     final TtsPlayerState playerState = widget.currentPlayerState;
 
-    // <<< LÓGICA DO ÍCONE ATUALIZADA >>>
+    // <<< INÍCIO DA LÓGICA DE ÍCONES ATUALIZADA >>>
+
     IconData audioIcon;
     Color audioIconColor =
         theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey;
     String audioTooltip;
+    // Variável para controlar a visibilidade do botão de parar
+    bool showStopButton = false;
 
     if (isThisSectionTheCurrentOne) {
       if (playerState == TtsPlayerState.playing) {
         audioIcon = Icons.pause_circle_outline;
         audioIconColor = theme.colorScheme.primary.withOpacity(0.8);
         audioTooltip = "Pausar Leitura";
-      } else {
-        // Paused or Stopped
+        showStopButton = true; // Mostra o botão de parar
+      } else if (playerState == TtsPlayerState.paused) {
         audioIcon = Icons.play_circle_outline;
         audioIconColor = theme.colorScheme.primary.withOpacity(0.8);
         audioTooltip = "Continuar Leitura";
+        showStopButton = true; // Mostra o botão de parar
+      } else {
+        // playerState == TtsPlayerState.stopped
+        audioIcon = Icons.play_circle_outline;
+        audioTooltip = "Ouvir Seção";
+        showStopButton = false; // Esconde o botão de parar
       }
     } else {
       audioIcon = Icons.play_circle_outline;
       audioTooltip = "Ouvir Seção";
+      showStopButton = false; // Esconde o botão de parar
     }
+    // <<< FIM DA LÓGICA DE ÍCONES ATUALIZADA >>>
 
     return StoreConnector<AppState, _SectionViewModel>(
       converter: (store) =>
           _SectionViewModel.fromStore(store, _sectionIdForTracking),
       distinct: true,
       builder: (context, viewModel) {
-        // Acessamos os dados do ViewModel DENTRO do builder.
         final allUserTags = viewModel.allUserTags;
         final chapterId = "${widget.bookAbbrev}_${widget.chapterNumber}";
         final recommendedVersesForChapter =
@@ -575,7 +540,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- TÍTULO E BOTÃO DE PLAY ---
+                // --- TÍTULO E BOTÕES DE ÁUDIO ---
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -594,24 +559,30 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       ),
                     ),
 
-                    // <<< INÍCIO DA GRANDE MUDANÇA: IconButton -> PopupMenuButton >>>
+                    // <<< INÍCIO DA MUDANÇA: ADIÇÃO DO BOTÃO DE PARAR >>>
+
+                    // Botão de Parar (só aparece quando showStopButton é true)
+                    if (showStopButton)
+                      IconButton(
+                        icon: Icon(Icons.stop_circle_outlined,
+                            color: theme.iconTheme.color?.withOpacity(0.6),
+                            size: 26),
+                        tooltip: "Parar Leitura",
+                        onPressed: () {
+                          // Chama o método stop diretamente do TtsManager
+                          TtsManager().stop();
+                        },
+                        splashRadius: 24,
+                      ),
+
+                    // Botão de Play/Pause/Menu (como antes)
                     Tooltip(
                       message: audioTooltip,
                       child: PopupMenuButton<TtsContentType>(
-                        // Quando um item do menu é selecionado
                         onSelected: (TtsContentType choice) {
-                          // Se já estiver tocando esta seção, a ação é de pausar/continuar
-                          if (isThisSectionTheCurrentOne) {
-                            widget.onPlayRequest(_sectionIdForTracking,
-                                choice); // A BiblePage vai lidar com o pause/resume
-                          } else {
-                            // Se não, inicia uma nova reprodução com a opção escolhida
-                            widget.onPlayRequest(_sectionIdForTracking, choice);
-                          }
+                          widget.onPlayRequest(_sectionIdForTracking, choice);
                         },
-                        // O ícone do botão é o que definimos na lógica acima
                         icon: Icon(audioIcon, color: audioIconColor, size: 26),
-                        // Constrói os itens do menu
                         itemBuilder: (BuildContext context) =>
                             <PopupMenuEntry<TtsContentType>>[
                           const PopupMenuItem<TtsContentType>(
@@ -631,7 +602,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                         ],
                       ),
                     ),
-                    // <<< FIM DA GRANDE MUDANÇA >>>
+                    // <<< FIM DA MUDANÇA >>>
                   ],
                 ),
                 const Divider(color: Colors.transparent, height: 4),
