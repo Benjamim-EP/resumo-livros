@@ -1,25 +1,143 @@
 {
-  "id": "seq_mulheres_palavra_7semanas",
+  "id": "seq_mulheres_da_palavra_7meses",
   "type": "reading_sequence",
-  "title": "Mulheres da Palavra",
-  "description": "Uma sequência de leitura de 7 semanas para aprofundar seu relacionamento com as Escrituras.",
+  "title": "Mulheres da Palavra: Uma Jornada de 7 Meses",
+  "description": "Uma sequência de leitura curada para aprofundar sua fé, identidade e propósito ao longo de 7 meses.",
   "featuredImage": "assets/images/guias/mulheres_cover.webp",
-  "duration": "7 Semanas",
+  "duration": "7 Meses",
   "steps": [
     {
-      "week": 1,
-      "title": "Fundamentos da Fé",
-      "resourceId": "c-s-lewis-cristianismo-puro-e-simples"
+      "month": 1,
+      "title": "A Base da Feminilidade",
+      "focus": "Construir a identidade a partir de Quem Deus é.",
+      "resources": [
+        {
+          "title": "Deixe-me Ser Mulher",
+          "resourceId": "elisabeth-elliot-deixe-me-ser-mulher"
+        },
+        {
+          "title": "Ninguém como Ele",
+          "resourceId": "jen-wilkin-ninguem-como-ele"
+        },
+        {
+          "title": "Tornando-se Elisabeth Elliot",
+          "resourceId": "ellen-santilli-tornando-se-elisabeth-elliot"
+        }
+      ]
     },
     {
-      "week": 2,
-      "title": "A Jornada da Alma",
-      "resourceId": "o-peregrino-oxford-world-s-classics"
+      "month": 2,
+      "title": "O Coração e os Relacionamentos",
+      "focus": "Blindar o coração e construir relacionamentos sobre a rocha.",
+      "resources": [
+        {
+          "title": "Paixão e Pureza",
+          "resourceId": "elisabeth-elliot-paixao-e-pureza"
+        },
+        {
+          "title": "O Significado do Casamento",
+          "resourceId": "timothy-keller-o-significado-do-casamento"
+        },
+        {
+          "title": "Mentiras em que as Garotas Acreditam",
+          "resourceId": "nancy-leigh-demoss-mentiras-em-que-as-garotas-acreditam-e-a-verdade-que-as-liberta"
+        }
+      ]
     },
     {
-      "week": 3,
-      "title": "Entendendo o Sofrimento",
-      "resourceId": "c-s-lewis-o-problema-da-dor"
+      "month": 3,
+      "title": "A Disciplina da Vida Interior",
+      "focus": "Desenvolver a força interior para permanecer firme.",
+      "resources": [
+        {
+          "title": "Uma Vida de Obediência",
+          "resourceId": "elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte"
+        },
+        {
+          "title": "Campo de Batalha da Mente",
+          "resourceId": "joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente"
+        },
+        {
+          "title": "Celebração da Disciplina",
+          "resourceId": "richard-j-foster-celebracao-da-disciplina"
+        }
+      ]
+    },
+    {
+      "month": 4,
+      "title": "Vocação e Propósito no Mundo",
+      "focus": "Entender que toda a vida é um ministério.",
+      "resources": [
+        {
+          "title": "Verdade Total",
+          "resourceId": "nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural"
+        },
+        {
+          "title": "O Chamado",
+          "resourceId": "os-guinness-o-chamado"
+        },
+        {
+          "title": "Pensamentos Secretos de uma Convertida Improvável",
+          "resourceId": "rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel"
+        }
+      ]
+    },
+    {
+      "month": 5,
+      "title": "Vencendo a Ansiedade e Encontrando a Paz",
+      "focus": "Lançar sobre Ele toda a ansiedade e viver a paz que excede o entendimento.",
+      "resources": [
+        {
+          "title": "Depressão Espiritual",
+          "resourceId": "martyn-lloyd-jones-depressao-espiritual"
+        },
+        {
+          "title": "Inesperado: Deixe o Medo para Trás e Avance em Fé",
+          "resourceId": "christine-caine-inesperado-deixe-o-medo-para-tras-e-avance-em-fe"
+        },
+        {
+          "title": "O Refúgio Secreto",
+          "resourceId": "corrie-ten-boom-o-refugio-secreto"
+        }
+      ]
+    },
+    {
+      "month": 6,
+      "title": "A Mulher Virtuosa no Século 21",
+      "focus": "Viver a identidade e o propósito que Deus designou para a mulher.",
+      "resources": [
+        {
+          "title": "Mulheres da Palavra",
+          "resourceId": "jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente"
+        },
+        {
+          "title": "Adornada: Vivendo a Beleza do Evangelho em Meio às Mulheres",
+          "resourceId": "nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres"
+        },
+        {
+          "title": "O Evangelho Vem com uma Chave de Casa",
+          "resourceId": "rosaria-butterfield-o-evangelho-vem-com-uma-chave-de-casa"
+        }
+      ]
+    },
+    {
+      "month": 7,
+      "title": "Firmando o Lar e a Família",
+      "focus": "Construir um legado de fé para as próximas gerações.",
+      "resources": [
+        {
+          "title": "Amor e Respeito na Família",
+          "resourceId": "emerson-eggerichs-amor-e-respeito-na-familia-o-que-os-pais-mais-desejam-do-que-os-filhos-mais-precisam"
+        },
+        {
+          "title": "Pastoreando o Coração da Criança",
+          "resourceId": "tedd-tripp-pastoreando-o-coracao-da-crianca"
+        },
+        {
+          "title": "O Lar que Dá Vida: Criando um Lugar de Pertença e Propósito",
+          "resourceId": "sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito"
+        }
+      ]
     }
   ]
 }

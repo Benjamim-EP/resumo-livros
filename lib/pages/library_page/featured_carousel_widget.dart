@@ -4,6 +4,8 @@ import 'package:flutter/material.dart' hide CarouselController;
 // <<< CORREÇÃO 1: Adicionado o prefixo 'cs' ao import >>>
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:septima_biblia/models/featured_content.dart';
+import 'package:septima_biblia/pages/library_page/reading_sequence_page.dart';
+import 'package:septima_biblia/services/custom_page_route.dart';
 
 class FeaturedCarouselWidget extends StatefulWidget {
   final List<FeaturedContent> items;
@@ -80,68 +82,99 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
   }
 
   Widget _buildCarouselItem(BuildContext context, FeaturedContent item) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      margin: const EdgeInsets.symmetric(horizontal: 5.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12.0),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              item.featuredImage,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(color: Colors.grey.shade800);
-              },
+    // Ação que será executada ao tocar no card
+    void handleTap() {
+      if (item.type == 'reading_sequence') {
+        // Encontra o assetPath correspondente ao id do item (simulação)
+        final String assetPath =
+            'assets/guias/sequencia_mulheres_da_palavra.json'; // Exemplo
+
+        Navigator.push(
+          context,
+          FadeScalePageRoute(
+            page: ReadingSequencePage(
+              assetPath: assetPath, // Passa o caminho do JSON
+              sequenceTitle: item.title,
             ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0.5, 1.0],
+          ),
+        );
+      } else if (item.type == 'study_guide') {
+        // Navega para a página de Guia de Estudo (que você pode criar no futuro)
+        // Navigator.push(context, FadeScalePageRoute(page: StudyGuidePage(assetPath: ...)));
+        print("Navegar para a página de Guia de Estudo: ${item.title}");
+      }
+    }
+
+    return InkWell(
+        // Envolve o Container com InkWell
+        onTap: handleTap, // Define a ação de toque
+        child: Container(
+          width: MediaQuery.of(context).size.width,
+          margin: const EdgeInsets.symmetric(horizontal: 5.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  item.featuredImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(color: Colors.grey.shade800);
+                  },
                 ),
-              ),
-            ),
-            Positioned(
-              bottom: 20.0,
-              left: 20.0,
-              right: 20.0,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22.0,
-                      fontWeight: FontWeight.bold,
-                      shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.description,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14.0,
-                      shadows: const [
-                        Shadow(blurRadius: 2, color: Colors.black)
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.9)
                       ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.5, 1.0],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
+                ),
+                Positioned(
+                  bottom: 20.0,
+                  left: 20.0,
+                  right: 20.0,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22.0,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(blurRadius: 4, color: Colors.black54)
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        item.description,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14.0,
+                          shadows: const [
+                            Shadow(blurRadius: 2, color: Colors.black)
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }
