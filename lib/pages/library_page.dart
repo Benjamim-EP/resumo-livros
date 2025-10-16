@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/components/custom_search_bar.dart';
+import 'package:septima_biblia/models/featured_content.dart';
 import 'package:septima_biblia/pages/library_page/bible_timeline_page.dart';
 import 'package:septima_biblia/pages/library_page/book_study_guide_page.dart';
 import 'package:septima_biblia/pages/library_page/church_history_index_page.dart';
 import 'package:septima_biblia/pages/library_page/compact_resource_card.dart';
 import 'package:septima_biblia/pages/library_page/components/continue_reading_row.dart';
 import 'package:septima_biblia/pages/library_page/components/recommendation_row.dart';
+import 'package:septima_biblia/pages/library_page/featured_carousel_widget.dart';
 import 'package:septima_biblia/pages/library_page/generic_book_viewer_page.dart';
 import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/library_recommendation_page.dart';
@@ -26,6 +28,7 @@ import 'package:septima_biblia/redux/reducers/subscription_reducer.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
+import 'package:septima_biblia/services/featured_content_service.dart';
 import 'package:septima_biblia/services/interstitial_manager.dart';
 import 'package:redux/redux.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
@@ -1285,6 +1288,9 @@ class _LibraryPageState extends State<LibraryPage> {
   // Nova variável para controlar o modo de filtro exclusivo (ativado com long press)
   String? _exclusiveFilter; // Pode ser 'ficcao', 'isStudyGuide', ou null
 
+  List<FeaturedContent> _featuredItems = [];
+  bool _isLoadingFeatured = true;
+
   bool get _isFilterOrSearchActive =>
       _searchController.text.isNotEmpty ||
       !_showFiction ||
@@ -1306,6 +1312,7 @@ class _LibraryPageState extends State<LibraryPage> {
     super.initState();
     _searchController.addListener(_filterLibrary);
     _filterLibrary(); // Executa uma vez no início para popular a lista.
+    _loadFeaturedContent();
   }
 
   @override
@@ -1313,6 +1320,17 @@ class _LibraryPageState extends State<LibraryPage> {
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadFeaturedContent() async {
+    // Usa nosso serviço para buscar os dados dos assets
+    final items = await FeaturedContentService.instance.getFeaturedItems();
+    if (mounted) {
+      setState(() {
+        _featuredItems = items;
+        _isLoadingFeatured = false;
+      });
+    }
   }
 
   // Função para normalizar texto para busca (case-insensitive e sem acentos)
@@ -1490,6 +1508,22 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
+  Widget _buildCarouselPlaceholder(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5.0),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1503,311 +1537,306 @@ class _LibraryPageState extends State<LibraryPage> {
         store.dispatch(FetchRecommendedSermonsAction());
       },
       builder: (context, viewModel) {
+        // A barra de filtros foi movida para o bottomNavigationBar do Scaffold.
         return Scaffold(
-          body: Column(
-            children: [
+          body: CustomScrollView(
+            slivers: [
+              // --- INÍCIO DA NOVA SEÇÃO DO CARROSSEL ---
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: _isLoadingFeatured
+                      ? _buildCarouselPlaceholder(context)
+                      : FeaturedCarouselWidget(items: _featuredItems),
+                ),
+              ),
+              // --- FIM DA NOVA SEÇÃO DO CARROSSEL ---
+
               // Barra de busca animada
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                child: _showSearchBar
-                    ? Padding(
-                        key: const ValueKey('searchBar'),
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: CustomSearchBar(
-                                controller: _searchController,
-                                hintText: "Buscar na biblioteca...",
-                                onChanged: (value) => setState(() {}),
-                                onClear: _clearSearchText,
+              SliverToBoxAdapter(
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: _showSearchBar
+                      ? Padding(
+                          key: const ValueKey('searchBar'),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: CustomSearchBar(
+                                  controller: _searchController,
+                                  hintText: "Buscar na biblioteca...",
+                                  onChanged: (value) => setState(() {}),
+                                  onClear: _clearSearchText,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: Icon(Icons.auto_awesome,
-                                  color: theme.colorScheme.primary),
-                              tooltip: "Recomendação com IA",
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const LibraryRecommendationPage()),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox(key: ValueKey('empty'), height: 16),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.auto_awesome,
+                                    color: theme.colorScheme.primary),
+                                tooltip: "Recomendação com IA",
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LibraryRecommendationPage()),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox(key: ValueKey('empty'), height: 16),
+                ),
               ),
 
-              // Corpo principal com scroll
-              Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    // --- SEÇÕES CONDICIONAIS ---
-                    if (!shouldHideRecommendations) ...[
-                      // "Continuar Lendo"
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8.0),
-                          child: ContinueReadingRow(),
-                        ),
-                      ),
+              // --- SEÇÕES CONDICIONAIS ---
+              if (!shouldHideRecommendations) ...[
+                // "Continuar Lendo"
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: ContinueReadingRow(),
+                  ),
+                ),
 
-                      // Prateleiras dinâmicas do Firestore
-                      ...viewModel.libraryShelves.map((shelfData) {
-                        return SliverToBoxAdapter(
-                          child: RecommendationRow(shelfData: shelfData),
-                        );
-                      }).toList(),
+                // Prateleiras dinâmicas do Firestore
+                ...viewModel.libraryShelves.map((shelfData) {
+                  return SliverToBoxAdapter(
+                    child: RecommendationRow(shelfData: shelfData),
+                  );
+                }).toList(),
 
-                      // "Sermões Recomendados"
-                      if (viewModel.recommendedSermons.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
-                                  child: Text("Sermões Recomendados",
-                                      style: theme.textTheme.titleLarge),
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 220,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0),
-                                    itemCount:
-                                        1 + viewModel.recommendedSermons.length,
-                                    itemBuilder: (context, index) {
-                                      if (index == 0) {
-                                        final spurgeonResourceData =
-                                            allLibraryItems.firstWhere(
-                                          (item) =>
-                                              item['id'] == 'spurgeon-sermoes',
-                                          orElse: () => {},
-                                        );
-                                        if (spurgeonResourceData.isEmpty) {
-                                          return const SizedBox.shrink();
-                                        }
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                              right: 12.0),
-                                          child: SizedBox(
-                                            width: 120,
-                                            child: CompactResourceCard(
-                                              title:
-                                                  spurgeonResourceData['title'],
-                                              author: spurgeonResourceData[
-                                                  'author'],
-                                              coverImage: AssetImage(
-                                                  spurgeonResourceData[
-                                                      'coverImagePath']),
-                                              onCardTap: () {
+                // "Sermões Recomendados"
+                if (viewModel.recommendedSermons.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Text("Sermões Recomendados",
+                                style: theme.textTheme.titleLarge),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 220,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              itemCount:
+                                  1 + viewModel.recommendedSermons.length,
+                              itemBuilder: (context, index) {
+                                if (index == 0) {
+                                  final spurgeonResourceData =
+                                      allLibraryItems.firstWhere(
+                                    (item) => item['id'] == 'spurgeon-sermoes',
+                                    orElse: () => {},
+                                  );
+                                  if (spurgeonResourceData.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 12.0),
+                                    child: SizedBox(
+                                      width: 120,
+                                      child: CompactResourceCard(
+                                        title: spurgeonResourceData['title'],
+                                        author: spurgeonResourceData['author'],
+                                        coverImage: AssetImage(
+                                            spurgeonResourceData[
+                                                'coverImagePath']),
+                                        onCardTap: () {
+                                          Navigator.push(
+                                              context,
+                                              FadeScalePageRoute(
+                                                  page: spurgeonResourceData[
+                                                      'destinationPage']));
+                                        },
+                                        onExpandTap: () {
+                                          showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            backgroundColor: Colors.transparent,
+                                            builder: (ctx) =>
+                                                ResourceDetailModal(
+                                              itemData: spurgeonResourceData,
+                                              onStartReading: () {
+                                                Navigator.pop(ctx);
                                                 Navigator.push(
                                                     context,
                                                     FadeScalePageRoute(
                                                         page: spurgeonResourceData[
                                                             'destinationPage']));
                                               },
-                                              onExpandTap: () {
-                                                showModalBottomSheet(
-                                                  context: context,
-                                                  isScrollControlled: true,
-                                                  backgroundColor:
-                                                      Colors.transparent,
-                                                  builder: (ctx) =>
-                                                      ResourceDetailModal(
-                                                    itemData:
-                                                        spurgeonResourceData,
-                                                    onStartReading: () {
-                                                      Navigator.pop(ctx);
-                                                      Navigator.push(
-                                                          context,
-                                                          FadeScalePageRoute(
-                                                              page: spurgeonResourceData[
-                                                                  'destinationPage']));
-                                                    },
-                                                  ),
-                                                );
-                                              },
                                             ),
-                                          ),
-                                        );
-                                      }
-                                      final sermonData = viewModel
-                                          .recommendedSermons[index - 1];
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 12.0),
-                                        child: RecommendedSermonCard(
-                                            sermonData: sermonData),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-
-                    // Título da grade principal
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                        child: Text(
-                          _searchController.text.isNotEmpty
-                              ? "Resultados da Busca"
-                              : "Toda a Biblioteca",
-                          style: theme.textTheme.titleLarge,
-                        ),
-                      ),
-                    ),
-
-                    // --- Grade de Resultados ---
-                    _filteredLibraryItems.isEmpty
-                        ? SliverFillRemaining(
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Text(
-                                  _searchController.text.isNotEmpty
-                                      ? "Nenhum livro encontrado para '${_searchController.text}'."
-                                      : "Nenhum livro corresponde aos filtros aplicados.",
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          )
-                        : SliverPadding(
-                            padding: const EdgeInsets.all(16.0),
-                            sliver: SliverGrid(
-                              gridDelegate:
-                                  const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 140.0,
-                                mainAxisExtent: 210.0,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 16,
-                              ),
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  final itemData = _filteredLibraryItems[index];
-                                  final bool isFullyPremium =
-                                      itemData['isFullyPremium'] == true;
-                                  final String coverPath =
-                                      itemData['coverImagePath'] ?? '';
-
-                                  void startReadingAction() {
-                                    AnalyticsService.instance
-                                        .logLibraryResourceOpened(
-                                            itemData['title']);
-                                    if (isFullyPremium &&
-                                        !viewModel.isPremium) {
-                                      _showPremiumDialog(context);
-                                    } else {
-                                      if (!viewModel.isPremium) {
-                                        interstitialManager.tryShowInterstitial(
-                                            fromScreen:
-                                                "Library_To_${itemData['title']}");
-                                      }
-                                      Navigator.push(
-                                        context,
-                                        FadeScalePageRoute(
-                                            page: itemData['destinationPage']),
-                                      );
-                                    }
-                                  }
-
-                                  void openDetailsModal() {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      backgroundColor: Colors.transparent,
-                                      builder: (ctx) => ResourceDetailModal(
-                                        itemData: itemData,
-                                        onStartReading: () {
-                                          Navigator.pop(ctx);
-                                          startReadingAction();
+                                          );
                                         },
                                       ),
-                                    );
-                                  }
-
-                                  return CompactResourceCard(
-                                    title: itemData['title'],
-                                    author: itemData['author'],
-                                    coverImage: coverPath.isNotEmpty
-                                        ? AssetImage(coverPath)
-                                        : null,
-                                    isPremium: isFullyPremium,
-                                    onCardTap: startReadingAction,
-                                    onExpandTap: openDetailsModal,
-                                  ).animate().fadeIn(
-                                      duration: 400.ms,
-                                      delay: (50 * (index % 15)).ms);
-                                },
-                                childCount: _filteredLibraryItems.length,
-                              ),
+                                    ),
+                                  );
+                                }
+                                final sermonData =
+                                    viewModel.recommendedSermons[index - 1];
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12.0),
+                                  child: RecommendedSermonCard(
+                                      sermonData: sermonData),
+                                );
+                              },
                             ),
                           ),
-                  ],
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+
+              // Título da grade principal
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                  child: Text(
+                    _searchController.text.isNotEmpty
+                        ? "Resultados da Busca"
+                        : "Toda a Biblioteca",
+                    style: theme.textTheme.titleLarge,
+                  ),
                 ),
               ),
 
-              // Barra de filtros inferior
-              LibraryFilterBar(
-                showFiction: _showFiction,
-                showStudyGuide: _showStudyGuide,
-                exclusiveFilter: _exclusiveFilter,
-                difficultyRange: _difficultyRange,
-                isAnyFilterActive: _isFilterOrSearchActive,
-                onFictionTap: () => setState(() {
-                  _exclusiveFilter =
-                      (_exclusiveFilter == 'ficcao') ? null : null;
-                  _showFiction = !_showFiction;
-                  _filterLibrary();
-                }),
-                onFictionLongPress: () => setState(() {
-                  _exclusiveFilter = 'ficcao';
-                  _filterLibrary();
-                }),
-                onStudyGuideTap: () => setState(() {
-                  _exclusiveFilter =
-                      (_exclusiveFilter == 'isStudyGuide') ? null : null;
-                  _showStudyGuide = !_showStudyGuide;
-                  _filterLibrary();
-                }),
-                onStudyGuideLongPress: () => setState(() {
-                  _exclusiveFilter = 'isStudyGuide';
-                  _filterLibrary();
-                }),
-                onDifficultyTap: _showDifficultyFilter,
-                onSearchOrClearTap: () {
-                  if (_isFilterOrSearchActive) {
-                    _clearAllFiltersAndSearch();
-                    setState(() => _showSearchBar = false);
-                    FocusScope.of(context).unfocus();
-                  } else {
-                    setState(() {
-                      _showSearchBar = true;
-                      _searchFocusNode.requestFocus();
-                    });
-                  }
-                },
-                isSearchActive: _showSearchBar,
-                searchQuery: _searchController.text,
-              ),
+              // --- Grade de Resultados ---
+              _filteredLibraryItems.isEmpty
+                  ? SliverFillRemaining(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Text(
+                            _searchController.text.isNotEmpty
+                                ? "Nenhum livro encontrado para '${_searchController.text}'."
+                                : "Nenhum livro corresponde aos filtros aplicados.",
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 140.0,
+                          mainAxisExtent: 210.0,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 16,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final itemData = _filteredLibraryItems[index];
+                            final bool isFullyPremium =
+                                itemData['isFullyPremium'] == true;
+                            final String coverPath =
+                                itemData['coverImagePath'] ?? '';
+
+                            void startReadingAction() {
+                              AnalyticsService.instance
+                                  .logLibraryResourceOpened(itemData['title']);
+                              if (isFullyPremium && !viewModel.isPremium) {
+                                _showPremiumDialog(context);
+                              } else {
+                                if (!viewModel.isPremium) {
+                                  interstitialManager.tryShowInterstitial(
+                                      fromScreen:
+                                          "Library_To_${itemData['title']}");
+                                }
+                                Navigator.push(
+                                  context,
+                                  FadeScalePageRoute(
+                                      page: itemData['destinationPage']),
+                                );
+                              }
+                            }
+
+                            void openDetailsModal() {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (ctx) => ResourceDetailModal(
+                                  itemData: itemData,
+                                  onStartReading: () {
+                                    Navigator.pop(ctx);
+                                    startReadingAction();
+                                  },
+                                ),
+                              );
+                            }
+
+                            return CompactResourceCard(
+                              title: itemData['title'],
+                              author: itemData['author'],
+                              coverImage: coverPath.isNotEmpty
+                                  ? AssetImage(coverPath)
+                                  : null,
+                              isPremium: isFullyPremium,
+                              onCardTap: startReadingAction,
+                              onExpandTap: openDetailsModal,
+                            ).animate().fadeIn(
+                                duration: 400.ms,
+                                delay: (50 * (index % 15)).ms);
+                          },
+                          childCount: _filteredLibraryItems.length,
+                        ),
+                      ),
+                    ),
             ],
+          ),
+          bottomNavigationBar: LibraryFilterBar(
+            showFiction: _showFiction,
+            showStudyGuide: _showStudyGuide,
+            exclusiveFilter: _exclusiveFilter,
+            difficultyRange: _difficultyRange,
+            isAnyFilterActive: _isFilterOrSearchActive,
+            onFictionTap: () => setState(() {
+              _exclusiveFilter = (_exclusiveFilter == 'ficcao') ? null : null;
+              _showFiction = !_showFiction;
+              _filterLibrary();
+            }),
+            onFictionLongPress: () => setState(() {
+              _exclusiveFilter = 'ficcao';
+              _filterLibrary();
+            }),
+            onStudyGuideTap: () => setState(() {
+              _exclusiveFilter =
+                  (_exclusiveFilter == 'isStudyGuide') ? null : null;
+              _showStudyGuide = !_showStudyGuide;
+              _filterLibrary();
+            }),
+            onStudyGuideLongPress: () => setState(() {
+              _exclusiveFilter = 'isStudyGuide';
+              _filterLibrary();
+            }),
+            onDifficultyTap: _showDifficultyFilter,
+            onSearchOrClearTap: () {
+              if (_isFilterOrSearchActive) {
+                _clearAllFiltersAndSearch();
+                setState(() => _showSearchBar = false);
+                FocusScope.of(context).unfocus();
+              } else {
+                setState(() {
+                  _showSearchBar = true;
+                  _searchFocusNode.requestFocus();
+                });
+              }
+            },
+            isSearchActive: _showSearchBar,
+            searchQuery: _searchController.text,
           ),
         );
       },

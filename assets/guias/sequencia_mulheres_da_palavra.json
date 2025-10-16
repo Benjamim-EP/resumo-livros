@@ -1,0 +1,25 @@
+{
+  "id": "seq_mulheres_palavra_7semanas",
+  "type": "reading_sequence",
+  "title": "Mulheres da Palavra",
+  "description": "Uma sequência de leitura de 7 semanas para aprofundar seu relacionamento com as Escrituras.",
+  "featuredImage": "assets/images/guias/mulheres_cover.webp",
+  "duration": "7 Semanas",
+  "steps": [
+    {
+      "week": 1,
+      "title": "Fundamentos da Fé",
+      "resourceId": "c-s-lewis-cristianismo-puro-e-simples"
+    },
+    {
+      "week": 2,
+      "title": "A Jornada da Alma",
+      "resourceId": "o-peregrino-oxford-world-s-classics"
+    },
+    {
+      "week": 3,
+      "title": "Entendendo o Sofrimento",
+      "resourceId": "c-s-lewis-o-problema-da-dor"
+    }
+  ]
+}

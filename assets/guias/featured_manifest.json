@@ -1,0 +1,12 @@
+{
+  "featuredItems": [
+    {
+      "id": "estudo_graca_7dias",
+      "assetPath": "assets/guias/um_estudo_sobre_a_graca.json"
+    },
+    {
+      "id": "seq_mulheres_palavra_7semanas",
+      "assetPath": "assets/guias/sequencia_mulheres_da_palavra.json"
+    }
+  ]
+}
