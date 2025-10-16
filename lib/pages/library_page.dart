@@ -11,7 +11,7 @@ import 'package:septima_biblia/pages/library_page/church_history_index_page.dart
 import 'package:septima_biblia/pages/library_page/compact_resource_card.dart';
 import 'package:septima_biblia/pages/library_page/components/continue_reading_row.dart';
 import 'package:septima_biblia/pages/library_page/components/recommendation_row.dart';
-import 'package:septima_biblia/pages/library_page/featured_carousel_widget.dart';
+import 'package:septima_biblia/pages/library_page/components/featured_carousel_widget.dart';
 import 'package:septima_biblia/pages/library_page/generic_book_viewer_page.dart';
 import 'package:septima_biblia/pages/library_page/gods_word_to_women/gods_word_to_women_index_page.dart';
 import 'package:septima_biblia/pages/library_page/library_recommendation_page.dart';
