@@ -138,6 +138,8 @@ class _BookProgressCard extends StatelessWidget {
 
     final String coverPath = bookMetaData['coverImagePath'] ?? '';
     final Widget destinationPage = bookMetaData['destinationPage'];
+    // <<< 1. EXTRAIR O TÍTULO DO LIVRO >>>
+    final String title = bookMetaData['title'] ?? 'Livro';
 
     return StoreConnector<AppState, double>(
       converter: (store) {
@@ -180,6 +182,16 @@ class _BookProgressCard extends StatelessWidget {
                 backgroundColor: theme.colorScheme.surfaceVariant,
                 progressColor: theme.colorScheme.primary,
                 padding: EdgeInsets.zero,
+              ),
+
+              // <<< 2. ADICIONAR O WIDGET DE TEXTO PARA O TÍTULO >>>
+              const SizedBox(height: 6), // Espaço entre a barra e o texto
+              Text(
+                title,
+                style: theme.textTheme.bodySmall,
+                textAlign: TextAlign.center, // Centraliza o texto
+                maxLines: 2, // Permite que o título quebre em até 2 linhas
+                overflow: TextOverflow.ellipsis, // Adiciona "..." se for maior
               ),
             ],
           ),
