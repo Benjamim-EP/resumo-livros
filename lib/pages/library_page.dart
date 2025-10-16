@@ -795,6 +795,437 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'ficcao': false,
     'dificuldade': 4,
     'isStudyGuide': true,
+  },
+  {
+    'id': 'os-guinness-o-chamado',
+    'title': "O Chamado",
+    'description':
+        "Um livro escrito para aqueles que possuem um profundo desejo de compreender o propósito de sua existência - o 'porquê' último de sua vida. Os Guinness avalia como essa busca é empreendida por adolescentes, universitários, jovens profissionais, pessoas na meia-idade, pais com o 'ninho vazio', homens e mulheres dos cinquenta para cima. Para conhecer o sentido da sua vida deverão descobrir o propósito para o qual foram criados e para o qual foram chamados.",
+    'author': 'Os Guinness',
+    'pageCount': '256',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/os-guinness-o-chamado_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'os-guinness-o-chamado', bookTitle: "O Chamado"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'christine-caine-inesperado-deixe-o-medo-para-tras-e-avance-em-fe',
+    'title': "Inesperado: Deixe o Medo para Trás e Avance em Fé",
+    'description':
+        "Neste livro, Christine Caine convida o leitor a deixar para trás o medo do desconhecido e a avançar com fé, mesmo quando a vida toma rumos inesperados. A autora compartilha experiências pessoais e ensinamentos bíblicos para encorajar e equipar o leitor a confiar em Deus em meio às incertezas.",
+    'author': 'Christine Caine',
+    'pageCount': '224',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/christine-caine-inesperado-deixe-o-medo-para-tras-e-avance-em-fe_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'christine-caine-inesperado-deixe-o-medo-para-tras-e-avance-em-fe',
+        bookTitle: "Inesperado"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'corrie-ten-boom-o-refugio-secreto',
+    'title': "O Refúgio Secreto",
+    'description':
+        "A história verídica de como uma família holandesa arrisca sua vida para esconder judeus durante a Segunda Guerra Mundial é vividamente registrada neste livro. Como membros do movimento de Resistência, Corrie ten Boom, seu pai e sua irmã foram enviados aos campos de concentração nazistas onde seu aprendizado sobre a graça divina foi o sustentáculo durante os anos de provação.",
+    'author': 'Corrie ten Boom',
+    'pageCount': '324',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/corrie-ten-boom-o-refugio-secreto_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'corrie-ten-boom-o-refugio-secreto',
+        bookTitle: "O Refúgio Secreto"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'elisabeth-elliot-paixao-e-pureza',
+    'title': "Paixão e Pureza",
+    'description':
+        "Por meio de cartas trocadas com Jim e escritos em seu diário, a autora compartilha memórias de sua perseverança sobre as tentações, os sacrifícios enfrentados e as vitórias sobre o fogo da paixão em sua história de namoro com Jim. Neste clássico, Elisabeth oferece ricos ensinamentos bíblicos que auxiliam os solteiros a priorizarem o compromisso com Cristo acima do amor entre um homem e uma mulher.",
+    'author': 'Elisabeth Elliot',
+    'pageCount': '250',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/elisabeth-elliot-paixao-e-pureza_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'elisabeth-elliot-paixao-e-pureza',
+        bookTitle: "Paixão e Pureza"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'ellen-santilli-tornando-se-elisabeth-elliot',
+    'title': "Tornando-se Elisabeth Elliot",
+    'description':
+        "Uma biografia que narra a vida de Elisabeth Elliot, desde sua infância e juventude até seus anos como missionária, escritora e palestrante. O livro explora as experiências que moldaram sua fé e ministério, incluindo a perda de seu primeiro marido, Jim Elliot. A obra oferece um olhar íntimo sobre a jornada de uma das mulheres mais influentes do cristianismo do século XX.",
+    'author': 'Ellen Santilli Vaughn',
+    'pageCount': '384',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/ellen-santilli-tornando-se-elisabeth-elliot_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'ellen-santilli-tornando-se-elisabeth-elliot',
+        bookTitle: "Tornando-se Elisabeth Elliot"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'elisabeth-elliot-deixe-me-ser-mulher',
+    'title': "Deixe-me Ser Mulher",
+    'description':
+        "Escrito de mãe para filha no auge do movimento feminista em 1976, este livro reúne ensinamentos preciosos para os dias de hoje sobre o que é ser uma mulher cristã. Com o objetivo de responder à pergunta “O que significa ser mulher”, Elisabeth Elliot aborda vários assuntos relevantes como: submissão, orgulho, liberdade, vocação.",
+    'author': 'Elisabeth Elliot',
+    'pageCount': '256',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/elisabeth-elliot-deixe-me-ser-mulher_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'elisabeth-elliot-deixe-me-ser-mulher',
+        bookTitle: "Deixe-me Ser Mulher"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao',
+    'title': "Esperança na Solidão: Encontrando Deus na Escuridão",
+    'description':
+        "Neste livro, Elisabeth Elliot explora o tema da solidão e como encontrar esperança e a presença de Deus em meio a ela. A autora compartilha reflexões e experiências pessoais para encorajar aqueles que se sentem sozinhos, mostrando que a solidão pode ser um caminho para um relacionamento mais profundo com Deus.",
+    'author': 'Elisabeth Elliot',
+    'pageCount': '192',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao',
+        bookTitle: "Esperança na Solidão"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'elisabeth-elliot-o-sofrimento-nunca-e-em-vao',
+    'title': "O Sofrimento Nunca é em Vão",
+    'description':
+        "A partir de seu testemunho de vida e todas as provações que ela passou, somos desafiados, encorajados e inspirados a continuar confiando em Deus mesmo nos momentos mais difíceis e angustiantes de nossas vidas.",
+    'author': 'Elisabeth Elliot',
+    'pageCount': '132',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/elisabeth-elliot-o-sofrimento-nunca-e-em-vao_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'elisabeth-elliot-o-sofrimento-nunca-e-em-vao',
+        bookTitle: "O Sofrimento Nunca é em Vão"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte',
+    'title': "Uma Vida de Obediência: 7 Disciplinas para uma Vida mais Forte",
+    'description':
+        "Elisabeth Elliot apresenta sete disciplinas espirituais para fortalecer a vida cristã. Com base em sua própria jornada de fé, a autora explora a importância da obediência a Deus em áreas como a vontade, o corpo, a mente, as posses, o tempo, o trabalho e os sentimentos. O livro oferece um guia prático para uma vida de maior disciplina e dedicação a Deus.",
+    'author': 'Elisabeth Elliot',
+    'pageCount': '208',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte',
+        bookTitle: "Uma Vida de Obediência"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'emerson-eggerichs-amor-e-respeito-na-familia-o-que-os-pais-mais-desejam-do-que-os-filhos-mais-precisam',
+    'title': "Amor e Respeito na Família",
+    'description':
+        "Psicólogos afirmam hoje o que a sabedoria bíblica já havia estabelecido há milênios: as crianças precisam do amor que Deus nos ordenou dar a elas (Tito 2.4), e os pais precisam receber delas o respeito que as Escrituras apontam ser o dever dos filhos (Êxodo 20.12). Amor e respeito na família oferece orientações práticas para romper o que os autores denominam o ciclo insano que realimenta a discórdia, afasta pais e filhos e torna o lar um ambiente tóxico.",
+    'author': 'Emerson Eggerichs',
+    'pageCount': '222',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/emerson-eggerichs-amor-e-respeito-na-familia-o-que-os-pais-mais-desejam-do-que-os-filhos-mais-precisam_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'emerson-eggerichs-amor-e-respeito-na-familia-o-que-os-pais-mais-desejam-do-que-os-filhos-mais-precisam',
+        bookTitle: "Amor e Respeito na Família"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente',
+    'title': "Mulheres da Palavra",
+    'description':
+        "Oferecendo um plano claro e conciso de aprofundamento no estudo das Sagradas Escrituras, este livro irá ajudar as mulheres a perseverarem na leitura da Palavra de Deus, de forma a treinar suas mentes e transformar seus corações.",
+    'author': 'Jen Wilkin',
+    'pageCount': '184',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente',
+        bookTitle: "Mulheres da Palavra"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'jen-wilkin-ninguem-como-ele',
+    'title': "Ninguém como Ele",
+    'description':
+        "Jen Wilkin explora dez atributos de Deus que destacam Sua singularidade e majestade. O livro convida o leitor a um estudo profundo sobre quem Deus é, mostrando como a compreensão de Seus atributos pode transformar a adoração, o relacionamento e a vida diária do crente.",
+    'author': 'Jen Wilkin',
+    'pageCount': '224',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath': 'assets/covers/jen-wilkin-ninguem-como-ele_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'jen-wilkin-ninguem-como-ele', bookTitle: "Ninguém como Ele"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente',
+    'title': "Campo de Batalha da Mente",
+    'description':
+        "Se você é um dos milhões que sofrem com preocupação, dúvida, depressão, raiva ou culpa, você está experimentando um ataque à sua mente. Superar pensamentos negativos que vêm contra sua mente traz liberdade e paz.",
+    'author': 'Joyce Meyer',
+    'pageCount': '288',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente',
+        bookTitle: "Campo de Batalha da Mente"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'martyn-lloyd-jones-depressao-espiritual',
+    'title': "Depressão Espiritual",
+    'description':
+        "Neste livro, o Dr. Lloyd-Jones discute as causas da depressão espiritual e a forma como deve ser tratada e superada. A Bíblia aborda este tema com muita frequência, e como parece ser um problema que afetou muitos do povo de Deus, e ainda afeta os cristãos de hoje, este livro certamente será de grande ajuda para esclarecer o que a Bíblia ensina sobre este assunto.",
+    'author': 'Martyn Lloyd-Jones',
+    'pageCount': '320',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/martyn-lloyd-jones-depressao-espiritual_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'martyn-lloyd-jones-depressao-espiritual',
+        bookTitle: "Depressão Espiritual"),
+    'ficcao': false,
+    'dificuldade': 5,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres',
+    'title': "Adornada: Vivendo a Beleza do Evangelho em Meio às Mulheres",
+    'description':
+        "Nancy DeMoss Wolgemuth explora a passagem de Tito 2 e o chamado para que as mulheres mais velhas ensinem as mais novas. O livro oferece uma visão prática de como viver o evangelho de forma bela e intencional, construindo relacionamentos de mentoria que edificam a igreja e glorificam a Deus.",
+    'author': 'Nancy DeMoss Wolgemuth',
+    'pageCount': '352',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres',
+        bookTitle: "Adornada"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'nancy-leigh-demoss-mentiras-em-que-as-garotas-acreditam-e-a-verdade-que-as-liberta',
+    'title': "Mentiras em que as Garotas Acreditam e a Verdade que as Liberta",
+    'description':
+        "Nancy DeMoss Wolgemuth e Dannah Gresh abordam as mentiras comuns que as jovens acreditam sobre Deus, si mesmas, rapazes, amizades e o futuro. O livro oferece a verdade da Palavra de Deus para combater essas mentiras, ajudando as jovens a viverem na liberdade e na verdade de Cristo.",
+    'author': 'Nancy DeMoss Wolgemuth',
+    'pageCount': '240',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/nancy-leigh-demoss-mentiras-em-que-as-garotas-acreditam-e-a-verdade-que-as-liberta_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'nancy-leigh-demoss-mentiras-em-que-as-garotas-acreditam-e-a-verdade-que-as-liberta',
+        bookTitle: "Mentiras em que as Garotas Acreditam"),
+    'ficcao': false,
+    'dificuldade': 2,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural',
+    'title':
+        "Verdade Total: Libertando o Cristianismo de seu Cativeiro Cultural",
+    'description':
+        "Nancy Pearcey argumenta que o cristianismo não é apenas uma fé privada, mas uma verdade total que se aplica a todas as áreas da vida. O livro desafia os cristãos a desenvolverem uma cosmovisão bíblica consistente, capaz de engajar e transformar a cultura, libertando o cristianismo da dicotomia entre o sagrado e o secular.",
+    'author': 'Nancy R. Pearcey',
+    'pageCount': '448',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural',
+        bookTitle: "Verdade Total"),
+    'ficcao': false,
+    'dificuldade': 5,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'richard-j-foster-celebracao-da-disciplina',
+    'title': "Celebração da Disciplina",
+    'description':
+        "Richard Foster escreveu este livro para ajudar os cristãos a redescobrir os 'hábitos sagrados' que foram negligenciados ou mal compreendidos no cristianismo moderno. Ele divide essas práticas em três categorias: disciplinas internas, disciplinas externas e disciplinas corporativas.",
+    'author': 'Richard J. Foster',
+    'pageCount': '303',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/richard-j-foster-celebracao-da-disciplina_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'richard-j-foster-celebracao-da-disciplina',
+        bookTitle: "Celebração da Disciplina"),
+    'ficcao': false,
+    'dificuldade': 5,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'rosaria-butterfield-o-evangelho-vem-com-uma-chave-de-casa',
+    'title': "O Evangelho Vem com uma Chave de Casa",
+    'description':
+        "Rosaria Butterfield descreve a prática da hospitalidade radicalmente comum como um meio de viver o evangelho no dia a dia. A autora compartilha histórias de como abrir sua casa para estranhos e vizinhos se tornou uma poderosa ferramenta de evangelismo e discipulado, mostrando que o evangelho é compartilhado tanto na mesa de jantar quanto no púlpito.",
+    'author': 'Rosaria Butterfield',
+    'pageCount': '224',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/rosaria-butterfield-o-evangelho-vem-com-uma-chave-de-casa_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'rosaria-butterfield-o-evangelho-vem-com-uma-chave-de-casa',
+        bookTitle: "O Evangelho Vem com uma Chave de Casa"),
+    'ficcao': false,
+    'dificuldade': 3,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel',
+    'title': "Pensamentos Secretos de uma Convertida Improvável",
+    'description':
+        "A jornada de uma professora de língua inglesa rumo à fé cristã. Rosaria Champagne Butterfield conta a história de sua conversão, e é surpreendente. O amor de Deus não tem limites, ninguém é um caso perdido, Jesus veio para TODOS. Essa leitura despertou em mim um olhar diferente para as pessoas.",
+    'author': 'Rosaria Butterfield',
+    'pageCount': '174',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel',
+        bookTitle: "Pensamentos Secretos de uma Convertida Improvável"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id':
+        'sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito',
+    'title': "O Lar que Dá Vida: Criando um Lugar de Pertença e Propósito",
+    'description':
+        "Sally Clarkson inspira as mães a criarem um lar que seja um refúgio de amor, vida e aprendizado para seus filhos. O livro oferece conselhos práticos e encorajamento para cultivar uma atmosfera familiar que nutra a alma e o coração, transformando a casa em um lugar onde a fé e o caráter são forjados.",
+    'author': 'Sally Clarkson',
+    'pageCount': '272',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId:
+            'sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito',
+        bookTitle: "O Lar que Dá Vida"),
+    'ficcao': false,
+    'dificuldade': 2,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'tedd-tripp-pastoreando-o-coracao-da-crianca',
+    'title': "Pastoreando o Coração da Criança",
+    'description':
+        "Pastoreando o Coração da Criança é uma obra sobre como falar ao coração de nossos filhos. As coisas que seu filho diz e faz brotam do coração. Lucas 6.45 afirma isso com as seguintes palavras: 'A boca fala do que está cheio o coração'. Escrito para pais que têm filhos de qualquer idade, este livro esclarecedor fornece perspectivas e procedimentos para o pastoreio do coração da criança nos caminhos da vida.",
+    'author': 'Tedd Tripp',
+    'pageCount': '240',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/tedd-tripp-pastoreando-o-coracao-da-crianca_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'tedd-tripp-pastoreando-o-coracao-da-crianca',
+        bookTitle: "Pastoreando o Coração da Criança"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
+  },
+  {
+    'id': 'timothy-keller-o-significado-do-casamento',
+    'title': "O Significado do Casamento",
+    'description':
+        "Este livro se baseia na muito aplaudida série de sermões pregados por Timothy Keller, autor best-seller do New York Times. O autor mostra a todos — cristãos, céticos, solteiros, casais casados há muito tempo e aos que estão prestes a noivar — a visão do que o casamento deve ser segundo a Bíblia.",
+    'author': 'Timothy Keller',
+    'pageCount': '296',
+    'isFullyPremium': false,
+    'hasPremiumFeature': false,
+    'coverImagePath':
+        'assets/covers/timothy-keller-o-significado-do-casamento_cover.webp',
+    'destinationPage': const BookStudyGuidePage(
+        bookId: 'timothy-keller-o-significado-do-casamento',
+        bookTitle: "O Significado do Casamento"),
+    'ficcao': false,
+    'dificuldade': 4,
+    'isStudyGuide': false
   }
 ];
 
