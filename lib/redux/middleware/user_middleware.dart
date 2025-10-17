@@ -343,41 +343,65 @@ List<Middleware<AppState>> createUserMiddleware() {
       print(
           "UserMiddleware (LearningGoal): 'learningGoal' salvo com sucesso no Firestore.");
 
-      // <<< INÍCIO DA NOVA LÓGICA DE LIMPEZA DE CACHE >>>
+      // --- INÍCIO DA LÓGICA DE LIMPEZA DE CACHE ---
 
-      // 2. Limpa o cache de recomendações no Firestore
+      // 2. Limpa o cache de recomendações de VERSÍCULOS no Firestore
       print(
           "UserMiddleware (LearningGoal): Iniciando limpeza do cache de 'recommendedVerses' no Firestore...");
-      final collectionRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('recommendedVerses');
-      final snapshot = await collectionRef.get();
+      try {
+        final collectionRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('recommendedVerses');
+        final snapshot = await collectionRef.get();
 
-      if (snapshot.docs.isNotEmpty) {
-        // Usa um batch para deletar todos os documentos de uma vez (mais eficiente)
-        final batch = FirebaseFirestore.instance.batch();
-        for (var doc in snapshot.docs) {
-          batch.delete(doc.reference);
+        if (snapshot.docs.isNotEmpty) {
+          final batch = FirebaseFirestore.instance.batch();
+          for (var doc in snapshot.docs) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+          print(
+              "UserMiddleware (LearningGoal): Cache de ${snapshot.docs.length} recomendações de versículos limpo no Firestore.");
+        } else {
+          print(
+              "UserMiddleware (LearningGoal): Nenhum cache de versículos para limpar.");
         }
-        await batch.commit();
+      } catch (e) {
         print(
-            "UserMiddleware (LearningGoal): Cache de ${snapshot.docs.length} recomendações antigas limpo no Firestore.");
-      } else {
-        print(
-            "UserMiddleware (LearningGoal): Nenhum cache de recomendações para limpar no Firestore.");
+            "UserMiddleware (LearningGoal): Erro ao limpar cache de versículos: $e");
+        // Não paramos a execução, apenas logamos o erro.
       }
 
-      // 3. Limpa o estado local (Redux) das recomendações antigas para a UI
+      // <<< NOVO BLOCO PARA LIMPAR O CACHE DE SERMÕES >>>
+      // 3. Limpa o cache de recomendações de SERMÕES no Firestore
+      print(
+          "UserMiddleware (LearningGoal): Iniciando limpeza do cache de 'sermonRecommendations' no Firestore...");
+      try {
+        final docRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('personalizedContent')
+            .doc('sermonRecommendations');
+
+        await docRef.delete();
+        print(
+            "UserMiddleware (LearningGoal): Cache de sermões no Firestore limpo com sucesso.");
+      } catch (e) {
+        print(
+            "UserMiddleware (LearningGoal): Erro ao limpar cache de sermões (pode não existir ainda): $e");
+        // É seguro ignorar o erro aqui, pois o documento pode simplesmente não existir.
+      }
+      // <<< FIM DO NOVO BLOCO >>>
+
+      // 4. Limpa o estado local (Redux) de AMBAS as recomendações para a UI
       store.dispatch(ClearAllVerseRecommendationsAction());
       store.dispatch(ClearRecommendedSermonsAction());
       print(
           "UserMiddleware (LearningGoal): Caches de recomendação de versículos e sermões limpos no Redux.");
 
-      // 4. (Opcional) Inicia proativamente a busca por novas recomendações
+      // 5. Inicia proativamente a busca por novas recomendações de SERMÕES
       store.dispatch(FetchRecommendedSermonsAction());
-
-      // <<< FIM DA NOVA LÓGICA DE LIMPEZA DE CACHE >>>
     } catch (e) {
       print(
           'UserMiddleware (LearningGoal): Erro ao atualizar o campo "learningGoal" ou limpar caches: $e');
