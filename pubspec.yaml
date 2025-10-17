@@ -137,6 +137,7 @@ flutter:
     - assets/covers/guias/
     - assets/covers/sagas/
     - assets/guias/
+    - assets/images/carroussel/
     - test.env
     
     - assets/metadata/bible_sections_count.json 
@@ -172,7 +173,6 @@ flutter:
     - assets/Biblia/completa_traducoes/acf/
     
     - assets/Biblia/eventos_por_capitulo/
-    - assets/images/tribos/
     - assets/images/
     - assets/intro/
     - assets/icons/
