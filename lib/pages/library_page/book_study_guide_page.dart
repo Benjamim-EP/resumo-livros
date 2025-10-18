@@ -1,16 +1,22 @@
 // lib/pages/library_page/book_study_guide_page.dart
+
+import 'dart:async'; // <<< 1. IMPORTAR ASYNC PARA O TIMER >>>
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_redux/flutter_redux.dart'; // <<< 2. IMPORTAR REDUX >>>
+import 'package:septima_biblia/redux/actions.dart'; // <<< 3. IMPORTAR ACTIONS >>>
+import 'package:septima_biblia/redux/store.dart'; // <<< 4. IMPORTAR STORE >>>
 import 'package:url_launcher/url_launcher.dart';
 
-// Modelo para os dados do guia de estudo
+// Modelo para os dados do guia de estudo (sem alterações)
 class ChapterGuide {
   final String title;
   final List<dynamic> topics;
   ChapterGuide({required this.title, required this.topics});
 }
 
+// <<< 5. CONVERTIDO PARA STATEFULWIDGET >>>
 class BookStudyGuidePage extends StatefulWidget {
   final String bookId;
   final String bookTitle;
@@ -29,15 +35,89 @@ class _BookStudyGuidePageState extends State<BookStudyGuidePage> {
   late Future<List<ChapterGuide>> _guideFuture;
   String? _amazonLink;
 
+  // <<< 6. NOVAS VARIÁVEIS DE ESTADO PARA PROGRESSO >>>
+  final ScrollController _scrollController = ScrollController();
+  Timer? _debounce;
+
   @override
   void initState() {
     super.initState();
     _guideFuture = _fetchStudyGuide();
+
+    // <<< 7. ADICIONAR O LISTENER E CARREGAR O PROGRESSO INICIAL >>>
+    _loadInitialScrollPosition();
+    _scrollController.addListener(_onScroll);
   }
 
+  @override
+  void dispose() {
+    // <<< 8. GARANTIR A LIMPEZA DOS RECURSOS >>>
+    _debounce?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // <<< 9. NOVA FUNÇÃO PARA OUVIR A ROLAGEM E ATIVAR O DEBOUNCE >>>
+  void _onScroll() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 1500), _saveProgress);
+  }
+
+  // <<< 10. NOVA FUNÇÃO PARA CARREGAR A POSIÇÃO INICIAL >>>
+  void _loadInitialScrollPosition() {
+    // Adiciona um callback para ser executado após o primeiro frame ser construído
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final store = StoreProvider.of<AppState>(context, listen: false);
+      final progressItem = store.state.userState.inProgressItems.firstWhere(
+        (item) => item['contentId'] == widget.bookId,
+        orElse: () => {},
+      );
+
+      final double savedProgress =
+          (progressItem['progressPercentage'] as num?)?.toDouble() ?? 0.0;
+
+      if (savedProgress > 0 && _scrollController.hasClients) {
+        final double scrollPosition =
+            _scrollController.position.maxScrollExtent * savedProgress;
+        _scrollController.jumpTo(scrollPosition);
+        print(
+            "Guia de Estudo: Posição de leitura restaurada para ${(savedProgress * 100).toStringAsFixed(1)}%");
+      }
+    });
+  }
+
+  // <<< 11. NOVA FUNÇÃO PARA CALCULAR E SALVAR O PROGRESSO >>>
+  void _saveProgress() {
+    if (!mounted ||
+        !_scrollController.hasClients ||
+        _scrollController.position.maxScrollExtent <= 0) {
+      return;
+    }
+
+    final double progress = (_scrollController.position.pixels /
+            _scrollController.position.maxScrollExtent)
+        .clamp(0.0, 1.0);
+
+    // Usamos a mesma ação dos sermões, pois ela é genérica o suficiente.
+    // Ela será tratada pelo `sermon_data_middleware.dart` que chama a função
+    // `updateUnifiedReadingProgress` do FirestoreService.
+    StoreProvider.of<AppState>(context, listen: false).dispatch(
+      UpdateSermonProgressAction(
+        sermonId: widget.bookId, // Aqui, o "sermonId" é o nosso `bookId`
+        progressPercentage: progress,
+      ),
+    );
+
+    print(
+        "Guia de Estudo: Progresso salvo para '${widget.bookId}': ${(progress * 100).toStringAsFixed(1)}%");
+  }
+
+  // O resto das suas funções (`_fetchStudyGuide`, `_launchURL`) permanece o mesmo.
   Future<List<ChapterGuide>> _fetchStudyGuide() async {
     final firestore = FirebaseFirestore.instance;
-
     final bookDoc =
         await firestore.collection('bookStudyGuides').doc(widget.bookId).get();
     if (bookDoc.exists && mounted) {
@@ -45,14 +125,12 @@ class _BookStudyGuidePageState extends State<BookStudyGuidePage> {
         _amazonLink = bookDoc.data()?['amazonLink'];
       });
     }
-
     final snapshot = await firestore
         .collection('bookStudyGuides')
         .doc(widget.bookId)
         .collection('chapters')
         .orderBy(FieldPath.documentId)
         .get();
-
     return snapshot.docs.map((doc) {
       return ChapterGuide(
         title: doc.data()['chapterTitle'] ?? 'Capítulo Desconhecido',
@@ -64,7 +142,7 @@ class _BookStudyGuidePageState extends State<BookStudyGuidePage> {
   Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      // Tratar erro se necessário
+      // Tratar erro
     }
   }
 
@@ -101,6 +179,8 @@ class _BookStudyGuidePageState extends State<BookStudyGuidePage> {
 
           final chapters = snapshot.data!;
           return ListView.builder(
+            // <<< 12. CONECTAR O SCROLLCONTROLLER À LISTA >>>
+            controller: _scrollController,
             padding: const EdgeInsets.all(16.0),
             itemCount: chapters.length + 1, // +1 para o disclaimer
             itemBuilder: (context, index) {
@@ -108,7 +188,6 @@ class _BookStudyGuidePageState extends State<BookStudyGuidePage> {
                 return _buildDisclaimer(context);
               }
               final chapter = chapters[index - 1];
-              // ✅ O CARD EXTERNO É O ExpansionTile, como antes
               return Card(
                 elevation: 2,
                 margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -120,21 +199,17 @@ class _BookStudyGuidePageState extends State<BookStudyGuidePage> {
                   title: Text(chapter.title,
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold)),
-                  childrenPadding: const EdgeInsets.fromLTRB(
-                      8, 0, 8, 16), // Padding interno do ExpansionTile
-                  // ✅ CADA TÓPICO DENTRO DO ExpansionTile AGORA É UM CARD
+                  childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
                   children: chapter.topics.asMap().entries.map<Widget>((entry) {
                     int idx = entry.key;
                     var topic = entry.value;
-
                     final topicTitle = topic['title'] ?? '';
                     final keyPoints =
                         List<String>.from(topic['keyPoints'] ?? []);
 
                     return Card(
                       elevation: 2,
-                      color: theme.cardColor
-                          .withOpacity(0.5), // Cor sutil para diferenciar
+                      color: theme.cardColor.withOpacity(0.5),
                       margin: const EdgeInsets.only(top: 12.0),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
@@ -186,6 +261,7 @@ class _BookStudyGuidePageState extends State<BookStudyGuidePage> {
     );
   }
 
+  // A função _buildDisclaimer permanece a mesma
   Widget _buildDisclaimer(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
