@@ -1,4 +1,5 @@
 import 'package:redux/redux.dart';
+import 'package:septima_biblia/pages/library_page.dart';
 import 'package:septima_biblia/redux/actions.dart';
 import 'package:septima_biblia/redux/store.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
@@ -81,11 +82,40 @@ Future<Map<String, dynamic>?> _fetchRecommendedShelf(
     final result = await callable.call<Map<String, dynamic>>({});
     final recommendations =
         result.data['recommendations'] as List<dynamic>? ?? [];
+
     if (recommendations.isNotEmpty) {
+      // <<< INÍCIO DA CORREÇÃO DE ROBUSTEZ >>>
+      final List<String> sanitizedBookIds = recommendations.map((item) {
+        final aiBookId = item['bookId'] as String? ?? '';
+
+        // 1. Tenta uma correspondência exata primeiro (o caso ideal)
+        if (allLibraryItems.any((libItem) => libItem['id'] == aiBookId)) {
+          return aiBookId;
+        }
+
+        // 2. Se falhar, tenta uma correspondência parcial (fuzzy match)
+        // Isso corrige erros como 'a-ultima-noite-do-mundo' vs 'c-s-lewis-a-ultima-noite-do-mundo'
+        final correctedItem = allLibraryItems.firstWhere(
+          (libItem) => (libItem['id'] as String).endsWith(aiBookId),
+          orElse: () => {},
+        );
+
+        if (correctedItem.isNotEmpty) {
+          print(
+              "LibraryMiddleware: Corrigido ID da IA de '$aiBookId' para '${correctedItem['id']}'");
+          return correctedItem['id'] as String;
+        }
+
+        // 3. Se tudo falhar, retorna o ID quebrado para que o log de erro na UI o capture
+        print(
+            "LibraryMiddleware: AVISO - Não foi possível corrigir ou encontrar o ID da IA: '$aiBookId'");
+        return aiBookId;
+      }).toList();
+      // <<< FIM DA CORREÇÃO DE ROBUSTEZ >>>
+
       return {
         'title': 'Recomendado para Você',
-        'items':
-            recommendations.map((item) => item['bookId'] as String).toList(),
+        'items': sanitizedBookIds, // Usa a lista de IDs corrigida
         'order': 1,
       };
     }

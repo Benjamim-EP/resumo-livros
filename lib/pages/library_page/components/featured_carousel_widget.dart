@@ -1,11 +1,12 @@
 // lib/pages/library_page/components/featured_carousel_widget.dart
 
-import 'package:flutter/material.dart' hide CarouselController;
-// <<< CORREÇÃO 1: Adicionado o prefixo 'cs' ao import >>>
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:carousel_slider/carousel_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart' as cs;
 import 'package:septima_biblia/models/featured_content.dart';
 import 'package:septima_biblia/pages/library_page/reading_sequence_page.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class FeaturedCarouselWidget extends StatefulWidget {
   final List<FeaturedContent> items;
@@ -18,7 +19,6 @@ class FeaturedCarouselWidget extends StatefulWidget {
 
 class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
   int _currentIndex = 0;
-  // <<< CORREÇÃO 2: Usando o prefixo para especificar a classe correta >>>
   final CarouselSliderController _carouselController =
       CarouselSliderController();
 
@@ -29,19 +29,26 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
     }
 
     final theme = Theme.of(context);
+    final double? carouselHeight = kIsWeb ? 280.0 : null;
+    final double carouselAspectRatio = kIsWeb ? 16 / 9 : 16 / 9;
+    final double viewportFraction = kIsWeb ? 0.25 : 1.0;
+    final bool enlargeCenterPage = kIsWeb
+        ? true
+        : false; // Era `true` para ambos, mudei para `false` no mobile para ocupar 100%
 
     return Column(
       children: [
-        // <<< CORREÇÃO 3: Usando o prefixo >>>
-        CarouselSlider(
+        cs.CarouselSlider(
           carouselController: _carouselController,
-          // <<< CORREÇÃO 4: Usando o prefixo >>>
-          options: CarouselOptions(
+          options: cs.CarouselOptions(
+            // <<< 3. USAR AS VARIÁVEIS RESPONSIVAS >>>
+            height: carouselHeight,
+            aspectRatio: carouselAspectRatio,
+            viewportFraction: viewportFraction,
+            enlargeCenterPage: enlargeCenterPage,
+
             autoPlay: true,
             autoPlayInterval: const Duration(seconds: 8),
-            aspectRatio: 16 / 9,
-            viewportFraction: 1.0,
-            enlargeCenterPage: false,
             onPageChanged: (index, reason) {
               setState(() {
                 _currentIndex = index;
@@ -56,6 +63,8 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
             );
           }).toList(),
         ),
+
+        // Os indicadores de ponto (dots)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: widget.items.asMap().entries.map((entry) {
@@ -82,24 +91,18 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
   }
 
   Widget _buildCarouselItem(BuildContext context, FeaturedContent item) {
-    // Ação que será executada ao tocar no card
     void handleTap() {
       if (item.type == 'reading_sequence') {
         Navigator.push(
           context,
           FadeScalePageRoute(
             page: ReadingSequencePage(
-              // <<< CORREÇÃO APLICADA AQUI >>>
-              // Agora usamos o assetPath que vem diretamente do nosso objeto `item`.
               assetPath: item.assetPath,
               sequenceTitle: item.title,
             ),
           ),
         );
       } else if (item.type == 'study_guide') {
-        // Navega para a página de Guia de Estudo (que você pode criar no futuro)
-        // Exemplo:
-        // Navigator.push(context, FadeScalePageRoute(page: StudyGuidePage(assetPath: item.assetPath)));
         print(
             "Navegar para a página de Guia de Estudo: ${item.title} (Path: ${item.assetPath})");
       }
@@ -109,13 +112,13 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
       onTap: handleTap,
       child: Container(
         width: MediaQuery.of(context).size.width,
-        margin: const EdgeInsets.symmetric(horizontal: 5.0),
+        // <<< MUDANÇA 4: Margem para o item central ampliado não cortar >>>
+        margin: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12.0),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Imagem de Fundo
               Image.asset(
                 item.featuredImage,
                 fit: BoxFit.cover,
@@ -123,7 +126,6 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
                   return Container(color: Colors.grey.shade800);
                 },
               ),
-              // Gradiente
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -134,7 +136,6 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
                   ),
                 ),
               ),
-              // Textos
               Positioned(
                 bottom: 20.0,
                 left: 20.0,

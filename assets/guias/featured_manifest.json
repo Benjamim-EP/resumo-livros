@@ -5,8 +5,12 @@
       "assetPath": "assets/guias/um_estudo_sobre_a_graca.json"
     },
     {
-      "id": "seq_mulheres_palavra_7meses",
+      "id": "seq_mulheres_da_palavra_7meses",
       "assetPath": "assets/guias/sequencia_mulheres_da_palavra.json"
+    },
+    {
+      "id": "seq_coracoes_partidos_4semanas",
+      "assetPath": "assets/guias/seq_coracoes_partidos.json"
     }
   ]
 }

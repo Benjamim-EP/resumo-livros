@@ -3279,14 +3279,17 @@ Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é 
 {{
   "recommendations": [
     {{
-      "bookId": "id-do-livro-1",
-      "title": "Título do Livro 1",
-      "author": "Autor do Livro 1",
-      "coverImagePath": "caminho/para/capa1.webp",
-      "justificativa": "Sua justificativa para o livro 1 aqui."
+      "bookId": "c-s-lewis-a-ultima-noite-do-mundo", 
+      "title": "A Última Noite do Mundo",
+      "author": "C. S. Lewis",
+      "coverImagePath": "caminho/para/capa.webp",
+      "justificativa": "Sua justificativa para este livro aqui."
     }}
   ]
 }}
+
+# EXEMPLO DE SAÍDA INCORRETA (NÃO retire partes do id), exemplo do id "c-s-lewis-a-ultima-noite-do-mundo":
+# {{ "bookId": "a-ultima-noite-do-mundo" }}
 """
     
     user_prompt = f"NECESSIDADE DO USUÁRIO: \"{recommendation_base_text}\""
@@ -3300,7 +3303,7 @@ Você é um bibliotecário e conselheiro teológico especialista. Sua tarefa é 
         print(f"Enviando prompt para a OpenAI...")
         
         chat_completion = client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="gpt-5-nano",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
