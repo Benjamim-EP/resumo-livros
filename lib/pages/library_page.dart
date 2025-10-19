@@ -660,7 +660,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
   },
   {
     'id': 'billy-graham-aproximando-se-de-casa-vida-fe-e-terminar-bem',
-    'title': "Aproximando-se de Casa",
+    'title': "A caminho de Casa",
     'description':
         "Reflexões sobre envelhecer com graça, fé e propósito, oferecendo sabedoria para terminar bem a jornada da vida.",
     'author': 'Billy Graham',
@@ -668,7 +668,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/guias/billy-graham-aproximando-se-de-casa-vida-fe-e-terminar-bem_cover.webp',
+        'assets/covers/guias/billy-graham-a-caminho-de-casa_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId: 'billy-graham-aproximando-se-de-casa-vida-fe-e-terminar-bem',
         bookTitle: "Aproximando-se de Casa"),
@@ -1230,6 +1230,24 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'ficcao': false,
     'dificuldade': 4,
     'isStudyGuide': false
+  },
+  {
+    "id": "sheldon-vanauken-uma-misericordia-severa",
+    "title": "Uma Misericórdia Severa",
+    "description":
+        "Vencedor do National Book Award, 'Uma Misericórdia Severa' é o relato comovente da história de amor de Sheldon Vanauken e sua esposa, Jean, a descoberta da fé em meio à dor e a amizade com C. S. Lewis. A obra inclui dezoito cartas de C. S. Lewis que abordam questões universais sobre fé, a existência de Deus e as razões por trás do sofrimento. É uma narrativa autobiográfica sobre a busca espiritual do autor e o impacto transformador que a amizade com Lewis teve em sua vida.",
+    "author": "Sheldon Vanauken",
+    "pageCount": "240",
+    "isFullyPremium": false,
+    "hasPremiumFeature": false,
+    "coverImagePath":
+        "assets/covers/guias/sheldon-vanauken-uma-misericordia-severa_cover.webp",
+    'destinationPage': const BookStudyGuidePage(
+        bookId: "sheldon-vanauken-uma-misericordia-severa",
+        bookTitle: "Uma Misericórdia Severa"),
+    "ficcao": false,
+    "dificuldade": 4,
+    "isStudyGuide": false
   }
 ];
 

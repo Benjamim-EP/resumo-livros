@@ -1,0 +1,54 @@
+{
+  "id": "seq_coracoes_partidos_4semanas",
+  "type": "reading_sequence",
+  "title": "Para os Corações Partidos",
+  "description": "Uma jornada de leitura para encontrar esperança e consolo em meio à dor e ao luto.",
+  "featuredImage": "assets/images/guias/coracoes_partidos_cover.webp",
+  "duration": "4 Semanas",
+  "steps": [
+    {
+      "week": 1,
+      "title": "Enfrentando a Realidade da Dor",
+      "focus": "Uma análise honesta sobre a experiência do luto e a busca por sentido.",
+      "resources": [
+        {
+          "title": "A Anatomia de Uma Dor",
+          "resourceId": "c-s-lewis-a-anatomia-de-uma-dor"
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "title": "O Propósito no Sofrimento",
+      "focus": "Descobrindo que a dor, sob a soberania de Deus, nunca é desperdiçada.",
+      "resources": [
+        {
+          "title": "O Sofrimento Nunca é em Vão",
+          "resourceId": "elisabeth-elliot-o-sofrimento-nunca-e-em-vao"
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "title": "Encontrando Deus na Solidão",
+      "focus": "Transformando o deserto da solidão em um lugar de encontro com o divino.",
+      "resources": [
+        {
+          "title": "Esperança na Solidão",
+          "resourceId": "elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao"
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "title": "Uma Misericórdia Severa",
+      "focus": "Testemunhando uma história real de amor, fé e amizade em meio à perda, com a orientação de C.S. Lewis.",
+      "resources": [
+        {
+          "title": "Uma Misericórdia Severa",
+          "resourceId": "sheldon-vanauken-uma-misericordia-severa"
+        }
+      ]
+    }
+  ]
+}
