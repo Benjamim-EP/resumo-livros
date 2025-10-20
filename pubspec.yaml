@@ -137,6 +137,7 @@ flutter:
     - assets/covers/guias/
     - assets/covers/sagas/
     - assets/guias/
+    - assets/guias/artigos/
     - assets/images/carroussel/
     - test.env
     

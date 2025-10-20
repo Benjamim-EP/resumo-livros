@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart' as cs;
 import 'package:septima_biblia/models/featured_content.dart';
 import 'package:septima_biblia/pages/library_page/reading_sequence_page.dart';
+import 'package:septima_biblia/pages/library_page/study_guide_page.dart';
 import 'package:septima_biblia/services/custom_page_route.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -103,8 +104,16 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
           ),
         );
       } else if (item.type == 'study_guide') {
-        print(
-            "Navegar para a página de Guia de Estudo: ${item.title} (Path: ${item.assetPath})");
+        Navigator.push(
+          context,
+          FadeScalePageRoute(
+            page: StudyGuidePage(
+              title: item.title,
+              contentPath: item.contentPath!, // Passa o caminho do arquivo .md
+              guideId: item.id, // Passa o ID para rastreamento de progresso
+            ),
+          ),
+        );
       }
     }
 

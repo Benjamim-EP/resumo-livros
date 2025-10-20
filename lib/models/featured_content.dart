@@ -1,5 +1,3 @@
-// lib/models/featured_content.dart
-
 class FeaturedContent {
   final String id;
   final String type;
@@ -7,7 +5,8 @@ class FeaturedContent {
   final String description;
   final String featuredImage;
   final String duration;
-  final String assetPath; // <-- 1. NOVA PROPRIEDADE
+  final String assetPath;
+  final String? contentPath; // <-- 1. NOVO CAMPO OPCIONAL
 
   FeaturedContent({
     required this.id,
@@ -16,13 +15,12 @@ class FeaturedContent {
     required this.description,
     required this.featuredImage,
     required this.duration,
-    required this.assetPath, // <-- 2. ADICIONADO AO CONSTRUTOR
+    required this.assetPath,
+    this.contentPath, // <-- 2. ADICIONADO AO CONSTRUTOR
   });
 
-  /// Agora, o construtor de fábrica precisa do assetPath para criar o objeto.
   factory FeaturedContent.fromJson(
       Map<String, dynamic> json, String assetPath) {
-    // <-- 3. NOVO PARÂMETRO
     return FeaturedContent(
       id: json['id'] as String? ?? '',
       type: json['type'] as String? ?? 'unknown',
@@ -31,7 +29,8 @@ class FeaturedContent {
       featuredImage: json['featuredImage'] as String? ??
           'assets/images/guias/placeholder.webp',
       duration: json['duration'] as String? ?? '',
-      assetPath: assetPath, // <-- 4. ATRIBUINDO O VALOR
+      assetPath: assetPath,
+      contentPath: json['contentPath'] as String?, // <-- 3. ATRIBUINDO O VALOR
     );
   }
 }

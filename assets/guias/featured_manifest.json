@@ -1,16 +1,16 @@
 {
   "featuredItems": [
     {
-      "id": "estudo_graca_7dias",
-      "assetPath": "assets/guias/um_estudo_sobre_a_graca.json"
-    },
-    {
       "id": "seq_mulheres_da_palavra_7meses",
       "assetPath": "assets/guias/sequencia_mulheres_da_palavra.json"
     },
     {
       "id": "seq_coracoes_partidos_4semanas",
       "assetPath": "assets/guias/seq_coracoes_partidos.json"
+    },
+    {
+      "id": "estudo_oracao_artigo",
+      "assetPath": "assets/guias/estudo_sobre_a_oracao.json"
     }
   ]
 }
