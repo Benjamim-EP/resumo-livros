@@ -30,10 +30,10 @@ class _FeaturedCarouselWidgetState extends State<FeaturedCarouselWidget> {
     }
 
     final theme = Theme.of(context);
-    final double? carouselHeight = kIsWeb ? 280.0 : null;
-    final double carouselAspectRatio = kIsWeb ? 16 / 9 : 16 / 9;
-    final double viewportFraction = kIsWeb ? 0.25 : 1.0;
-    final bool enlargeCenterPage = kIsWeb
+    final double? carouselHeight = kIsWeb ? 600 : null;
+    final double carouselAspectRatio = kIsWeb ? 4 / 5 : 4 / 5;
+    final double viewportFraction = kIsWeb ? 0.2 : 1.0;
+    final bool enlargeCenterPage = false
         ? true
         : false; // Era `true` para ambos, mudei para `false` no mobile para ocupar 100%
 

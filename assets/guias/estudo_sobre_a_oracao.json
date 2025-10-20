@@ -1,9 +1,9 @@
 {
   "id": "estudo_oracao_artigo",
   "type": "study_guide",
-  "title": "Um Estudo Sobre a Oração",
-  "description": "Uma reflexão profunda sobre a natureza, o propósito e o poder da oração nas Escrituras.",
-  "featuredImage": "images/guias/oracao_cover.webp",          
+  "title": "",
+  "description": "",
+  "featuredImage": "images/carroussel/oracao_cover.webp",          
   "duration": "Leitura Contínua",
   "contentPath": "guias/artigos/estudo_sobre_a_oracao.md"         
 }
