@@ -34,13 +34,18 @@ class ReadingSequence {
 }
 
 class SequenceStep {
-  final int month;
+  // <<< INÍCIO DA CORREÇÃO >>>
+  final int stepNumber; // Armazena o número (seja da semana ou do mês)
+  final String stepType; // Armazena o texto ("Semana" ou "Mês")
+  // <<< FIM DA CORREÇÃO >>>
+
   final String title;
   final String focus;
   final List<SequenceResource> resources;
 
   SequenceStep({
-    required this.month,
+    required this.stepNumber,
+    required this.stepType,
     required this.title,
     required this.focus,
     required this.resources,
@@ -51,9 +56,24 @@ class SequenceStep {
     List<SequenceResource> resourcesList =
         resourcesFromJson.map((i) => SequenceResource.fromJson(i)).toList();
 
+    // <<< INÍCIO DA CORREÇÃO PRINCIPAL >>>
+    // Lógica para detectar se o JSON usa 'week' ou 'month'
+    int number = 0;
+    String type = 'Etapa'; // Um fallback caso nenhum dos dois seja encontrado
+
+    if (json.containsKey('week')) {
+      number = json['week'] ?? 0;
+      type = 'Semana';
+    } else if (json.containsKey('month')) {
+      number = json['month'] ?? 0;
+      type = 'Mês';
+    }
+    // <<< FIM DA CORREÇÃO PRINCIPAL >>>
+
     return SequenceStep(
-      month: json['month'] ?? 0,
-      title: json['title'] ?? 'Mês',
+      stepNumber: number,
+      stepType: type,
+      title: json['title'] ?? 'Etapa',
       focus: json['focus'] ?? '',
       resources: resourcesList,
     );
