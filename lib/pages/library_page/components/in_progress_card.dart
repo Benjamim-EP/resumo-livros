@@ -18,14 +18,12 @@ class InProgressCard extends StatelessWidget {
     final double progressPercentage =
         (progressData['progressPercentage'] as num?)?.toDouble() ?? 0.0;
 
-    // ✅ LÓGICA DE BUSCA CORRIGIDA E ROBUSTA
     final fullItemData = allLibraryItems.firstWhere(
-      (item) => item['id'] == contentId, // Agora compara IDs diretamente!
-      orElse: () => {}, // Retorna um mapa vazio se não encontrar
+      (item) => item['id'] == contentId,
+      orElse: () => {},
     );
 
     if (fullItemData.isEmpty) {
-      // Este log nos ajudará a depurar se um ID não for encontrado
       print(
           "InProgressCard: ERRO - Não foi possível encontrar metadados para o contentId: '$contentId'");
       return const SizedBox(
@@ -50,39 +48,45 @@ class InProgressCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(
           width: 120,
+          // <<< INÍCIO DA CORREÇÃO >>>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+            // mainAxisSize foi removido, permitindo que a Column ocupe toda a altura disponível (220px)
             children: [
-              AspectRatio(
-                aspectRatio: 2 / 3,
-                child: Card(
-                  elevation: 4,
-                  margin: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (coverPath.isNotEmpty)
-                        Image.asset(coverPath, fit: BoxFit.cover)
-                      else
-                        Container(color: theme.colorScheme.surfaceVariant),
-                      Center(
-                        child: Icon(
-                          Icons.play_circle_outline,
-                          color: Colors.white.withOpacity(0.8),
-                          size: 40,
-                          shadows: const [
-                            Shadow(blurRadius: 6, color: Colors.black54)
-                          ],
+              // O AspectRatio agora está dentro de um Expanded,
+              // tornando-o flexível para ocupar o espaço vertical restante.
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 2 / 3,
+                  child: Card(
+                    elevation: 4,
+                    margin: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (coverPath.isNotEmpty)
+                          Image.asset(coverPath, fit: BoxFit.cover)
+                        else
+                          Container(color: theme.colorScheme.surfaceVariant),
+                        Center(
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            color: Colors.white.withOpacity(0.8),
+                            size: 40,
+                            shadows: const [
+                              Shadow(blurRadius: 6, color: Colors.black54)
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
+              // <<< FIM DA CORREÇÃO >>>
               const SizedBox(height: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),

@@ -3,7 +3,7 @@
   "type": "reading_sequence",
   "title": "",
   "description": "",
-  "featuredImage": "images/carroussel/coracoes_partidos_cover.webp",
+  "featuredImage": "assets/images/carroussel/coracoes_partidos_cover.webp",
   "duration": "4 Semanas",
   "steps": [
     {
@@ -24,7 +24,7 @@
       "resources": [
         {
           "title": "O Sofrimento Nunca é em Vão",
-          "resourceId": "elisabeth-elliot-o-sofrimento-nunca-e-em-vao"
+          "resourceId": "ellisabeth-ellioth-o-sofrimento-nunca-e-em-vao"
         }
       ]
     },
@@ -35,7 +35,7 @@
       "resources": [
         {
           "title": "Esperança na Solidão",
-          "resourceId": "elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao"
+          "resourceId": "ellisabeth-ellioth-esperanca-na-solidao-encontrando-deus-no-deserto"
         }
       ]
     },

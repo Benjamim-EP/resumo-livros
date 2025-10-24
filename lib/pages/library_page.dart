@@ -36,6 +36,10 @@ import 'package:unorm_dart/unorm_dart.dart' as unorm;
 // Lista estática e pública com os metadados de todos os recursos da biblioteca
 // lib/pages/library_page.dart
 
+// lib/pages/library_page.dart
+
+// (cole esta lista no seu arquivo, substituindo a antiga)
+
 final List<Map<String, dynamic>> allLibraryItems = [
   // --- LIVROS ADICIONADOS ---
   {
@@ -167,7 +171,6 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'dificuldade': 5,
     'isStudyGuide': false,
   },
-  // --- ITENS EXISTENTES ATUALIZADOS ---
   {
     'id': 'gravidade-e-graca',
     'title': "Gravidade e Graça",
@@ -609,7 +612,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
-    'id': 'c-s-lewis-reflexoes-sobre-os-salmos',
+    'id': 'c-s-lewis-reflexoes', // MUDANÇA AQUI
     'title': "Reflexões sobre os Salmos",
     'description':
         "Uma meditação pessoal e acadêmica sobre o livro de Salmos, abordando suas dificuldades, belezas e significados.",
@@ -620,7 +623,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'coverImagePath':
         'assets/covers/guias/c-s-lewis-reflexoes-sobre-os-salmos_cover.webp',
     'destinationPage': const BookStudyGuidePage(
-        bookId: 'c-s-lewis-reflexoes-sobre-os-salmos',
+        bookId: 'c-s-lewis-reflexoes', // MUDANÇA AQUI
         bookTitle: "Reflexões sobre os Salmos"),
     'ficcao': false,
     'dificuldade': 4,
@@ -800,7 +803,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': true,
   },
   {
-    'id': 'os-guinness-o-chamado',
+    'id': '-os-guinness-o-chamado',
     'title': "O Chamado",
     'description':
         "Um livro escrito para aqueles que possuem um profundo desejo de compreender o propósito de sua existência - o 'porquê' último de sua vida. Os Guinness avalia como essa busca é empreendida por adolescentes, universitários, jovens profissionais, pessoas na meia-idade, pais com o 'ninho vazio', homens e mulheres dos cinquenta para cima. Para conhecer o sentido da sua vida deverão descobrir o propósito para o qual foram criados e para o qual foram chamados.",
@@ -808,9 +811,9 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'pageCount': '256',
     'isFullyPremium': false,
     'hasPremiumFeature': false,
-    'coverImagePath': 'assets/covers/guias/os-guinness-o-chamado_cover.webp',
+    'coverImagePath': 'assets/covers/guias/-os-guinness-o-chamado_cover.webp',
     'destinationPage': const BookStudyGuidePage(
-        bookId: 'os-guinness-o-chamado', bookTitle: "O Chamado"),
+        bookId: '-os-guinness-o-chamado', bookTitle: "O Chamado"),
     'ficcao': false,
     'dificuldade': 4,
     'isStudyGuide': false
@@ -889,7 +892,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false
   },
   {
-    'id': 'elisabeth-elliot-deixe-me-ser-mulher',
+    'id': 'ellisabeth-ellioth-deixe-me-ser-mulher',
     'title': "Deixe-me Ser Mulher",
     'description':
         "Escrito de mãe para filha no auge do movimento feminista em 1976, este livro reúne ensinamentos preciosos para os dias de hoje sobre o que é ser uma mulher cristã. Com o objetivo de responder à pergunta “O que significa ser mulher”, Elisabeth Elliot aborda vários assuntos relevantes como: submissão, orgulho, liberdade, vocação.",
@@ -900,14 +903,15 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'coverImagePath':
         'assets/covers/guias/elisabeth-elliot-deixe-me-ser-mulher_cover.webp',
     'destinationPage': const BookStudyGuidePage(
-        bookId: 'elisabeth-elliot-deixe-me-ser-mulher',
+        bookId: 'ellisabeth-ellioth-deixe-me-ser-mulher',
         bookTitle: "Deixe-me Ser Mulher"),
     'ficcao': false,
     'dificuldade': 3,
     'isStudyGuide': false
   },
   {
-    'id': 'elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao',
+    'id':
+        'ellisabeth-ellioth-esperanca-na-solidao-encontrando-deus-no-deserto', // MUDANÇA AQUI
     'title': "Esperança na Solidão: Encontrando Deus na Escuridão",
     'description':
         "Neste livro, Elisabeth Elliot explora o tema da solidão e como encontrar esperança e a presença de Deus em meio a ela. A autora compartilha reflexões e experiências pessoais para encorajar aqueles que se sentem sozinhos, mostrando que a solidão pode ser um caminho para um relacionamento mais profundo com Deus.",
@@ -919,14 +923,14 @@ final List<Map<String, dynamic>> allLibraryItems = [
         'assets/covers/guias/elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'elisabeth-elliot-esperanca-na-solidao-encontrando-deus-na-escuridao',
+            'ellisabeth-ellioth-esperanca-na-solidao-encontrando-deus-no-deserto', // MUDANÇA AQUI
         bookTitle: "Esperança na Solidão"),
     'ficcao': false,
     'dificuldade': 3,
     'isStudyGuide': false
   },
   {
-    'id': 'elisabeth-elliot-o-sofrimento-nunca-e-em-vao',
+    'id': 'ellisabeth-ellioth-o-sofrimento-nunca-e-em-vao', // MUDANÇA AQUI
     'title': "O Sofrimento Nunca é em Vão",
     'description':
         "A partir de seu testemunho de vida e todas as provações que ela passou, somos desafiados, encorajados e inspirados a continuar confiando em Deus mesmo nos momentos mais difíceis e angustiantes de nossas vidas.",
@@ -937,7 +941,8 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'coverImagePath':
         'assets/covers/guias/elisabeth-elliot-o-sofrimento-nunca-e-em-vao_cover.webp',
     'destinationPage': const BookStudyGuidePage(
-        bookId: 'elisabeth-elliot-o-sofrimento-nunca-e-em-vao',
+        bookId:
+            'ellisabeth-ellioth-o-sofrimento-nunca-e-em-vao', // MUDANÇA AQUI
         bookTitle: "O Sofrimento Nunca é em Vão"),
     'ficcao': false,
     'dificuldade': 4,
@@ -945,7 +950,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
   },
   {
     'id':
-        'elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte',
+        'ellisabeth-ellioth-uma-vida-de-obediencia-7-disciplinas-para-a-vida-do-cristao',
     'title': "Uma Vida de Obediência: 7 Disciplinas para uma Vida mais Forte",
     'description':
         "Elisabeth Elliot apresenta sete disciplinas espirituais para fortalecer a vida cristã. Com base em sua própria jornada de fé, a autora explora a importância da obediência a Deus em áreas como a vontade, o corpo, a mente, as posses, o tempo, o trabalho e os sentimentos. O livro oferece um guia prático para uma vida de maior disciplina e dedicação a Deus.",
@@ -957,7 +962,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         'assets/covers/guias/elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'elisabeth-elliot-uma-vida-de-obediencia-7-disciplinas-para-uma-vida-mais-forte',
+            'ellisabeth-ellioth-uma-vida-de-obediencia-7-disciplinas-para-a-vida-do-cristao',
         bookTitle: "Uma Vida de Obediência"),
     'ficcao': false,
     'dificuldade': 4,
@@ -985,7 +990,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
   },
   {
     'id':
-        'jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente',
+        'jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-nossa-mente-e-coracao',
     'title': "Mulheres da Palavra",
     'description':
         "Oferecendo um plano claro e conciso de aprofundamento no estudo das Sagradas Escrituras, este livro irá ajudar as mulheres a perseverarem na leitura da Palavra de Deus, de forma a treinar suas mentes e transformar seus corações.",
@@ -994,10 +999,10 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/guias/jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente_cover.webp',
+        'assets/covers/guias/jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-nossa-mente-e-coracao_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-o-coracao-e-a-mente',
+            'jen-wilkin-mulheres-da-palavra-como-estudar-a-biblia-com-nossa-mente-e-coracao',
         bookTitle: "Mulheres da Palavra"),
     'ficcao': false,
     'dificuldade': 3,
@@ -1022,7 +1027,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
   },
   {
     'id':
-        'joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente',
+        'joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-na-sua-mente',
     'title': "Campo de Batalha da Mente",
     'description':
         "Se você é um dos milhões que sofrem com preocupação, dúvida, depressão, raiva ou culpa, você está experimentando um ataque à sua mente. Superar pensamentos negativos que vêm contra sua mente traz liberdade e paz.",
@@ -1031,10 +1036,10 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/guias/joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente_cover.webp',
+        'assets/covers/guias/joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-na-sua-mente_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-em-sua-mente',
+            'joyce-meyer-campo-de-batalha-da-mente-vencendo-a-batalha-na-sua-mente',
         bookTitle: "Campo de Batalha da Mente"),
     'ficcao': false,
     'dificuldade': 3,
@@ -1059,8 +1064,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isStudyGuide': false
   },
   {
-    'id':
-        'nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres',
+    'id': 'nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-comunhao',
     'title': "Adornada: Vivendo a Beleza do Evangelho em Meio às Mulheres",
     'description':
         "Nancy DeMoss Wolgemuth explora a passagem de Tito 2 e o chamado para que as mulheres mais velhas ensinem as mais novas. O livro oferece uma visão prática de como viver o evangelho de forma bela e intencional, construindo relacionamentos de mentoria que edificam a igreja e glorificam a Deus.",
@@ -1069,10 +1073,10 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/guias/nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres_cover.webp',
+        'assets/covers/guias/nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-comunhao_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-meio-as-mulheres',
+            'nancy-demoss-adornada-vivendo-a-beleza-do-evangelho-em-comunhao',
         bookTitle: "Adornada"),
     'ficcao': false,
     'dificuldade': 3,
@@ -1100,7 +1104,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
   },
   {
     'id':
-        'nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural',
+        'nancy-r--pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural',
     'title':
         "Verdade Total: Libertando o Cristianismo de seu Cativeiro Cultural",
     'description':
@@ -1110,17 +1114,17 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/guias/nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural_cover.webp',
+        'assets/covers/guias/nancy-r--pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'nancy-r-pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural',
+            'nancy-r--pearcey-verdade-total-libertando-o-cristianismo-de-seu-cativeiro-cultural',
         bookTitle: "Verdade Total"),
     'ficcao': false,
     'dificuldade': 5,
     'isStudyGuide': false
   },
   {
-    'id': 'richard-j-foster-celebracao-da-disciplina',
+    'id': 'richard-j--foster-celebracao-da-disciplina',
     'title': "Celebração da Disciplina",
     'description':
         "Richard Foster escreveu este livro para ajudar os cristãos a redescobrir os 'hábitos sagrados' que foram negligenciados ou mal compreendidos no cristianismo moderno. Ele divide essas práticas em três categorias: disciplinas internas, disciplinas externas e disciplinas corporativas.",
@@ -1129,9 +1133,9 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/guias/richard-j-foster-celebracao-da-disciplina_cover.webp',
+        'assets/covers/guias/richard-j--foster-celebracao-da-disciplina_cover.webp',
     'destinationPage': const BookStudyGuidePage(
-        bookId: 'richard-j-foster-celebracao-da-disciplina',
+        bookId: 'richard-j--foster-celebracao-da-disciplina',
         bookTitle: "Celebração da Disciplina"),
     'ficcao': false,
     'dificuldade': 5,
@@ -1157,7 +1161,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
   },
   {
     'id':
-        'rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel',
+        'rosaria-champagne-butterfield-pensamentos-secretos-de-uma-convertida-improvavel',
     'title': "Pensamentos Secretos de uma Convertida Improvável",
     'description':
         "A jornada de uma professora de língua inglesa rumo à fé cristã. Rosaria Champagne Butterfield conta a história de sua conversão, e é surpreendente. O amor de Deus não tem limites, ninguém é um caso perdido, Jesus veio para TODOS. Essa leitura despertou em mim um olhar diferente para as pessoas.",
@@ -1169,7 +1173,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
         'assets/covers/guias/rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'rosaria-butterfield-pensamentos-secretos-de-uma-convertida-improvavel',
+            'rosaria-champagne-butterfield-pensamentos-secretos-de-uma-convertida-improvavel',
         bookTitle: "Pensamentos Secretos de uma Convertida Improvável"),
     'ficcao': false,
     'dificuldade': 4,
@@ -1177,7 +1181,7 @@ final List<Map<String, dynamic>> allLibraryItems = [
   },
   {
     'id':
-        'sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito',
+        'sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertencimento-e-beleza',
     'title': "O Lar que Dá Vida: Criando um Lugar de Pertença e Propósito",
     'description':
         "Sally Clarkson inspira as mães a criarem um lar que seja um refúgio de amor, vida e aprendizado para seus filhos. O livro oferece conselhos práticos e encorajamento para cultivar uma atmosfera familiar que nutra a alma e o coração, transformando a casa em um lugar onde a fé e o caráter são forjados.",
@@ -1186,10 +1190,10 @@ final List<Map<String, dynamic>> allLibraryItems = [
     'isFullyPremium': false,
     'hasPremiumFeature': false,
     'coverImagePath':
-        'assets/covers/guias/sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito_cover.webp',
+        'assets/covers/guias/sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertencimento-e-beleza_cover.webp',
     'destinationPage': const BookStudyGuidePage(
         bookId:
-            'sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertenca-e-proposito',
+            'sally-clarkson-o-lar-que-da-vida-criando-um-lugar-de-pertencimento-e-beleza',
         bookTitle: "O Lar que Dá Vida"),
     'ficcao': false,
     'dificuldade': 2,
