@@ -119,7 +119,6 @@ class _LibraryRecommendationPageState extends State<LibraryRecommendationPage> {
     );
   }
 
-  /// Constrói o corpo da página com base no estado atual (loading, erro, resultado, inicial)
   Widget _buildBodyContent(ThemeData theme) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -142,24 +141,48 @@ class _LibraryRecommendationPageState extends State<LibraryRecommendationPage> {
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
         itemCount: _recommendations!.length,
         itemBuilder: (context, index) {
-          final item = _recommendations![index];
-          final String title = item['title'] ?? '';
+          // --- INÍCIO DA CORREÇÃO ---
 
-          // Usa o mapa de consulta para encontrar a página de destino correta
+          // 1. Pega a recomendação original da IA
+          final aiRecommendation = _recommendations![index];
+          final String bookIdFromAI =
+              aiRecommendation['bookId'] as String? ?? '';
+
+          // 2. Busca os metadados locais confiáveis usando o bookId da IA
+          final localBookData = allLibraryItems.firstWhere(
+            (localItem) => localItem['id'] == bookIdFromAI,
+            orElse: () =>
+                {}, // Retorna um mapa vazio se não encontrar para evitar erros
+          );
+
+          // 3. Cria um novo mapa de dados corrigido
+          // Ele usa todos os dados da IA, mas SOBRESCREVE o 'coverImagePath'
+          // com o valor confiável da nossa lista local.
+          final Map<String, dynamic> correctedData = {
+            ...aiRecommendation, // Mantém 'title', 'author', 'justificativa', etc., da IA
+            if (localBookData.isNotEmpty)
+              'coverImagePath': localBookData[
+                  'coverImagePath'], // Sobrescreve com o caminho correto
+          };
+
+          // A lógica para encontrar a página de destino continua a mesma
+          final String title = correctedData['title'] ?? '';
           final Widget destinationPage = _destinationPageMap[title] ??
               const Scaffold(
                   body: Center(child: Text("Página não encontrada")));
 
+          // 4. Passa os dados JÁ CORRIGIDOS para o AiRecommendationCard
           return AiRecommendationCard(
-            recommendation: item,
+            recommendation: correctedData,
             onTap: () {
-              // Navega para a página correta do livro
               Navigator.push(
                 context,
                 FadeScalePageRoute(page: destinationPage),
               );
             },
           ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: -0.2);
+
+          // --- FIM DA CORREÇÃO ---
         },
       );
     }
