@@ -1,6 +1,7 @@
 // lib/pages/bible_page.dart
 import 'dart:async';
 import 'dart:io';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -124,6 +125,7 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
   bool _showMindMaps = false;
 
   bool _isStudyModeActive = false;
+  bool _isGeneratingSummary = false;
 
   @override
   void initState() {
@@ -161,6 +163,38 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         startReadingTracker(scrollController: _scrollController1);
       }
     });
+  }
+
+  Future<String> _getCommentaryTextForSection(String sectionId) async {
+    // A ID do documento de comentário é construída da mesma forma que no sermon_detail_page
+
+    // <<< CORREÇÃO 1: Acessar 'selectedBook' diretamente, sem 'widget.' >>>
+    String abbrevForFirestore =
+        selectedBook!.toLowerCase() == 'job' ? 'jó' : selectedBook!;
+
+    // <<< CORREÇÃO 2: Extrair o 'versesRangeStr' do 'sectionId' >>>
+    // O sectionId vem no formato "gn_c1_v1-2", então pegamos a parte depois de "_v"
+    final String versesRangeStr = sectionId.split('_v').last;
+
+    // <<< CORREÇÃO 3: Acessar 'selectedChapter' diretamente >>>
+    final commentaryDocId =
+        "${abbrevForFirestore}_c${selectedChapter}_v$versesRangeStr";
+
+    final commentaryData =
+        await _firestoreService.getSectionCommentary(commentaryDocId);
+    final commentaryItems = (commentaryData?['commentary'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e))
+            .toList() ??
+        [];
+
+    if (commentaryItems.isEmpty) {
+      throw Exception("O comentário base para esta seção não foi encontrado.");
+    }
+
+    return commentaryItems
+        .map((item) => (item['traducao'] as String? ?? "").trim())
+        .where((text) => text.isNotEmpty)
+        .join("\n\n");
   }
 
   String _generateTtsIntro(String rawTitle, List<int> verses) {
@@ -310,56 +344,29 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
 
   Future<void> _handleShowSummary(String sectionId, String sectionTitle) async {
     final store = StoreProvider.of<AppState>(context, listen: false);
-    final isGuest = store.state.userState.isGuestUser;
-    final userId = store.state.userState.userId;
-    print("Usuário ID: $userId, É convidado: $isGuest");
-    if (userId == null && !isGuest) return;
+    final isPremium = _isUserPremium(store);
+    final prefs = await SharedPreferences.getInstance();
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) => const PopScope(
-          canPop: false, child: Center(child: CircularProgressIndicator())),
-    );
+    // Chave de cache específica para o resumo
+    final String summaryCacheKey = 'summary_$sectionId';
 
-    try {
-      bool isUserPremium = false;
-      int currentUserCoins = 0;
+    // 1. Tenta carregar do cache primeiro
+    final String? cachedSummary = prefs.getString(summaryCacheKey);
+    if (cachedSummary != null) {
+      print("Resumo encontrado no cache. Exibindo...");
+      _showSummaryModal(sectionTitle, cachedSummary);
+      return;
+    }
 
-      if (isGuest) {
-        final prefs = await SharedPreferences.getInstance();
-        currentUserCoins = prefs.getInt(guestUserCoinsPrefsKey) ?? 0;
-      } else {
-        final userDetails = await _firestoreService.getUserDetails(userId!);
-        if (userDetails != null) {
-          currentUserCoins = userDetails['userCoins'] as int? ?? 0;
-          final statusString = userDetails['subscriptionStatus'] as String?;
-          final endDate =
-              (userDetails['subscriptionEndDate'] as Timestamp?)?.toDate();
-          if (statusString == 'active' &&
-              endDate != null &&
-              endDate.isAfter(DateTime.now())) {
-            isUserPremium = true;
-          }
-        }
-      }
-      print("Usuário Premium: $isUserPremium, Moedas: $currentUserCoins");
+    // 2. Se não está no cache, verifica o custo
+    if (!isPremium) {
+      const int summaryCost = 3; // Custo para gerar o resumo
+      final currentUserCoins = store.state.userState.userCoins;
 
-      if (mounted) Navigator.pop(context);
-
-      final unlockedSummaries = await _getUnlockedSummaries();
-      bool isUnlocked = isUserPremium || unlockedSummaries.contains(sectionId);
-
-      if (isUnlocked) {
-        await _loadAndShowSummary(sectionId, sectionTitle);
-        return;
-      }
-
-      const int summaryCost = 3;
       if (currentUserCoins < summaryCost) {
         CustomNotificationService.showWarningWithAction(
           context: context,
-          message: 'Você precisa de $summaryCost moedas para ver este resumo.',
+          message: 'Você precisa de $summaryCost moedas para gerar um resumo.',
           buttonText: 'Ganhar Moedas',
           onButtonPressed: () => store.dispatch(RequestRewardedAdAction()),
         );
@@ -382,56 +389,63 @@ class _BiblePageState extends State<BiblePage> with ReadingTimeTrackerMixin {
         ),
       );
 
-      if (shouldProceed == true) {
-        final newCoinTotal = currentUserCoins - summaryCost;
+      if (shouldProceed != true) return;
 
-        store.dispatch(UpdateUserCoinsAction(newCoinTotal));
+      // Deduz as moedas otimisticamente
+      store.dispatch(UpdateUserCoinsAction(currentUserCoins - summaryCost));
+    }
 
-        if (userId != null) {
-          await _firestoreService.updateUserField(
-              userId, 'userCoins', newCoinTotal);
-        } else if (isGuest) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setInt(guestUserCoinsPrefsKey, newCoinTotal);
-        }
+    // 3. Gera o resumo com a IA
+    setState(() => _isGeneratingSummary = true);
+    CustomNotificationService.showInfo(
+        context, "Gerando resumo com IA, aguarde...");
 
-        await _addUnlockedSummary(sectionId);
-        await _loadAndShowSummary(sectionId, sectionTitle);
+    try {
+      final String contextText = await _getCommentaryTextForSection(sectionId);
+
+      final functions =
+          FirebaseFunctions.instanceFor(region: "southamerica-east1");
+      final callable = functions.httpsCallable('generateCommentarySummary');
+      final result = await callable
+          .call<Map<String, dynamic>>({'context_text': contextText});
+
+      final summary = result.data['summary'] as String?;
+      if (summary == null || summary.isEmpty) {
+        throw Exception("A IA não retornou um resumo válido.");
       }
+
+      // 4. Salva no cache e exibe
+      await prefs.setString(summaryCacheKey, summary);
+      _showSummaryModal(sectionTitle, summary);
     } catch (e) {
-      if (mounted && Navigator.of(context).canPop()) Navigator.pop(context);
+      print("Erro ao gerar resumo da seção: $e");
       if (mounted)
         CustomNotificationService.showError(
-            context, "Erro ao verificar seu status. Tente novamente.");
+            context, "Falha ao gerar o resumo. Tente novamente.");
+      // Reembolsa as moedas em caso de erro
+      if (!isPremium) {
+        store.dispatch(
+            UpdateUserCoinsAction(store.state.userState.userCoins + 3));
+        if (mounted)
+          CustomNotificationService.showSuccess(
+              context, "Suas moedas foram devolvidas.");
+      }
+    } finally {
+      if (mounted) setState(() => _isGeneratingSummary = false);
     }
   }
 
-// Função auxiliar para carregar e mostrar o modal
-  Future<void> _loadAndShowSummary(
-      String sectionId, String sectionTitle) async {
-    try {
-      // Constrói o caminho para o arquivo .md
-      final String summaryPath = 'assets/commentary_summaries/$sectionId.md';
-      final String summaryContent = await rootBundle.loadString(summaryPath);
-
-      if (mounted) {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => SummaryDisplayModal(
-            title: sectionTitle,
-            summaryContent: summaryContent,
-          ),
-        );
-      }
-    } catch (e) {
-      print("Erro ao carregar resumo para $sectionId: $e");
-      if (mounted) {
-        // ✅ ALTERAÇÃO AQUI: Usa o serviço customizado para consistência
-        CustomNotificationService.showError(
-            context, 'Resumo para esta seção não foi encontrado.');
-      }
+  void _showSummaryModal(String title, String content) {
+    if (mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => SummaryDisplayModal(
+          title: title,
+          summaryContent: content,
+        ),
+      );
     }
   }
 

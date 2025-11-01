@@ -2425,7 +2425,7 @@ def submitReplyOrComment(req: https_fn.CallableRequest) -> dict:
 @https_fn.on_call(
     secrets=["openai-api-key"], # Garante que a chave da API OpenAI está disponível
     region=options.SupportedRegion.SOUTHAMERICA_EAST1,
-    memory=options.MemoryOption.MB_256,
+    memory=options.MemoryOption.MB_512,
     cors=cors_options
 )
 def generateCommentarySummary(req: https_fn.CallableRequest) -> dict:

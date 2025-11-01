@@ -1,5 +1,6 @@
 // lib/pages/biblie_page/bible_page_widgets.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:septima_biblia/pages/biblie_page/highlight_editor_dialog.dart';
@@ -734,6 +735,8 @@ class BiblePageWidgets {
     final theme = Theme.of(context);
     final store = StoreProvider.of<AppState>(context, listen: false);
 
+    final String fullReference = "$bookAbbrev $chapter:$verseNum";
+
     showModalBottomSheet(
       context: context,
       backgroundColor: theme.dialogBackgroundColor,
@@ -823,6 +826,35 @@ class BiblePageWidgets {
                       tags: result.tags,
                     ));
                   }
+                },
+              ),
+
+              ListTile(
+                leading: Icon(Icons.copy_outlined,
+                    color: theme.iconTheme.color?.withOpacity(0.8)),
+                title: Text(
+                  "Copiar Versículo",
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface, fontSize: 15),
+                ),
+                onTap: () {
+                  // 3. Formata o texto final para a área de transferência
+                  final String textToCopy = '"$verseText" ($fullReference)';
+
+                  // 4. Copia para o clipboard
+                  Clipboard.setData(ClipboardData(text: textToCopy));
+
+                  // 5. Fecha o modal
+                  Navigator.pop(modalContext);
+
+                  // 6. Mostra um feedback para o usuário
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Versículo copiado para a área de transferência!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
                 },
               ),
 
