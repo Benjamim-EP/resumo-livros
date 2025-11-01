@@ -14,6 +14,7 @@ import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
 import 'package:septima_biblia/pages/purschase_pages/subscription_selection_page.dart';
 import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/bible_version_service.dart';
+import 'package:septima_biblia/pages/biblie_page/verse_comparison_modal.dart';
 
 class BiblePageWidgets {
   // >>> INÍCIO DA CORREÇÃO 2/4: Adicionando os parâmetros que faltavam <<<
@@ -853,6 +854,29 @@ class BiblePageWidgets {
                       content: Text(
                           'Versículo copiado para a área de transferência!'),
                       duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+
+              ListTile(
+                leading: Icon(Icons.compare_arrows_outlined,
+                    color: theme.iconTheme.color?.withOpacity(0.8)),
+                title: Text(
+                  "Comparar Traduções",
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurface, fontSize: 15),
+                ),
+                onTap: () {
+                  Navigator.pop(modalContext); // Close the options modal
+                  Navigator.push(
+                    context, // Use the original page context
+                    MaterialPageRoute(
+                      builder: (context) => VerseComparisonModal(
+                        verseId: verseId,
+                        verseReference: fullReference,
+                      ),
+                      fullscreenDialog: true,
                     ),
                   );
                 },

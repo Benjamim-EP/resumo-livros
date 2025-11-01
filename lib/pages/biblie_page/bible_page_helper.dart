@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
+import 'package:septima_biblia/services/bible_version_service.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -49,7 +50,7 @@ class BiblePageHelper {
       String normalizeText(String text) {
         return unorm
             .nfd(text.toLowerCase().trim())
-            .replaceAll(RegExp(r'[\u0300-\u036f]'), '');
+            .replaceAll(RegExp(r'[\u00c0-\u024f]'), '');
       }
 
       decodedJson.forEach((key, value) {
@@ -522,32 +523,118 @@ class BiblePageHelper {
 
   static Future<String> loadSingleVerseText(String verseId, String translation,
       {AssetBundle? bundle}) async {
-    final assetBundle = bundle ?? rootBundle;
+    // Don't show interlinear as plain text
     if (translation == 'hebrew_original' ||
         translation == 'greek_interlinear') {
       return "[Visualização interlinear]";
     }
+
     final parts = verseId.split('_');
     if (parts.length != 3) return "Referência inválida";
+
     final bookAbbrev = parts[0];
-    final chapterForPath = parts[1];
-    final verseIndex = int.tryParse(parts[2]);
-    if (verseIndex == null) return "Verso inválido";
+    final chapterNum = int.tryParse(parts[1]);
+    final verseNum = int.tryParse(parts[2]);
+
+    if (chapterNum == null || verseNum == null) return "Verso inválido";
+
     try {
-      final String verseDataPath =
-          'assets/Biblia/completa_traducoes/$translation/$bookAbbrev/$chapterForPath.json';
-      final String verseDataString =
-          await assetBundle.loadString(verseDataPath);
-      final decodedVerseData = json.decode(verseDataString);
-      if (decodedVerseData is List &&
-          verseIndex > 0 &&
-          verseIndex <= decodedVerseData.length) {
-        return decodedVerseData[verseIndex - 1].toString();
+      // Use the central data loading function which handles both assets and Firestore
+      final dynamic verseDataList = await _loadVerseDataForTranslation(
+          bookAbbrev, chapterNum, translation,
+          bundle: bundle);
+
+      if (verseDataList is List) {
+        final verseIndex = verseNum - 1;
+        if (verseIndex >= 0 && verseIndex < verseDataList.length) {
+          // Ensure the item is a string
+          return verseDataList[verseIndex].toString();
+        } else {
+          return "[Texto não encontrado]";
+        }
       } else {
-        return "[Texto não encontrado]";
+        return "[Formato de capítulo inválido]";
       }
     } catch (e) {
+      print("Erro em loadSingleVerseText para $verseId ($translation): $e");
       return "[Erro ao carregar]";
     }
+  }
+
+  static Future<Map<String, String>> loadSingleVerseAcrossAllTranslations(
+    String verseId, {
+    AssetBundle? bundle,
+  }) async {
+    final Map<String, String> results = {};
+
+    // Use the service to get all available versions metadata
+    final versionsMeta = await BibleVersionService.instance.getVersions();
+    final List<String> translationIds =
+        versionsMeta.map((meta) => meta.id).toList();
+
+    // <<< START OF CORRECTION >>>
+    // Ensure all local versions are included
+    final localVersions = ['nvi', 'acf', 'kjf', 'kja', 'aa'];
+    for (var version in localVersions) {
+      if (!translationIds.contains(version)) {
+        translationIds.add(version);
+      }
+    }
+    // <<< END OF CORRECTION >>>
+
+    // Create a map of futures
+    final Map<String, Future<String>> futuresMap = {
+      for (var id in translationIds)
+        id: loadSingleVerseText(verseId, id, bundle: bundle)
+    };
+
+    // Wait for all futures to complete
+    final allResults = await Future.wait(futuresMap.values);
+    final allKeys = futuresMap.keys.toList();
+
+    for (int i = 0; i < allResults.length; i++) {
+      final text = allResults[i];
+      final translationId = allKeys[i];
+      // Only add if text is valid and not an error/placeholder message
+      if (text.isNotEmpty && !text.startsWith('[')) {
+        results[translationId] = text;
+      }
+    }
+
+    // Reorder the results to a more logical presentation order
+    final orderedResults = <String, String>{};
+    // <<< START OF CORRECTION >>>
+    // Updated order including aa and kja
+    final preferredOrder = [
+      'nvi',
+      'acf',
+      'kjf',
+      'kja', // Added
+      'aa', // Added
+      'ara',
+      'arc',
+      'naa',
+      'nvt',
+      'ntlh',
+      'as21',
+      'jfaa',
+      'nbv'
+    ];
+    // <<< END OF CORRECTION >>>
+
+    for (var key in preferredOrder) {
+      if (results.containsKey(key)) {
+        orderedResults[key.toUpperCase()] = results[key]!;
+      }
+    }
+
+    // Add any other versions that weren't in the preferred order
+    for (var key in results.keys) {
+      if (!orderedResults.containsKey(key.toUpperCase())) {
+        orderedResults[key.toUpperCase()] = results[key]!;
+      }
+    }
+
+    return orderedResults;
   }
 }
