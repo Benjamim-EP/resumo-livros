@@ -96,10 +96,10 @@ async def query_pinecone_community_async(vector: list[float], top_k: int) -> lis
     """
     _initialize_community_clients()
     
-    httpx_client = _httpx_client_community
+    # --- INÍCIO DA CORREÇÃO ---
     pinecone_api_key = _pinecone_api_key_community_loaded
 
-    if not httpx_client or not pinecone_api_key:
+    if not pinecone_api_key:
         raise ConnectionError("Falha na inicialização dos clientes para consulta ao Pinecone.")
 
     request_url = f"{PINECONE_ENDPOINT_COMMUNITY}/query"
@@ -112,13 +112,15 @@ async def query_pinecone_community_async(vector: list[float], top_k: int) -> lis
     }
     
     print(f"CommunitySearchService: Consultando Pinecone com top_k={top_k}")
-    try:
-        response = await httpx_client.post(request_url, headers=headers, json=payload)
-        response.raise_for_status()
-        return response.json().get("matches", [])
-    except Exception as e:
-        print(f"CommunitySearchService: Erro na consulta ao Pinecone: {e}")
-        raise
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(request_url, headers=headers, json=payload)
+            response.raise_for_status()
+            return response.json().get("matches", [])
+        except Exception as e:
+            print(f"CommunitySearchService: Erro na consulta ao Pinecone: {e}")
+            raise
 
 async def perform_community_search_async(user_query: str, top_k: int = 20) -> list[dict]:
     """

@@ -2090,15 +2090,15 @@ async def _query_pinecone_quotes_async(vector: list[float], top_k: int) -> list[
     """
     Consulta o índice 'septima-quotes' do Pinecone de forma assíncrona.
     """
-    # Reutiliza a inicialização de clientes do serviço de sermões (que é genérica)
-    sermons_service._initialize_sermon_clients()
+    # --- INÍCIO DA CORREÇÃO ---
     
-    # Pega os clientes inicializados
-    httpx_client = sermons_service._httpx_client_sermons
+    # Inicializa apenas para garantir que as chaves de API sejam carregadas.
+    # Não usaremos mais o cliente httpx global daqui.
+    sermons_service._initialize_sermon_clients()
     pinecone_api_key = sermons_service._pinecone_api_key_sermons_loaded
 
-    if not httpx_client or not pinecone_api_key:
-        raise ConnectionError("Falha na inicialização dos clientes para consulta ao Pinecone.")
+    if not pinecone_api_key:
+        raise ConnectionError("Falha ao carregar configuração da API Pinecone.")
 
     # !!! ESTA É A MUDANÇA MAIS IMPORTANTE !!!
     # Substitua pelo endpoint EXATO do seu índice de frases 'septima-quotes'
@@ -2115,17 +2115,20 @@ async def _query_pinecone_quotes_async(vector: list[float], top_k: int) -> list[
     }
     
     print(f"Consultando Pinecone (Frases) em {request_url}")
-    try:
-        response = await httpx_client.post(request_url, headers=headers, json=payload)
-        response.raise_for_status()
-        result_data = response.json()
-        return result_data.get("matches", [])
-    except httpx.HTTPStatusError as e_http:
-        print(f"Erro HTTP ao consultar Pinecone (Frases): Status {e_http.response.status_code}, Corpo: {e_http.response.text}")
-        raise ConnectionError(f"Falha na comunicação com Pinecone (Frases).")
-    except Exception as e_generic:
-        print(f"Erro inesperado durante a consulta ao Pinecone (Frases): {e_generic}")
-        raise
+    
+    # Cria o cliente HTTPX localmente dentro do escopo da função async
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(request_url, headers=headers, json=payload)
+            response.raise_for_status()
+            result_data = response.json()
+            return result_data.get("matches", [])
+        except httpx.HTTPStatusError as e_http:
+            print(f"Erro HTTP ao consultar Pinecone (Frases): Status {e_http.response.status_code}, Corpo: {e_http.response.text}")
+            raise ConnectionError(f"Falha na comunicação com Pinecone (Frases).")
+        except Exception as e_generic:
+            print(f"Erro inesperado durante a consulta ao Pinecone (Frases): {e_generic}")
+            raise
 
 @https_fn.on_call(
     secrets=["openai-api-key", "pinecone-api-key"],

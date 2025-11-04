@@ -81,8 +81,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     }
   }
 
-  // ✅ 1. NOVA FUNÇÃO DE CALLBACK PARA CURTIDAS
-  /// Atualiza o estado da lista `_feedItems` quando uma curtida muda.
   void _onLikeChanged(String quoteId, bool isNowLiked, int newLikeCount) {
     if (!mounted) return;
 
@@ -94,8 +92,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
 
     setState(() {
       _feedItems[index]['likeCount'] = newLikeCount;
-
-      // Garante que a lista 'likedBy' local esteja sincronizada
       final List<dynamic> likedBy =
           List.from(_feedItems[index]['likedBy'] ?? []);
       if (isNowLiked) {
@@ -109,8 +105,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     });
   }
 
-  // ✅ 2. NOVA FUNÇÃO DE CALLBACK PARA COMENTÁRIOS
-  /// Busca a contagem de comentários mais recente do Firestore.
   void _onCommentPosted(String quoteId) async {
     if (!mounted) return;
 
@@ -179,6 +173,7 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     await prefs.setStringList(_seenQuotesPrefsKey, limitedList);
   }
 
+  // ### START OF MODIFICATION 1/3: ORCHESTRATOR FUNCTION ###
   Future<void> _fetchAndBuildFeed({bool isInitialLoad = false}) async {
     if (_isFetchingMore) return;
     if (mounted) {
@@ -191,26 +186,33 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
     }
 
     try {
-      // 1. Sempre busca mais frases se os buffers estiverem baixos
+      // Tenta buscar o feed principal (personalizado + aleatório)
+      bool primaryFeedSuccess = false;
       if (_personalizedBuffer.length < 5 || _randomBuffer.length < 15) {
-        print("BibTokPage: Buffers baixos. Buscando mais frases do backend...");
-        await _fetchAndFillBuffers();
+        print("BibTokPage: Buffers baixos. Buscando feed principal...");
+        primaryFeedSuccess = await _fetchAndFillBuffers();
+      } else {
+        primaryFeedSuccess = true; // Buffers já estão cheios
       }
 
-      // 2. Intercala as frases dos buffers para a lista de exibição
+      // Se a busca principal falhar ou retornar vazia, aciona o fallback
+      if (!primaryFeedSuccess) {
+        print(
+            "BibTokPage: Feed principal falhou ou veio vazio. Acionando fallback...");
+        await _fetchFallbackQuotesFromFirestore();
+      }
+
+      // Intercala as frases dos buffers para a lista de exibição (esta parte não muda)
       final List<Map<String, dynamic>> newItemsToDisplay = [];
       int itemsAdded = 0;
-      const int batchSize = 10; // Adiciona até 10 novos itens por vez
+      const int batchSize = 10;
 
       while (itemsAdded < batchSize &&
           (_personalizedBuffer.isNotEmpty || _randomBuffer.isNotEmpty)) {
-        // Adiciona 1 personalizada
         if (_personalizedBuffer.isNotEmpty) {
           newItemsToDisplay.add(_personalizedBuffer.removeAt(0));
           itemsAdded++;
         }
-
-        // Adiciona até 3 aleatórias
         int randomsToAdd = 0;
         while (randomsToAdd < 3 && _randomBuffer.isNotEmpty) {
           newItemsToDisplay.add(_randomBuffer.removeAt(0));
@@ -222,7 +224,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
       if (newItemsToDisplay.isNotEmpty && mounted) {
         setState(() {
           _feedItems.addAll(newItemsToDisplay);
-          // Marca a primeira frase da lista como vista, se for a carga inicial
           if (isInitialLoad && _feedItems.isNotEmpty) {
             final firstQuoteId = _feedItems.first['id'] as String?;
             if (firstQuoteId != null &&
@@ -232,10 +233,7 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
           }
         });
         print(
-            "BibTokPage: ${newItemsToDisplay.length} novas frases intercaladas e adicionadas ao feed.");
-      } else {
-        print(
-            "BibTokPage: Nenhum item novo para adicionar após a filtragem e intercalação.");
+            "BibTokPage: ${newItemsToDisplay.length} novas frases adicionadas ao feed.");
       }
     } catch (e) {
       print("Erro ao construir feed do BibTok: $e");
@@ -248,19 +246,17 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
       }
     }
   }
+  // ### END OF MODIFICATION 1/3 ###
 
-  // <<< NOVA FUNÇÃO HELPER PARA BUSCAR E FILTRAR >>>
-  Future<void> _fetchAndFillBuffers() async {
+  // ### START OF MODIFICATION 2/3: PRIMARY FEED FUNCTION ###
+  Future<bool> _fetchAndFillBuffers() async {
     try {
-      // Define quantos de cada tipo buscar. Queremos 1 para cada 3 aleatórias.
       const int personalizedCount = 10;
-      const int randomCount = 30; // Mantém a proporção e busca um bom volume
+      const int randomCount = 30;
 
       final callable =
           FirebaseFunctions.instanceFor(region: "southamerica-east1")
               .httpsCallable('getBibTokFeed');
-
-      // A chamada agora não precisa do 'type', mas envia a contagem desejada
       final result = await callable.call<Map<String, dynamic>>(
           {'count': max(personalizedCount, randomCount)});
 
@@ -268,12 +264,17 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
       final List<dynamic> personalized = data['personalized_quotes'] ?? [];
       final List<dynamic> random = data['random_quotes'] ?? [];
 
+      // Se ambas as listas vierem vazias, consideramos uma falha
+      if (personalized.isEmpty && random.isEmpty) {
+        print("BibTokPage: Cloud Function retornou listas vazias.");
+        return false;
+      }
+
       final allSeenIdsToFilter = {
         ..._persistentSeenIds,
         ..._sessionOnlySeenIds
       };
 
-      // Filtra e adiciona aos buffers
       final unseenPersonalized = personalized
           .map((item) => Map<String, dynamic>.from(item as Map))
           .where((quote) =>
@@ -291,27 +292,70 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
 
       print(
           "BibTokPage: Buffers preenchidos. Personalizadas: ${_personalizedBuffer.length}, Aleatórias: ${_randomBuffer.length}");
+      return true; // Sucesso
     } catch (e) {
-      print("Erro ao preencher os buffers de frases: $e");
+      print("Erro ao preencher os buffers de frases (Cloud Function): $e");
+      return false; // Falha
     }
   }
+  // ### END OF MODIFICATION 2/3 ###
 
-  Future<List<Map<String, dynamic>>> _fetchQuotesFromBackend(
-      {required String type, required int count}) async {
+  // ### START OF MODIFICATION 3/3: NEW FALLBACK FUNCTION ###
+  Future<void> _fetchFallbackQuotesFromFirestore() async {
+    print(
+        "BibTokPage Fallback: Buscando frases aleatórias diretamente do Firestore...");
     try {
-      final callable =
-          FirebaseFunctions.instanceFor(region: "southamerica-east1")
-              .httpsCallable('getBibTokFeed');
-      final result = await callable
-          .call<Map<String, dynamic>>({'type': type, 'count': count});
-      return (result.data['quotes'] as List)
-          .map((item) => Map<String, dynamic>.from(item))
+      const int fallbackLimit = 20;
+      final allSeenIdsToFilter = {
+        ..._persistentSeenIds,
+        ..._sessionOnlySeenIds
+      };
+
+      // Gera um ID aleatório para servir como ponto de partida da busca
+      String randomId =
+          FirebaseFirestore.instance.collection('quotes').doc().id;
+
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('quotes')
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: randomId)
+          .limit(fallbackLimit)
+          .get();
+
+      // Se a primeira busca não retornar resultados suficientes, busca do início
+      if (snapshot.docs.length < fallbackLimit) {
+        final secondSnapshot = await FirebaseFirestore.instance
+            .collection('quotes')
+            .limit(fallbackLimit - snapshot.docs.length)
+            .get();
+        snapshot.docs.addAll(secondSnapshot.docs);
+      }
+
+      final newQuotes = snapshot.docs
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            // Adiciona o ID do documento aos dados, pois ele não vem por padrão
+            data['id'] = doc.id;
+            return data;
+          })
+          // Filtra para garantir que não vamos adicionar duplicatas que já estão na tela ou no buffer
+          .where((quote) =>
+              !allSeenIdsToFilter.contains(quote['id']) &&
+              !_randomBuffer.any((b) => b['id'] == quote['id']))
           .toList();
+
+      if (newQuotes.isNotEmpty) {
+        _randomBuffer.addAll(newQuotes);
+        print(
+            "BibTokPage Fallback: ${newQuotes.length} novas frases de fallback adicionadas ao buffer.");
+      } else {
+        print(
+            "BibTokPage Fallback: Nenhuma frase nova encontrada no Firestore.");
+      }
     } catch (e) {
-      print("Erro ao chamar getBibTokFeed (type: $type): $e");
-      return [];
+      print("BibTokPage Fallback: ERRO ao buscar frases do Firestore: $e");
     }
   }
+  // ### END OF MODIFICATION 3/3 ###
 
   Future<void> _persistSessionIds() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -374,15 +418,12 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
       converter: (store) => _BibTokViewModel.fromStore(store),
       onInit: (store) {
         final userState = store.state.userState;
-        // Se o usuário for convidado, ou se for um usuário logado que já tem
-        // seus dados carregados (ex: ao reiniciar o app), inicia o feed.
         if (userState.isGuestUser || userState.userDetails != null) {
           print(
               "BibTok onInit: Usuário convidado ou já logado. Iniciando feed...");
           _initializeFeed();
         }
       },
-      // onWillChange ainda é útil para quando um usuário faz login na sessão atual.
       onWillChange: (previousViewModel, newViewModel) {
         if (previousViewModel?.userDetails == null &&
             newViewModel.userDetails != null) {
@@ -487,7 +528,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
                         Colors.black.withOpacity(0.4), BlendMode.darken),
                   ),
                 ),
-                // ✅ 3. PASSA AS FUNÇÕES DE CALLBACK PARA O WIDGET FILHO
                 child: QuoteCardWidget(
                   quoteData: quoteData,
                   onLikeChanged: _onLikeChanged,
@@ -544,7 +584,6 @@ class _BibTokPageState extends State<BibTokPage> with WidgetsBindingObserver {
                     Colors.black.withOpacity(0.4), BlendMode.darken),
               ),
             ),
-            // ✅ 4. PASSA AS FUNÇÕES DE CALLBACK AQUI TAMBÉM (PARA USUÁRIOS PREMIUM)
             child: QuoteCardWidget(
               quoteData: quoteData,
               onLikeChanged: _onLikeChanged,

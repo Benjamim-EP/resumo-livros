@@ -75,38 +75,42 @@ async def _generate_sermon_embedding_async(text_to_embed: str) -> list[float]:
 
 async def _query_pinecone_sermons_async(vector: list[float], top_k: int, filters: dict | None = None) -> list[dict]:
     _initialize_sermon_clients()
-    if not _httpx_client_sermons:
-        raise ConnectionError("Falha na inicialização do cliente HTTPX para Sermons.")
-    if not _pinecone_api_key_sermons_loaded:
+    
+    # --- INÍCIO DA CORREÇÃO ---
+    pinecone_api_key = _pinecone_api_key_sermons_loaded
+
+    if not pinecone_api_key:
         raise ConnectionError("Falha ao carregar configuração da API Pinecone para Sermons.")
 
-    request_url = f"{PINECONE_ENDPOINT_SPURGEON}/query" # Use o endpoint correto
+    request_url = f"{PINECONE_ENDPOINT_SPURGEON}/query"
     headers = {
-        "Api-Key": _pinecone_api_key_sermons_loaded,
+        "Api-Key": pinecone_api_key,
         "Content-Type": "application/json", "Accept": "application/json"
     }
     payload: dict[str, any] = {
         "vector": vector, "topK": top_k,
         "includeMetadata": True, "includeValues": False
     }
-    if filters: payload["filter"] = filters # Adicionar filtros se fornecidos
+    if filters: payload["filter"] = filters
     
-    print(f"Consultando Pinecone (Sermões) em {request_url} com payload: {str(payload)[:200]}...") # Log do payload
-    try:
-        response = await _httpx_client_sermons.post(request_url, headers=headers, json=payload)
-        response.raise_for_status()
-        result_data = response.json()
-        matches = result_data.get("matches", [])
-        if not isinstance(matches, list): return []
-        print(f"Consulta ao Pinecone (Sermões) bem-sucedida. {len(matches)} parágrafos encontrados.")
-        return matches
-    except httpx.HTTPStatusError as e_http:
-        error_body_text = e_http.response.text # Pegar o texto para log
-        print(f"Erro HTTP ao consultar Pinecone (Sermões): Status {e_http.response.status_code}, Corpo: {error_body_text}")
-        raise ConnectionError(f"Falha na comunicação com Pinecone (Sermões) (HTTP {e_http.response.status_code}). Detalhe: {error_body_text[:200]}") from e_http
-    except Exception as e_generic:
-        print(f"Erro inesperado durante a consulta ao Pinecone (Sermões): {e_generic}")
-        raise Exception(f"Erro desconhecido ao consultar Pinecone (Sermões): {e_generic}")
+    print(f"Consultando Pinecone (Sermões) em {request_url}...")
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(request_url, headers=headers, json=payload)
+            response.raise_for_status()
+            result_data = response.json()
+            matches = result_data.get("matches", [])
+            if not isinstance(matches, list): return []
+            print(f"Consulta ao Pinecone (Sermões) bem-sucedida. {len(matches)} parágrafos encontrados.")
+            return matches
+        except httpx.HTTPStatusError as e_http:
+            error_body_text = e_http.response.text
+            print(f"Erro HTTP ao consultar Pinecone (Sermões): Status {e_http.response.status_code}, Corpo: {error_body_text}")
+            raise ConnectionError(f"Falha na comunicação com Pinecone (Sermões).")
+        except Exception as e_generic:
+            print(f"Erro inesperado durante a consulta ao Pinecone (Sermões): {e_generic}")
+            raise
 
 def _extract_sermon_base_id(pinecone_id: str) -> str:
     """Extrai o ID base do sermão do ID do Pinecone (ex: sermon_1000_p25 -> sermon_1000)"""
