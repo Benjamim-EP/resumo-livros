@@ -59,6 +59,7 @@ try:
     import bible_chat_service
     import book_search_service
     import community_search_service
+    import quote_search_service # <<< ADICIONE ESTE IMPORT
     print("Módulos de serviço importados com sucesso.")
 except ImportError as e_import:
     print(f"AVISO: Falha na importação de um ou mais módulos de serviço: {e_import}")
@@ -3589,3 +3590,34 @@ def getSermonRecommendationsForUser(req: https_fn.CallableRequest) -> dict:
     return _run_async_handler_wrapper(
         getSermonRecommendationsForUser_async(req)
     )
+
+
+@https_fn.on_call(
+    secrets=["openai-api-key", "pinecone-api-key"],
+    region=options.SupportedRegion.SOUTHAMERICA_EAST1,
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=60,
+    cors=cors_options
+)
+def semanticQuoteSearch(req: https_fn.CallableRequest) -> dict:
+    """
+    Busca semanticamente na coleção de frases (BibTok).
+    """
+    if not req.auth or not req.auth.uid:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.UNAUTHENTICATED, message='Usuário não autenticado.')
+
+    if quote_search_service is None:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro interno: serviço de busca de frases indisponível.")
+
+    user_query = req.data.get("query")
+    if not user_query:
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, message="O parâmetro 'query' é obrigatório.")
+
+    try:
+        search_results = _run_async_handler_wrapper(
+            quote_search_service.perform_quote_search_async(user_query)
+        )
+        return {"results": search_results}
+    except Exception as e:
+        print(f"Erro em semanticQuoteSearch: {e}")
+        raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.INTERNAL, message="Erro ao realizar a busca de frases.")
