@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "resumo-livros"
-  }
+  },
+  "targets": {
+    "resumo-livros": {
+      "hosting": {
+        "flutter-app": [
+          "septima-biblia-app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
