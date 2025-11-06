@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:septima_biblia/pages/biblie_page/cross_references_row.dart';
+import 'package:septima_biblia/pages/biblie_page/interlinear_insight_card.dart';
 import 'package:septima_biblia/pages/biblie_page/recommended_resources_row.dart';
 import 'package:septima_biblia/pages/biblie_page/study_card_widget.dart';
 import 'package:septima_biblia/pages/biblie_page/summary_display_modal.dart';
@@ -18,6 +19,7 @@ import 'package:septima_biblia/services/analytics_service.dart';
 import 'package:septima_biblia/services/custom_notification_service.dart';
 import 'package:septima_biblia/services/firestore_service.dart';
 import 'package:septima_biblia/pages/biblie_page/bible_page_helper.dart';
+import 'package:septima_biblia/services/insight_service.dart';
 import 'package:septima_biblia/services/tts_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -182,6 +184,9 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
 
   @override
   bool get wantKeepAlive => true;
+
+  bool _showInsights = false;
+  Future<String?>? _insightFuture;
 
   @override
   void initState() {
@@ -469,12 +474,25 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
     );
   }
 
+  void _toggleAndLoadInsights() {
+    setState(() {
+      _showInsights = !_showInsights;
+      // Carrega o insight apenas quando o usuário expande pela primeira vez
+      if (_showInsights && _insightFuture == null) {
+        _insightFuture =
+            InsightService.instance.getInsight(_sectionIdForTracking);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     final theme = Theme.of(context);
     final bool currentIsRead = widget.isRead;
+    final bool canShowInsightButton =
+        widget.showHebrewInterlinear || widget.showGreekInterlinear;
     final bool isThisSectionTheCurrentOne =
         widget.currentlyPlayingSectionId == _sectionIdForTracking;
     final TtsPlayerState playerState = widget.currentPlayerState;
@@ -523,6 +541,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
             viewModel.recommendedVerses[chapterId];
 
         return Card(
+          // ... (seu Card existente)
           elevation: 2,
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           color: currentIsRead
@@ -559,68 +578,70 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                       ),
                     ),
 
-                    // <<< INÍCIO DA MUDANÇA: ADIÇÃO DO BOTÃO DE PARAR >>>
+                    // --- BOTÃO DE INSIGHTS (condicional) ---
+                    if (canShowInsightButton)
+                      IconButton(
+                        icon: Icon(
+                          Icons.auto_awesome_outlined,
+                          color: _showInsights
+                              ? theme.colorScheme.secondary
+                              : theme.iconTheme.color?.withOpacity(0.7),
+                          size: 24,
+                        ),
+                        tooltip: "Ver Insights do Original",
+                        onPressed: _toggleAndLoadInsights,
+                        splashRadius: 24,
+                      ),
 
-                    // Botão de Parar (só aparece quando showStopButton é true)
                     if (showStopButton)
                       IconButton(
                         icon: Icon(Icons.stop_circle_outlined,
                             color: theme.iconTheme.color?.withOpacity(0.6),
                             size: 26),
                         tooltip: "Parar Leitura",
-                        onPressed: () {
-                          // Chama o método stop diretamente do TtsManager
-                          TtsManager().stop();
-                        },
+                        onPressed: () => TtsManager().stop(),
                         splashRadius: 24,
                       ),
 
-                    // Botão de Play/Pause/Menu (como antes)
                     Tooltip(
                       message: audioTooltip,
                       child: PopupMenuButton<TtsContentType>(
-                        onSelected: (TtsContentType choice) {
-                          widget.onPlayRequest(_sectionIdForTracking, choice);
-                        },
+                        onSelected: (TtsContentType choice) =>
+                            widget.onPlayRequest(_sectionIdForTracking, choice),
                         icon: Icon(audioIcon, color: audioIconColor, size: 26),
                         itemBuilder: (BuildContext context) =>
                             <PopupMenuEntry<TtsContentType>>[
                           const PopupMenuItem<TtsContentType>(
                             value: TtsContentType.versesOnly,
                             child: ListTile(
-                              leading: Icon(Icons.menu_book_outlined),
-                              title: Text('Somente Versículos'),
-                            ),
+                                leading: Icon(Icons.menu_book_outlined),
+                                title: Text('Somente Versículos')),
                           ),
                           const PopupMenuItem<TtsContentType>(
                             value: TtsContentType.versesAndCommentary,
                             child: ListTile(
-                              leading: Icon(Icons.comment_bank_outlined),
-                              title: Text('Versículos e Comentário'),
-                            ),
+                                leading: Icon(Icons.comment_bank_outlined),
+                                title: Text('Versículos e Comentário')),
                           ),
                         ],
                       ),
                     ),
-                    // <<< FIM DA MUDANÇA >>>
                   ],
                 ),
                 const Divider(color: Colors.transparent, height: 4),
 
-                // --- LISTA DE VERSÍCULOS ---
+                // --- LISTA DE VERSÍCULOS (sem alteração) ---
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: widget.verseNumbersInSection.length,
                   itemBuilder: (context, indexInSecao) {
+                    // ... (sua lógica de itemBuilder existente continua aqui)
                     final verseNumber =
                         widget.verseNumbersInSection[indexInSecao];
-
-                    // Lógica de verificação continua aqui
                     final bool isRecommended =
                         recommendedVersesForChapter?.contains(verseNumber) ??
                             false;
-
                     dynamic mainTranslationVerseDataItem;
                     List<Map<String, String>>? hebrewDataForThisVerse;
                     List<Map<String, String>>? greekDataForThisVerse;
@@ -670,39 +691,66 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             hebrewVerseData: hebrewDataForThisVerse,
                             greekVerseData: greekDataForThisVerse,
                             fontSizeMultiplier: widget.fontSizeMultiplier,
-                            isRecommended:
-                                isRecommended, // <<< O parâmetro é passado aqui
+                            isRecommended: isRecommended,
                           ),
                           CrossReferencesRow(
-                            bookAbbrev: widget.bookAbbrev,
-                            chapter: widget.chapterNumber,
-                            verse: verseNumber,
-                          ),
+                              bookAbbrev: widget.bookAbbrev,
+                              chapter: widget.chapterNumber,
+                              verse: verseNumber),
                         ],
                       );
                     } else {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: Text(
-                          'Erro: Verso $verseNumber não encontrado.',
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
+                        child: Text('Erro: Verso $verseNumber não encontrado.',
+                            style: TextStyle(color: theme.colorScheme.error)),
                       );
                     }
                   },
                 ),
+
+                // --- ÁREA DE INSIGHTS (condicional) ---
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: _showInsights && _insightFuture != null
+                      ? FutureBuilder<String?>(
+                          future: _insightFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16.0),
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            if (snapshot.hasError ||
+                                !snapshot.hasData ||
+                                snapshot.data!.isEmpty) {
+                              return InterlinearInsightCard(
+                                  markdownContent: snapshot.error?.toString() ??
+                                      "Nenhum insight encontrado para esta seção.");
+                            }
+                            return InterlinearInsightCard(
+                                markdownContent: snapshot.data!);
+                          },
+                        )
+                      : const SizedBox.shrink(),
+                ),
+
                 if (widget.isStudyModeActive)
                   StudyCardWidget(
+                    // ... (seus parâmetros existentes)
                     commentaryDocId: _commentaryDocId,
                     onGenerateSummary: () {
                       widget.onShowSummaryRequest(
                           _commentaryDocId, widget.sectionTitle);
                     },
-                    // <<< CORREÇÃO FINAL AQUI >>>
                     isPremium: viewModel.isPremium,
                     allUserTags: viewModel.allUserTags,
                     bookAbbrev: widget.bookAbbrev,
-                    bookName: widget.bookName, // Agora deve funcionar
+                    bookName: widget.bookName,
                     chapterNumber: widget.chapterNumber,
                     sectionIdForHighlights: _sectionIdForTracking,
                     sectionTitle: widget.sectionTitle,
@@ -710,6 +758,7 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                   ),
                 const Divider(height: 20),
                 Row(
+                  // ... (seu rodapé com "Mais Estudos" e "Marcar como Lido")
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     TextButton.icon(
@@ -787,10 +836,8 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
                             const Divider(height: 16),
                             Padding(
                               padding: const EdgeInsets.only(left: 4.0),
-                              child: Text(
-                                "Recursos de Estudo",
-                                style: theme.textTheme.titleMedium,
-                              ),
+                              child: Text("Recursos de Estudo",
+                                  style: theme.textTheme.titleMedium),
                             ),
                             RecommendedResourcesRow(
                                 sectionId: _sectionIdForTracking),
@@ -804,8 +851,5 @@ class _SectionItemWidgetState extends State<SectionItemWidget>
         );
       },
     );
-    // ==========================================================
-    // <<< FIM DA CORREÇÃO E OTIMIZAÇÃO >>>
-    // ==========================================================
   }
 }
